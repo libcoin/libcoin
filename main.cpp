@@ -637,6 +637,9 @@ bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMi
     if (!IsStandard())
         return error("AcceptToMemoryPool() : nonstandard transaction type");
 
+    if (fClient)
+        return true;
+
     // Do we already have it?
     uint256 hash = GetHash();
     CRITICAL_BLOCK(cs_mapTransactions)
@@ -1308,22 +1311,25 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     if (!CheckBlock())
         return false;
 
-    //// issue here: it doesn't know the version
-    unsigned int nTxPos = pindex->nBlockPos + ::GetSerializeSize(CBlock(), SER_DISK) - 1 + GetSizeOfCompactSize(vtx.size());
-
-    map<uint256, CTxIndex> mapUnused;
-    int64 nFees = 0;
-    foreach(CTransaction& tx, vtx)
+    if (!fClient)
     {
-        CDiskTxPos posThisTx(pindex->nFile, pindex->nBlockPos, nTxPos);
-        nTxPos += ::GetSerializeSize(tx, SER_DISK);
+        //// issue here: it doesn't know the version
+        unsigned int nTxPos = pindex->nBlockPos + ::GetSerializeSize(CBlock(), SER_DISK) - 1 + GetSizeOfCompactSize(vtx.size());
 
-        if (!tx.ConnectInputs(txdb, mapUnused, posThisTx, pindex, nFees, true, false))
+        map<uint256, CTxIndex> mapUnused;
+        int64 nFees = 0;
+        foreach(CTransaction& tx, vtx)
+        {
+            CDiskTxPos posThisTx(pindex->nFile, pindex->nBlockPos, nTxPos);
+            nTxPos += ::GetSerializeSize(tx, SER_DISK);
+
+            if (!tx.ConnectInputs(txdb, mapUnused, posThisTx, pindex, nFees, true, false))
+                return false;
+        }
+
+        if (vtx[0].GetValueOut() > GetBlockValue(pindex->nHeight, nFees))
             return false;
     }
-
-    if (vtx[0].GetValueOut() > GetBlockValue(pindex->nHeight, nFees))
-        return false;
 
     // Update block index on disk without changing it in memory.
     // The memory index structure will be changed after the db commits.
@@ -1378,7 +1384,7 @@ bool Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
     foreach(CBlockIndex* pindex, vDisconnect)
     {
         CBlock block;
-        if (!block.ReadFromDisk(pindex))
+        if (!block.ReadFromDisk(pindex, !fClient))
             return error("Reorganize() : ReadFromDisk for disconnect failed");
         if (!block.DisconnectBlock(txdb, pindex))
             return error("Reorganize() : DisconnectBlock failed");
@@ -1395,7 +1401,7 @@ bool Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
     {
         CBlockIndex* pindex = vConnect[i];
         CBlock block;
-        if (!block.ReadFromDisk(pindex))
+        if (!block.ReadFromDisk(pindex, !fClient))
             return error("Reorganize() : ReadFromDisk for connect failed");
         if (!block.ConnectBlock(txdb, pindex))
         {
@@ -1526,7 +1532,7 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos)
 
     txdb.Close();
 
-    if (pindexNew == pindexBest)
+    if (!fClient && pindexNew == pindexBest)
     {
         // Notify UI to display prev block's coinbase if it was ours
         static uint256 hashPrevBestCoinBase;
@@ -1547,10 +1553,6 @@ bool CBlock::CheckBlock() const
     // These are checks that are independent of context
     // that can be verified before saving an orphan block.
 
-    // Size limits
-    if (vtx.empty() || vtx.size() > MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK) > MAX_BLOCK_SIZE)
-        return error("CheckBlock() : size limits failed");
-
     // Check proof of work matches claimed amount
     if (!CheckProofOfWork(GetHash(), nBits))
         return error("CheckBlock() : proof of work failed");
@@ -1558,6 +1560,13 @@ bool CBlock::CheckBlock() const
     // Check timestamp
     if (GetBlockTime() > GetAdjustedTime() + 2 * 60 * 60)
         return error("CheckBlock() : block timestamp too far in the future");
+
+    if (fClient && vtx.empty())
+        return true;
+
+    // Size limits
+    if (vtx.empty() || vtx.size() > MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK) > MAX_BLOCK_SIZE)
+        return error("CheckBlock() : size limits failed");
 
     // First transaction must be coinbase, the rest must not be
     if (vtx.empty() || !vtx[0].IsCoinBase())
@@ -1623,13 +1632,14 @@ bool CBlock::AcceptBlock()
         return error("AcceptBlock() : out of disk space");
     unsigned int nFile = -1;
     unsigned int nBlockPos = 0;
-    if (!WriteToDisk(nFile, nBlockPos))
-        return error("AcceptBlock() : WriteToDisk failed");
+    if (!fClient)
+        if (!WriteToDisk(nFile, nBlockPos))
+            return error("AcceptBlock() : WriteToDisk failed");
     if (!AddToBlockIndex(nFile, nBlockPos))
         return error("AcceptBlock() : AddToBlockIndex failed");
 
     // Relay inventory, but don't relay old inventory during initial block download
-    if (hashBestChain == hash)
+    if (!fClient && hashBestChain == hash)
         CRITICAL_BLOCK(cs_vNodes)
             foreach(CNode* pnode, vNodes)
                 if (nBestHeight > (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : 55000))
@@ -2405,6 +2415,8 @@ bool ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         {
             if (fShutdown)
                 return true;
+            if (fClient && inv.type == MSG_TX)
+                continue;
             pfrom->AddInventoryKnown(inv);
 
             bool fAlreadyHave = AlreadyHave(txdb, inv);
@@ -2441,6 +2453,9 @@ bool ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 
             if (inv.type == MSG_BLOCK)
             {
+                if (fClient)
+                    return true;
+
                 // Send block from disk
                 map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(inv.hash);
                 if (mi != mapBlockIndex.end())
@@ -2486,6 +2501,8 @@ bool ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 
     else if (strCommand == "getblocks")
     {
+        if (fClient)
+            return true;
         CBlockLocator locator;
         uint256 hashStop;
         vRecv >> locator >> hashStop;
@@ -2556,6 +2573,8 @@ bool ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 
     else if (strCommand == "tx")
     {
+        if (fClient)
+            return true;
         vector<uint256> vWorkQueue;
         CDataStream vMsg(vRecv);
         CTransaction tx;
@@ -2620,6 +2639,33 @@ bool ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 
         if (ProcessBlock(pfrom, &block))
             mapAlreadyAskedFor.erase(inv);
+    }
+
+
+    else if (strCommand == "headers")
+    {
+        if (!fClient)
+            return true;
+        vector<CBlock> vHeaders;
+        vRecv >> vHeaders;
+
+        uint256 hashBestBefore = hashBestChain;
+        foreach(CBlock& block, vHeaders)
+        {
+            block.vtx.clear();
+
+            printf("received header %s\n", block.GetHash().ToString().substr(0,20).c_str());
+
+            CInv inv(MSG_BLOCK, block.GetHash());
+            pfrom->AddInventoryKnown(inv);
+
+            if (ProcessBlock(pfrom, &block))
+                mapAlreadyAskedFor.erase(inv);
+        }
+
+        // Request next batch
+        if (hashBestChain != hashBestBefore)
+            pfrom->PushGetBlocks(pindexBest, uint256(0));
     }
 
 

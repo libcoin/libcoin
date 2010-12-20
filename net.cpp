@@ -51,7 +51,15 @@ void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
     pindexLastGetBlocksBegin = pindexBegin;
     hashLastGetBlocksEnd = hashEnd;
 
-    PushMessage("getblocks", CBlockLocator(pindexBegin), hashEnd);
+    /// Client todo: After the initial block header download, start using getblocks
+    /// here instead of getheaders.  For blocks generated after the first time the
+    /// program was run, we need to download full blocks to watch for received
+    /// transactions in them.  We're able to download headers only for blocks
+    /// generated before we ever ran because they can't contain txes for us.
+    if (::fClient)
+        PushMessage("getheaders", CBlockLocator(pindexBegin), hashEnd);
+    else
+        PushMessage("getblocks", CBlockLocator(pindexBegin), hashEnd);
 }
 
 

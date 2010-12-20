@@ -464,29 +464,32 @@ bool CTxDB::LoadBlockIndex()
     ReadBestInvalidWork(bnBestInvalidWork);
 
     // Verify blocks in the best chain
-    CBlockIndex* pindexFork = NULL;
-    for (CBlockIndex* pindex = pindexBest; pindex && pindex->pprev; pindex = pindex->pprev)
+    if (!fClient)
     {
-        if (pindex->nHeight < nBestHeight-2500 && !mapArgs.count("-checkblocks"))
-            break;
-        CBlock block;
-        if (!block.ReadFromDisk(pindex))
-            return error("LoadBlockIndex() : block.ReadFromDisk failed");
-        if (!block.CheckBlock())
+        CBlockIndex* pindexFork = NULL;
+        for (CBlockIndex* pindex = pindexBest; pindex && pindex->pprev; pindex = pindex->pprev)
         {
-            printf("LoadBlockIndex() : *** found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().ToString().c_str());
-            pindexFork = pindex->pprev;
+            if (pindex->nHeight < nBestHeight-2500 && !mapArgs.count("-checkblocks"))
+                break;
+            CBlock block;
+            if (!block.ReadFromDisk(pindex))
+                return error("LoadBlockIndex() : block.ReadFromDisk failed");
+            if (!block.CheckBlock())
+            {
+                printf("LoadBlockIndex() : *** found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().ToString().c_str());
+                pindexFork = pindex->pprev;
+            }
         }
-    }
-    if (pindexFork)
-    {
-        // Reorg back to the fork
-        printf("LoadBlockIndex() : *** moving best chain pointer back to block %d\n", pindexFork->nHeight);
-        CBlock block;
-        if (!block.ReadFromDisk(pindexFork))
-            return error("LoadBlockIndex() : block.ReadFromDisk failed");
-        CTxDB txdb;
-        block.SetBestChain(txdb, pindexFork);
+        if (pindexFork)
+        {
+            // Reorg back to the fork
+            printf("LoadBlockIndex() : *** moving best chain pointer back to block %d\n", pindexFork->nHeight);
+            CBlock block;
+            if (!block.ReadFromDisk(pindexFork))
+                return error("LoadBlockIndex() : block.ReadFromDisk failed");
+            CTxDB txdb;
+            block.SetBestChain(txdb, pindexFork);
+        }
     }
 
     return true;

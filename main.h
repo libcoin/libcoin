@@ -619,6 +619,8 @@ public:
 
     bool ReadFromDisk(CDiskTxPos pos, FILE** pfileRet=NULL)
     {
+        assert(!fClient);
+
         CAutoFile filein = OpenBlockFile(pos.nFile, 0, pfileRet ? "rb+" : "rb");
         if (!filein)
             return error("CTransaction::ReadFromDisk() : OpenBlockFile failed");
@@ -1174,6 +1176,7 @@ public:
 
     bool ReadFromDisk(unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true)
     {
+        assert(!fClient);
         SetNull();
 
         // Open history file to read
@@ -1231,7 +1234,7 @@ public:
 
 
 //
-// The block chain is a tree shaped structure starting with the
+// The block index is a tree shaped structure starting with the
 // genesis block at the root, with each block potentially having multiple
 // candidates to be the next block.  pprev and pnext link a path through the
 // main/longest chain.  A blockindex may have multiple pprev pointing back
