@@ -1584,14 +1584,646 @@ Value getwork(const Array& params, bool fHelp)
     }
 }
 
+Value gettxdetails(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+                            "gettxdetails <txhash>\n"
+                            "Get transaction details for transaction with hash <txhash>");
+    
+    uint256 hash;
+    hash.SetHex(params[0].get_str());
+    
+    CTxDB txdb("r");
+    
+    CTransaction tx;
+    if(!txdb.ReadDiskTx(hash, tx))
+        throw JSONRPCError(-5, "Invalid transaction id");
+    
+    Object entry;
+    
+    // scheme follows the scheme of blockexplorer:
+    // "hash" : hash in hex
+    // "ver" : vernum
+    entry.push_back(Pair("hash", hash.ToString()));
+    entry.push_back(Pair("ver", tx.nVersion));
+    entry.push_back(Pair("vin_sz", uint64_t(tx.vin.size())));
+    entry.push_back(Pair("vout_sz", uint64_t(tx.vout.size())));
+    entry.push_back(Pair("lock_time", uint64_t(tx.nLockTime)));
+    entry.push_back(Pair("size", uint64_t(::GetSerializeSize(tx, SER_NETWORK))));
+    
+    // now loop over the txins
+    Array txins;
+    BOOST_FOREACH(const CTxIn& txin, tx.vin)
+    {
+        Object inentry;
+        inentry.clear();
+        Object prevout;
+        prevout.clear();
+        prevout.push_back(Pair("hash", txin.prevout.hash.ToString()));
+        prevout.push_back(Pair("n", uint64_t(txin.prevout.n)));
+        inentry.push_back(Pair("prev_out", prevout));
+        if(tx.IsCoinBase())            
+            inentry.push_back(Pair("coinbase", txin.scriptSig.ToString()));
+        else
+            inentry.push_back(Pair("scriptSig", txin.scriptSig.ToString()));
+        txins.push_back(inentry);
+    }
+    entry.push_back(Pair("in", txins));
+    
+    // now loop over the txouts
+    Array txouts;
+    BOOST_FOREACH(const CTxOut& txout, tx.vout)
+    {
+        Object outentry;
+        outentry.clear();
+        outentry.push_back(Pair("value", strprintf("%"PRI64d".%08"PRI64d"",txout.nValue/COIN, txout.nValue%COIN))); // format correctly
+        outentry.push_back(Pair("scriptPubKey", txout.scriptPubKey.ToString()));
+        txouts.push_back(outentry);
+    }
+    entry.push_back(Pair("out", txouts));
+    
+    return entry;    
+}
 
 
+bool Solver(const CScript& scriptPubKey, vector<pair<opcodetype, vector<unsigned char> > >& vSolutionRet);
 
+typedef pair<uint256, unsigned int> Coin;
 
+class CAsset;
 
+class CAsset : public CKeyStore
+{
+public:
+    //    typedef COutPoint Coin;
+    typedef set<Coin> Coins;
+    typedef map<uint256, CTransaction> TxCache;
+    typedef set<uint256> TxSet;
+    typedef map<uint160, CKey> KeyMap;
+private:
+    KeyMap _keymap;
+    TxCache _tx_cache;
+    Coins _coins;
+    
+public:
+    CAsset() {}
+    void addAddress(uint160 hash160) { _keymap[hash160]; }
+    void addKey(CKey key) { _keymap[Hash160(key.GetPubKey())] = key; }
+    
+    set<uint160> getAddresses()
+    {
+        set<uint160> addresses;
+        for(KeyMap::iterator addr = _keymap.begin(); addr != _keymap.end(); ++addr)
+            addresses.insert(addr->first);
+        return addresses;
+    }
+    
+    virtual bool AddKey(const CKey& key)
+    {
+        _keymap[Hash160(key.GetPubKey())] = key;
+        return true;
+    }
+    
+    virtual bool HaveKey(const CBitcoinAddress &address) const
+    {
+        uint160 hash160 = address.GetHash160();
+        return (_keymap.count(hash160) > 0);
+    }
+    
+    virtual bool GetKey(const CBitcoinAddress &address, CKey& keyOut) const
+    {
+        uint160 hash160 = address.GetHash160();
+        KeyMap::const_iterator pair = _keymap.find(hash160);
+        if(pair != _keymap.end())
+        {
+            keyOut = pair->second;
+            return true;
+        }
+        return false;        
+    }
+    
+    // we might need to override these as well... Depending how well we want to support having only keys with pub/160 part
+    //    virtual bool GetPubKey(const CBitcoinAddress &address, std::vector<unsigned char>& vchPubKeyOut) const
+    //    virtual std::vector<unsigned char> GenerateNewKey();
+    
+    const CTransaction& getTx(uint256 hash) const
+    {
+        TxCache::const_iterator pair = _tx_cache.find(hash);
+        if(pair != _tx_cache.end())
+        {
+            return pair->second;
+        }
+        //        cout << "CACHE MISS!!! " << hash.ToString() << endl;
+        /*
+         CTxDB txdb("r");
+         CTransaction tx;
+         if(txdb.ReadDiskTx(hash, tx))
+         {
+         _tx_cache[hash] = tx;
+         return _tx_cache[hash];
+         }
+         */
+        // throw something!
+    }
+    
+    uint160 getAddress(const CTxOut& out)
+    {
+        vector<pair<opcodetype, vector<unsigned char> > > vSolution;
+        if (!Solver(out.scriptPubKey, vSolution))
+            return 0;
+        
+        BOOST_FOREACH(PAIRTYPE(opcodetype, vector<unsigned char>)& item, vSolution)
+        {
+            vector<unsigned char> vchPubKey;
+            if (item.first == OP_PUBKEY)
+            {
+                // encode the pubkey into a hash160
+                return Hash160(item.second);                
+            }
+            else if (item.first == OP_PUBKEYHASH)
+            {
+                return uint160(item.second);                
+            }
+        }
+        return 0;
+    }
+    
+    void syncronize()
+    {
+        CTxDB txdb("r");
+        
+        _coins.clear();
+        
+        // read all relevant tx'es
+        for(KeyMap::iterator key = _keymap.begin(); key != _keymap.end(); ++key)
+        {
+            Coins debit;
+            txdb.ReadDrIndex(key->first, debit);
+            Coins credit;
+            txdb.ReadCrIndex(key->first, credit);
+            
+            Coins coins;
+            for(Coins::iterator coin = debit.begin(); coin != debit.end(); ++coin)
+            {
+                CTransaction tx;
+                txdb.ReadDiskTx(coin->first, tx);
+                _tx_cache[coin->first] = tx; // caches the relevant transactions
+                coins.insert(*coin);
+            }
+            for(Coins::iterator coin = credit.begin(); coin != credit.end(); ++coin)
+            {
+                CTransaction tx;
+                txdb.ReadDiskTx(coin->first, tx);
+                _tx_cache[coin->first] = tx; // caches the relevant transactions
+                
+                CTxIn in = tx.vin[coin->second];
+                Coin spend(in.prevout.hash, in.prevout.n);
+                coins.erase(spend);
+            }
+            
+            _coins.insert(coins.begin(), coins.end());
+        }
+        
+        // now _coins contains all non-spend coins !
+    }
+    
+    const Coins& getCoins()
+    {
+        return _coins;
+    }
+    
+    bool isSpendable(Coin coin)
+    {
+        // get the address
+        CTransaction tx = getTx(coin.first);
+        CTxOut& out = tx.vout[coin.second];
+        uint160 addr = getAddress(out);
+        KeyMap::iterator keypair = _keymap.find(addr);
+        if(keypair->second.IsNull())
+            return false;
+        
+        try {
+            CPrivKey privkey = keypair->second.GetPrivKey();
+        }
+        catch(key_error err)
+        {
+            return false;
+        }
+        return true;        
+    }
+    
+    const int64 value(Coin coin) const
+    {
+        const CTransaction& tx = getTx(coin.first);
+        const CTxOut& out = tx.vout[coin.second];
+        return out.nValue;
+    }
+    
+    struct CompValue {
+        const CAsset& _asset;
+        CompValue(const CAsset& asset) : _asset(asset) {}
+        bool operator() (Coin a, Coin b)
+        {
+            return (_asset.value(a) < _asset.value(b));
+        }
+    };
+    
+    int64 balance()
+    {
+        int64 sum = 0;
+        for(Coins::iterator coin = _coins.begin(); coin != _coins.end(); ++coin)
+            sum += value(*coin);
+        return sum;
+    }
+    
+    int64 spendable_balance()
+    {
+        int64 sum = 0;
+        for(Coins::iterator coin = _coins.begin(); coin != _coins.end(); ++coin)
+            if(isSpendable(*coin))
+                sum += value(*coin);
+        return sum;
+    }
+    
+    typedef pair<uint160, int64> Payment;
+    CTransaction generateTx(set<Payment> payments, uint160 changeaddr = 0)
+    {
+        int64 amount = 0;
+        for(set<Payment>::iterator payment = payments.begin(); payment != payments.end(); ++payment)
+            amount += payment->second;
+        
+        // calculate fee
+        int64 fee = max(amount/1000, (int64)500000);
+        amount += fee;
+        
+        // create a list of spendable coins
+        vector<Coin> spendable_coins;
+        for(Coins::iterator coin = _coins.begin(); coin != _coins.end(); ++coin)
+            if (isSpendable(*coin)) {
+                spendable_coins.push_back(*coin);
+            }
+        
+        CompValue compvalue(*this);
+        sort(spendable_coins.begin(), spendable_coins.end(), compvalue);
+        
+        int64 sum = 0;
+        int coins = 0;
+        for(coins = 0; coins < spendable_coins.size(); coins++)
+        {
+            sum += value(spendable_coins[coins]);
+            if(sum > amount)
+                break;
+        }
+        
+        CTransaction tx;
+        
+        if(sum < amount) // could not pay - throw something
+            return tx;
+        
+        // shuffle the inputs
+        random_shuffle(spendable_coins.begin(), spendable_coins.end());
+        
+        // now fill in the tx outs
+        for(set<Payment>::iterator payment = payments.begin(); payment != payments.end(); ++payment)
+        {
+            CScript scriptPubKey;
+            scriptPubKey << OP_DUP << OP_HASH160 << payment->first << OP_EQUALVERIFY << OP_CHECKSIG;
+            
+            CTxOut out(payment->second, scriptPubKey);
+            tx.vout.push_back(out);
+        }            
+        // handle change!
+        int64 change = amount - sum;
+        uint160 changeto = changeaddr;
+        if(changeto == 0)
+        {
+            CTransaction txchange = getTx(spendable_coins[0].first);
+            uint160 changeto = getAddress(txchange.vout[spendable_coins[0].second]);
+        }
+        
+        if(change > 50000) // skip smaller amounts of change
+        {
+            CScript scriptPubKey;
+            scriptPubKey << OP_DUP << OP_HASH160 << changeto << OP_EQUALVERIFY << OP_CHECKSIG;
+            
+            CTxOut out(change, scriptPubKey);
+            tx.vout.push_back(out);
+        }            
+        
+        int64 invalue = 0;
+        for(int i = 0; i < coins; i++)
+        {
+            const Coin& coin = spendable_coins[i];
+            invalue += value(spendable_coins[i]);
+            CTxIn in(coin.first, coin.second);
+            
+            tx.vin.push_back(in);
+        }
+        
+        for(int i = 0; i < coins; i++)
+        {
+            const Coin& coin = spendable_coins[i];
+            const CTransaction& txfrom = getTx(coin.first);
+            if (!SignSignature(*this, txfrom, tx, i))
+            {
+                // throw something!                
+            }
+        }        
+        return tx;
+    }
+    
+    CTransaction generateTx(uint160 to, int64 amount, uint160 change = 0)
+    {
+        set<Payment> payments;
+        payments.insert(Payment(to, amount));
+        return generateTx(payments, change);
+    }
+};
 
+Value getvalue(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+                            "getvalue <btcaddr>\n"
+                            "Get value of <btcaddr>");
+    
+    uint160 hash160 = CBitcoinAddress(params[0].get_str()).GetHash160();
+    
+    CAsset asset;
+    asset.addAddress(hash160);
+    asset.syncronize();
+    int64 balance = asset.balance();
+    
+    Value val(balance);
+    
+    return val;
+}
 
+Value gettxto(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 2)
+        throw runtime_error(
+                            "gettxto <value> <btcaddr>\n"
+                            "Get transaction of <value> to <btcaddr>");
+    
+    double dvalue;
+    istringstream(params[0].get_str()) >> dvalue;
+    int64 nValue = COIN*dvalue;
+    CBitcoinAddress address(params[1].get_str());
+    
+    CScript scriptPubKey;
+    scriptPubKey.SetBitcoinAddress(address);
+    
+    CWalletTx wtx;
+    
+    CReserveKey reservekey(pwalletMain);
+    int64 nFeeRequired;
+    
+    if (! pwalletMain->CreateTransaction(scriptPubKey, nValue, wtx, reservekey, nFeeRequired))
+    {
+        string strError;
+        if (nValue + nFeeRequired > pwalletMain->GetBalance())
+            strError = strprintf(_("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds  "), FormatMoney(nFeeRequired).c_str());
+        else
+            strError = _("Error: Transaction creation failed  ");
+        throw JSONRPCError(-5, strError);
+    }
+    
+    CTransaction tx = wtx;
+    
+    // or using PorteMonnaie instead:
+    // CPorteMonnaie porteMonnaie("<path-to-coins>"); // the folder contains files of name <bitcoinaddress>.pem containing, possibly encoded, private ecc keys. The file can be empty in which case the coin is assumed to be of observation only. - further, portemonnaie assumes a cache - named similarly as bitcoinaddress.cache containing the collected tx'es
+    // portemonnaie.syncronize(txdb);
+    // CTransaction tx = porteMonnaie.pay(nValue, address);    
+    
+    Object entry;
+    
+    // scheme follows the scheme of blockexplorer:
+    // "ver" : vernum
+    entry.push_back(Pair("hash", tx.GetHash().ToString()));
+    entry.push_back(Pair("ver", tx.nVersion));
+    entry.push_back(Pair("vin_sz", uint64_t(tx.vin.size())));
+    entry.push_back(Pair("vout_sz", uint64_t(tx.vout.size())));
+    entry.push_back(Pair("lock_time", uint64_t(tx.nLockTime)));
+    entry.push_back(Pair("size", uint64_t(::GetSerializeSize(tx, SER_NETWORK))));
+    
+    // now loop over the txins
+    Array txins;
+    BOOST_FOREACH(const CTxIn& txin, tx.vin)
+    {
+        Object inentry;
+        inentry.clear();
+        Object prevout;
+        prevout.clear();
+        prevout.push_back(Pair("hash", txin.prevout.hash.ToString()));
+        prevout.push_back(Pair("n", uint64_t(txin.prevout.n)));
+        inentry.push_back(Pair("prev_out", prevout));
+        if(tx.IsCoinBase())            
+            inentry.push_back(Pair("coinbase", txin.scriptSig.ToString()));
+        else
+            inentry.push_back(Pair("scriptSig", txin.scriptSig.ToString()));
+        txins.push_back(inentry);
+    }
+    entry.push_back(Pair("in", txins));
+    
+    // now loop over the txouts
+    Array txouts;
+    BOOST_FOREACH(const CTxOut& txout, tx.vout)
+    {
+        Object outentry;
+        outentry.clear();
+        outentry.push_back(Pair("value", strprintf("%"PRI64d".%08"PRI64d"",txout.nValue/COIN, txout.nValue%COIN))); // format correctly
+        outentry.push_back(Pair("scriptPubKey", txout.scriptPubKey.ToString()));
+        txouts.push_back(outentry);
+    }
+    entry.push_back(Pair("out", txouts));
+    
+    return entry;    
+}    
 
+Value getdebit(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+                            "getdebit <btcaddr>\n"
+                            "Get debit coins of <btcaddr>");
+    uint160 hash160 = CBitcoinAddress(params[0].get_str()).GetHash160();
+    
+    CTxDB txdb("r");
+    
+    set<Coin> debit;
+    
+    txdb.ReadDrIndex(hash160, debit);
+    
+    Array list;
+    
+    for(set<Coin>::iterator coin = debit.begin(); coin != debit.end(); ++coin)
+    {
+        Object obj;
+        obj.clear();
+        obj.push_back(Pair("hash", coin->first.ToString()));
+        obj.push_back(Pair("n", uint64_t(coin->second)));
+        list.push_back(obj);
+    }
+    
+    return list;
+}
+
+Value getcredit(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+                            "getcredit <btcaddr>\n"
+                            "Get credit coins of <btcaddr>");
+    uint160 hash160 = CBitcoinAddress(params[0].get_str()).GetHash160();
+    
+    CTxDB txdb("r");
+    
+    set<Coin> credit;
+    
+    txdb.ReadCrIndex(hash160, credit);
+    
+    Array list;
+    
+    for(set<Coin>::iterator coin = credit.begin(); coin != credit.end(); ++coin)
+    {
+        Object obj;
+        obj.clear();
+        obj.push_back(Pair("hash", coin->first.ToString()));
+        obj.push_back(Pair("n", uint64_t(coin->second)));
+        list.push_back(obj);
+    }
+    
+    return list;
+}
+
+Value getcoins(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+                            "getcoins <btcaddr>\n"
+                            "Get non spend coins of <btcaddr>");
+    
+    uint160 hash160 = CBitcoinAddress(params[0].get_str()).GetHash160();
+    
+    CAsset asset;
+    asset.addAddress(hash160);
+    asset.syncronize();
+    set<Coin> coins = asset.getCoins();
+    
+    Array list;
+    
+    for(set<Coin>::iterator coin = coins.begin(); coin != coins.end(); ++coin)
+    {
+        Object obj;
+        obj.clear();
+        obj.push_back(Pair("hash", coin->first.ToString()));
+        obj.push_back(Pair("n", uint64_t(coin->second)));
+        list.push_back(obj);
+    }
+    
+    return list;
+}
+
+Value posttx(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+                            "posttx <tx>\n"
+                            "Post a signed transaction json"); // note this is a new transaction and hence it has no hash!
+    
+    Object entry = params[0].get_obj();
+    
+    CTransaction tx;
+    
+    // find first the version
+    tx.nVersion = find_value(entry, "ver").get_int();
+    // then the lock_time
+    tx.nLockTime = find_value(entry, "lock_time").get_int();
+    
+    // then find the vins and outs
+    Array txins = find_value(entry, "in").get_array();
+    Array txouts = find_value(entry, "out").get_array();
+    
+    map<string, opcodetype> opcodemap; // the following will create a map opcodeName -> opCode, the opcodeName='OP_UNKNOWN' = 0xfc (last code with no name)
+    for(unsigned char c = 0; c < UCHAR_MAX; c++) opcodemap[string(GetOpName(opcodetype(c)))] = (opcodetype)c;
+    
+    for(Array::iterator itin = txins.begin(); itin != txins.end(); ++itin)
+    {
+        Object in = itin->get_obj();
+        Object prev_out = find_value(in, "prev_out").get_obj();
+        uint256 hash(find_value(prev_out, "hash").get_str());
+        unsigned int n = find_value(prev_out, "n").get_int();
+        CScript scriptSig;
+        string sscript = find_value(in, "scriptSig").get_str();
+        // traverse through the vector and pushback opcodes and values
+        istringstream iss(sscript);
+        string token;
+        while(iss >> token)
+        {
+            map<string, opcodetype>::iterator opcode = opcodemap.find(token);
+            if(opcode != opcodemap.end()) // opcode read
+                scriptSig << opcode->second;
+            else // value read
+                scriptSig << ParseHex(token);
+        }
+        CTxIn txin(hash, n, scriptSig);
+        tx.vin.push_back(txin);
+    }
+    
+    for(Array::iterator itout = txouts.begin(); itout != txouts.end(); ++itout)
+    {
+        Object out = itout->get_obj();
+        string strvalue = find_value(out, "value").get_str();
+        //parse string value...
+        istringstream ivs(strvalue);
+        double dvalue;
+        ivs >> dvalue;
+        dvalue *= COIN;
+        int64 value = dvalue;
+        CScript scriptPubkey;
+        string sscript = find_value(out, "scriptPubKey").get_str();
+        // traverse through the vector and pushback opcodes and values
+        istringstream iss(sscript);
+        string token;
+        while(iss >> token)
+        {
+            map<string, opcodetype>::iterator opcode = opcodemap.find(token);
+            if(opcode != opcodemap.end()) // opcode read
+                scriptPubkey << opcode->second;
+            else // value read
+                scriptPubkey << ParseHex(token);
+        }
+        CTxOut txout(value, scriptPubkey);
+        tx.vout.push_back(txout);
+    }
+    
+    // now we have read the transaction - we need verify and possibly post it to the p2p network
+    // We create a fake node and pretend we got this from the network - this ensures that this is handled by the right thread...
+    CNode* pnode = new CNode(INVALID_SOCKET, CAddress("localhost"));
+    
+    CDataStream ss;
+    ss << tx;
+    CMessageHeader header("tx", ss.size());
+    uint256 hash = Hash(ss.begin(), ss.begin() + ss.size());
+    unsigned int nChecksum;
+    memcpy(&nChecksum, &hash, sizeof(nChecksum));    
+    header.nChecksum = nChecksum;
+    pnode->vRecv << header;
+    pnode->vRecv << tx;
+    pnode->nVersion = VERSION;
+    
+    CRITICAL_BLOCK(cs_vNodes)
+    {
+        pnode->nTimeConnected = GetTime();
+        pnode->nLastRecv = GetTime();
+        pnode->AddRef();
+        vNodes.push_back(pnode); // add the node to the node list - it will then get polled for its content and purged at the next occation
+    }
+    
+    return Value::null;
+}
 
 
 //
@@ -1643,6 +2275,13 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("getwork",                &getwork),
     make_pair("listaccounts",           &listaccounts),
     make_pair("settxfee",               &settxfee),
+    
+    make_pair("getdebit",               &getdebit),
+    make_pair("getcredit",              &getcredit),
+    make_pair("getcoins",               &getcoins),
+    make_pair("gettxdetails",           &gettxdetails),
+    make_pair("posttx",                 &posttx),
+    make_pair("gettxto",                &gettxto),
 };
 map<string, rpcfn_type> mapCallTable(pCallTable, pCallTable + sizeof(pCallTable)/sizeof(pCallTable[0]));
 
@@ -1671,6 +2310,12 @@ string pAllowInSafeMode[] =
     "walletlock",
     "validateaddress",
     "getwork",
+    
+    "getdebit",
+    "getcredit",
+    "getcoins",
+    "gettxdetails",
+    "posttx",
 };
 set<string> setAllowInSafeMode(pAllowInSafeMode, pAllowInSafeMode + sizeof(pAllowInSafeMode)/sizeof(pAllowInSafeMode[0]));
 
