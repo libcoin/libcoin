@@ -275,9 +275,6 @@ private:
     void operator=(const CTxDB&);
 public:
     bool ReadTxIndex(uint256 hash, CTxIndex& txindex);
-    bool ReadBtcIndex(uint160 hash, std::set<uint256>& txhashes);    
-    bool ReadDrIndex(uint160 hash160, std::set<std::pair<uint256, unsigned int> >& debit);
-    bool ReadCrIndex(uint160 hash160, std::set<std::pair<uint256, unsigned int> >& credit);
     bool UpdateTxIndex(uint256 hash, const CTxIndex& txindex);
     bool AddTxIndex(const CTransaction& tx, const CDiskTxPos& pos, int nHeight);
     bool EraseTxIndex(const CTransaction& tx);
