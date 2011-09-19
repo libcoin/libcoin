@@ -15,7 +15,7 @@
 
 class CBlock;
 class CBlockIndex;
-class CWalletTx;
+//class CWalletTx;
 class CWallet;
 class CKeyItem;
 class CReserveKey;
@@ -111,7 +111,7 @@ std::string GetWarnings(std::string strFor);
 
 
 
-
+/*
 
 bool GetWalletFile(CWallet* pwallet, std::string &strWalletFileOut);
 
@@ -128,7 +128,7 @@ bool WriteSetting(const std::string& strKey, const T& value)
     }
     return fOk;
 }
-
+*/
 
 class CDiskTxPos
 {

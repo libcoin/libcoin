@@ -6,7 +6,7 @@
 #define BITCOIN_UI_H
 
 #include <boost/function.hpp>
-#include "wallet.h"
+//#include "wallet.h"
 
 DECLARE_EVENT_TYPE(wxEVT_UITHREADCALL, -1)
 

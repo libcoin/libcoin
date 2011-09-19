@@ -6,7 +6,7 @@
 #include "db.h"
 #include "net.h"
 #include "init.h"
-#include "cryptopp/sha.h"
+//#include "cryptopp/sha.h"
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
@@ -73,7 +73,7 @@ int fUseUPnP = false;
 //
 // dispatching functions
 //
-
+/*
 void RegisterWallet(CWallet* pwalletIn)
 {
     CRITICAL_BLOCK(cs_setpwalletRegistered)
@@ -148,7 +148,7 @@ void static ResendWalletTransactions()
         pwallet->ResendWalletTransactions();
 }
 
-
+*/
 
 
 
@@ -439,7 +439,7 @@ bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMi
                 nLastTime = nNow;
                 // -limitfreerelay unit is thousand-bytes-per-minute
                 // At default rate it would take over a month to fill 1GB
-                if (dFreeCount > GetArg("-limitfreerelay", 15)*10*1000 && !IsFromMe(*this))
+                if (dFreeCount > GetArg("-limitfreerelay", 15)*10*1000 /*&& !IsFromMe(*this)*/)
                     return error("AcceptToMemoryPool() : free transaction rejected by rate limiter");
                 if (fDebug)
                     printf("Rate limit dFreeCount: %g => %g\n", dFreeCount, dFreeCount+nSize);
@@ -461,8 +461,8 @@ bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMi
 
     ///// are we sure this is ok when loading transactions or restoring block txes
     // If updated, erase old tx from wallet
-    if (ptxOld)
-        EraseFromWallets(ptxOld->GetHash());
+//    if (ptxOld)
+//        EraseFromWallets(ptxOld->GetHash());
 
     printf("AcceptToMemoryPool(): accepted %s\n", hash.ToString().substr(0,10).c_str());
     return true;
@@ -563,7 +563,7 @@ bool CMerkleTx::AcceptToMemoryPool()
 }
 
 
-
+/*
 bool CWalletTx::AcceptWalletTransaction(CTxDB& txdb, bool fCheckInputs)
 {
     CRITICAL_BLOCK(cs_mapTransactions)
@@ -588,7 +588,7 @@ bool CWalletTx::AcceptWalletTransaction()
     CTxDB txdb("r");
     return AcceptWalletTransaction(txdb);
 }
-
+*/
 int CTxIndex::GetDepthInMainChain() const
 {
     // Read block header
@@ -1016,8 +1016,8 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     }
 
     // Watch for transactions paying to me
-    BOOST_FOREACH(CTransaction& tx, vtx)
-        SyncWithWallets(tx, this, true);
+//    BOOST_FOREACH(CTransaction& tx, vtx)
+//        SyncWithWallets(tx, this, true);
 
     return true;
 }
@@ -1156,14 +1156,14 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
             return error("SetBestChain() : Reorganize failed");
         }
     }
-
+/*
     // Update best block in wallet (so we can detect restored wallets)
     if (!IsInitialBlockDownload())
     {
         const CBlockLocator locator(pindexNew);
         ::SetBestChain(locator);
     }
-
+*/
     // New best block
     hashBestChain = hash;
     pindexBest = pindexNew;
@@ -1215,7 +1215,7 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos)
     {
         // Notify UI to display prev block's coinbase if it was ours
         static uint256 hashPrevBestCoinBase;
-        UpdatedTransaction(hashPrevBestCoinBase);
+//        UpdatedTransaction(hashPrevBestCoinBase);
         hashPrevBestCoinBase = vtx[0].GetHash();
     }
 
@@ -1580,7 +1580,7 @@ void PrintBlockTree()
             DateTimeStrFormat("%x %H:%M:%S", block.GetBlockTime()).c_str(),
             block.vtx.size());
 
-        PrintWallets(block);
+//        PrintWallets(block);
 
         // put the main timechain first
         vector<CBlockIndex*>& vNext = mapNext[pindex];
@@ -1942,7 +1942,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
                 pfrom->PushGetBlocks(pindexBest, GetOrphanRoot(mapOrphanBlocks[inv.hash]));
 
             // Track requests for our stuff
-            Inventory(inv.hash);
+//            Inventory(inv.hash);
         }
     }
 
@@ -1995,7 +1995,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
             }
 
             // Track requests for our stuff
-            Inventory(inv.hash);
+//            Inventory(inv.hash);
         }
     }
 
@@ -2087,7 +2087,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         bool fMissingInputs = false;
         if (tx.AcceptToMemoryPool(true, &fMissingInputs))
         {
-            SyncWithWallets(tx, NULL, true);
+//            SyncWithWallets(tx, NULL, true);
             RelayMessage(inv, vMsg);
             mapAlreadyAskedFor.erase(inv);
             vWorkQueue.push_back(inv.hash);
@@ -2108,7 +2108,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
                     if (tx.AcceptToMemoryPool(true))
                     {
                         printf("   accepted orphan tx %s\n", inv.hash.ToString().substr(0,10).c_str());
-                        SyncWithWallets(tx, NULL, true);
+//                        SyncWithWallets(tx, NULL, true);
                         RelayMessage(inv, vMsg);
                         mapAlreadyAskedFor.erase(inv);
                         vWorkQueue.push_back(inv.hash);
@@ -2166,7 +2166,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         }
     }
 
-
+/*
     else if (strCommand == "checkorder")
     {
         uint256 hashReply;
@@ -2212,7 +2212,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         if (!tracker.IsNull())
             tracker.fn(tracker.param1, vRecv);
     }
-
+*/
 
     else if (strCommand == "ping")
     {
@@ -2382,7 +2382,7 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
             pto->PushMessage("ping");
 
         // Resend wallet transactions that haven't gotten in a block yet
-        ResendWalletTransactions();
+//        ResendWalletTransactions();
 
         // Address refresh broadcast
         static int64 nLastRebroadcast;
@@ -2487,7 +2487,7 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
                     uint256 hashRand = inv.hash ^ hashSalt;
                     hashRand = Hash(BEGIN(hashRand), END(hashRand));
                     bool fTrickleWait = ((hashRand & 3) != 0);
-
+/*
                     // always trickle our own transactions
                     if (!fTrickleWait)
                     {
@@ -2496,7 +2496,7 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
                             if (wtx.fFromMe)
                                 fTrickleWait = true;
                     }
-
+*/
                     if (fTrickleWait)
                     {
                         vInvWait.push_back(inv);
@@ -2560,6 +2560,7 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
 
 
 
+/*
 
 
 
@@ -2648,7 +2649,6 @@ public:
             printf("   setDependsOn %s\n", hash.ToString().substr(0,10).c_str());
     }
 };
-
 
 CBlock* CreateNewBlock(CReserveKey& reservekey)
 {
@@ -3090,3 +3090,4 @@ void GenerateBitcoins(bool fGenerate, CWallet* pwallet)
         }
     }
 }
+*/

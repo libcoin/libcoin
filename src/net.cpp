@@ -1724,7 +1724,7 @@ void StartNode(void* parg)
         printf("Error: CreateThread(ThreadMessageHandler) failed\n");
 
     // Generate coins in the background
-    GenerateBitcoins(fGenerateBitcoins, pwalletMain);
+//    GenerateBitcoins(fGenerateBitcoins, pwalletMain);
 }
 
 bool StopNode()

@@ -678,7 +678,7 @@ bool LoadAddresses()
 //
 // CWalletDB
 //
-
+/*
 bool CWalletDB::WriteName(const string& strAddress, const string& strName)
 {
     nWalletDBUpdated++;
@@ -1063,3 +1063,4 @@ bool BackupWallet(const CWallet& wallet, const string& strDest)
     }
     return false;
 }
+ */

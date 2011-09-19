@@ -18,7 +18,7 @@ class CDiskBlockIndex;
 class CDiskTxPos;
 class COutPoint;
 class CAddress;
-class CWalletTx;
+//class CWalletTx;
 class CWallet;
 class CAccount;
 class CAccountingEntry;
@@ -352,7 +352,7 @@ enum DBErrors
     DB_TOO_NEW,
     DB_LOAD_FAIL,
 };
-
+/*
 class CWalletDB : public CDB
 {
 public:
@@ -482,5 +482,5 @@ public:
 
     int LoadWallet(CWallet* pwallet);
 };
-
+*/
 #endif
