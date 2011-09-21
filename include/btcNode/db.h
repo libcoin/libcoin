@@ -5,7 +5,9 @@
 #ifndef BITCOIN_DB_H
 #define BITCOIN_DB_H
 
-#include "key.h"
+#include "btc/key.h"
+#include "btc/tx.h"
+#include "btcNode/main.h"
 
 #include <map>
 #include <string>
@@ -14,15 +16,12 @@
 #include <db_cxx.h>
 
 class CTxIndex;
-class CDiskBlockIndex;
 class CDiskTxPos;
 class COutPoint;
 class CAddress;
-//class CWalletTx;
-class CWallet;
+
 class CAccount;
 class CAccountingEntry;
-class CBlockLocator;
 
 
 extern unsigned int nWalletDBUpdated;
@@ -30,11 +29,6 @@ extern DbEnv dbenv;
 
 
 extern void DBFlush(bool fShutdown);
-void ThreadFlushWalletDB(void* parg);
-bool BackupWallet(const CWallet& wallet, const std::string& strDest);
-
-
-
 
 class CDB
 {

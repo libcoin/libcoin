@@ -5,15 +5,15 @@
 #ifndef H_BITCOIN_SCRIPT
 #define H_BITCOIN_SCRIPT
 
-#include "base58.h"
-#include "keystore.h"
+#include "btc/base58.h"
+#include "btc/keystore.h"
 
 #include <string>
 #include <vector>
 
 #include <boost/foreach.hpp>
 
-class CTransaction;
+class CTx;
 
 enum
 {
@@ -692,12 +692,12 @@ public:
 
 
 
-bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, const CTransaction& txTo, unsigned int nIn, int nHashType);
+bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, const CTx& txTo, unsigned int nIn, int nHashType);
 
 bool IsStandard(const CScript& scriptPubKey);
 bool IsMine(const CKeyStore& keystore, const CScript& scriptPubKey);
 bool ExtractAddress(const CScript& scriptPubKey, const CKeyStore* pkeystore, CBitcoinAddress& addressRet);
-bool SignSignature(const CKeyStore& keystore, const CTransaction& txFrom, CTransaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL, CScript scriptPrereq=CScript());
-bool VerifySignature(const CTransaction& txFrom, const CTransaction& txTo, unsigned int nIn, int nHashType=0);
+bool SignSignature(const CKeyStore& keystore, const CTx& txFrom, CTx& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL, CScript scriptPrereq=CScript());
+bool VerifySignature(const CTx& txFrom, const CTx& txTo, unsigned int nIn, int nHashType=0);
 
 #endif

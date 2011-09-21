@@ -2,12 +2,18 @@
 // Copyright (c) 2011 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
-#include "headers.h"
+//#include "headers.h"
+
+#include <vector>
+#include <boost/foreach.hpp>
+
+#include "btc/bignum.h"
+#include "btc/tx.h"
 
 using namespace std;
 using namespace boost;
 
-bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CScript scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType);
+bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CScript scriptCode, const CTx& txTo, unsigned int nIn, int nHashType);
 
 
 
@@ -70,7 +76,7 @@ static inline void popstack(vector<valtype>& stack)
 }
 
 
-bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, const CTransaction& txTo, unsigned int nIn, int nHashType)
+bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, const CTx& txTo, unsigned int nIn, int nHashType)
 {
     CAutoBN_CTX pctx;
     CScript::const_iterator pc = script.begin();
@@ -873,14 +879,14 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, co
 
 
 
-uint256 SignatureHash(CScript scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType)
+uint256 SignatureHash(CScript scriptCode, const CTx& txTo, unsigned int nIn, int nHashType)
 {
     if (nIn >= txTo.vin.size())
     {
         printf("ERROR: SignatureHash() : nIn=%d out of range\n", nIn);
         return 1;
     }
-    CTransaction txTmp(txTo);
+    CTx txTmp(txTo);
 
     // In case concatenating two scripts ends up with two codeseparators,
     // or an extra one at the end, this prevents all those possible incompatibilities.
@@ -937,7 +943,7 @@ uint256 SignatureHash(CScript scriptCode, const CTransaction& txTo, unsigned int
 
 
 bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CScript scriptCode,
-              const CTransaction& txTo, unsigned int nIn, int nHashType)
+              const CTx& txTo, unsigned int nIn, int nHashType)
 {
     CKey key;
     if (!key.SetPubKey(vchPubKey))
@@ -1146,7 +1152,7 @@ bool ExtractAddress(const CScript& scriptPubKey, const CKeyStore* keystore, CBit
 }
 
 
-bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CTransaction& txTo, unsigned int nIn, int nHashType)
+bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CTx& txTo, unsigned int nIn, int nHashType)
 {
     vector<vector<unsigned char> > stack;
     if (!EvalScript(stack, scriptSig, txTo, nIn, nHashType))
@@ -1159,7 +1165,7 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
 }
 
 
-bool SignSignature(const CKeyStore &keystore, const CTransaction& txFrom, CTransaction& txTo, unsigned int nIn, int nHashType, CScript scriptPrereq)
+bool SignSignature(const CKeyStore &keystore, const CTx& txFrom, CTx& txTo, unsigned int nIn, int nHashType, CScript scriptPrereq)
 {
     assert(nIn < txTo.vin.size());
     CTxIn& txin = txTo.vin[nIn];
@@ -1184,7 +1190,7 @@ bool SignSignature(const CKeyStore &keystore, const CTransaction& txFrom, CTrans
 }
 
 
-bool VerifySignature(const CTransaction& txFrom, const CTransaction& txTo, unsigned int nIn, int nHashType)
+bool VerifySignature(const CTx& txFrom, const CTx& txTo, unsigned int nIn, int nHashType)
 {
     assert(nIn < txTo.vin.size());
     const CTxIn& txin = txTo.vin[nIn];

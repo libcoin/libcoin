@@ -3,9 +3,12 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "headers.h"
-#include "db.h"
-#include "net.h"
+//#include "headers.h"
+#include "btcNode/db.h"
+#include "btcNode/net.h"
+
+#include "btc/util.h"
+
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
@@ -771,7 +774,7 @@ int CWalletDB::LoadWallet(CWallet* pwallet)
     vector<uint256> vWalletUpgrade;
 
     // Modify defaults
-#ifndef __WXMSW__
+#ifndef _WIN32
     // Tray icon sometimes disappears on 9.10 karmic koala 64-bit, leaving no way to access the program
     fMinimizeToTray = false;
     fMinimizeOnClose = false;

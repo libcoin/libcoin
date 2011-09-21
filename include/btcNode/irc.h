@@ -5,6 +5,9 @@
 #ifndef BITCOIN_IRC_H
 #define BITCOIN_IRC_H
 
+#include <string>
+#include "btc/util.h"
+
 bool RecvLine(SOCKET hSocket, std::string& strLine);
 void ThreadIRCSeed(void* parg);
 

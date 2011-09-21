@@ -3,10 +3,14 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "headers.h"
-#include "irc.h"
-#include "net.h"
-#include "strlcpy.h"
+#include "btcNode/irc.h"
+#include "btcNode/net.h"
+
+#include "btc/base58.h"
+#include "btc/strlcpy.h"
+#include "btc/util.h"
+
+#include <boost/asio.hpp>
 
 using namespace std;
 using namespace boost;

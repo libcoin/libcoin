@@ -1,0 +1,46 @@
+
+# FIXME: For OS X, need flag for Framework or dylib
+IF(DYNAMIC_BITCOIN)
+    ADD_DEFINITIONS(-DBTCNODE_LIBRARY)
+ELSE()
+    ADD_DEFINITIONS(-DBTCNODE_LIBRARY_STATIC)
+ENDIF()
+
+SET(LIB_NAME btcNode)
+
+SET(HEADER_PATH ${PROJECT_SOURCE_DIR}/include/${LIB_NAME})
+SET(TARGET_H
+    ${HEADER_PATH}/main.h
+    ${HEADER_PATH}/db.h
+    ${HEADER_PATH}/irc.h
+    ${HEADER_PATH}/net.h
+    ${HEADER_PATH}/protocol.h
+    ${BITCOIN_CONFIG_HEADER}
+)
+
+#ADD_LIBRARY(${LIB_NAME}
+#    ${BITCOIN_USER_DEFINED_DYNAMIC_OR_STATIC}
+#    ${LIB_PUBLIC_HEADERS}
+SET(TARGET_SRC
+    main.cpp
+    db.cpp
+    irc.cpp
+    net.cpp
+    protocol.cpp
+
+    ${BITCOIN_VERSIONINFO_RC}
+)
+SET(TARGET_LIBRARIES btc)
+
+SET(TARGET_EXTERNAL_LIBRARIES
+    ${CMAKE_THREAD_LIBS_INIT}    
+    ${MATH_LIBRARY} 
+    ${SSL_LIBRARY} 
+    ${CRYPTO_LIBRARY} 
+    ${BDB_LIBRARY} 
+    ${BOOST_LIBRARIES} 
+    ${DL_LIBRARY}
+)
+
+SETUP_LIBRARY(${LIB_NAME})
+

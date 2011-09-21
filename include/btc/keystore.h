@@ -5,7 +5,7 @@
 #ifndef BITCOIN_KEYSTORE_H
 #define BITCOIN_KEYSTORE_H
 
-#include "crypter.h"
+#include "btc/crypter.h"
 
 class CKeyStore
 {

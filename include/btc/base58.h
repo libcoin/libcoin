@@ -17,7 +17,7 @@
 
 #include <string>
 #include <vector>
-#include "bignum.h"
+#include "btc/bignum.h"
 
 static const char* pszBase58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 

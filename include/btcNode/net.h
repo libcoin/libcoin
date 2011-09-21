@@ -10,11 +10,11 @@
 #include <boost/foreach.hpp>
 #include <openssl/rand.h>
 
-#ifndef __WXMSW__
+#ifndef _WIN32
 #include <arpa/inet.h>
 #endif
 
-#include "protocol.h"
+#include "btcNode/protocol.h"
 
 class CAddrDB;
 class CRequestTracker;

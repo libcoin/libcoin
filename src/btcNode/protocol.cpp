@@ -3,10 +3,10 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "protocol.h"
-#include "util.h"
+#include "btcNode/protocol.h"
+#include "btc/util.h"
 
-#ifndef __WXMSW__
+#ifndef _WIN32
 # include <arpa/inet.h>
 #endif
 

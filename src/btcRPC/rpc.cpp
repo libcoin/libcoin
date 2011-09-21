@@ -3,11 +3,17 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "headers.h"
-#include "cryptopp/sha.h"
-#include "db.h"
-#include "net.h"
-#include "init.h"
+#include "btc/util.h"
+#include "btc/tx.h"
+#include "btc/uint256.h"
+
+//#include "btcNode/db.h"
+#include "btcNode/main.h" // we need to include this and depend on btcNode only to access to vnThreadsRunning global var and Shutdown - TODO: untangle this!
+
+#include <openssl/buffer.h>
+#include <openssl/bio.h>
+#include <openssl/evp.h>
+
 #undef printf
 #include <boost/asio.hpp>
 #include <boost/iostreams/concepts.hpp>
@@ -19,9 +25,9 @@
 #include <boost/filesystem/fstream.hpp>
 typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> SSLStream;
 #endif
-#include "json/json_spirit_reader_template.h"
-#include "json/json_spirit_writer_template.h"
-#include "json/json_spirit_utils.h"
+
+#include "btcRPC/rpc.h"
+
 #define printf OutputDebugStringF
 // MinGW 3.4.5 gets "fatal error: had to relocate PCH" if the json headers are
 // precompiled in headers.h.  The problem might be when the pch file goes over
@@ -34,11 +40,9 @@ using namespace boost::asio;
 using namespace json_spirit;
 
 void ThreadRPCServer2(void* parg);
-typedef Value(*rpcfn_type)(const Array& params, bool fHelp);
-extern map<string, rpcfn_type> mapCallTable;
 
-static int64 nWalletUnlockTime;
-static CCriticalSection cs_nWalletUnlockTime;
+//static int64 nWalletUnlockTime;
+//static CCriticalSection cs_nWalletUnlockTime;
 
 
 Object JSONRPCError(int code, const string& message)
@@ -64,7 +68,7 @@ void PrintConsole(const char* format, ...)
         buffer[limit-1] = 0;
     }
     printf("%s", buffer);
-#if defined(__WXMSW__) && defined(GUI)
+#if defined(_WIN32) && defined(GUI)
     MyMessageBox(buffer, "Bitcoin", wxOK | wxICON_EXCLAMATION);
 #else
     fprintf(stdout, "%s", buffer);
@@ -87,7 +91,7 @@ Value ValueFromAmount(int64 amount)
 {
     return (double)amount / (double)COIN;
 }
-
+/*
 void WalletTxToJSON(const CWalletTx& wtx, Object& entry)
 {
     entry.push_back(Pair("confirmations", wtx.GetDepthInMainChain()));
@@ -96,7 +100,7 @@ void WalletTxToJSON(const CWalletTx& wtx, Object& entry)
     BOOST_FOREACH(const PAIRTYPE(string,string)& item, wtx.mapValue)
         entry.push_back(Pair(item.first, item.second));
 }
-
+*/
 string AccountFromValue(const Value& value)
 {
     string strAccount = value.get_str();
@@ -158,7 +162,7 @@ Value help(const Array& params, bool fHelp)
     return strRet;
 }
 
-
+/*
 Value stop(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
@@ -1715,15 +1719,15 @@ public:
             return pair->second;
         }
         //        cout << "CACHE MISS!!! " << hash.ToString() << endl;
-        /*
-         CTxDB txdb("r");
-         CTransaction tx;
-         if(txdb.ReadDiskTx(hash, tx))
-         {
-         _tx_cache[hash] = tx;
-         return _tx_cache[hash];
-         }
-         */
+
+//      CTxDB txdb("r");
+//         CTransaction tx;
+//         if(txdb.ReadDiskTx(hash, tx))
+//         {
+//         _tx_cache[hash] = tx;
+//         return _tx_cache[hash];
+//         }
+
         // throw something!
     }
     
@@ -2224,7 +2228,7 @@ Value posttx(const Array& params, bool fHelp)
     
     return Value::null;
 }
-
+*/
 
 //
 // Call Table
@@ -2233,6 +2237,7 @@ Value posttx(const Array& params, bool fHelp)
 pair<string, rpcfn_type> pCallTable[] =
 {
     make_pair("help",                   &help),
+    /*
     make_pair("stop",                   &stop),
     make_pair("getblockcount",          &getblockcount),
     make_pair("getblocknumber",         &getblocknumber),
@@ -2282,12 +2287,14 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("gettxdetails",           &gettxdetails),
     make_pair("posttx",                 &posttx),
     make_pair("gettxto",                &gettxto),
+     */
 };
 map<string, rpcfn_type> mapCallTable(pCallTable, pCallTable + sizeof(pCallTable)/sizeof(pCallTable[0]));
 
 string pAllowInSafeMode[] =
 {
     "help",
+    /*
     "stop",
     "getblockcount",
     "getblocknumber",
@@ -2316,6 +2323,7 @@ string pAllowInSafeMode[] =
     "getcoins",
     "gettxdetails",
     "posttx",
+     */
 };
 set<string> setAllowInSafeMode(pAllowInSafeMode, pAllowInSafeMode + sizeof(pAllowInSafeMode)/sizeof(pAllowInSafeMode[0]));
 
@@ -2528,7 +2536,7 @@ string JSONRPCRequest(const string& strMethod, const Array& params, const Value&
     request.push_back(Pair("method", strMethod));
     request.push_back(Pair("params", params));
     request.push_back(Pair("id", id));
-    return write_string(Value(request), false) + "\n";
+    return write(Value(request)) + "\n";
 }
 
 string JSONRPCReply(const Value& result, const Value& error, const Value& id)
@@ -2540,7 +2548,7 @@ string JSONRPCReply(const Value& result, const Value& error, const Value& id)
         reply.push_back(Pair("result", result));
     reply.push_back(Pair("error", error));
     reply.push_back(Pair("id", id));
-    return write_string(Value(reply), false) + "\n";
+    return write(Value(reply)) + "\n";
 }
 
 void ErrorReply(std::ostream& stream, const Object& objError, const Value& id)
@@ -2754,7 +2762,7 @@ void ThreadRPCServer2(void* parg)
         {
             // Parse request
             Value valRequest;
-            if (!read_string(strRequest, valRequest) || valRequest.type() != obj_type)
+            if (!json_spirit::read(strRequest, valRequest) || valRequest.type() != obj_type)
                 throw JSONRPCError(-32700, "Parse error");
             const Object& request = valRequest.get_obj();
 
@@ -2796,7 +2804,8 @@ void ThreadRPCServer2(void* parg)
                 // Execute
                 Value result;
                 CRITICAL_BLOCK(cs_main)
-                CRITICAL_BLOCK(pwalletMain->cs_wallet)
+// we don't have a wallet pr default!
+//                CRITICAL_BLOCK(pwalletMain->cs_wallet)
                     result = (*(*mi).second)(params, false);
 
                 // Send reply
@@ -2874,7 +2883,7 @@ Object CallRPC(const string& strMethod, const Array& params)
 
     // Parse reply
     Value valReply;
-    if (!read_string(strReply, valReply))
+    if (!json_spirit::read(strReply, valReply))
         throw runtime_error("couldn't parse reply from server");
     const Object& reply = valReply.get_obj();
     if (reply.empty())
@@ -2893,7 +2902,7 @@ void ConvertTo(Value& value)
     {
         // reinterpret string as unquoted json value
         Value value2;
-        if (!read_string(value.get_str(), value2))
+        if (!json_spirit::read(value.get_str(), value2))
             throw runtime_error("type mismatch");
         value = value2.get_value<T>();
     }
@@ -2959,7 +2968,7 @@ int CommandLineRPC(int argc, char *argv[])
         {
             string s = params[1].get_str();
             Value v;
-            if (!read_string(s, v) || v.type() != obj_type)
+            if (!json_spirit::read(s, v) || v.type() != obj_type)
                 throw runtime_error("type mismatch");
             params[1] = v.get_obj();
         }
@@ -2975,7 +2984,7 @@ int CommandLineRPC(int argc, char *argv[])
         if (error.type() != null_type)
         {
             // Error
-            strPrint = "error: " + write_string(error, false);
+            strPrint = "error: " + write(error);
             int code = find_value(error.get_obj(), "code").get_int();
             nRet = abs(code);
         }
@@ -2987,7 +2996,7 @@ int CommandLineRPC(int argc, char *argv[])
             else if (result.type() == str_type)
                 strPrint = result.get_str();
             else
-                strPrint = write_string(result, true);
+                strPrint = write_formatted(result);
         }
     }
     catch (std::exception& e)
@@ -3002,7 +3011,7 @@ int CommandLineRPC(int argc, char *argv[])
 
     if (strPrint != "")
     {
-#if defined(__WXMSW__) && defined(GUI)
+#if defined(_WIN32) && defined(GUI)
         // Windows GUI apps can't print to command line,
         // so settle for a message box yuck
         MyMessageBox(strPrint, "Bitcoin", wxOK);

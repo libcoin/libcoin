@@ -12,9 +12,9 @@
 #include <openssl/ecdsa.h>
 #include <openssl/obj_mac.h>
 
-#include "serialize.h"
-#include "uint256.h"
-#include "base58.h"
+#include "btc/serialize.h"
+#include "btc/uint256.h"
+#include "btc/base58.h"
 
 // secp160k1
 // const unsigned int PRIVATE_KEY_SIZE = 192;

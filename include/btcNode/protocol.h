@@ -10,9 +10,10 @@
 #ifndef __INCLUDED_PROTOCOL_H__
 #define __INCLUDED_PROTOCOL_H__
 
-#include "serialize.h"
 #include <string>
-#include "uint256.h"
+
+#include "btc/uint256.h"
+#include "btc/serialize.h"
 
 extern bool fTestNet;
 static inline unsigned short GetDefaultPort(const bool testnet = fTestNet)

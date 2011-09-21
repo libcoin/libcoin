@@ -3,22 +3,51 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "headers.h"
-#include "irc.h"
-#include "db.h"
-#include "net.h"
-#include "init.h"
-#include "strlcpy.h"
+#include "btcNode/main.h"
+#include "btcNode/irc.h"
+#include "btcNode/db.h"
+#include "btcNode/net.h"
 
-#ifdef __WXMSW__
+#include "btc/strlcpy.h"
+
+#ifdef _WIN32
 #include <string.h>
 #endif
+
+#include <boost/asio.hpp>
 
 #ifdef USE_UPNP
 #include <miniupnpc/miniwget.h>
 #include <miniupnpc/miniupnpc.h>
 #include <miniupnpc/upnpcommands.h>
 #include <miniupnpc/upnperrors.h>
+#endif
+
+#ifdef _WIN32
+#include <windows.h>
+#include <winsock2.h>
+#include <mswsock.h>
+#include <shlobj.h>
+#include <shlwapi.h>
+#include <io.h>
+#include <process.h>
+#include <malloc.h>
+#else
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <errno.h>
+#include <net/if.h>
+#include <ifaddrs.h>
+#include <fcntl.h>
+#include <signal.h>
+#endif
+#ifdef BSD
+#include <netinet/in.h>
 #endif
 
 using namespace std;
@@ -102,7 +131,7 @@ bool ConnectSocket(const CAddress& addrConnect, SOCKET& hSocketRet, int nTimeout
     bool fProxy = (fUseProxy && addrConnect.IsRoutable());
     struct sockaddr_in sockaddr = (fProxy ? addrProxy.GetSockAddr() : addrConnect.GetSockAddr());
 
-#ifdef __WXMSW__
+#ifdef _WIN32
     u_long fNonblock = 1;
     if (ioctlsocket(hSocket, FIONBIO, &fNonblock) == SOCKET_ERROR)
 #else
@@ -141,7 +170,7 @@ bool ConnectSocket(const CAddress& addrConnect, SOCKET& hSocketRet, int nTimeout
                 return false;
             }
             socklen_t nRetSize = sizeof(nRet);
-#ifdef __WXMSW__
+#ifdef _WIN32
             if (getsockopt(hSocket, SOL_SOCKET, SO_ERROR, (char*)(&nRet), &nRetSize) == SOCKET_ERROR)
 #else
             if (getsockopt(hSocket, SOL_SOCKET, SO_ERROR, &nRet, &nRetSize) == SOCKET_ERROR)
@@ -158,7 +187,7 @@ bool ConnectSocket(const CAddress& addrConnect, SOCKET& hSocketRet, int nTimeout
                 return false;
             }
         }
-#ifdef __WXMSW__
+#ifdef _WIN32
         else if (WSAGetLastError() != WSAEISCONN)
 #else
         else
@@ -175,7 +204,7 @@ bool ConnectSocket(const CAddress& addrConnect, SOCKET& hSocketRet, int nTimeout
     CNode::ConnectNode immediately turns the socket back to non-blocking
     but we'll turn it back to blocking just in case
     */
-#ifdef __WXMSW__
+#ifdef _WIN32
     fNonblock = 0;
     if (ioctlsocket(hSocket, FIONBIO, &fNonblock) == SOCKET_ERROR)
 #else
@@ -674,7 +703,7 @@ CNode* ConnectNode(CAddress addrConnect, int64 nTimeout)
         printf("connected %s\n", addrConnect.ToString().c_str());
 
         // Set to nonblocking
-#ifdef __WXMSW__
+#ifdef _WIN32
         u_long nOne = 1;
         if (ioctlsocket(hSocket, FIONBIO, &nOne) == SOCKET_ERROR)
             printf("ConnectSocket() : ioctlsocket nonblocking setting failed, error %d\n", WSAGetLastError());
@@ -1558,7 +1587,7 @@ bool BindListenPort(string& strError)
     int nOne = 1;
     addrLocalHost.port = htons(GetListenPort());
 
-#ifdef __WXMSW__
+#ifdef _WIN32
     // Initialize Windows Sockets
     WSADATA wsadata;
     int ret = WSAStartup(MAKEWORD(2,2), &wsadata);
@@ -1584,13 +1613,13 @@ bool BindListenPort(string& strError)
     setsockopt(hListenSocket, SOL_SOCKET, SO_NOSIGPIPE, (void*)&nOne, sizeof(int));
 #endif
 
-#ifndef __WXMSW__
+#ifndef _WIN32
     // Allow binding if the port is still in TIME_WAIT state after
     // the program was closed and restarted.  Not an issue on windows.
     setsockopt(hListenSocket, SOL_SOCKET, SO_REUSEADDR, (void*)&nOne, sizeof(int));
 #endif
 
-#ifdef __WXMSW__
+#ifdef _WIN32
     // Set to nonblocking, incoming connections will also inherit this
     if (ioctlsocket(hListenSocket, FIONBIO, (u_long*)&nOne) == SOCKET_ERROR)
 #else
@@ -1637,7 +1666,7 @@ void StartNode(void* parg)
     if (pnodeLocalHost == NULL)
         pnodeLocalHost = new CNode(INVALID_SOCKET, CAddress("127.0.0.1", 0, false, nLocalServices));
 
-#ifdef __WXMSW__
+#ifdef _WIN32
     // Get local host ip
     char pszHostName[1000] = "";
     if (gethostname(pszHostName, sizeof(pszHostName)) != SOCKET_ERROR)
@@ -1772,7 +1801,7 @@ public:
             if (closesocket(hListenSocket) == SOCKET_ERROR)
                 printf("closesocket(hListenSocket) failed with error %d\n", WSAGetLastError());
 
-#ifdef __WXMSW__
+#ifdef _WIN32
         // Shutdown Windows Sockets
         WSACleanup();
 #endif
