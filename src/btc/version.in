@@ -1,0 +1,61 @@
+
+#ifndef BTC_VERSION
+#define BTC_VERSION 1
+
+#include <btc/export.h>
+
+extern "C" {
+
+#define BITCOIN_MAJOR_VERSION    @BITCOIN_MAJOR_VERSION@
+#define BITCOIN_MINOR_VERSION    @BITCOIN_MINOR_VERSION@
+#define BITCOIN_PATCH_VERSION    @BITCOIN_PATCH_VERSION@
+#define BITCOIN_SOVERSION        @BITCOIN_SOVERSION@
+
+/* Convenience macro that can be used to decide whether a feature is present or not i.e.
+ * #if BTC_MIN_VERSION_REQUIRED(0,4,0)
+ *    your code here
+ * #endif
+ */
+#define BTC_MIN_VERSION_REQUIRED(MAJOR, MINOR, PATCH) ((BITCOIN_MAJOR_VERSION>MAJOR) || (BITCOIN_MAJOR_VERSION==MAJOR && (BITCOIN_MINOR_VERSION>MINOR || (BITCOIN_MINOR_VERSION==MINOR && BITCOIN_PATCH_VERSION>=PATCH))))
+#define BTC_VERSION_LESS_THAN(MAJOR, MINOR, PATCH) ((BITCOIN_MAJOR_VERSION<MAJOR) || (BITCOIN_MAJOR_VERSION==MAJOR && (BITCOIN_MINOR_VERSION<MINOR || (BITCOIN_MINOR_VERSION==MINOR && BITCOIN_PATCH_VERSION<PATCH))))
+#define BTC_VERSION_LESS_OR_EQUAL(MAJOR, MINOR, PATCH) ((BITCOIN_MAJOR_VERSION<MAJOR) || (BITCOIN_MAJOR_VERSION==MAJOR && (BITCOIN_MINOR_VERSION<MINOR || (BITCOIN_MINOR_VERSION==MINOR && BITCOIN_PATCH_VERSION<=PATCH))))
+#define BTC_VERSION_GREATER_THAN(MAJOR, MINOR, PATCH) ((BITCOIN_MAJOR_VERSION>MAJOR) || (BITCOIN_MAJOR_VERSION==MAJOR && (BITCOIN_MINOR_VERSION>MINOR || (BITCOIN_MINOR_VERSION==MINOR && BITCOIN_PATCH_VERSION>PATCH))))
+#define BTC_VERSION_GREATER_OR_EQUAL(MAJOR, MINOR, PATCH) ((BITCOIN_MAJOR_VERSION>MAJOR) || (BITCOIN_MAJOR_VERSION==MAJOR && (BITCOIN_MINOR_VERSION>MINOR || (BITCOIN_MINOR_VERSION==MINOR && BITCOIN_PATCH_VERSION>=PATCH))))
+
+
+/**
+  * btcGetVersion() returns the library version number.
+  * Numbering convention : BitCoin-1.0 will return 1.0 from btcGetVersion.
+  *
+  * This C function can be also used to check for the existence of the BitCoin
+  * library using autoconf and its m4 macro AC_CHECK_LIB.
+  *
+  * Here is the code to add to your configure.in:
+ \verbatim
+ #
+ # Check for the BitCoin (BTC) library
+ #
+ AC_CHECK_LIB(btc, btcGetVersion, ,
+    [AC_MSG_ERROR(BitCoin library not found. See http://www.openscenegraph.org)],)
+ \endverbatim
+*/
+extern BTC_EXPORT const char* btcGetVersion();
+
+/** The btcGetSOVersion() method returns the BitCoin shared object version number. */
+extern BTC_EXPORT const char* btcGetSOVersion();
+
+/** The btcGetLibraryName() method returns the library name in human-friendly form. */
+extern BTC_EXPORT const char* btcGetLibraryName();
+
+// old defines for backwards compatibility.
+#define BTC_VERSION_MAJOR BITCOIN_MAJOR_VERSION
+#define BTC_VERSION_MINOR BITCOIN_MINOR_VERSION
+#define BTC_VERSION_PATCH BITCOIN_PATCH_VERSION
+
+#define BTC_VERSION_RELEASE BTC_VERSION_PATCH
+#define BTC_VERSION_REVISION 0
+
+
+}
+
+#endif

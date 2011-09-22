@@ -371,11 +371,11 @@ OPTION(BTC_CPP_EXCEPTIONS_AVAILABLE "Set to OFF to disable compile of BTC compon
 # Set Config file
 
 SET(BITCOIN_CONFIG_HEADER "${PROJECT_BINARY_DIR}/include/btc/config.h")
-CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/btc/Config.in"
+CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/btc/config.in"
                "${BITCOIN_CONFIG_HEADER}")
 
 SET(BITCOIN_VERSION_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/btc/version.h")
-CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/btc/Version.in"
+CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/btc/version.in"
                "${BITCOIN_VERSION_HEADER}")
 
 # INSTALL_FILES(/include/btc/ FILES "${BITCOIN_CONFIG_HEADER}")
