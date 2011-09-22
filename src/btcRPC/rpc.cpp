@@ -41,10 +41,6 @@ using namespace json_spirit;
 
 void ThreadRPCServer2(void* parg);
 
-//static int64 nWalletUnlockTime;
-//static CCriticalSection cs_nWalletUnlockTime;
-
-
 Object JSONRPCError(int code, const string& message)
 {
     Object error;

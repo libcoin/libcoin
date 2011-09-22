@@ -1,0 +1,5 @@
+SET(TARGET_SRC init.h init.cpp )
+
+SET(TARGET_ADDED_LIBRARIES btcWallet)
+
+SETUP_APPLICATION(bitcoind)

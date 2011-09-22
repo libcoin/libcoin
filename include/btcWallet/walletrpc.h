@@ -7,6 +7,10 @@
 
 #include "btcRPC/rpc.h"
 
+class CWallet;
+extern CWallet* pwalletMain;
+
+json_spirit::Value syncwallet(const json_spirit::Array& params, bool fHelp);
 json_spirit::Value getnewaddress(const json_spirit::Array& params, bool fHelp);
 json_spirit::Value getaccountaddress(const json_spirit::Array& params, bool fHelp);
 json_spirit::Value setaccount(const json_spirit::Array& params, bool fHelp);
@@ -32,7 +36,6 @@ json_spirit::Value walletpassphrasechange(const json_spirit::Array& params, bool
 json_spirit::Value walletlock(const json_spirit::Array& params, bool fHelp);
 json_spirit::Value encryptwallet(const json_spirit::Array& params, bool fHelp);
 json_spirit::Value validateaddress(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value getwork(const json_spirit::Array& params, bool fHelp);
 
 
 #endif

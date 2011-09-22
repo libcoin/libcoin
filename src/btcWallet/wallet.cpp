@@ -358,6 +358,32 @@ int64 CWallet::GetDebit(const CTxIn &txin) const
     return 0;
 }
 
+void CWallet::Sync() // sync from the start!
+{
+    CTxDB txdb;
+    
+    CRITICAL_BLOCK(cs_wallet)
+    {
+        for(KeyMap::iterator key = mapKeys.begin(); key != mapKeys.end(); ++key)
+        {
+            std::set<std::pair<uint256, unsigned int> > debit;
+            txdb.ReadDrIndex((key->first).GetHash160(), debit);
+            for (std::set<std::pair<uint256, unsigned int> >::iterator pair = debit.begin(); pair != debit.end(); ++pair) {
+                CTransaction tx;
+                txdb.ReadDiskTx(pair->first, tx);
+                AddToWalletIfInvolvingMe(tx, NULL);
+            }
+            std::set<std::pair<uint256, unsigned int> > credit;
+            txdb.ReadCrIndex((key->first).GetHash160(), credit);
+            for (std::set<std::pair<uint256, unsigned int> >::iterator pair = credit.begin(); pair != credit.end(); ++pair) {
+                CTransaction tx;
+                txdb.ReadDiskTx(pair->first, tx);
+                AddToWalletIfInvolvingMe(tx, NULL);
+            }
+        }
+    }    
+}
+
 int64 CWalletTx::GetTxTime() const
 {
     return nTimeReceived;
@@ -575,6 +601,32 @@ int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
     }
     return ret;
 }
+
+bool CWalletTx::AcceptWalletTransaction(CTxDB& txdb, bool fCheckInputs)
+{
+    CRITICAL_BLOCK(cs_mapTransactions)
+    {
+        // Add previous supporting transactions first
+        BOOST_FOREACH(CMerkleTx& tx, vtxPrev)
+        {
+            if (!tx.IsCoinBase())
+            {
+                uint256 hash = tx.GetHash();
+                if (!mapTransactions.count(hash) && !txdb.ContainsTx(hash))
+                    tx.AcceptToMemoryPool(txdb, fCheckInputs);
+            }
+        }
+        return AcceptToMemoryPool(txdb, fCheckInputs);
+    }
+    return false;
+}
+
+bool CWalletTx::AcceptWalletTransaction() 
+{
+    CTxDB txdb("r");
+    return AcceptWalletTransaction(txdb);
+}
+
 
 void CWallet::ReacceptWalletTransactions()
 {

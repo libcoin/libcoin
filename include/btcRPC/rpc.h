@@ -17,6 +17,10 @@ typedef json_spirit::Value(*rpcfn_type)(const json_spirit::Array& params, bool f
 extern std::set<std::string> setAllowInSafeMode;
 extern std::map<std::string, rpcfn_type> mapCallTable;
 
+int64 AmountFromValue(const json_spirit::Value& value);
+json_spirit::Value ValueFromAmount(int64 amount);
+std::string AccountFromValue(const json_spirit::Value& value);
+
 json_spirit::Object JSONRPCError(int code, const std::string& message);
 
 void ThreadRPCServer(void* parg);

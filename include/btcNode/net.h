@@ -556,6 +556,9 @@ public:
         PushMessage(pszCommand, hashReply, a1, a2);
     }
 
+    bool ProcessMessage(std::string strCommand, CDataStream& vRecv);
+    bool ProcessMessages();
+    bool SendMessages(bool fSendTrickle);    
 
 
     void PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd);

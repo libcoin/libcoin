@@ -2,20 +2,61 @@
 // Copyright (c) 2011 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
-#include "headers.h"
-#include "db.h"
-#include "rpc.h"
-#include "net.h"
-#include "init.h"
-#include "strlcpy.h"
+
+#include "btc/strlcpy.h"
+
+#include "btcNode/db.h"
+#include "btcNode/net.h"
+
+#include "btcRPC/rpc.h"
+
+#include "btcWallet/wallet.h"
+#include "btcWallet/walletrpc.h"
+
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/interprocess/sync/file_lock.hpp>
 
+#include <signal.h>
+
 using namespace std;
 using namespace boost;
 
-CWallet* pwalletMain;
+typedef void wxWindow;
+#define wxYES                   0x00000002
+#define wxOK                    0x00000004
+#define wxNO                    0x00000008
+#define wxYES_NO                (wxYES|wxNO)
+#define wxCANCEL                0x00000010
+#define wxAPPLY                 0x00000020
+#define wxCLOSE                 0x00000040
+#define wxOK_DEFAULT            0x00000000
+#define wxYES_DEFAULT           0x00000000
+#define wxNO_DEFAULT            0x00000080
+#define wxCANCEL_DEFAULT        0x80000000
+#define wxICON_EXCLAMATION      0x00000100
+#define wxICON_HAND             0x00000200
+#define wxICON_WARNING          wxICON_EXCLAMATION
+#define wxICON_ERROR            wxICON_HAND
+#define wxICON_QUESTION         0x00000400
+#define wxICON_INFORMATION      0x00000800
+#define wxICON_STOP             wxICON_HAND
+#define wxICON_ASTERISK         wxICON_INFORMATION
+#define wxICON_MASK             (0x00000100|0x00000200|0x00000400|0x00000800)
+#define wxFORWARD               0x00001000
+#define wxBACKWARD              0x00002000
+#define wxRESET                 0x00004000
+#define wxHELP                  0x00008000
+#define wxMORE                  0x00010000
+#define wxSETUP                 0x00020000
+
+inline int MyMessageBox(const std::string& message, const std::string& caption="Message", int style=wxOK, wxWindow* parent=NULL, int x=-1, int y=-1)
+{
+    printf("%s: %s\n", caption.c_str(), message.c_str());
+    fprintf(stderr, "%s: %s\n", caption.c_str(), message.c_str());
+    return 4;
+}
+#define wxMessageBox  MyMessageBox
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -30,41 +71,45 @@ void ExitTimeout(void* parg)
 #endif
 }
 
-void Shutdown(void* parg)
+class CShutdown : public CHandler
 {
-    static CCriticalSection cs_Shutdown;
-    static bool fTaken;
-    bool fFirstThread;
-    CRITICAL_BLOCK(cs_Shutdown)
+    virtual void operator()()
     {
-        fFirstThread = !fTaken;
-        fTaken = true;
+        static CCriticalSection cs_Shutdown;
+        static bool fTaken;
+        bool fFirstThread;
+        CRITICAL_BLOCK(cs_Shutdown)
+        {
+            fFirstThread = !fTaken;
+            fTaken = true;
+        }
+        static bool fExit;
+        if (fFirstThread)
+        {
+            fShutdown = true;
+            nTransactionsUpdated++;
+            DBFlush(false);
+            StopNode();
+            DBFlush(true);
+            boost::filesystem::remove(GetPidFile());
+            //        UnregisterWallet(pwalletMain);
+            //        delete pwalletMain;
+            CreateThread(ExitTimeout, NULL);
+            Sleep(50);
+            printf("Bitcoin exiting\n\n");
+            fExit = true;
+            exit(0);
+        }
+        else
+        {
+            while (!fExit)
+                Sleep(500);
+            Sleep(100);
+            ExitThread(0);
+        }
     }
-    static bool fExit;
-    if (fFirstThread)
-    {
-        fShutdown = true;
-        nTransactionsUpdated++;
-        DBFlush(false);
-        StopNode();
-        DBFlush(true);
-        boost::filesystem::remove(GetPidFile());
-        UnregisterWallet(pwalletMain);
-        delete pwalletMain;
-        CreateThread(ExitTimeout, NULL);
-        Sleep(50);
-        printf("Bitcoin exiting\n\n");
-        fExit = true;
-        exit(0);
-    }
-    else
-    {
-        while (!fExit)
-            Sleep(500);
-        Sleep(100);
-        ExitThread(0);
-    }
-}
+    
+};
 
 void HandleSIGTERM(int)
 {
@@ -72,14 +117,13 @@ void HandleSIGTERM(int)
 }
 
 
-
-
-
-
 //////////////////////////////////////////////////////////////////////////////
 //
 // Start
 //
+bool AppInit(int argc, char* argv[]);
+bool AppInit2(int argc, char* argv[]);
+
 #ifndef GUI
 int main(int argc, char* argv[])
 {
@@ -112,6 +156,8 @@ bool AppInit(int argc, char* argv[])
 
 bool AppInit2(int argc, char* argv[])
 {
+    CShutdown shutdown;
+    CMain::instance().registerShutdownHandler(shutdown);
 #ifdef _MSC_VER
     // Turn off microsoft heap dump noise
     _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
@@ -134,6 +180,50 @@ bool AppInit2(int argc, char* argv[])
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGHUP, &sa, NULL);
 #endif
+
+    
+    //
+    // Add wallet functions to RPC
+    //
+    
+    mapCallTable.insert(make_pair("syncwallet",             &syncwallet));
+    mapCallTable.insert(make_pair("getnewaddress",          &getnewaddress));
+    mapCallTable.insert(make_pair("getaccountaddress",      &getaccountaddress));
+    mapCallTable.insert(make_pair("setaccount",             &setaccount));
+    mapCallTable.insert(make_pair("getaccount",             &getaccount));
+    mapCallTable.insert(make_pair("getaddressesbyaccount",  &getaddressesbyaccount));
+    mapCallTable.insert(make_pair("sendtoaddress",          &sendtoaddress));
+    mapCallTable.insert(make_pair("getreceivedbyaddress",   &getreceivedbyaddress));
+    mapCallTable.insert(make_pair("getreceivedbyaccount",   &getreceivedbyaccount));
+    mapCallTable.insert(make_pair("listreceivedbyaddress",  &listreceivedbyaddress));
+    mapCallTable.insert(make_pair("listreceivedbyaccount",  &listreceivedbyaccount));
+    mapCallTable.insert(make_pair("backupwallet",           &backupwallet));
+    mapCallTable.insert(make_pair("keypoolrefill",          &keypoolrefill));
+    mapCallTable.insert(make_pair("walletpassphrase",       &walletpassphrase));
+    mapCallTable.insert(make_pair("walletpassphrasechange", &walletpassphrasechange));
+    mapCallTable.insert(make_pair("walletlock",             &walletlock));
+    mapCallTable.insert(make_pair("encryptwallet",          &encryptwallet));
+    mapCallTable.insert(make_pair("validateaddress",        &validateaddress));
+    mapCallTable.insert(make_pair("getbalance",             &getbalance));
+    mapCallTable.insert(make_pair("move",                   &movecmd));
+    mapCallTable.insert(make_pair("sendfrom",               &sendfrom));
+    mapCallTable.insert(make_pair("sendmany",               &sendmany));
+    mapCallTable.insert(make_pair("gettransaction",         &gettransaction));
+    mapCallTable.insert(make_pair("listtransactions",       &listtransactions));
+    mapCallTable.insert(make_pair("listaccounts",           &listaccounts));
+    mapCallTable.insert(make_pair("settxfee",               &settxfee));
+
+    setAllowInSafeMode.insert("syncwallet");
+    setAllowInSafeMode.insert("getnewaddress");
+    setAllowInSafeMode.insert("getaccountaddress");
+    setAllowInSafeMode.insert("setaccount");
+    setAllowInSafeMode.insert("getaccount");
+    setAllowInSafeMode.insert("getaddressesbyaccount");
+    setAllowInSafeMode.insert("backupwallet");
+    setAllowInSafeMode.insert("keypoolrefill");
+    setAllowInSafeMode.insert("walletpassphrase");
+    setAllowInSafeMode.insert("walletlock");
+    setAllowInSafeMode.insert("validateaddress");
 
     //
     // Parameters

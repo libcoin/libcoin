@@ -32,12 +32,12 @@ static const int fHaveUPnP = true;
 static const int fHaveUPnP = false;
 #endif
 
-
-
-
-
-
 extern CCriticalSection cs_main;
+
+class CTransaction;
+extern std::map<uint256, CTransaction> mapTransactions;
+extern CCriticalSection cs_mapTransactions;
+
 extern std::map<uint256, CBlockIndex*> mapBlockIndex;
 extern uint256 hashGenesisBlock;
 extern CBlockIndex* pindexGenesisBlock;
@@ -74,8 +74,8 @@ FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszM
 FILE* AppendBlockFile(unsigned int& nFileRet);
 bool LoadBlockIndex(bool fAllowNew=true);
 void PrintBlockTree();
-bool ProcessMessages(CNode* pfrom);
-bool SendMessages(CNode* pto, bool fSendTrickle);
+//bool ProcessMessages(CNode* pfrom);
+//bool SendMessages(CNode* pto, bool fSendTrickle);
 //void GenerateBitcoins(bool fGenerate, CWallet* pwallet);
 CBlock* CreateNewBlock(CReserveKey& reservekey);
 void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce);
@@ -1051,6 +1051,10 @@ public:
         printf("%s", ToString().c_str());
     }
 };
+
+class CAlert;
+extern std::map<uint256, CAlert> mapAlerts;
+extern CCriticalSection cs_mapAlerts;
 
 class CAlert : public CUnsignedAlert
 {

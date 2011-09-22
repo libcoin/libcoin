@@ -23,6 +23,9 @@ class CKeyPool;
 
 class CWalletDB;
 
+void RegisterWallet(CWallet* pwalletIn);
+void UnregisterWallet(CWallet* pwalletIn);
+
 class CWallet : public CCryptoKeyStore
 {
 private:
@@ -204,6 +207,8 @@ public:
     bool GetTransaction(const uint256 &hashTx, CWalletTx& wtx);
 
     bool SetDefaultKey(const std::vector<unsigned char> &vchPubKey);
+    
+    void Sync();
 };
 
 

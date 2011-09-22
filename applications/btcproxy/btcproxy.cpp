@@ -191,12 +191,6 @@ bool AppInit2(int argc, char* argv[])
     mapCallTable.insert(make_pair("gettxdetails",           &gettxdetails));
     mapCallTable.insert(make_pair("posttx",                 &posttx));
 
-    setAllowInSafeMode.insert("getblockcount");
-    setAllowInSafeMode.insert("getblocknumber");
-    setAllowInSafeMode.insert("getconnectioncount");
-    setAllowInSafeMode.insert("getdifficulty");
-    setAllowInSafeMode.insert("gethashespersec");
-    setAllowInSafeMode.insert("getinfo");
     setAllowInSafeMode.insert("getdebit");
     setAllowInSafeMode.insert("getcredit");
     setAllowInSafeMode.insert("getcoins");

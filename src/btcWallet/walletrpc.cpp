@@ -9,6 +9,37 @@ using namespace std;
 using namespace boost;
 using namespace json_spirit;
 
+// global wallet - we define it here as opposed to in init.cpp as the rpc interface is really accessing the global/main wallet
+CWallet* pwalletMain;
+
+static int64 nWalletUnlockTime;
+static CCriticalSection cs_nWalletUnlockTime;
+
+
+void WalletTxToJSON(const CWalletTx& wtx, Object& entry)
+{
+    entry.push_back(Pair("confirmations", wtx.GetDepthInMainChain()));
+    entry.push_back(Pair("txid", wtx.GetHash().GetHex()));
+    entry.push_back(Pair("time", (boost::int64_t)wtx.GetTxTime()));
+    BOOST_FOREACH(const PAIRTYPE(string,string)& item, wtx.mapValue)
+    entry.push_back(Pair(item.first, item.second));
+}
+
+
+
+Value syncwallet(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() > 0)
+        throw runtime_error(
+                            "syncwallet\n"
+                            "Syncronize the wallet against the latest transactions.  "
+                            "This should be called before all other wallet calls.");
+    
+    pwalletMain->Sync();
+    
+    return Value::null;
+}
+
 Value getnewaddress(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() > 1)
@@ -1164,109 +1195,4 @@ Value validateaddress(const Array& params, bool fHelp)
             ret.push_back(Pair("account", pwalletMain->mapAddressBook[address]));
     }
     return ret;
-}
-
-
-Value getwork(const Array& params, bool fHelp)
-{
-    if (fHelp || params.size() > 1)
-        throw runtime_error(
-                            "getwork [data]\n"
-                            "If [data] is not specified, returns formatted hash data to work on:\n"
-                            "  \"midstate\" : precomputed hash state after hashing the first half of the data\n"
-                            "  \"data\" : block data\n"
-                            "  \"hash1\" : formatted hash buffer for second hash\n"
-                            "  \"target\" : little endian hash target\n"
-                            "If [data] is specified, tries to solve the block and returns true if it was successful.");
-    
-    if (vNodes.empty())
-        throw JSONRPCError(-9, "Bitcoin is not connected!");
-    
-    if (IsInitialBlockDownload())
-        throw JSONRPCError(-10, "Bitcoin is downloading blocks...");
-    
-    typedef map<uint256, pair<CBlock*, CScript> > mapNewBlock_t;
-    static mapNewBlock_t mapNewBlock;
-    static vector<CBlock*> vNewBlock;
-    static CReserveKey reservekey(pwalletMain);
-    
-    if (params.size() == 0)
-    {
-        // Update block
-        static unsigned int nTransactionsUpdatedLast;
-        static CBlockIndex* pindexPrev;
-        static int64 nStart;
-        static CBlock* pblock;
-        if (pindexPrev != pindexBest ||
-            (nTransactionsUpdated != nTransactionsUpdatedLast && GetTime() - nStart > 60))
-        {
-            if (pindexPrev != pindexBest)
-            {
-                // Deallocate old blocks since they're obsolete now
-                mapNewBlock.clear();
-                BOOST_FOREACH(CBlock* pblock, vNewBlock)
-                delete pblock;
-                vNewBlock.clear();
-            }
-            nTransactionsUpdatedLast = nTransactionsUpdated;
-            pindexPrev = pindexBest;
-            nStart = GetTime();
-            
-            // Create new block
-            pblock = CreateNewBlock(reservekey);
-            if (!pblock)
-                throw JSONRPCError(-7, "Out of memory");
-            vNewBlock.push_back(pblock);
-        }
-        
-        // Update nTime
-        pblock->nTime = max(pindexPrev->GetMedianTimePast()+1, GetAdjustedTime());
-        pblock->nNonce = 0;
-        
-        // Update nExtraNonce
-        static unsigned int nExtraNonce = 0;
-        IncrementExtraNonce(pblock, pindexPrev, nExtraNonce);
-        
-        // Save
-        mapNewBlock[pblock->hashMerkleRoot] = make_pair(pblock, pblock->vtx[0].vin[0].scriptSig);
-        
-        // Prebuild hash buffers
-        char pmidstate[32];
-        char pdata[128];
-        char phash1[64];
-        FormatHashBuffers(pblock, pmidstate, pdata, phash1);
-        
-        uint256 hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
-        
-        Object result;
-        result.push_back(Pair("midstate", HexStr(BEGIN(pmidstate), END(pmidstate))));
-        result.push_back(Pair("data",     HexStr(BEGIN(pdata), END(pdata))));
-        result.push_back(Pair("hash1",    HexStr(BEGIN(phash1), END(phash1))));
-        result.push_back(Pair("target",   HexStr(BEGIN(hashTarget), END(hashTarget))));
-        return result;
-    }
-    else
-    {
-        // Parse parameters
-        vector<unsigned char> vchData = ParseHex(params[0].get_str());
-        if (vchData.size() != 128)
-            throw JSONRPCError(-8, "Invalid parameter");
-        CBlock* pdata = (CBlock*)&vchData[0];
-        
-        // Byte reverse
-        for (int i = 0; i < 128/4; i++)
-            ((unsigned int*)pdata)[i] = CryptoPP::ByteReverse(((unsigned int*)pdata)[i]);
-        
-        // Get saved block
-        if (!mapNewBlock.count(pdata->hashMerkleRoot))
-            return false;
-        CBlock* pblock = mapNewBlock[pdata->hashMerkleRoot].first;
-        
-        pblock->nTime = pdata->nTime;
-        pblock->nNonce = pdata->nNonce;
-        pblock->vtx[0].vin[0].scriptSig = mapNewBlock[pdata->hashMerkleRoot].second;
-        pblock->hashMerkleRoot = pblock->BuildMerkleTree();
-        
-        return CheckWork(pblock, *pwalletMain, reservekey);
-    }
 }
