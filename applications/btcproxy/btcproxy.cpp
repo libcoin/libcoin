@@ -185,12 +185,14 @@ bool AppInit2(int argc, char* argv[])
     // Add proxy functions to RPC
     //
     
+    mapCallTable.insert(make_pair("getvalue",               &getvalue));
     mapCallTable.insert(make_pair("getdebit",               &getdebit));
     mapCallTable.insert(make_pair("getcredit",              &getcredit));
     mapCallTable.insert(make_pair("getcoins",               &getcoins));
     mapCallTable.insert(make_pair("gettxdetails",           &gettxdetails));
     mapCallTable.insert(make_pair("posttx",                 &posttx));
 
+    setAllowInSafeMode.insert("getvalue");
     setAllowInSafeMode.insert("getdebit");
     setAllowInSafeMode.insert("getcredit");
     setAllowInSafeMode.insert("getcoins");

@@ -366,18 +366,21 @@ void CWallet::Sync() // sync from the start!
     {
         for(KeyMap::iterator key = mapKeys.begin(); key != mapKeys.end(); ++key)
         {
-            std::set<std::pair<uint256, unsigned int> > debit;
+            cout << key->first.ToString() << endl;
+            set<std::pair<uint256, unsigned int> > debit;
             txdb.ReadDrIndex((key->first).GetHash160(), debit);
-            for (std::set<std::pair<uint256, unsigned int> >::iterator pair = debit.begin(); pair != debit.end(); ++pair) {
+            for (set<std::pair<uint256, unsigned int> >::iterator pair = debit.begin(); pair != debit.end(); ++pair) {
                 CTransaction tx;
                 txdb.ReadDiskTx(pair->first, tx);
+                cout << "\t" << pair->first.ToString() << " - " << pair->second << endl;
                 AddToWalletIfInvolvingMe(tx, NULL);
             }
-            std::set<std::pair<uint256, unsigned int> > credit;
+            set<std::pair<uint256, unsigned int> > credit;
             txdb.ReadCrIndex((key->first).GetHash160(), credit);
-            for (std::set<std::pair<uint256, unsigned int> >::iterator pair = credit.begin(); pair != credit.end(); ++pair) {
+            for (set<std::pair<uint256, unsigned int> >::iterator pair = credit.begin(); pair != credit.end(); ++pair) {
                 CTransaction tx;
                 txdb.ReadDiskTx(pair->first, tx);
+                cout << "\t" << pair->first.ToString() << " - " << pair->second << endl;
                 AddToWalletIfInvolvingMe(tx, NULL);
             }
         }
