@@ -16,6 +16,9 @@
 #include <vector>
 #include <string>
 
+#define __STDC_LIMIT_MACROS
+#include <stdint.h>
+
 #include <boost/thread.hpp>
 #include <boost/interprocess/sync/interprocess_recursive_mutex.hpp>
 #include <boost/date_time/gregorian/gregorian_types.hpp>
@@ -81,7 +84,7 @@ T* alignup(T* p)
     return u.ptr;
 }
 
-#ifndef MSG_NOSIGNAL
+#ifdef __MACH__
 #define MSG_NOSIGNAL        0
 #endif
 #ifndef S_IRUSR
