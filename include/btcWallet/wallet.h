@@ -5,12 +5,22 @@
 #ifndef BITCOIN_WALLET_H
 #define BITCOIN_WALLET_H
 
-#include "bignum.h"
-#include "key.h"
-#include "script.h"
+#include "btc/bignum.h"
+#include "btc/key.h"
+#include "btc/script.h"
+
+#include "btcNode/main.h"
+
+#include "btcWallet/walletdb.h"
+
+class CWallet;
+extern CCriticalSection cs_setpwalletRegistered;
+extern std::set<CWallet*> setpwalletRegistered;
 
 class CWalletTx;
 class CReserveKey;
+class CKeyPool;
+
 class CWalletDB;
 
 class CWallet : public CCryptoKeyStore
@@ -159,11 +169,7 @@ public:
         }
         return nChange;
     }
-    void SetBestChain(const CBlockLocator& loc)
-    {
-        CWalletDB walletdb(strWalletFile);
-        walletdb.WriteBestBlock(loc);
-    }
+    void SetBestChain(const CBlockLocator& loc);
 
     int LoadWallet(bool& fFirstRunRet);
 //    bool BackupWallet(const std::string& strDest);

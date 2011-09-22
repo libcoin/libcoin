@@ -11,7 +11,7 @@ FOREACH( mylibfolder
         btc
         btcNode 
         btcRPC 
-#        btcWallet 
+        btcWallet 
 #        btcMine 
     )
 

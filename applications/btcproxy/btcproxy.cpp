@@ -185,12 +185,6 @@ bool AppInit2(int argc, char* argv[])
     // Add proxy functions to RPC
     //
     
-    mapCallTable.insert(make_pair("getblockcount",          &getblockcount));
-    mapCallTable.insert(make_pair("getblocknumber",         &getblocknumber));
-    mapCallTable.insert(make_pair("getconnectioncount",     &getconnectioncount));
-    mapCallTable.insert(make_pair("getdifficulty",          &getdifficulty));
-    mapCallTable.insert(make_pair("gethashespersec",        &gethashespersec));
-    mapCallTable.insert(make_pair("getinfo",                &getinfo));
     mapCallTable.insert(make_pair("getdebit",               &getdebit));
     mapCallTable.insert(make_pair("getcredit",              &getcredit));
     mapCallTable.insert(make_pair("getcoins",               &getcoins));

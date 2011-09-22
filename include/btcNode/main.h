@@ -17,11 +17,8 @@
 
 class CBlock;
 class CBlockIndex;
-//class CWalletTx;
-class CWallet;
+
 class CKeyItem;
-class CReserveKey;
-class CWalletDB;
 
 class CAddress;
 class CInv;
@@ -52,8 +49,6 @@ extern unsigned int nTransactionsUpdated;
 extern double dHashesPerSec;
 extern int64 nHPSTimerStart;
 extern int64 nTimeBestReceived;
-extern CCriticalSection cs_setpwalletRegistered;
-extern std::set<CWallet*> setpwalletRegistered;
 
 // Settings
 extern int fGenerateBitcoins;
@@ -72,8 +67,8 @@ class CReserveKey;
 class CTxDB;
 class CTxIndex;
 
-void RegisterWallet(CWallet* pwalletIn);
-void UnregisterWallet(CWallet* pwalletIn);
+//void RegisterWallet(CWallet* pwalletIn);
+//void UnregisterWallet(CWallet* pwalletIn);
 bool CheckDiskSpace(uint64 nAdditionalBytes=0);
 FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode="rb");
 FILE* AppendBlockFile(unsigned int& nFileRet);
@@ -81,11 +76,11 @@ bool LoadBlockIndex(bool fAllowNew=true);
 void PrintBlockTree();
 bool ProcessMessages(CNode* pfrom);
 bool SendMessages(CNode* pto, bool fSendTrickle);
-void GenerateBitcoins(bool fGenerate, CWallet* pwallet);
+//void GenerateBitcoins(bool fGenerate, CWallet* pwallet);
 CBlock* CreateNewBlock(CReserveKey& reservekey);
 void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce);
 void FormatHashBuffers(CBlock* pblock, char* pmidstate, char* pdata, char* phash1);
-bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey);
+//bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey);
 bool CheckProofOfWork(uint256 hash, unsigned int nBits);
 int GetTotalBlocksEstimate();
 bool IsInitialBlockDownload();

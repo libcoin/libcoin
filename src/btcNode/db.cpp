@@ -16,19 +16,14 @@ using namespace std;
 using namespace boost;
 
 
-unsigned int nWalletDBUpdated;
-uint64 nAccountingEntryNumber = 0;
-
-
-
 //
 // CDB
 //
 
-static CCriticalSection cs_db;
+CCriticalSection cs_db;
 static bool fDbEnvInit = false;
 DbEnv dbenv(0);
-static map<string, int> mapFileUseCount;
+map<string, int> mapFileUseCount;
 static map<string, Db*> mapDb;
 
 class CDBInit
@@ -153,7 +148,7 @@ void CDB::Close()
         --mapFileUseCount[strFile];
 }
 
-void static CloseDb(const string& strFile)
+void CloseDb(const string& strFile)
 {
     CRITICAL_BLOCK(cs_db)
     {

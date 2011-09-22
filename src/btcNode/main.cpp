@@ -17,9 +17,6 @@ using namespace boost;
 // Global state
 //
 
-CCriticalSection cs_setpwalletRegistered;
-set<CWallet*> setpwalletRegistered;
-
 CCriticalSection cs_main;
 
 static map<uint256, CTransaction> mapTransactions;

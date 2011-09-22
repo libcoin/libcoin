@@ -3,12 +3,15 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "headers.h"
-#include "db.h"
-#include "cryptopp/sha.h"
-#include "crypter.h"
+#include "btcWallet/wallet.h"
+#include "btcWallet/walletDB.h"
+//#include "btcNode/db.h"
+#include "btc/crypter.h"
 
 using namespace std;
+
+CCriticalSection cs_setpwalletRegistered;
+set<CWallet*> setpwalletRegistered;
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1060,7 +1063,11 @@ bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
     return true;
 }
 
-
+// this is ugly - again we have calls to GUI methods from within the code code - need to make some call back structure
+inline bool ThreadSafeAskFee(int64 nFeeRequired, const std::string& strCaption, void* parent)
+{
+    return true;
+}
 
 
 string CWallet::SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee)
@@ -1112,8 +1119,11 @@ string CWallet::SendMoneyToBitcoinAddress(const CBitcoinAddress& address, int64 
     return SendMoney(scriptPubKey, nValue, wtxNew, fAskFee);
 }
 
-
-
+void CWallet::SetBestChain(const CBlockLocator& loc)
+{
+    CWalletDB walletdb(strWalletFile);
+    walletdb.WriteBestBlock(loc);
+}
 
 int CWallet::LoadWallet(bool& fFirstRunRet)
 {
@@ -1344,4 +1354,87 @@ void CReserveKey::ReturnKey()
     nIndex = -1;
     vchPubKey.clear();
 }
+
+//////////////////////////////////////////////////////////////////////////////
+//
+// dispatching functions
+//
+
+void RegisterWallet(CWallet* pwalletIn)
+{
+    CRITICAL_BLOCK(cs_setpwalletRegistered)
+    {
+        setpwalletRegistered.insert(pwalletIn);
+    }
+}
+
+void UnregisterWallet(CWallet* pwalletIn)
+{
+    CRITICAL_BLOCK(cs_setpwalletRegistered)
+    {
+        setpwalletRegistered.erase(pwalletIn);
+    }
+}
+
+bool static IsFromMe(CTransaction& tx)
+{
+    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
+    if (pwallet->IsFromMe(tx))
+        return true;
+    return false;
+}
+
+bool static GetTransaction(const uint256& hashTx, CWalletTx& wtx)
+{
+    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
+    if (pwallet->GetTransaction(hashTx,wtx))
+        return true;
+    return false;
+}
+
+void static EraseFromWallets(uint256 hash)
+{
+    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
+    pwallet->EraseFromWallet(hash);
+}
+
+void static SyncWithWallets(const CTransaction& tx, const CBlock* pblock = NULL, bool fUpdate = false)
+{
+    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
+    pwallet->AddToWalletIfInvolvingMe(tx, pblock, fUpdate);
+}
+
+void static SetBestChain(const CBlockLocator& loc)
+{
+    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
+    pwallet->SetBestChain(loc);
+}
+
+void static UpdatedTransaction(const uint256& hashTx)
+{
+    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
+    pwallet->UpdatedTransaction(hashTx);
+}
+
+void static PrintWallets(const CBlock& block)
+{
+    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
+    pwallet->PrintWallet(block);
+}
+
+void static Inventory(const uint256& hash)
+{
+    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
+    pwallet->Inventory(hash);
+}
+
+void static ResendWalletTransactions()
+{
+    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
+    pwallet->ResendWalletTransactions();
+}
+
+
+
+
 

@@ -7,13 +7,6 @@
 
 #include "btcRPC/rpc.h"
 
-json_spirit::Value getblockcount(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value getblocknumber(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value getconnectioncount(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value getdifficulty(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value gethashespersec(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value getinfo(const json_spirit::Array& params, bool fHelp);
-
 json_spirit::Value gettxdetails(const json_spirit::Array& params, bool fHelp);
 json_spirit::Value getvalue(const json_spirit::Array& params, bool fHelp);
 json_spirit::Value getdebit(const json_spirit::Array& params, bool fHelp);
