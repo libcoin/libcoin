@@ -4,7 +4,7 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 #include "btcWallet/wallet.h"
-#include "btcWallet/walletDB.h"
+#include "btcWallet/walletdb.h"
 //#include "btcNode/db.h"
 #include "btc/crypter.h"
 
