@@ -73,6 +73,7 @@ CDB::CDB(const char* pszFile, const char* pszMode) : pdb(NULL)
             dbenv.set_lk_max_locks(10000);
             dbenv.set_lk_max_objects(10000);
             dbenv.set_errfile(fopen(strErrorFile.c_str(), "a")); /// debug
+            dbenv.log_set_config(DB_LOG_AUTO_REMOVE, 1);
             dbenv.set_flags(DB_AUTO_COMMIT, 1);
             ret = dbenv.open(strDataDir.c_str(),
                              DB_CREATE     |
@@ -233,28 +234,20 @@ bool CTxDB::ReadCrIndex(uint160 hash160, set<Coin>& credit)
     return Read(make_pair(string("cr"), CBitcoinAddress(hash160).ToString()), credit);
 }
 
+bool Solver(const CScript& scriptPubKey, vector<pair<opcodetype, vector<unsigned char> > >& vSolutionRet);
+
 bool CTxDB::UpdateTxIndex(uint256 hash, const CTxIndex& txindex)
 {
     assert(!fClient);
-    return Write(make_pair(string("tx"), hash), txindex);
-}
-
-bool Solver(const CScript& scriptPubKey, vector<pair<opcodetype, vector<unsigned char> > >& vSolutionRet);
-
-bool CTxDB::AddTxIndex(const CTransaction& tx, const CDiskTxPos& pos, int nHeight)
-{
-    assert(!fClient);
-    
-    // Add to tx index
-    uint256 hash = tx.GetHash();
-    CTxIndex txindex(pos, tx.vout.size());
+    CTransaction tx;
+    tx.ReadFromDisk(txindex.pos);
     
     // gronager: hook to enable public key / hash160 lookups by a separate database
     // first find the keys and hash160s that are referenced in this transaction
     typedef pair<uint160, unsigned int> AssetPair;
     vector<AssetPair> vDebit;
     vector<AssetPair> vCredit;
-    
+
     // for each tx out in the newly added tx check for a pubkey or a pubkeyhash in the script
     for(unsigned int n = 0; n < tx.vout.size(); n++)
     {
@@ -283,7 +276,8 @@ bool CTxDB::AddTxIndex(const CTransaction& tx, const CDiskTxPos& pos, int nHeigh
         {
             const CTxIn& txin = tx.vin[n];
             CTransaction prevtx;
-            ReadDiskTx(txin.prevout, prevtx);
+            if(!ReadDiskTx(txin.prevout, prevtx))
+                continue; // OK ???
             CTxOut txout = prevtx.vout[txin.prevout.n];        
             
             vector<pair<opcodetype, vector<unsigned char> > > vSolution;
@@ -312,7 +306,6 @@ bool CTxDB::AddTxIndex(const CTransaction& tx, const CDiskTxPos& pos, int nHeigh
         Read(make_pair(string("dr"), CBitcoinAddress(hashpair->first).ToString()), txhashes);
         txhashes.insert(Coin(hash, hashpair->second));
         Write(make_pair(string("dr"), CBitcoinAddress(hashpair->first).ToString()), txhashes); // overwrite!
-        //        cout << "Found address in transfer " << CBitcoinAddress(hash160).ToString() << endl;
     }
     
     for(vector<AssetPair>::iterator hashpair = vCredit.begin(); hashpair != vCredit.end(); ++hashpair)
@@ -321,10 +314,21 @@ bool CTxDB::AddTxIndex(const CTransaction& tx, const CDiskTxPos& pos, int nHeigh
         Read(make_pair(string("cr"), CBitcoinAddress(hashpair->first).ToString()), txhashes);
         txhashes.insert(Coin(hash, hashpair->second));
         Write(make_pair(string("cr"), CBitcoinAddress(hashpair->first).ToString()), txhashes); // overwrite!
-        //        cout << "Found address in transfer " << CBitcoinAddress(hash160).ToString() << endl;
     }
     
     return Write(make_pair(string("tx"), hash), txindex);
+}
+
+bool CTxDB::AddTxIndex(const CTransaction& tx, const CDiskTxPos& pos, int nHeight)
+{
+    assert(!fClient);
+    
+    // Add to tx index
+    uint256 hash = tx.GetHash();
+    CTxIndex txindex(pos, tx.vout.size());
+    
+    return UpdateTxIndex(hash, txindex);
+//    return Write(make_pair(string("tx"), hash), txindex);
 }
 
 
@@ -333,6 +337,80 @@ bool CTxDB::EraseTxIndex(const CTransaction& tx)
     assert(!fClient);
     uint256 hash = tx.GetHash();
 
+    // gronager: hook to enable public key / hash160 lookups by a separate database
+    // first find the keys and hash160s that are referenced in this transaction
+    typedef pair<uint160, unsigned int> AssetPair;
+    vector<AssetPair> vDebit;
+    vector<AssetPair> vCredit;
+    cout << "erase tx: " << hash.ToString() << endl;    
+    // for each tx out in the newly added tx check for a pubkey or a pubkeyhash in the script
+    for(unsigned int n = 0; n < tx.vout.size(); n++)
+    {
+        const CTxOut& txout = tx.vout[n];
+        vector<pair<opcodetype, vector<unsigned char> > > vSolution;
+        if (!Solver(txout.scriptPubKey, vSolution))
+            break;
+        
+        BOOST_FOREACH(PAIRTYPE(opcodetype, vector<unsigned char>)& item, vSolution)
+        {
+            vector<unsigned char> vchPubKey;
+            if (item.first == OP_PUBKEY)
+            {
+                // encode the pubkey into a hash160
+                vDebit.push_back(AssetPair(Hash160(item.second), n));                
+            }
+            else if (item.first == OP_PUBKEYHASH)
+            {
+                vDebit.push_back(AssetPair(uint160(item.second), n));                
+            }
+        }
+    }
+    if(!tx.IsCoinBase())
+    {
+        for(unsigned int n = 0; n < tx.vin.size(); n++)
+        {
+            const CTxIn& txin = tx.vin[n];
+            CTransaction prevtx;
+            if(!ReadDiskTx(txin.prevout, prevtx))
+                continue; // OK ???
+            CTxOut txout = prevtx.vout[txin.prevout.n];        
+            
+            vector<pair<opcodetype, vector<unsigned char> > > vSolution;
+            if (!Solver(txout.scriptPubKey, vSolution))
+                break;
+            
+            BOOST_FOREACH(PAIRTYPE(opcodetype, vector<unsigned char>)& item, vSolution)
+            {
+                vector<unsigned char> vchPubKey;
+                if (item.first == OP_PUBKEY)
+                {
+                    // encode the pubkey into a hash160
+                    vCredit.push_back(pair<uint160, unsigned int>(Hash160(item.second), n));                
+                }
+                else if (item.first == OP_PUBKEYHASH)
+                {
+                    vCredit.push_back(pair<uint160, unsigned int>(uint160(item.second), n));                
+                }
+            }
+        }
+    }
+    
+    for(vector<AssetPair>::iterator hashpair = vDebit.begin(); hashpair != vDebit.end(); ++hashpair)
+    {
+        set<Coin> txhashes;
+        Read(make_pair(string("dr"), CBitcoinAddress(hashpair->first).ToString()), txhashes);
+        txhashes.erase(Coin(hash, hashpair->second));
+        Write(make_pair(string("dr"), CBitcoinAddress(hashpair->first).ToString()), txhashes); // overwrite!
+    }
+    
+    for(vector<AssetPair>::iterator hashpair = vCredit.begin(); hashpair != vCredit.end(); ++hashpair)
+    {
+        set<Coin> txhashes;
+        Read(make_pair(string("cr"), CBitcoinAddress(hashpair->first).ToString()), txhashes);
+        txhashes.erase(Coin(hash, hashpair->second));
+        Write(make_pair(string("cr"), CBitcoinAddress(hashpair->first).ToString()), txhashes); // overwrite!
+    }
+    
     return Erase(make_pair(string("tx"), hash));
 }
 

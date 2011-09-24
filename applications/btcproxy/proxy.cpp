@@ -11,6 +11,53 @@ using namespace std;
 using namespace boost;
 using namespace json_spirit;
 
+Value gettxmaturity(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+                            "gettxmaturity <txhash>\n"
+                            "Get transaction maturity as 3 numbers: confirmations, known inventory, in nodes");
+
+    unsigned int confirmations, known_in_nodes, n_nodes;
+    
+    uint256 hash;
+    hash.SetHex(params[0].get_str());
+    
+    CTxDB txdb("r");
+    
+    CTxIndex txindex;
+    if(!txdb.ReadTxIndex(hash, txindex)) // confirmation is 0, check the other maturity
+    {
+        confirmations = 0;
+        CInv inv(MSG_TX, hash);
+        CRITICAL_BLOCK(cs_vNodes)
+        {
+            n_nodes = vNodes.size();
+            known_in_nodes = 0;
+            for(int n = 0; n < n_nodes; n++)
+            {
+                CRITICAL_BLOCK(vNodes[n]->cs_inventory)
+                    if(vNodes[n]->setInventoryKnown.count(inv))
+                        known_in_nodes++;
+            }
+        }
+    }
+    else
+    {
+        n_nodes = vNodes.size();
+        known_in_nodes = 0;
+// now get # block the tx is in.
+        confirmations = txindex.GetDepthInMainChain();
+    }
+
+    Object entry;
+    entry.push_back(Pair("confirmations", uint64_t(confirmations)));
+    entry.push_back(Pair("known_in_nodes", uint64_t(known_in_nodes)));
+    entry.push_back(Pair("of_nodes", uint64_t(n_nodes)));
+    
+    return entry;
+}
+
 Value gettxdetails(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)

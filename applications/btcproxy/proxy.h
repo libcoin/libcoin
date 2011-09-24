@@ -7,6 +7,7 @@
 
 #include "btcRPC/rpc.h"
 
+json_spirit::Value gettxmaturity(const json_spirit::Array& params, bool fHelp);
 json_spirit::Value gettxdetails(const json_spirit::Array& params, bool fHelp);
 json_spirit::Value getvalue(const json_spirit::Array& params, bool fHelp);
 json_spirit::Value getdebit(const json_spirit::Array& params, bool fHelp);
