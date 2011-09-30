@@ -670,7 +670,7 @@ string GetDefaultDataDir()
     string strHome = pszHome;
     if (strHome[strHome.size()-1] != '/')
         strHome += '/';
-#ifdef __MACH__
+#ifdef _NOT_DEFINED__MACH__
     // Mac
     strHome += "Library/Application Support/";
     filesystem::create_directory(strHome.c_str());

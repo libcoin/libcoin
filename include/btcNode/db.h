@@ -58,7 +58,9 @@ protected:
         // Read
         Dbt datValue;
         datValue.set_flags(DB_DBT_MALLOC);
+//        std::3000 << "about to read" << std::endl;
         int ret = pdb->get(GetTxn(), &datKey, &datValue, 0);
+//        std::cout << "did read" << std::endl;
         memset(datKey.get_data(), 0, datKey.get_size());
         if (datValue.get_data() == NULL)
             return false;
@@ -94,7 +96,9 @@ protected:
         Dbt datValue(&ssValue[0], ssValue.size());
 
         // Write
+//        std::cout << "about to write: " << ssKey.size() << ", " << ssValue.size() << std::endl;
         int ret = pdb->put(GetTxn(), &datKey, &datValue, (fOverwrite ? 0 : DB_NOOVERWRITE));
+//        std::cout << "did write" << std::endl;
 
         // Clear memory in case it was a private key
         memset(datKey.get_data(), 0, datKey.get_size());

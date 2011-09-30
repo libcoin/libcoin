@@ -70,8 +70,9 @@ CDB::CDB(const char* pszFile, const char* pszMode) : pdb(NULL)
 
             dbenv.set_lg_dir(strLogDir.c_str());
             dbenv.set_lg_max(10000000);
-            dbenv.set_lk_max_locks(10000);
-            dbenv.set_lk_max_objects(10000);
+            dbenv.set_lk_max_locks(100000);
+            dbenv.set_lk_max_objects(100000);
+            dbenv.set_cachesize(4, 0, 1); // DB cache of 1GB
             dbenv.set_errfile(fopen(strErrorFile.c_str(), "a")); /// debug
             dbenv.log_set_config(DB_LOG_AUTO_REMOVE, 1);
             dbenv.set_flags(DB_AUTO_COMMIT, 1);
@@ -239,6 +240,9 @@ bool Solver(const CScript& scriptPubKey, vector<pair<opcodetype, vector<unsigned
 bool CTxDB::UpdateTxIndex(uint256 hash, const CTxIndex& txindex)
 {
     assert(!fClient);
+
+//    cout << "update tx: " << hash.ToString() << endl;    
+    
     CTransaction tx;
     tx.ReadFromDisk(txindex.pos);
     
@@ -304,6 +308,7 @@ bool CTxDB::UpdateTxIndex(uint256 hash, const CTxIndex& txindex)
     {
         set<Coin> txhashes;
         Read(make_pair(string("dr"), CBitcoinAddress(hashpair->first).ToString()), txhashes);
+//        cout << "\t debit: " << CBitcoinAddress(hashpair->first).ToString() << endl;    
         txhashes.insert(Coin(hash, hashpair->second));
         Write(make_pair(string("dr"), CBitcoinAddress(hashpair->first).ToString()), txhashes); // overwrite!
     }
@@ -312,10 +317,11 @@ bool CTxDB::UpdateTxIndex(uint256 hash, const CTxIndex& txindex)
     {
         set<Coin> txhashes;
         Read(make_pair(string("cr"), CBitcoinAddress(hashpair->first).ToString()), txhashes);
+//        cout << "\t credit: " << CBitcoinAddress(hashpair->first).ToString() << endl;    
         txhashes.insert(Coin(hash, hashpair->second));
         Write(make_pair(string("cr"), CBitcoinAddress(hashpair->first).ToString()), txhashes); // overwrite!
     }
-    
+//    cout << "and write tx" << std::endl;
     return Write(make_pair(string("tx"), hash), txindex);
 }
 
