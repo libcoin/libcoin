@@ -7,6 +7,7 @@
 
 #include "btc/key.h"
 #include "btc/tx.h"
+#include "btc/asset.h"
 #include "btcNode/main.h"
 
 #include <map>
@@ -290,7 +291,18 @@ public:
 };
 
 
-
+class CDBAssetSyncronizer : public CAssetSyncronizer
+{
+public:
+    CDBAssetSyncronizer(CTxDB& txdb) : _txdb(txdb) {}
+    virtual void getCreditCoins(uint160 btc, Coins& coins);
+    virtual void getDebitCoins(uint160 btc, Coins& coins);
+    virtual void getCoins(uint160 btc, Coins& coins);
+    
+    virtual void getTransaction(const Coin& coin, CTx&);
+private:
+    CTxDB& _txdb;
+};
 
 
 class CAddrDB : public CDB

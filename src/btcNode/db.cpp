@@ -678,6 +678,55 @@ bool CTxDB::LoadBlockIndex()
 
 
 
+//
+// CDBAssetSyncronizer
+//
+
+
+void CDBAssetSyncronizer::getCreditCoins(uint160 btc, Coins& coins)
+{
+    _txdb.ReadCrIndex(btc, coins);
+}
+
+void CDBAssetSyncronizer::getDebitCoins(uint160 btc, Coins& coins)
+{
+    _txdb.ReadDrIndex(btc, coins);
+}
+
+void CDBAssetSyncronizer::getTransaction(const Coin& coin, CTx& tx)
+{
+    CTransaction transaction;
+    _txdb.ReadDiskTx(coin.first, transaction);
+    tx = transaction;
+}
+
+void CDBAssetSyncronizer::getCoins(uint160 btc, Coins& coins)
+{
+    // read all relevant tx'es
+    Coins debit;
+    getDebitCoins(btc, debit);
+    Coins credit;
+    getCreditCoins(btc, credit);
+    
+    for(Coins::iterator coin = debit.begin(); coin != debit.end(); ++coin)
+    {
+        CTransaction tx;
+        _txdb.ReadDiskTx(coin->first, tx);
+        coins.insert(*coin);
+    }
+    for(Coins::iterator coin = credit.begin(); coin != credit.end(); ++coin)
+    {
+        CTransaction tx;
+        _txdb.ReadDiskTx(coin->first, tx);
+        
+        CTxIn in = tx.vin[coin->second];
+        Coin spend(in.prevout.hash, in.prevout.n);
+        coins.erase(spend);
+    }
+}
+
+
+
 
 //
 // CAddrDB

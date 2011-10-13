@@ -5,7 +5,7 @@
 #include "btcNode/db.h"
 #include "btcRPC/rpc.h"
 
-#include "asset.h"
+#include "btc/asset.h"
 
 using namespace std;
 using namespace boost;
@@ -133,7 +133,7 @@ Value getvalue(const Array& params, bool fHelp)
     asset.addAddress(hash160);
     CTxDB txdb;
     CDBAssetSyncronizer sync(txdb);
-    asset.syncronize(sync);
+    asset.syncronize(sync, true);
     int64 balance = asset.balance();
     
     Value val(balance);
@@ -210,7 +210,7 @@ Value getcoins(const Array& params, bool fHelp)
     asset.addAddress(hash160);
     CTxDB txdb;
     CDBAssetSyncronizer sync(txdb);
-    asset.syncronize(sync);
+    asset.syncronize(sync, true);
     set<Coin> coins = asset.getCoins();
     
     Array list;

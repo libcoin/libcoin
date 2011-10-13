@@ -19,6 +19,7 @@ ENDIF()
 
 SET(HEADER_PATH ${PROJECT_SOURCE_DIR}/include/${LIB_NAME})
 SET(TARGET_H
+    ${HEADER_PATH}/asset.h
     ${HEADER_PATH}/base58.h
     ${HEADER_PATH}/bignum.h
     ${HEADER_PATH}/crypter.h
@@ -37,6 +38,7 @@ SET(TARGET_H
 #    ${BITCOIN_USER_DEFINED_DYNAMIC_OR_STATIC}
 #    ${LIB_PUBLIC_HEADERS}
 SET(TARGET_SRC
+    asset.cpp
     crypter.cpp
     keystore.cpp
     tx.cpp
