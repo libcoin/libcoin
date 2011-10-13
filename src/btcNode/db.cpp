@@ -72,7 +72,7 @@ CDB::CDB(const char* pszFile, const char* pszMode) : pdb(NULL)
             dbenv.set_lg_max(10000000);
             dbenv.set_lk_max_locks(100000);
             dbenv.set_lk_max_objects(100000);
-            dbenv.set_cachesize(4, 0, 1); // DB cache of 1GB
+//            dbenv.set_cachesize(4, 0, 1); // DB cache of 1GB
             dbenv.set_errfile(fopen(strErrorFile.c_str(), "a")); /// debug
             dbenv.log_set_config(DB_LOG_AUTO_REMOVE, 1);
             dbenv.set_flags(DB_AUTO_COMMIT, 1);

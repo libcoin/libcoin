@@ -131,7 +131,9 @@ Value getvalue(const Array& params, bool fHelp)
     
     CAsset asset;
     asset.addAddress(hash160);
-    asset.syncronize();
+    CTxDB txdb;
+    CDBAssetSyncronizer sync(txdb);
+    asset.syncronize(sync);
     int64 balance = asset.balance();
     
     Value val(balance);
@@ -206,7 +208,9 @@ Value getcoins(const Array& params, bool fHelp)
     
     CAsset asset;
     asset.addAddress(hash160);
-    asset.syncronize();
+    CTxDB txdb;
+    CDBAssetSyncronizer sync(txdb);
+    asset.syncronize(sync);
     set<Coin> coins = asset.getCoins();
     
     Array list;

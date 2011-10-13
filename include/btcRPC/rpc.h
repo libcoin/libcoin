@@ -21,9 +21,17 @@ int64 AmountFromValue(const json_spirit::Value& value);
 json_spirit::Value ValueFromAmount(int64 amount);
 std::string AccountFromValue(const json_spirit::Value& value);
 
+std::string JSONRPCRequest(const std::string& strMethod, const json_spirit::Array& params, const json_spirit::Value& id);
+
 json_spirit::Object JSONRPCError(int code, const std::string& message);
 
 void ThreadRPCServer(void* parg);
 int CommandLineRPC(int argc, char *argv[]);
+
+std::string EncodeBase64(std::string s);
+std::string DecodeBase64(std::string s);
+
+int ReadHTTP(std::basic_istream<char>& stream, std::map<std::string, std::string>& mapHeadersRet, std::string& strMessageRet);
+std::string HTTPPost(const std::string& strMsg, const std::map<std::string,std::string>& mapRequestHeaders);
 
 #endif

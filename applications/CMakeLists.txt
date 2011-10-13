@@ -25,6 +25,7 @@ SET(TARGET_COMMON_LIBRARIES
 IF(DYNAMIC_BITCOIN)
     ADD_SUBDIRECTORY(btcproxy)
     ADD_SUBDIRECTORY(bitcoind)
+    ADD_SUBDIRECTORY(btc)
 ELSE()
     # need to define this on win32 or linker cries about _declspecs
     ADD_DEFINITIONS(-DBTC_LIBRARY_STATIC)

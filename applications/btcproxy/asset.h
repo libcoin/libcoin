@@ -10,6 +10,31 @@
 #include "btcNode/main.h"
 
 typedef std::pair<uint256, unsigned int> Coin;
+typedef std::set<Coin> Coins;
+
+class CAssetSyncronizer
+{
+public:
+    typedef std::set<Coin> Coins;
+    virtual void getCreditCoins(uint160 btc, Coins& coins) = 0;
+    virtual void getDebitCoins(uint160 btc, Coins& coins) = 0;
+    virtual void getCoins(uint160 btc, Coins& coins) = 0;
+    
+    virtual void getTransaction(const Coin& coin, CTx&) = 0;
+};
+
+class CDBAssetSyncronizer : public CAssetSyncronizer
+{
+public:
+    CDBAssetSyncronizer(CTxDB& txdb) : _txdb(txdb) {}
+    virtual void getCreditCoins(uint160 btc, Coins& coins);
+    virtual void getDebitCoins(uint160 btc, Coins& coins);
+    virtual void getCoins(uint160 btc, Coins& coins);
+    
+    virtual void getTransaction(const Coin& coin, CTx&);
+private:
+    CTxDB& _txdb;
+};
 
 class CAsset;
 
@@ -17,7 +42,6 @@ class CAsset : public CKeyStore
 {
 public:
     //    typedef COutPoint Coin;
-    typedef std::set<Coin> Coins;
     typedef std::map<uint256, CTransaction> TxCache;
     typedef std::set<uint256> TxSet;
     typedef std::map<uint160, CKey> KeyMap;
@@ -47,7 +71,9 @@ public:
     
     uint160 getAddress(const CTxOut& out);
     
-    void syncronize();
+    void remote_sync();
+
+    void syncronize(CAssetSyncronizer& sync);
     
     const Coins& getCoins()
     {

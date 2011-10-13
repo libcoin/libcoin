@@ -19,6 +19,48 @@ set<uint160> CAsset::getAddresses()
     return addresses;
 }
     
+void CDBAssetSyncronizer::getCreditCoins(uint160 btc, Coins& coins)
+{
+    _txdb.ReadCrIndex(btc, coins);
+}
+
+void CDBAssetSyncronizer::getDebitCoins(uint160 btc, Coins& coins)
+{
+    _txdb.ReadDrIndex(btc, coins);
+}
+
+void CDBAssetSyncronizer::getTransaction(const Coin& coin, CTx& tx)
+{
+    CTransaction transaction;
+    _txdb.ReadDiskTx(coin.first, transaction);
+    tx = transaction;
+}
+
+void CDBAssetSyncronizer::getCoins(uint160 btc, Coins& coins)
+{
+    // read all relevant tx'es
+    Coins debit;
+    getDebitCoins(btc, debit);
+    Coins credit;
+    getCreditCoins(btc, credit);
+    
+    for(Coins::iterator coin = debit.begin(); coin != debit.end(); ++coin)
+    {
+        CTransaction tx;
+        _txdb.ReadDiskTx(coin->first, tx);
+        coins.insert(*coin);
+    }
+    for(Coins::iterator coin = credit.begin(); coin != credit.end(); ++coin)
+    {
+        CTransaction tx;
+        _txdb.ReadDiskTx(coin->first, tx);
+        
+        CTxIn in = tx.vin[coin->second];
+        Coin spend(in.prevout.hash, in.prevout.n);
+        coins.erase(spend);
+    }
+}
+        
 bool CAsset::AddKey(const CKey& key)
 {
     _keymap[Hash160(key.GetPubKey())] = key;
@@ -76,32 +118,35 @@ uint160 CAsset::getAddress(const CTxOut& out)
     return 0;
 }
 
-void CAsset::syncronize()
+void CAsset::remote_sync()
 {
-    CTxDB txdb("r");
     
+}
+
+void CAsset::syncronize(CAssetSyncronizer& sync)
+{
     _coins.clear();
     
     // read all relevant tx'es
     for(KeyMap::iterator key = _keymap.begin(); key != _keymap.end(); ++key)
     {
         Coins debit;
-        txdb.ReadDrIndex(key->first, debit);
+        sync.getDebitCoins(key->first, debit);
         Coins credit;
-        txdb.ReadCrIndex(key->first, credit);
+        sync.getCreditCoins(key->first, credit);
         
         Coins coins;
         for(Coins::iterator coin = debit.begin(); coin != debit.end(); ++coin)
         {
             CTransaction tx;
-            txdb.ReadDiskTx(coin->first, tx);
+            sync.getTransaction(*coin, tx);
             _tx_cache[coin->first] = tx; // caches the relevant transactions
             coins.insert(*coin);
         }
         for(Coins::iterator coin = credit.begin(); coin != credit.end(); ++coin)
         {
             CTransaction tx;
-            txdb.ReadDiskTx(coin->first, tx);
+            sync.getTransaction(*coin, tx);
             _tx_cache[coin->first] = tx; // caches the relevant transactions
             
             CTxIn in = tx.vin[coin->second];
