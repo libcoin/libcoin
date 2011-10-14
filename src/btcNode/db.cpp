@@ -686,17 +686,34 @@ bool CTxDB::LoadBlockIndex()
 void CDBAssetSyncronizer::getCreditCoins(uint160 btc, Coins& coins)
 {
     _txdb.ReadCrIndex(btc, coins);
+    CRITICAL_BLOCK(cs_mapTransactions)
+    if(mapCredits.count(btc))
+        coins.insert(mapCredits[btc].begin(), mapCredits[btc].end());
 }
 
 void CDBAssetSyncronizer::getDebitCoins(uint160 btc, Coins& coins)
 {
     _txdb.ReadDrIndex(btc, coins);
+    
+    CRITICAL_BLOCK(cs_mapTransactions)
+    if(mapDebits.count(btc))
+        coins.insert(mapDebits[btc].begin(), mapDebits[btc].end());
 }
 
 void CDBAssetSyncronizer::getTransaction(const Coin& coin, CTx& tx)
 {
     CTransaction transaction;
-    _txdb.ReadDiskTx(coin.first, transaction);
+    if(!_txdb.ReadDiskTx(coin.first, transaction))
+    {
+        CRITICAL_BLOCK(cs_mapTransactions)
+        {
+            if(mapTransactions.count(coin.first))
+                transaction = mapTransactions[coin.first];
+            //                   else
+            //                       throw JSONRPCError(-5, "Invalid transaction id");        
+        }
+    }
+           
     tx = transaction;
 }
 
@@ -711,13 +728,13 @@ void CDBAssetSyncronizer::getCoins(uint160 btc, Coins& coins)
     for(Coins::iterator coin = debit.begin(); coin != debit.end(); ++coin)
     {
         CTransaction tx;
-        _txdb.ReadDiskTx(coin->first, tx);
+        getTransaction(*coin, tx);
         coins.insert(*coin);
     }
     for(Coins::iterator coin = credit.begin(); coin != credit.end(); ++coin)
     {
         CTransaction tx;
-        _txdb.ReadDiskTx(coin->first, tx);
+        getTransaction(*coin, tx);
         
         CTxIn in = tx.vin[coin->second];
         Coin spend(in.prevout.hash, in.prevout.n);

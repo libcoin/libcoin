@@ -73,10 +73,13 @@ Value gettxdetails(const Array& params, bool fHelp)
     CTransaction tx;
     if(!txdb.ReadDiskTx(hash, tx))
     {
-        if(mapTransactions.count(hash))
-            tx = mapTransactions[hash];
-        else
-            throw JSONRPCError(-5, "Invalid transaction id");        
+        CRITICAL_BLOCK(cs_mapTransactions)
+        {
+            if(mapTransactions.count(hash))
+                tx = mapTransactions[hash];
+            else
+                throw JSONRPCError(-5, "Invalid transaction id");        
+        }
     }
     
     Object entry;
@@ -160,8 +163,9 @@ Value getdebit(const Array& params, bool fHelp)
     
     txdb.ReadDrIndex(hash160, debit);
     
-    if(mapDebits.count(hash160))
-        debit.insert(mapDebits[hash160].begin(), mapDebits[hash160].end());
+    CRITICAL_BLOCK(cs_mapTransactions)
+        if(mapDebits.count(hash160))
+            debit.insert(mapDebits[hash160].begin(), mapDebits[hash160].end());
 
     Array list;
     
@@ -191,8 +195,9 @@ Value getcredit(const Array& params, bool fHelp)
     
     txdb.ReadCrIndex(hash160, credit);
 
-    if(mapCredits.count(hash160))
-        credit.insert(mapCredits[hash160].begin(), mapCredits[hash160].end());
+    CRITICAL_BLOCK(cs_mapTransactions)
+        if(mapCredits.count(hash160))
+            credit.insert(mapCredits[hash160].begin(), mapCredits[hash160].end());
     
     Array list;
     
