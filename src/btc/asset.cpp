@@ -207,7 +207,10 @@ CTx CAsset::generateTx(set<Payment> payments, uint160 changeaddr)
     {
         sum += value(spendable_coins[coins]);
         if(sum > amount)
+        {
+            coins++;
             break;
+        }
     }
     
     CTx tx;
@@ -216,7 +219,7 @@ CTx CAsset::generateTx(set<Payment> payments, uint160 changeaddr)
         return tx;
     
     // shuffle the inputs
-    random_shuffle(spendable_coins.begin(), spendable_coins.end());
+//    random_shuffle(spendable_coins.begin(), spendable_coins.end());
     
     // now fill in the tx outs
     for(set<Payment>::iterator payment = payments.begin(); payment != payments.end(); ++payment)
@@ -228,15 +231,15 @@ CTx CAsset::generateTx(set<Payment> payments, uint160 changeaddr)
         tx.vout.push_back(out);
     }            
     // handle change!
-    int64 change = amount - sum;
+    int64 change = sum - amount;
     uint160 changeto = changeaddr;
     if(changeto == 0)
     {
         CTx txchange = getTx(spendable_coins[0].first);
-        uint160 changeto = getAddress(txchange.vout[spendable_coins[0].second]);
+        changeto = getAddress(txchange.vout[spendable_coins[0].second]);
     }
     
-    if(change > 50000) // skip smaller amounts of change
+    if(change > 5000) // skip smaller amounts of change
     {
         CScript scriptPubKey;
         scriptPubKey << OP_DUP << OP_HASH160 << changeto << OP_EQUALVERIFY << OP_CHECKSIG;
@@ -264,7 +267,14 @@ CTx CAsset::generateTx(set<Payment> payments, uint160 changeaddr)
             // throw something!                
         }
     }        
-    return tx;
+    
+    if(tx.CheckTransaction())
+        return tx;
+    else
+    {
+        CTx failtx;
+        return failtx;
+    }
 }
 
 CTx CAsset::generateTx(uint160 to, int64 amount, uint160 change)
