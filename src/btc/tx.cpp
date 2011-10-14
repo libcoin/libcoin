@@ -25,6 +25,31 @@ const int nTotalBlocksEstimate = 140700; // Conservative estimate of total nr of
 
 //////////////////////////////////////////////////////////////////////////////
 //
+// CTxOut
+//
+
+uint160 CTxOut::getAsset() const
+{
+    vector<pair<opcodetype, vector<unsigned char> > > vSolution;
+    if (!Solver(scriptPubKey, vSolution))
+        return 0;
+    
+    BOOST_FOREACH(PAIRTYPE(opcodetype, vector<unsigned char>)& item, vSolution)
+    {
+        vector<unsigned char> vchPubKey;
+        if (item.first == OP_PUBKEY)
+            // encode the pubkey into a hash160
+            return Hash160(item.second);
+        else if (item.first == OP_PUBKEYHASH)
+            return uint160(item.second);                
+    }
+    
+    return 0;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+//
 // CTx
 //
 

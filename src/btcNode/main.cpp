@@ -20,6 +20,8 @@ using namespace boost;
 CCriticalSection cs_main;
 
 map<uint256, CTransaction> mapTransactions;
+map<uint160, set<pair<uint256, unsigned int> > > mapCredits;
+map<uint160, set<pair<uint256, unsigned int> > > mapDebits;
 CCriticalSection cs_mapTransactions;
 unsigned int nTransactionsUpdated = 0;
 map<COutPoint, CInPoint> mapNextTx;
@@ -342,14 +344,47 @@ bool CTransaction::AddToMemoryPoolUnchecked()
 {
     // Add to memory pool without checking anything.  Don't call this directly,
     // call AcceptToMemoryPool to properly check the transaction first.
+    
+    uint256 hash = GetHash();
+    
+    CTxDB txdb("r");
+    
+    typedef pair<uint160, unsigned int> AssetPair;
+    vector<AssetPair> debits;
+    vector<AssetPair> credits;
+    
+    // for each tx out in the newly added tx check for a pubkey or a pubkeyhash in the script
+    for(unsigned int n = 0; n < vout.size(); n++)
+        debits.push_back(AssetPair(vout[n].getAsset(), n));
+    
+    if(!IsCoinBase())
+    {
+        for(unsigned int n = 0; n < vin.size(); n++)
+        {
+            const CTxIn& txin = vin[n];
+            CTransaction prevtx;
+            if(!txdb.ReadDiskTx(txin.prevout, prevtx))
+                continue; // OK ???
+            CTxOut txout = prevtx.vout[txin.prevout.n];        
+            
+            credits.push_back(AssetPair(txout.getAsset(), n));
+        }
+    }
+    
     CRITICAL_BLOCK(cs_mapTransactions)
     {
-        uint256 hash = GetHash();
+        for(vector<AssetPair>::iterator assetpair = debits.begin(); assetpair != debits.end(); ++assetpair)
+            mapDebits[assetpair->first].insert(pair<uint256, unsigned int>(hash, assetpair->second));
+        
+        for(vector<AssetPair>::iterator assetpair = credits.begin(); assetpair != credits.end(); ++assetpair)
+            mapCredits[assetpair->first].insert(pair<uint256, unsigned int>(hash, assetpair->second));
+        
         mapTransactions[hash] = *this;
         for (int i = 0; i < vin.size(); i++)
             mapNextTx[vin[i].prevout] = CInPoint(&mapTransactions[hash], i);
         nTransactionsUpdated++;
     }
+    
     return true;
 }
 
@@ -357,8 +392,49 @@ bool CTransaction::AddToMemoryPoolUnchecked()
 bool CTransaction::RemoveFromMemoryPool()
 {
     // Remove transaction from memory pool
+    
+    uint256 hash = GetHash();
+    
+    CTxDB txdb("r");
+    
+    typedef pair<uint160, unsigned int> AssetPair;
+    vector<AssetPair> debits;
+    vector<AssetPair> credits;
+    
+    // for each tx out in the newly added tx check for a pubkey or a pubkeyhash in the script
+    for(unsigned int n = 0; n < vout.size(); n++)
+        debits.push_back(AssetPair(vout[n].getAsset(), n));
+    
+    if(!IsCoinBase())
+    {
+        for(unsigned int n = 0; n < vin.size(); n++)
+        {
+            const CTxIn& txin = vin[n];
+            CTransaction prevtx;
+            if(!txdb.ReadDiskTx(txin.prevout, prevtx))
+                continue; // OK ???
+            CTxOut txout = prevtx.vout[txin.prevout.n];        
+            
+            credits.push_back(AssetPair(txout.getAsset(), n));
+        }
+    }
+    
     CRITICAL_BLOCK(cs_mapTransactions)
     {
+        for(vector<AssetPair>::iterator assetpair = debits.begin(); assetpair != debits.end(); ++assetpair)
+        {
+            mapDebits[assetpair->first].erase(pair<uint256, unsigned int>(hash, assetpair->second));
+            if(mapDebits[assetpair->first].size() == 0)
+                mapDebits.erase(assetpair->first); 
+        }
+        
+        for(vector<AssetPair>::iterator assetpair = credits.begin(); assetpair != credits.end(); ++assetpair)
+        {
+            mapCredits[assetpair->first].erase(pair<uint256, unsigned int>(hash, assetpair->second));
+            if(mapCredits[assetpair->first].size() == 0)
+                mapCredits.erase(assetpair->first); 
+        }
+        
         BOOST_FOREACH(const CTxIn& txin, vin)
             mapNextTx.erase(txin.prevout);
         mapTransactions.erase(GetHash());

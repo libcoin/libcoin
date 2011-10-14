@@ -36,6 +36,8 @@ extern CCriticalSection cs_main;
 
 class CTransaction;
 extern std::map<uint256, CTransaction> mapTransactions;
+extern std::map<uint160, std::set<std::pair<uint256, unsigned int> > > mapCredits;
+extern std::map<uint160, std::set<std::pair<uint256, unsigned int> > > mapDebits;
 extern CCriticalSection cs_mapTransactions;
 
 extern std::map<uint256, CBlockIndex*> mapBlockIndex;

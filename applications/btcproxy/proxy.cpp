@@ -72,7 +72,12 @@ Value gettxdetails(const Array& params, bool fHelp)
     
     CTransaction tx;
     if(!txdb.ReadDiskTx(hash, tx))
-        throw JSONRPCError(-5, "Invalid transaction id");
+    {
+        if(mapTransactions.count(hash))
+            tx = mapTransactions[hash];
+        else
+            throw JSONRPCError(-5, "Invalid transaction id");        
+    }
     
     Object entry;
     
@@ -155,6 +160,9 @@ Value getdebit(const Array& params, bool fHelp)
     
     txdb.ReadDrIndex(hash160, debit);
     
+    if(mapDebits.count(hash160))
+        debit.insert(mapDebits[hash160].begin(), mapDebits[hash160].end());
+
     Array list;
     
     for(set<Coin>::iterator coin = debit.begin(); coin != debit.end(); ++coin)
@@ -182,6 +190,9 @@ Value getcredit(const Array& params, bool fHelp)
     set<Coin> credit;
     
     txdb.ReadCrIndex(hash160, credit);
+
+    if(mapCredits.count(hash160))
+        credit.insert(mapCredits[hash160].begin(), mapCredits[hash160].end());
     
     Array list;
     

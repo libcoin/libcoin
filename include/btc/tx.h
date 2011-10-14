@@ -169,6 +169,7 @@ public:
 // An output of a transaction.  It contains the public key that the next input
 // must be able to sign with to claim it.
 //
+
 class CTxOut
 {
 public:
@@ -208,6 +209,8 @@ public:
         return SerializeHash(*this);
     }
 
+    uint160 getAsset() const;
+    
     friend bool operator==(const CTxOut& a, const CTxOut& b)
     {
         return (a.nValue       == b.nValue &&

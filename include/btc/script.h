@@ -691,6 +691,7 @@ public:
 
 
 
+bool Solver(const CScript& scriptPubKey, std::vector<std::pair<opcodetype, std::vector<unsigned char> > >& vSolutionRet);
 
 bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, const CTx& txTo, unsigned int nIn, int nHashType);
 
