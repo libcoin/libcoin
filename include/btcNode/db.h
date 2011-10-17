@@ -320,6 +320,20 @@ public:
 
 bool LoadAddresses();
 
+class CBrokerDB : public CDB
+{
+public:
+    CBrokerDB(const char* pszMode="r+") : CDB("broker.dat", pszMode) { }
+private:
+    CBrokerDB(const CBrokerDB&);
+    void operator=(const CBrokerDB&);
+public:
+    bool WriteTx(const CTx& addr);
+    bool EraseTx(const CTx& addr);
+    bool LoadTxes();
+};
+
+bool LoadBrokerDB();
 
 enum DBErrors
 {

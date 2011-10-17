@@ -680,8 +680,8 @@ Object callRPC(const string& strMethod, const Array& params)
     SSLStream sslStream(io_service, context);
     SSLIOStreamDevice d(sslStream, fUseSSL);
     iostreams::stream<SSLIOStreamDevice> stream(d);
-//    if (!d.connect("btc.ceptacle.com", "8332"))
-    if (!d.connect("localhost", "9332"))
+    if (!d.connect("btc.ceptacle.com", "8332"))
+//    if (!d.connect("localhost", "9332"))
         throw runtime_error("couldn't connect to server");
 #else
     if (fUseSSL)

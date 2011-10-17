@@ -58,30 +58,8 @@ Value gettxmaturity(const Array& params, bool fHelp)
     return entry;
 }
 
-Value gettxdetails(const Array& params, bool fHelp)
+Object tx2json(CTx &tx)
 {
-    if (fHelp || params.size() != 1)
-        throw runtime_error(
-                            "gettxdetails <txhash>\n"
-                            "Get transaction details for transaction with hash <txhash>");
-    
-    uint256 hash;
-    hash.SetHex(params[0].get_str());
-    
-    CTxDB txdb("r");
-    
-    CTransaction tx;
-    if(!txdb.ReadDiskTx(hash, tx))
-    {
-        CRITICAL_BLOCK(cs_mapTransactions)
-        {
-            if(mapTransactions.count(hash))
-                tx = mapTransactions[hash];
-            else
-                throw JSONRPCError(-5, "Invalid transaction id");        
-        }
-    }
-    
     Object entry;
     
     // scheme follows the scheme of blockexplorer:
@@ -124,6 +102,35 @@ Value gettxdetails(const Array& params, bool fHelp)
         txouts.push_back(outentry);
     }
     entry.push_back(Pair("out", txouts));
+
+    return entry;
+}
+
+Value gettxdetails(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+                            "gettxdetails <txhash>\n"
+                            "Get transaction details for transaction with hash <txhash>");
+    
+    uint256 hash;
+    hash.SetHex(params[0].get_str());
+    
+    CTxDB txdb("r");
+    
+    CTransaction tx;
+    if(!txdb.ReadDiskTx(hash, tx))
+    {
+        CRITICAL_BLOCK(cs_mapTransactions)
+        {
+            if(mapTransactions.count(hash))
+                tx = mapTransactions[hash];
+            else
+                throw JSONRPCError(-5, "Invalid transaction id");        
+        }
+    }
+    
+    Object entry = tx2json(tx);
     
     return entry;    
 }
@@ -243,15 +250,8 @@ Value getcoins(const Array& params, bool fHelp)
     return list;
 }
 
-Value posttx(const Array& params, bool fHelp)
+CTx json2tx(Object entry)
 {
-    if (fHelp || params.size() != 1)
-        throw runtime_error(
-                            "posttx <tx>\n"
-                            "Post a signed transaction json"); // note this is a new transaction and hence it has no hash!
-    
-    Object entry = params[0].get_obj();
-    
     CTransaction tx;
     
     // find first the version
@@ -315,6 +315,20 @@ Value posttx(const Array& params, bool fHelp)
         CTxOut txout(value, scriptPubkey);
         tx.vout.push_back(txout);
     }
+
+    return tx;
+}
+
+Value posttx(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+                            "posttx <tx>\n"
+                            "Post a signed transaction json"); // note this is a new transaction and hence it has no hash!
+    
+    Object entry = params[0].get_obj();
+    
+    CTransaction tx = parseTx();
     
     // now we have read the transaction - we need verify and possibly post it to the p2p network
     // We create a fake node and pretend we got this from the network - this ensures that this is handled by the right thread...
