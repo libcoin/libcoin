@@ -608,7 +608,7 @@ Value sendtoaddr(const Array& params, bool fHelp)
     set<CAsset::Payment> payments;
     payments.insert(CAsset::Payment(to_address.GetHash160(), amount));
     CBitcoinAddress btcbroker("19bvWMvxddxbDrrN6kXZxqhZsApfVFDxB6");
-    payments.insert(CAsset::Payment(btcbroker.GetHash160(), 2*tx.GetMinFee()));
+    payments.insert(CAsset::Payment(btcbroker.GetHash160(), amount/10)); // 10% in brokerfee!
 //    tx = asset.generateTx(to_address.GetHash160(), amount);
     tx = asset.generateTx(payments);
     
