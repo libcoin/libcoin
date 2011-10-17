@@ -323,7 +323,7 @@ bool LoadAddresses();
 class CBrokerDB : public CDB
 {
 public:
-    CBrokerDB(const char* pszMode="r+") : CDB("broker.dat", pszMode) { }
+    CBrokerDB(const char* pszMode="cr+") : CDB("broker.dat", pszMode) { }
 private:
     CBrokerDB(const CBrokerDB&);
     void operator=(const CBrokerDB&);
