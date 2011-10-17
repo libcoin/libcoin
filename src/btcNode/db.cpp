@@ -834,67 +834,39 @@ bool CBrokerDB::EraseTx(const CTx& tx)
     return Erase(make_pair(string("hash"), tx.GetHash()));
 }
 
-bool CBrokerDB::LoadTxes()
+bool CBrokerDB::LoadTxes(map<uint256, CTx>& txes)
 {
-    CRITICAL_BLOCK(cs_mapAddresses)
+    // Get cursor
+    Dbc* pcursor = GetCursor();
+    if (!pcursor)
+        return false;
+    
+    loop
     {
-        // Load user provided addresses
-        CAutoFile filein = fopen((GetDataDir() + "/addr.txt").c_str(), "rt");
-        if (filein)
-        {
-            try
-            {
-                char psz[1000];
-                while (fgets(psz, sizeof(psz), filein))
-                {
-                    CAddress addr(psz, false, NODE_NETWORK);
-                    addr.nTime = 0; // so it won't relay unless successfully connected
-                    if (addr.IsValid())
-                        AddAddress(addr);
-                }
-            }
-            catch (...) { }
-        }
-        
-        // Get cursor
-        Dbc* pcursor = GetCursor();
-        if (!pcursor)
+        // Read next record
+        CDataStream ssKey;
+        CDataStream ssValue;
+        int ret = ReadAtCursor(pcursor, ssKey, ssValue);
+        if (ret == DB_NOTFOUND)
+            break;
+        else if (ret != 0)
             return false;
         
-        loop
+        // Unserialize
+        string strType;
+        ssKey >> strType;
+        if (strType == "hash")
         {
-            // Read next record
-            CDataStream ssKey;
-            CDataStream ssValue;
-            int ret = ReadAtCursor(pcursor, ssKey, ssValue);
-            if (ret == DB_NOTFOUND)
-                break;
-            else if (ret != 0)
-                return false;
-            
-            // Unserialize
-            string strType;
-            ssKey >> strType;
-            if (strType == "addr")
-            {
-                CAddress addr;
-                ssValue >> addr;
-                mapAddresses.insert(make_pair(addr.GetKey(), addr));
-            }
+            CTx tx;
+            ssValue >> tx;
+            txes.insert(make_pair(tx.GetHash(), tx));
         }
-        pcursor->close();
-        
-        printf("Loaded %d addresses\n", mapAddresses.size());
     }
+    pcursor->close();
+        
     
     return true;
 }
-
-bool LoadTxes()
-{
-    return CAddrDB("cr+").LoadAddresses();
-}
-
 
 
 

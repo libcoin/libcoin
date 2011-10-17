@@ -330,10 +330,8 @@ private:
 public:
     bool WriteTx(const CTx& addr);
     bool EraseTx(const CTx& addr);
-    bool LoadTxes();
+    bool LoadTxes(std::map<uint256, CTx>& txes);
 };
-
-bool LoadBrokerDB();
 
 enum DBErrors
 {

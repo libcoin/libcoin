@@ -11,6 +11,8 @@ using namespace std;
 using namespace boost;
 using namespace json_spirit;
 
+#define BTCBROKER "19bvWMvxddxbDrrN6kXZxqhZsApfVFDxB6"
+
 Value gettxmaturity(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
@@ -65,6 +67,7 @@ Object tx2json(CTx &tx)
     // scheme follows the scheme of blockexplorer:
     // "hash" : hash in hex
     // "ver" : vernum
+    uint256 hash = tx.GetHash();
     entry.push_back(Pair("hash", hash.ToString()));
     entry.push_back(Pair("ver", tx.nVersion));
     entry.push_back(Pair("vin_sz", uint64_t(tx.vin.size())));
@@ -319,6 +322,21 @@ CTx json2tx(Object entry)
     return tx;
 }
 
+int64 CalculateFee(CTx& tx)
+{
+    CTxDB txdb;
+    // calculate the inputs:
+    int64 value_in = 0;
+    for(int i = 0; i < tx.vin.size(); i++)
+    {
+        CTransaction txin;
+        txdb.ReadDiskTx(tx.vin[i].prevout.hash, txin);
+        value_in += txin.vout[tx.vin[i].prevout.n].nValue;
+    }
+    int64 value_out = tx.GetValueOut();
+    return value_out-value_in;
+}
+
 Value posttx(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
@@ -328,7 +346,53 @@ Value posttx(const Array& params, bool fHelp)
     
     Object entry = params[0].get_obj();
     
-    CTransaction tx = parseTx();
+    CTransaction tx = json2tx(entry);
+
+    // check transaction - if not a valid tx return error
+    if(!tx.CheckTransaction())
+        throw runtime_error("Transaction invalid failed basic checks");
+            
+    // check fee size - if too small return error
+    if(CalculateFee(tx) < tx.GetMinFee())
+    {
+        string error;
+        ostringstream err(error);
+        err << "Transaction fee of: " << CalculateFee(tx)*(1./COIN) << " less than minimum fee of: " << tx.GetMinFee()*(1./COIN) << " Transaction aborted";
+        throw runtime_error(error);        
+    }
+    
+    // check that the transaction contains a fee to me, the broker
+    uint160 btcbroker = CBitcoinAddress(BTCBROKER).GetHash160();
+    if(tx.paymentTo(btcbroker) < tx.GetMinFee())
+    {
+        string error;
+        ostringstream err(error);
+        err << "Transaction fee of: " << tx.paymentTo(btcbroker)*(1./COIN) << " less than minimum fee of: " << tx.GetMinFee()*(1./COIN) << " Transaction aborted";
+        throw runtime_error(error);        
+    }
+        
+    // accept to memory pool
+    if(!tx.AcceptToMemoryPool())
+    {
+        string error;
+        ostringstream err(error);
+        err << "Could not accept transaction - coins already spent?";
+        throw runtime_error(error);        
+    }
+
+    // post an inv telling about this tx
+    // we don't need to block on cs_main as this routine will be called _only_ by the RPC caller that already blocks on cs_main
+    if (!tx.IsCoinBase())
+    {
+        uint256 hash = tx.GetHash();
+        RelayMessage(CInv(MSG_TX, hash), tx);
+    }
+    
+    // save it to the broker db, from here it will be reposted later if needed
+    CBrokerDB brokerdb;
+    brokerdb.WriteTx(tx);
+    
+    return Value::null;
     
     // now we have read the transaction - we need verify and possibly post it to the p2p network
     // We create a fake node and pretend we got this from the network - this ensures that this is handled by the right thread...

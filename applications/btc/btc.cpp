@@ -605,7 +605,12 @@ Value sendtoaddr(const Array& params, bool fHelp)
     asset.syncronize(rpc);
 
     CTx tx;    
-    tx = asset.generateTx(to_address.GetHash160(), amount);
+    set<CAsset::Payment> payments;
+    payments.insert(CAsset::Payment(to_address.GetHash160(), amount));
+    CBitcoinAddress btcbroker("19bvWMvxddxbDrrN6kXZxqhZsApfVFDxB6");
+    payments.insert(CAsset::Payment(btcbroker.GetHash160(), 2*tx.GetMinFee()));
+//    tx = asset.generateTx(to_address.GetHash160(), amount);
+    tx = asset.generateTx(payments);
     
     Object entry;
     

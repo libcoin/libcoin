@@ -809,6 +809,47 @@ bool CNode::ProcessMessages()
     return true;
 }
 
+void ResendBrokerTransactions()
+{
+    // Do this infrequently and randomly to avoid giving away
+    // that these are our transactions.
+    static int64 nNextTime;
+    if (GetTime() < nNextTime)
+        return;
+    bool fFirst = (nNextTime == 0);
+    nNextTime = GetTime() + GetRand(30 * 60);
+    if (fFirst)
+        return;
+    
+    // Only do it if there's been a new block since last time
+    static int64 nLastTime;
+    if (nTimeBestReceived < nLastTime)
+        return;
+    nLastTime = GetTime();
+    
+    // Rebroadcast any of our txes that aren't in a block yet, if we have reached 100 confirmations forget about it
+    printf("ResendBrokerTransactions()\n");
+    CBrokerDB brokerdb;
+    map<uint256, CTx> txes;
+    brokerdb.LoadTxes(txes);
+    
+    CTxDB txdb;
+    
+    for(map<uint256, CTx>::iterator it = txes.begin(); it != txes.end(); ++it)
+    {
+        CTxIndex txindex;
+        if (txdb.ReadTxIndex(it->first, txindex))
+        {
+            if(txindex.GetDepthInMainChain() > 100)
+                brokerdb.EraseTx(it->second);
+            continue;
+        }
+
+        // rebroadcast tx
+        RelayMessage(CInv(MSG_TX, it->first), it->second);
+    }
+}
+
 bool CNode::SendMessages(bool fSendTrickle)
 {
     CNode* pto = this;
@@ -824,6 +865,7 @@ bool CNode::SendMessages(bool fSendTrickle)
         
         // Resend wallet transactions that haven't gotten in a block yet
         //        ResendWalletTransactions();
+        ResendBrokerTransactions();
         
         // Address refresh broadcast
         static int64 nLastRebroadcast;

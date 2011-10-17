@@ -365,6 +365,18 @@ public:
         return nValueOut;
     }
 
+    int64 paymentTo(uint160 btc) const
+    {
+        int64 value = 0;
+        BOOST_FOREACH(const CTxOut& txout, vout)
+        {
+            if(txout.getAsset() == btc)
+                value += txout.nValue;
+        }
+        
+        return value;
+    }
+    
     static bool AllowFree(double dPriority)
     {
         // Large (in bytes) low-priority (new, small-coin) transactions
