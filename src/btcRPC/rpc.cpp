@@ -500,6 +500,7 @@ string JSONRPCRequest(const string& strMethod, const Array& params, const Value&
 string JSONRPCReply(const Value& result, const Value& error, const Value& id)
 {
     Object reply;
+    reply.push_back(Pair("jsonrpc", "2.0"));
     if (error.type() != null_type)
         reply.push_back(Pair("result", Value::null));
     else

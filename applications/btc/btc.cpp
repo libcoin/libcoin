@@ -551,6 +551,71 @@ Value listaccnts(const Array& params, bool fHelp)
     return ret;
 }
 
+Value signhashwithkey(const Array& params, bool fHelp)
+{
+    if (pwalletMain->IsCrypted() && (fHelp || params.size() != 2))
+        throw runtime_error(
+                            "signhashwithkey <hash> <key>\n"
+                            "<amount> is a real and is rounded to the nearest 0.00000001\n"
+                            "requires wallet passphrase to be set with walletpassphrase first");
+    Array result;
+
+    uint256 hash(params[0].get_str());
+    vector<unsigned char> secret = ParseHex(params[1].get_str());
+    CSecret real_secret;
+    for(vector<unsigned char>::iterator i = secret.begin(); i != secret.end(); ++i)
+        real_secret.push_back(*i);
+    CKey key;
+    key.SetSecret(real_secret);
+
+    vector<unsigned char> signature;
+    key.Sign(hash, signature);
+    reverse(signature.begin(), signature.end());
+    signature.push_back(0);
+    CBigNum bn = CBigNum(signature);
+    
+    result.push_back(bn.GetHex());
+
+    result.push_back(key.GetAddress().ToString());
+    
+    return result;    
+}
+
+Value getprivatekeys(const Array& params, bool fHelp)
+{
+    if (pwalletMain->IsCrypted() && (fHelp || params.size() != 0))
+        throw runtime_error(
+                            "sendtoaddress <bitcoinaddress> <amount> [comment] [comment-to]\n"
+                            "<amount> is a real and is rounded to the nearest 0.00000001\n"
+                            "requires wallet passphrase to be set with walletpassphrase first");
+    Array result;
+    
+    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
+    {
+        const CBitcoinAddress& address = item.first;
+        CScript scriptPubKey;
+        scriptPubKey.SetBitcoinAddress(address);
+        if (!IsMine(*pwalletMain,scriptPubKey))
+            continue;
+        const string& label = item.second;
+    
+        CKey key;
+        pwalletMain->GetKey(address, key);
+        CSecret secret= key.GetSecret();
+        vector<unsigned char> whistle;
+        for (CSecret::iterator it = secret.begin(); it != secret.end(); ++it) {
+            whistle.push_back(*it); 
+        }
+        reverse(whistle.begin(),whistle.end());
+        if(whistle.size())
+            whistle.push_back(0);
+        CBigNum bn = CBigNum(whistle);
+        result.push_back(bn.GetHex());
+    }
+
+    return result;
+}
+
 Value sendtoaddr(const Array& params, bool fHelp)
 {
     if (pwalletMain->IsCrypted() && (fHelp || params.size() < 2 || params.size() > 4))
@@ -685,14 +750,15 @@ Object callRPC(const string& strMethod, const Array& params)
     SSLStream sslStream(io_service, context);
     SSLIOStreamDevice d(sslStream, fUseSSL);
     iostreams::stream<SSLIOStreamDevice> stream(d);
-    if (!d.connect("btc.ceptacle.com", "8332"))
-//    if (!d.connect("localhost", "9332"))
+//    if (!d.connect("btc.ceptacle.com", "8332"))
+    if (!d.connect("localhost", "9332"))
         throw runtime_error("couldn't connect to server");
 #else
     if (fUseSSL)
         throw runtime_error("-rpcssl=1, but bitcoin compiled without full openssl libraries.");
     
-    ip::tcp::iostream stream("btc.ceptacle.com", "8332");
+//    ip::tcp::iostream stream("btc.ceptacle.com", "8332");
+    ip::tcp::iostream stream("localhost", "9332");
     if (stream.fail())
         throw runtime_error("couldn't connect to server");
 #endif
@@ -760,6 +826,8 @@ int main(int argc, char* argv[])
     mapCallTable.insert(make_pair("listtransactions",       &listtransactions));
     mapCallTable.insert(make_pair("listaccounts",           &listaccnts));
     mapCallTable.insert(make_pair("settxfee",               &settxfee));
+    mapCallTable.insert(make_pair("getkeys",               &getprivatekeys));
+    mapCallTable.insert(make_pair("signhash",               &signhashwithkey));
     
     vector<string> args;
     do args.push_back(*(argv++)); while(--argc);

@@ -60,7 +60,7 @@ Value gettxmaturity(const Array& params, bool fHelp)
     return entry;
 }
 
-Object tx2json(CTx &tx)
+Object tx2json(CTx &tx, int64 timestamp = 0)
 {
     Object entry;
     
@@ -68,6 +68,7 @@ Object tx2json(CTx &tx)
     // "hash" : hash in hex
     // "ver" : vernum
     uint256 hash = tx.GetHash();
+    entry.push_back(Pair("timestamp", timestamp));
     entry.push_back(Pair("hash", hash.ToString()));
     entry.push_back(Pair("ver", tx.nVersion));
     entry.push_back(Pair("vin_sz", uint64_t(tx.vin.size())));
@@ -120,7 +121,18 @@ Value gettxdetails(const Array& params, bool fHelp)
     hash.SetHex(params[0].get_str());
     
     CTxDB txdb("r");
+
+    int64 timestamp = 0;
     
+    CTxIndex txindex;
+    if(txdb.ReadTxIndex(hash, txindex)) { // confirmation is 0, check the other maturity                                          // Read block header
+        CBlock block;
+        if (block.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos, false)) {
+        // Find the block in the index
+            timestamp = block.GetBlockTime();
+        }
+    }
+
     CTransaction tx;
     if(!txdb.ReadDiskTx(hash, tx))
     {
@@ -133,7 +145,7 @@ Value gettxdetails(const Array& params, bool fHelp)
         }
     }
     
-    Object entry = tx2json(tx);
+    Object entry = tx2json(tx, timestamp);
     
     return entry;    
 }
@@ -165,6 +177,11 @@ Value getdebit(const Array& params, bool fHelp)
         throw runtime_error(
                             "getdebit <btcaddr>\n"
                             "Get debit coins of <btcaddr>");
+    CBitcoinAddress addr = CBitcoinAddress(params[0].get_str());
+    if(!addr.IsValid())
+        throw runtime_error("getdebit <btcaddr>\n"
+                            "btcaddr invalid!");
+    
     uint160 hash160 = CBitcoinAddress(params[0].get_str()).GetHash160();
     
     CTxDB txdb("r");
@@ -194,10 +211,15 @@ Value getdebit(const Array& params, bool fHelp)
 Value getcredit(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
-        throw runtime_error(
-                            "getcredit <btcaddr>\n"
+        throw runtime_error("getcredit <btcaddr>\n"
                             "Get credit coins of <btcaddr>");
-    uint160 hash160 = CBitcoinAddress(params[0].get_str()).GetHash160();
+    
+    CBitcoinAddress addr = CBitcoinAddress(params[0].get_str());
+    if(!addr.IsValid())
+        throw runtime_error("getcredit <btcaddr>\n"
+                            "btcaddr invalid!");
+    uint160 hash160 = addr.GetHash160();
+        
     
     CTxDB txdb("r");
     
@@ -319,6 +341,9 @@ CTx json2tx(Object entry)
         tx.vout.push_back(txout);
     }
 
+    cout << tx.GetHash().ToString() << endl;
+    cout << find_value(entry, "hash").get_str() << endl;
+    
     return tx;
 }
 
@@ -330,11 +355,19 @@ int64 CalculateFee(CTx& tx)
     for(int i = 0; i < tx.vin.size(); i++)
     {
         CTransaction txin;
-        txdb.ReadDiskTx(tx.vin[i].prevout.hash, txin);
-        value_in += txin.vout[tx.vin[i].prevout.n].nValue;
+        txdb.ReadDiskTx(tx.vin[i].prevout.hash, txin); // OBS - you need to check also the MemoryPool...
+        if (txin.IsNull()) throw runtime_error("Referred transaction not known : " + tx.vin[i].prevout.hash.ToString());
+        if (tx.vin[i].prevout.n < txin.vout.size())
+            value_in += txin.vout[tx.vin[i].prevout.n].nValue;
+        else
+        {
+            ostringstream err;
+            err << "Referred index " << tx.vin[i].prevout.n << " too big. Transaction: " << tx.vin[i].prevout.hash.ToString() << "has only " << txin.vout.size() << " txouts.";
+            throw runtime_error(err.str());
+        }
     }
     int64 value_out = tx.GetValueOut();
-    return value_out-value_in;
+    return value_in-value_out;
 }
 
 Value posttx(const Array& params, bool fHelp)
@@ -347,6 +380,8 @@ Value posttx(const Array& params, bool fHelp)
     Object entry = params[0].get_obj();
     
     CTransaction tx = json2tx(entry);
+    
+    cout << write_formatted(tx2json(tx)) << endl;
 
     // check transaction - if not a valid tx return error
     if(!tx.CheckTransaction())
@@ -355,29 +390,29 @@ Value posttx(const Array& params, bool fHelp)
     // check fee size - if too small return error
     if(CalculateFee(tx) < tx.GetMinFee())
     {
-        string error;
-        ostringstream err(error);
+        ostringstream err;
         err << "Transaction fee of: " << CalculateFee(tx)*(1./COIN) << " less than minimum fee of: " << tx.GetMinFee()*(1./COIN) << " Transaction aborted";
-        throw runtime_error(error);        
+        cout << err.str() << endl;
+        throw runtime_error(err.str());        
     }
     
     // check that the transaction contains a fee to me, the broker
     uint160 btcbroker = CBitcoinAddress(BTCBROKER).GetHash160();
     if(tx.paymentTo(btcbroker) < tx.GetMinFee())
     {
-        string error;
-        ostringstream err(error);
+        ostringstream err;
         err << "Transaction fee of: " << tx.paymentTo(btcbroker)*(1./COIN) << " less than minimum fee of: " << tx.GetMinFee()*(1./COIN) << " Transaction aborted";
-        throw runtime_error(error);        
+        cout << err.str() << endl;
+        throw runtime_error(err.str());        
     }
         
     // accept to memory pool
     if(!tx.AcceptToMemoryPool())
     {
-        string error;
-        ostringstream err(error);
+        ostringstream err;
         err << "Could not accept transaction - coins already spent?";
-        throw runtime_error(error);        
+        cout << err.str() << endl;
+        throw runtime_error(err.str());        
     }
 
     // post an inv telling about this tx
