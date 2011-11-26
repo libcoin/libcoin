@@ -700,20 +700,23 @@ void ThreadRPCServer2(void* parg)
         }
 
         // Check authorization
-        if (mapHeaders.count("authorization") == 0)
-        {
-            stream << HTTPReply(401, "") << std::flush;
-            continue;
-        }
-        if (!HTTPAuthorized(mapHeaders))
-        {
-            // Deter brute-forcing short passwords
-            if (mapArgs["-rpcpassword"].size() < 15)
-                Sleep(50);
-
-            stream << HTTPReply(401, "") << std::flush;
-            printf("ThreadRPCServer incorrect password attempt\n");
-            continue;
+        if(mapArgs.count("-rpcuser") + mapArgs.count("-rpcpassword") > 0) {
+            if (mapHeaders.count("authorization") == 0)
+                {
+                stream << HTTPReply(401, "") << std::flush;
+                continue;
+                }
+            if (!HTTPAuthorized(mapHeaders))
+                {
+                // Deter brute-forcing short passwords
+                if (mapArgs["-rpcpassword"].size() < 15)
+                    Sleep(50);
+                
+                stream << HTTPReply(401, "") << std::flush;
+                printf("ThreadRPCServer incorrect password attempt\n");
+                continue;
+                }
+            
         }
 
         Value id = Value::null;
@@ -792,11 +795,11 @@ void ThreadRPCServer2(void* parg)
 
 Object CallRPC(const string& strMethod, const Array& params)
 {
-    if (mapArgs["-rpcuser"] == "" && mapArgs["-rpcpassword"] == "")
-        throw runtime_error(strprintf(
-            _("You must set rpcpassword=<password> in the configuration file:\n%s\n"
-              "If the file does not exist, create it with owner-readable-only file permissions."),
-                GetConfigFile().c_str()));
+    //    if (mapArgs["-rpcuser"] == "" && mapArgs["-rpcpassword"] == "")
+    //    throw runtime_error(strprintf(
+    //        _("You must set rpcpassword=<password> in the configuration file:\n%s\n"
+    //          "If the file does not exist, create it with owner-readable-only file permissions."),
+    //            GetConfigFile().c_str()));
 
     // Connect to localhost
     bool fUseSSL = GetBoolArg("-rpcssl");
@@ -820,9 +823,11 @@ Object CallRPC(const string& strMethod, const Array& params)
 
 
     // HTTP basic authentication
-    string strUserPass64 = EncodeBase64(mapArgs["-rpcuser"] + ":" + mapArgs["-rpcpassword"]);
     map<string, string> mapRequestHeaders;
-    mapRequestHeaders["Authorization"] = string("Basic ") + strUserPass64;
+    if(mapArgs.count("-rpcuser")+mapArgs.count("-rpcuser")>0) {
+        string strUserPass64 = EncodeBase64(mapArgs["-rpcuser"] + ":" + mapArgs["-rpcpassword"]);
+        mapRequestHeaders["Authorization"] = string("Basic ") + strUserPass64;
+    }
 
     // Send request
     string strRequest = JSONRPCRequest(strMethod, params, 1);

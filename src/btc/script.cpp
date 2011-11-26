@@ -938,6 +938,18 @@ uint256 SignatureHash(CScript scriptCode, const CTx& txTo, unsigned int nIn, int
     CDataStream ss(SER_GETHASH);
     ss.reserve(10000);
     ss << txTmp << nHashType;
+
+    /*
+    CDataStream sss(SER_GETHASH, VERSION);
+    sss.reserve(10000);
+    sss << txTmp;
+    
+    for(int i = 0; i < sss.size(); i++)
+        cout << (int)(unsigned char)sss[i] << ",";
+    cout << endl;
+    cout << endl;
+    cout << endl;
+    */
     return Hash(ss.begin(), ss.end());
 }
 

@@ -60,7 +60,7 @@ Value gettxmaturity(const Array& params, bool fHelp)
     return entry;
 }
 
-Object tx2json(CTx &tx, int64 timestamp = 0)
+Object tx2json(CTx &tx, int64 timestamp = 0, int64 blockheight = 0)
 {
     Object entry;
     
@@ -69,6 +69,7 @@ Object tx2json(CTx &tx, int64 timestamp = 0)
     // "ver" : vernum
     uint256 hash = tx.GetHash();
     entry.push_back(Pair("timestamp", timestamp));
+    entry.push_back(Pair("blockheight", blockheight));
     entry.push_back(Pair("hash", hash.ToString()));
     entry.push_back(Pair("ver", tx.nVersion));
     entry.push_back(Pair("vin_sz", uint64_t(tx.vin.size())));
@@ -123,9 +124,12 @@ Value gettxdetails(const Array& params, bool fHelp)
     CTxDB txdb("r");
 
     int64 timestamp = 0;
+    int64 blockheight = 0;
     
     CTxIndex txindex;
-    if(txdb.ReadTxIndex(hash, txindex)) { // confirmation is 0, check the other maturity                                          // Read block header
+    if(txdb.ReadTxIndex(hash, txindex)) { // Read block header
+        blockheight = 1 + nBestHeight - txindex.GetDepthInMainChain();
+
         CBlock block;
         if (block.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos, false)) {
         // Find the block in the index
@@ -144,8 +148,17 @@ Value gettxdetails(const Array& params, bool fHelp)
                 throw JSONRPCError(-5, "Invalid transaction id");        
         }
     }
+/*    
+    CDataStream ss(SER_GETHASH, VERSION);
+    ss.reserve(10000);
+    ss << tx;
+
+    for(int i = 0; i < ss.size(); i++)
+        cout << (int)(unsigned char)ss[i] << ",";
+    cout << endl;
+*/    
     
-    Object entry = tx2json(tx, timestamp);
+    Object entry = tx2json(tx, timestamp, blockheight);
     
     return entry;    
 }
@@ -323,7 +336,7 @@ CTx json2tx(Object entry)
         double dvalue;
         ivs >> dvalue;
         dvalue *= COIN;
-        int64 value = dvalue;
+        int64 value = floor(dvalue+0.1);
         CScript scriptPubkey;
         string sscript = find_value(out, "scriptPubKey").get_str();
         // traverse through the vector and pushback opcodes and values
