@@ -14,5 +14,7 @@ json_spirit::Value getdebit(const json_spirit::Array& params, bool fHelp);
 json_spirit::Value getcredit(const json_spirit::Array& params, bool fHelp);
 json_spirit::Value getcoins(const json_spirit::Array& params, bool fHelp);
 json_spirit::Value posttx(const json_spirit::Array& params, bool fHelp);
+json_spirit::Value checkvalue(const json_spirit::Array& params, bool fHelp);
+
 
 #endif

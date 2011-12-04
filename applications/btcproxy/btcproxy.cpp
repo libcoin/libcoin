@@ -192,6 +192,7 @@ bool AppInit2(int argc, char* argv[])
     mapCallTable.insert(make_pair("getcoins",               &getcoins));
     mapCallTable.insert(make_pair("gettxdetails",           &gettxdetails));
     mapCallTable.insert(make_pair("posttx",                 &posttx));
+    mapCallTable.insert(make_pair("checkvalue",                 &checkvalue));
 
     setAllowInSafeMode.insert("gettxmaturity");
     setAllowInSafeMode.insert("getvalue");
@@ -200,6 +201,7 @@ bool AppInit2(int argc, char* argv[])
     setAllowInSafeMode.insert("getcoins");
     setAllowInSafeMode.insert("gettxdetails");
     setAllowInSafeMode.insert("posttx");
+    setAllowInSafeMode.insert("checkvalue");
       
     
     //

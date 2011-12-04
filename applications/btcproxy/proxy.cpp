@@ -13,6 +13,41 @@ using namespace json_spirit;
 
 #define BTCBROKER "19bvWMvxddxbDrrN6kXZxqhZsApfVFDxB6"
 
+double reliability(uint256 hash) {
+    unsigned int confirmations, known_in_nodes, n_nodes;
+    CTxDB txdb("r");
+    
+    CTxIndex txindex;
+    if(!txdb.ReadTxIndex(hash, txindex)) { // confirmation is 0, check the other maturity
+        confirmations = 0;
+        CInv inv(MSG_TX, hash);
+        CRITICAL_BLOCK(cs_vNodes)
+            {
+            n_nodes = vNodes.size();
+            known_in_nodes = 0;
+            for(int n = 0; n < n_nodes; n++)
+                {
+                CRITICAL_BLOCK(vNodes[n]->cs_inventory)
+                if(vNodes[n]->setInventoryKnown.count(inv))
+                    known_in_nodes++;
+                }
+            }
+    }
+    else {
+        n_nodes = vNodes.size();
+        known_in_nodes = 0;
+        // now get # block the tx is in.
+        confirmations = txindex.GetDepthInMainChain();
+    }
+    
+    if(confirmations > 0)
+        return confirmations;
+    else if(n_nodes > 50) // require at least 50 nodes!
+        return 1./n_nodes * known_in_nodes;
+    else
+        return 0.;        
+}
+
 Value gettxmaturity(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
@@ -182,6 +217,105 @@ Value getvalue(const Array& params, bool fHelp)
     Value val(balance);
     
     return val;
+}
+
+Value checkvalue(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() < 1 || params.size() > 4)
+        throw runtime_error(
+                            "checkvalue <btcaddr> [[[<within>] <amount>] <confirmation>]\n"
+                            "check the value of a bitcoin address, <within> seconds, get confirmations of specific <amount> or get a true/false of a minimum confirmation level");
+
+    // parse the input
+    CBitcoinAddress addr = CBitcoinAddress(params[0].get_str());
+    if(!addr.IsValid())
+        throw runtime_error("getdebit <btcaddr>\n"
+                            "btcaddr invalid!");
+    uint160 hash160 = addr.GetHash160();
+    
+    int within = 0;
+    if(params.size() > 1)
+        within = params[1].get_int();
+        
+    uint64 amount = 0;
+    if(params.size() > 2)
+        amount = params[2].get_uint64();
+    
+    double confirmation = 0;
+    if(params.size() > 3)
+        confirmation = params[3].get_real();
+    
+    // now we have a all the params - we need to do some querying
+
+    CAsset asset;
+    asset.addAddress(hash160); // only one address in this asset
+    CTxDB txdb;
+    CDBAssetSyncronizer sync(txdb);
+    asset.syncronize(sync, true); // we now have all tx'es (incl those in memory! - we need to sort them according to time)
+    
+    Coins coins = asset.getCoins();
+    Coins coins_within; // this is the set of coins within <within> seconds
+    int64 now = GetTime();
+    if(within > 0) { // we only want a subset
+        for(Coins::iterator coin = coins.begin(); coin != coins.end(); ++coin) {
+            // now get the txes belonging to this coin!
+            CTxIndex txindex;
+            if(txdb.ReadTxIndex(coin->first, txindex)) { // Read block header
+                int blockheight = 1 + nBestHeight - txindex.GetDepthInMainChain();
+                int64 timestamp = 0;
+                CBlock block;
+                if (block.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos, false)) {
+                    // Find the block in the index
+                    timestamp = block.GetBlockTime();
+                }
+                else
+                    continue;
+                cout << now-timestamp << endl;
+                if(now-timestamp < within)
+                    coins_within.insert(*coin);
+                else
+                    continue;
+            }
+            else { // this is a memory tx
+                   // does memory txes have a timestamp ? // nope - until we have a proper interface we will assume that all keys in memory are within the timeinterval (which should hence be larger than 10 minutes...)
+                if(mapTransactions.count(coin->first)) {
+                    coins_within.insert(*coin);
+                }
+                else
+                    continue;
+                
+            }
+        }
+    }
+    else {
+        for(Coins::iterator coin = coins.begin(); coin != coins.end(); ++coin)
+            coins_within.insert(*coin);
+    }
+    
+    // now find the balance for the set of coins_within
+    int64 balance = 0;
+    double min_reliability = HUGE;// coins_within.size() ? reliability(coins_within.begin()->first) : 0;
+    for(Coins::iterator coin = coins_within.begin(); coin != coins_within.end(); ++coin) {
+        balance += asset.value(*coin);
+        min_reliability = min(min_reliability, reliability(coin->first));
+    }
+
+    if(balance < amount) min_reliability = 0;
+    
+    Object obj;
+    Value reliable;
+    switch (params.size()) {
+        case 1: // implicitly the same as within "forever"
+        case 2:
+            obj.push_back(Pair("balance", balance));
+        case 3:
+            obj.push_back(Pair("reliability", min_reliability));
+            return obj;
+            break;
+        case 4:
+            reliable = (bool) (min_reliability > confirmation);
+            return reliable;
+    }
 }
 
 Value getdebit(const Array& params, bool fHelp)
