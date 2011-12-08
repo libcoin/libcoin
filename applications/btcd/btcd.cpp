@@ -536,11 +536,24 @@ bool AppInit2(int argc, char* argv[])
     if (!CreateThread(StartNode, NULL))
         wxMessageBox("Error: CreateThread(StartNode) failed", "Bitcoin");
 
+    // startup the node
+    // Node n(db_location, accept_incoming_connections, use_upnp...);
+    // n.start(); // now n runs in a thread communicating with other peers, and with the database
+    // Node exposes an interface: 
+    //  bestHeight()
+    //  postTransaction(..)
+    //  getCredits(..)
+    //  getDebits(..)
+    //  getTransaction(..)
+    //  registerNotification(..)
+    //  other ?
+    
     try {
-        // Initialise the server.
+        // Initialise the HTTP Server.
         
         Server s("0.0.0.0", "9332", filesystem::initial_path().string());
-        s.registerMethod(method_ptr(new GetDebit));
+        // register some kind of exit handler from n
+        s.registerMethod(method_ptr(new GetDebit)); // should be GetDebit(n)
         s.registerMethod(method_ptr(new GetCredit));
         s.registerMethod(method_ptr(new GetTxDetails));        
         
@@ -566,6 +579,8 @@ bool AppInit2(int argc, char* argv[])
     catch (...) {
         cerr << "HTTP Server exception: " << endl;
     }
+
+    // kill the node!
     
     return true;
 }

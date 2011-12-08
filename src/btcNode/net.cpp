@@ -74,7 +74,6 @@ bool fClient = false;
 bool fAllowDNS = false;
 uint64 nLocalServices = (fClient ? 0 : NODE_NETWORK);
 CAddress addrLocalHost("0.0.0.0", 0, false, nLocalServices);
-static CNode* pnodeLocalHost = NULL;
 uint64 nLocalHostNonce = 0;
 array<int, 10> vnThreadsRunning;
 static SOCKET hListenSocket = INVALID_SOCKET;
@@ -1477,111 +1476,6 @@ void AddressCurrentlyConnected(const CAddress& addr)
     }
 }
 
-
-
-
-
-void AbandonRequests(void (*fn)(void*, CDataStream&), void* param1)
-{
-    // If the dialog might get closed before the reply comes back,
-    // call this in the destructor so it doesn't get called after it's deleted.
-    CRITICAL_BLOCK(cs_vNodes)
-    {
-        BOOST_FOREACH(CNode* pnode, vNodes)
-        {
-            CRITICAL_BLOCK(pnode->cs_mapRequests)
-            {
-                for (map<uint256, CRequestTracker>::iterator mi = pnode->mapRequests.begin(); mi != pnode->mapRequests.end();)
-                {
-                    CRequestTracker& tracker = (*mi).second;
-                    if (tracker.fn == fn && tracker.param1 == param1)
-                        pnode->mapRequests.erase(mi++);
-                    else
-                        mi++;
-                }
-            }
-        }
-    }
-}
-
-
-
-
-
-
-
-//
-// Subscription methods for the broadcast and subscription system.
-// Channel numbers are message numbers, i.e. MSG_TABLE and MSG_PRODUCT.
-//
-// The subscription system uses a meet-in-the-middle strategy.
-// With 100,000 nodes, if senders broadcast to 1000 random nodes and receivers
-// subscribe to 1000 random nodes, 99.995% (1 - 0.99^1000) of messages will get through.
-//
-
-bool AnySubscribed(unsigned int nChannel)
-{
-    if (pnodeLocalHost->IsSubscribed(nChannel))
-        return true;
-    CRITICAL_BLOCK(cs_vNodes)
-        BOOST_FOREACH(CNode* pnode, vNodes)
-            if (pnode->IsSubscribed(nChannel))
-                return true;
-    return false;
-}
-
-bool CNode::IsSubscribed(unsigned int nChannel)
-{
-    if (nChannel >= vfSubscribe.size())
-        return false;
-    return vfSubscribe[nChannel];
-}
-
-void CNode::Subscribe(unsigned int nChannel, unsigned int nHops)
-{
-    if (nChannel >= vfSubscribe.size())
-        return;
-
-    if (!AnySubscribed(nChannel))
-    {
-        // Relay subscribe
-        CRITICAL_BLOCK(cs_vNodes)
-            BOOST_FOREACH(CNode* pnode, vNodes)
-                if (pnode != this)
-                    pnode->PushMessage("subscribe", nChannel, nHops);
-    }
-
-    vfSubscribe[nChannel] = true;
-}
-
-void CNode::CancelSubscribe(unsigned int nChannel)
-{
-    if (nChannel >= vfSubscribe.size())
-        return;
-
-    // Prevent from relaying cancel if wasn't subscribed
-    if (!vfSubscribe[nChannel])
-        return;
-    vfSubscribe[nChannel] = false;
-
-    if (!AnySubscribed(nChannel))
-    {
-        // Relay subscription cancel
-        CRITICAL_BLOCK(cs_vNodes)
-            BOOST_FOREACH(CNode* pnode, vNodes)
-                if (pnode != this)
-                    pnode->PushMessage("sub-cancel", nChannel);
-    }
-}
-
-
-
-
-
-
-
-
-
 CNode* FindNode(unsigned int ip)
 {
     CRITICAL_BLOCK(cs_vNodes)
@@ -1677,29 +1571,6 @@ void CNode::CloseSocketDisconnect()
     }
 }
 
-void CNode::Cleanup()
-{
-    // All of a nodes broadcasts and subscriptions are automatically torn down
-    // when it goes down, so a node has to stay up to keep its broadcast going.
-
-    // Cancel subscriptions
-    for (unsigned int nChannel = 0; nChannel < vfSubscribe.size(); nChannel++)
-        if (vfSubscribe[nChannel])
-            CancelSubscribe(nChannel);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
 void ThreadSocketHandler(void* parg)
 {
     IMPLEMENT_RANDOMIZE_STACK(ThreadSocketHandler(parg));
@@ -1744,7 +1615,7 @@ void ThreadSocketHandler2(void* parg)
 
                     // close socket and cleanup
                     pnode->CloseSocketDisconnect();
-                    pnode->Cleanup();
+                //                    pnode->Cleanup();
 
                     // hold in disconnected pool until all refs are released
                     pnode->nReleaseTime = max(pnode->nReleaseTime, GetTime() + 15 * 60);
@@ -2597,9 +2468,6 @@ bool BindListenPort(string& strError)
 
 void StartNode(void* parg)
 {
-    if (pnodeLocalHost == NULL)
-        pnodeLocalHost = new CNode(INVALID_SOCKET, CAddress("127.0.0.1", 0, false, nLocalServices));
-
 #ifdef _WIN32
     // Get local host ip
     char pszHostName[1000] = "";
@@ -2718,27 +2586,3 @@ bool StopNode()
 
     return true;
 }
-
-class CNetCleanup
-{
-public:
-    CNetCleanup()
-    {
-    }
-    ~CNetCleanup()
-    {
-        // Close sockets
-        BOOST_FOREACH(CNode* pnode, vNodes)
-            if (pnode->hSocket != INVALID_SOCKET)
-                closesocket(pnode->hSocket);
-        if (hListenSocket != INVALID_SOCKET)
-            if (closesocket(hListenSocket) == SOCKET_ERROR)
-                printf("closesocket(hListenSocket) failed with error %d\n", WSAGetLastError());
-
-#ifdef _WIN32
-        // Shutdown Windows Sockets
-        WSACleanup();
-#endif
-    }
-}
-instance_of_cnetcleanup;
