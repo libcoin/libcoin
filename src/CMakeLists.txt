@@ -10,7 +10,7 @@ ENDIF()
 FOREACH( mylibfolder 
         btc
         btcNode 
-        btcRPC 
+        btcHTTP
         btcWallet 
 #        btcMine 
     )

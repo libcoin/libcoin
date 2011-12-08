@@ -3,9 +3,12 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 #include "btcNode/db.h"
-#include "btcRPC/rpc.h"
 
 #include "btc/asset.h"
+
+#include "btcHTTP/RPC.h"
+
+#include "proxy.h"
 
 using namespace std;
 using namespace boost;
@@ -146,8 +149,8 @@ Object tx2json(CTx &tx, int64 timestamp = 0, int64 blockheight = 0)
     return entry;
 }
 
-Value gettxdetails(const Array& params, bool fHelp)
-{
+Value GetTxDetails::operator()(const Array& params, bool fHelp) {
+
     if (fHelp || params.size() != 1)
         throw runtime_error(
                             "gettxdetails <txhash>\n"
@@ -180,7 +183,7 @@ Value gettxdetails(const Array& params, bool fHelp)
             if(mapTransactions.count(hash))
                 tx = mapTransactions[hash];
             else
-                throw JSONRPCError(-5, "Invalid transaction id");        
+                throw RPC::error(RPC::invalid_params, "Invalid transaction id");        
         }
     }
 /*    
@@ -318,8 +321,8 @@ Value checkvalue(const Array& params, bool fHelp)
     }
 }
 
-Value getdebit(const Array& params, bool fHelp)
-{
+Value GetDebit::operator()(const Array& params, bool fHelp) {
+
     if (fHelp || params.size() != 1)
         throw runtime_error(
                             "getdebit <btcaddr>\n"
@@ -355,8 +358,8 @@ Value getdebit(const Array& params, bool fHelp)
     return list;
 }
 
-Value getcredit(const Array& params, bool fHelp)
-{
+Value GetCredit::operator()(const Array& params, bool fHelp) {
+
     if (fHelp || params.size() != 1)
         throw runtime_error("getcredit <btcaddr>\n"
                             "Get credit coins of <btcaddr>");

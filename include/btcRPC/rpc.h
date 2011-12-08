@@ -12,6 +12,8 @@
 #include <map>
 #include <string>
 
+// need a class that is the server, and some classes for the rpc/post and get requests - it is an HTTP service/handler
+
 typedef json_spirit::Value(*rpcfn_type)(const json_spirit::Array& params, bool fHelp);
 
 extern std::set<std::string> setAllowInSafeMode;

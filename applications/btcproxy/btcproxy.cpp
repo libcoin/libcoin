@@ -8,7 +8,7 @@
 #include "btcNode/db.h"
 #include "btcNode/net.h"
 
-#include "btcRPC/rpc.h"
+#include "btcHTTP/Server.h"
 
 #include "proxy.h"
 
@@ -16,6 +16,7 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/interprocess/sync/file_lock.hpp>
 
+#include <exception>
 #include <signal.h>
 
 using namespace std;
@@ -180,29 +181,6 @@ bool AppInit2(int argc, char* argv[])
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGHUP, &sa, NULL);
 #endif
-
-    //
-    // Add proxy functions to RPC
-    //
-        
-    mapCallTable.insert(make_pair("gettxmaturity",          &gettxmaturity));
-    mapCallTable.insert(make_pair("getvalue",               &getvalue));
-    mapCallTable.insert(make_pair("getdebit",               &getdebit));
-    mapCallTable.insert(make_pair("getcredit",              &getcredit));
-    mapCallTable.insert(make_pair("getcoins",               &getcoins));
-    mapCallTable.insert(make_pair("gettxdetails",           &gettxdetails));
-    mapCallTable.insert(make_pair("posttx",                 &posttx));
-    mapCallTable.insert(make_pair("checkvalue",                 &checkvalue));
-
-    setAllowInSafeMode.insert("gettxmaturity");
-    setAllowInSafeMode.insert("getvalue");
-    setAllowInSafeMode.insert("getdebit");
-    setAllowInSafeMode.insert("getcredit");
-    setAllowInSafeMode.insert("getcoins");
-    setAllowInSafeMode.insert("gettxdetails");
-    setAllowInSafeMode.insert("posttx");
-    setAllowInSafeMode.insert("checkvalue");
-      
     
     //
     // Parameters
@@ -324,12 +302,6 @@ bool AppInit2(int argc, char* argv[])
     for (int i = 1; i < argc; i++)
         if (!IsSwitchChar(argv[i][0]))
             fCommandLine = true;
-
-    if (fCommandLine)
-    {
-        int ret = CommandLineRPC(argc, argv);
-        exit(ret);
-    }
 
 #ifndef _WIN32
     if (fDaemon)
@@ -556,14 +528,6 @@ bool AppInit2(int argc, char* argv[])
 #endif
     }
 
-    //
-    // Create the main window and start the node
-    //
-#ifdef GUI
-    if (!fDaemon)
-        CreateMainWindow();
-#endif
-
     if (!CheckDiskSpace())
         return false;
 
@@ -572,18 +536,36 @@ bool AppInit2(int argc, char* argv[])
     if (!CreateThread(StartNode, NULL))
         wxMessageBox("Error: CreateThread(StartNode) failed", "Bitcoin");
 
-    if (fServer)
-        CreateThread(ThreadRPCServer, NULL);
-
-#if defined(_WIN32) && defined(GUI)
-    if (fFirstRun)
-        SetStartOnSystemStartup(true);
-#endif
-
-#ifndef GUI
-    while (1)
-        Sleep(5000);
-#endif
-
+    try {
+        // Initialise the server.
+        
+        Server s("0.0.0.0", "9332", filesystem::initial_path().string());
+        s.registerMethod(method_ptr(new GetDebit));
+        s.registerMethod(method_ptr(new GetCredit));
+        s.registerMethod(method_ptr(new GetTxDetails));        
+        
+        /*
+         mapCallTable.insert(make_pair("gettxmaturity",          &gettxmaturity));
+         mapCallTable.insert(make_pair("getvalue",               &getvalue));
+         //    mapCallTable.insert(make_pair("getdebit",               &getdebit));
+         //    mapCallTable.insert(make_pair("getcredit",              &getcredit));
+         mapCallTable.insert(make_pair("getcoins",               &getcoins));
+         //    mapCallTable.insert(make_pair("gettxdetails",           &gettxdetails));
+         mapCallTable.insert(make_pair("posttx",                 &posttx));
+         mapCallTable.insert(make_pair("checkvalue",                 &checkvalue));
+*/
+        
+        printf("ThreadProxyServer started\n");
+        
+        // Run the server until stopped.
+        s.run();
+    }
+    catch (std::exception& e) {
+        cerr << "HTTP Server exception: " << e.what() << endl;
+    }
+    catch (...) {
+        cerr << "HTTP Server exception: " << endl;
+    }
+    
     return true;
 }

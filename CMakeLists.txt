@@ -27,7 +27,7 @@ if(COMMAND cmake_policy)
     endif()
 endif()
 
-PROJECT(bitcoin)
+PROJECT(btc)
 
 SET(BITCOIN_MAJOR_VERSION 0)
 SET(BITCOIN_MINOR_VERSION 4)
@@ -76,14 +76,14 @@ IF(BTC_BUILD_PLATFORM_ANDROID)
     SET(J  "4" CACHE STRING "how many processes for make -j <J>")
 
     ADD_CUSTOM_COMMAND(
-        OUTPUT    Android-bitcoin
+        OUTPUT    Android-btc
         DEPENDS   ${CMAKE_BINARY_DIR}/Android.mk
         COMMAND   "${ANDROID_NDK}/ndk-build" 
         ARGS      --directory=${CMAKE_BINARY_DIR} NDK_APPLICATION_MK=Application.mk -j${J} NDK_LOG=1
     )
 
     ADD_CUSTOM_TARGET(ndk ALL echo
-          DEPENDS Android-bitcoin
+          DEPENDS Android-btc
     )
     install(DIRECTORY include/ DESTINATION include/
         PATTERN ".svn" EXCLUDE
@@ -120,20 +120,20 @@ IF(CMAKE_SYSTEM MATCHES IRIX)
     SET(CMAKE_THREAD_LIBS_INIT "" CACHE INTERNAL "")
 ENDIF()
 
-OPTION(BTC_MAINTAINER "Enable bitcoin maintainer build methods, such as making svn branches, tags, updating ChangeLog." OFF)
+OPTION(BTC_MAINTAINER "Enable btc maintainer build methods, such as making svn branches, tags, updating ChangeLog." OFF)
 IF (BTC_MAINTAINER)
 
     #SET(BITCOIN_SVN "trunk")
     SET(BITCOIN_SVN "branches")
-    SET(BITCOIN_BRANCH bitcoin-${BITCOIN_MAJOR_VERSION}.${BITCOIN_MINOR_VERSION})
+    SET(BITCOIN_BRANCH btc-${BITCOIN_MAJOR_VERSION}.${BITCOIN_MINOR_VERSION})
 
     #
     # Provide target for tagging a release
     #
     SET(SVNCOMMAND svn)
-    SET(SVNTRUNKDIR     http://www.bitcoin.org/svn/btc/bitcoin/trunk)
-    SET(SVNTAGDIR       http://www.bitcoin.org/svn/btc/bitcoin/tags)
-    SET(SVNBRANCHDIR    http://www.bitcoin.org/svn/btc/bitcoin/branches)
+    SET(SVNTRUNKDIR     http://www.bitcoin.org/svn/btc/btc/trunk)
+    SET(SVNTAGDIR       http://www.bitcoin.org/svn/btc/btc/tags)
+    SET(SVNBRANCHDIR    http://www.bitcoin.org/svn/btc/btc/branches)
 
     IF   (BITCOIN_SVN STREQUAL "trunk")
         SET(SVNSOURCEDIR ${SVNTRUNKDIR})
@@ -143,9 +143,9 @@ IF (BTC_MAINTAINER)
 
 
     IF   (BITCOIN_RELEASE_CANDIDATE EQUAL 0)
-        SET(RELEASE_NAME bitcoin-${BITCOIN_VERSION})
+        SET(RELEASE_NAME btc-${BITCOIN_VERSION})
     ELSE()
-        SET(RELEASE_NAME bitcoin-${BITCOIN_VERSION}-rc${BITCOIN_RELEASE_CANDIDATE})
+        SET(RELEASE_NAME btc-${BITCOIN_VERSION}-rc${BITCOIN_RELEASE_CANDIDATE})
     ENDIF()
 
 
@@ -259,7 +259,7 @@ IF(WIN32 AND NOT ANDROID)
 
     IF(MSVC)
         # This option is to enable the /MP switch for Visual Studio 2005 and above compilers
-        OPTION(WIN32_USE_MP "Set to ON to build bitcoin with the /MP option (Visual Studio 2005 and above)." OFF)
+        OPTION(WIN32_USE_MP "Set to ON to build btc with the /MP option (Visual Studio 2005 and above)." OFF)
         MARK_AS_ADVANCED(WIN32_USE_MP)
         IF(WIN32_USE_MP)
             SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
@@ -273,7 +273,7 @@ IF(WIN32 AND NOT ANDROID)
         # This option is to enable the /DYNAMICBASE switch
         # It is used to workaround a bug in Windows 7 when linking in release, which results in corrupt
         # binaries. See this page for details: http://www.wintellect.com/CS/blogs/jrobbins/archive/2009/01/24/the-case-of-the-corrupt-pe-binaries.aspx
-        OPTION(WIN32_USE_DYNAMICBASE "Set to ON to build bitcoin with the /DYNAMICBASE option to work around a bug when linking release executables on Windows 7." OFF)
+        OPTION(WIN32_USE_DYNAMICBASE "Set to ON to build btc with the /DYNAMICBASE option to work around a bug when linking release executables on Windows 7." OFF)
         MARK_AS_ADVANCED(WIN32_USE_DYNAMICBASE)
         IF(WIN32_USE_DYNAMICBASE)
             SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DYNAMICBASE")
@@ -323,9 +323,9 @@ IF(WIN32 AND NOT ANDROID)
             SET(BTC_MSVC_VERSIONED_DLL OFF)
             SET(BTC_MSVC_DEBUG_INCREMENTAL_LINK ON)
         ELSE()
-            OPTION(BTC_MSVC_VERSIONED_DLL "Set to ON to build bitcoin with versioned dll names" ON)
+            OPTION(BTC_MSVC_VERSIONED_DLL "Set to ON to build btc with versioned dll names" ON)
             MARK_AS_ADVANCED(BTC_MSVC_VERSIONED_DLL)
-            OPTION(BTC_MSVC_DEBUG_INCREMENTAL_LINK "Set to OFF to build bitcoin without incremental linking in debug (release is off by default)" ON)
+            OPTION(BTC_MSVC_DEBUG_INCREMENTAL_LINK "Set to OFF to build btc without incremental linking in debug (release is off by default)" ON)
             MARK_AS_ADVANCED(BTC_MSVC_DEBUG_INCREMENTAL_LINK)
             IF(NOT BTC_MSVC_DEBUG_INCREMENTAL_LINK)
                 SET(CMAKE_MODULE_LINKER_FLAGS_DEBUG "/debug /INCREMENTAL:NO")
@@ -385,8 +385,8 @@ CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/btc/version.in"
 # Set Version Info resource file
 
 IF(MSVC)
-    SET(BITCOIN_VERSIONINFO_RC "${PROJECT_BINARY_DIR}/PlatformSpecifics/Windows/bitcoinVersionInfo.rc")
-    CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/PlatformSpecifics/Windows/bitcoinVersionInfo.rc.in"
+    SET(BITCOIN_VERSIONINFO_RC "${PROJECT_BINARY_DIR}/PlatformSpecifics/Windows/btcVersionInfo.rc")
+    CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/PlatformSpecifics/Windows/btcVersionInfo.rc.in"
                    "${BITCOIN_VERSIONINFO_RC}")
 ENDIF()
 
@@ -394,7 +394,7 @@ ENDIF()
 # Optional build components
 
 # BTC Applications
-OPTION(BUILD_BTC_APPLICATIONS "Enable to build BTC Applications (e.g. bitcoind)" ON)
+OPTION(BUILD_BTC_APPLICATIONS "Enable to build BTC Applications (e.g. btcd)" ON)
 
 # BTC Examples
 OPTION(BUILD_BTC_EXAMPLES "Enable to build BTC Examples" OFF)
@@ -562,10 +562,10 @@ ELSE()
     ENDIF(VALID_BUILDER_VERSION)
 ENDIF()
 
-#SET(INSTALL_BINDIR bitcoin/bin)
-#SET(INSTALL_INCDIR bitcoin/include)
-#SET(INSTALL_LIBDIR bitcoin/lib)
-#SET(INSTALL_DOCDIR bitcoin/doc)
+#SET(INSTALL_BINDIR btc/bin)
+#SET(INSTALL_INCDIR btc/include)
+#SET(INSTALL_LIBDIR btc/lib)
+#SET(INSTALL_DOCDIR btc/doc)
 
 ################################################################################
 # User Options
@@ -655,7 +655,7 @@ ENDIF()
 
 
 # Dynamic vs Static Linking
-OPTION(DYNAMIC_BITCOIN "Set to ON to build bitcoin for dynamic linking.  Use OFF for static." ON)
+OPTION(DYNAMIC_BITCOIN "Set to ON to build btc for dynamic linking.  Use OFF for static." ON)
 IF   (DYNAMIC_BITCOIN)
     SET(BITCOIN_USER_DEFINED_DYNAMIC_OR_STATIC "SHARED")
 ELSE ()
@@ -745,7 +745,7 @@ ENDIF(APPLE)
 
 # For Doxygen
 INCLUDE(${CMAKE_ROOT}/Modules/Documentation.cmake OPTIONAL)
-OPTION(BUILD_DOCUMENTATION "Build bitcoin reference documentation using doxygen (use: make DoxygenDoc)" OFF)
+OPTION(BUILD_DOCUMENTATION "Build btc reference documentation using doxygen (use: make DoxygenDoc)" OFF)
 MARK_AS_ADVANCED(CLEAR BUILD_DOCUMENTATION)
 # To build the documention, you will have to enable it
 # and then do the equivalent of "make DoxygenDoc".
@@ -760,7 +760,7 @@ IF(BUILD_DOCUMENTATION)
 
     OPTION(BUILD_REF_DOCS_TAGFILE "Generate a tag file named btc.tag on the documentation web server" OFF)
     IF(BUILD_REF_DOCS_TAGFILE)
-        SET(GENERATE_TAGFILE "${BITCOIN_BINARY_DIR}/doc/bitcoinReferenceDocs/btc.tag")
+        SET(GENERATE_TAGFILE "${BITCOIN_BINARY_DIR}/doc/btcReferenceDocs/btc.tag")
     ELSE()
         SET(GENERATE_TAGFILE "")
     ENDIF()
@@ -786,16 +786,16 @@ IF(BUILD_DOCUMENTATION)
     # This processes our doxyfile.cmake and substitutes paths to generate
     # a final Doxyfile
     CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/doc/Doxyfiles/doxyfile.cmake
-        ${PROJECT_BINARY_DIR}/doc/bitcoin.doxyfile
+        ${PROJECT_BINARY_DIR}/doc/btc.doxyfile
     )
     # copy the btc logo to documentations target folder
     CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/PlatformSpecifics/Windows/icons/src/btc32-32.png
-        ${PROJECT_BINARY_DIR}/doc/bitcoinReferenceDocs/btc32-32.png COPYONLY
+        ${PROJECT_BINARY_DIR}/doc/btcReferenceDocs/btc32-32.png COPYONLY
     )
-    #INSTALL(FILES ${PROJECT_BINARY_DIR}/doc/${PROJECT_NAME}ReferenceDocs-${BITCOIN_VERSION}.chm DESTINATION doc OPTIONAL COMPONENT bitcoin-doc)
-    INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/bitcoinReferenceDocs DESTINATION doc COMPONENT bitcoin-doc)
+    #INSTALL(FILES ${PROJECT_BINARY_DIR}/doc/${PROJECT_NAME}ReferenceDocs-${BITCOIN_VERSION}.chm DESTINATION doc OPTIONAL COMPONENT btc-doc)
+    INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/btcReferenceDocs DESTINATION doc COMPONENT btc-doc)
 
-    #INSTALL(FILES ${PROJECT_BINARY_DIR}/doc/${PROJECT_NAME}ReferenceDocs-${BITCOIN_VERSION}.chm DESTINATION doc OPTIONAL COMPONENT bitcoin-doc)
+    #INSTALL(FILES ${PROJECT_BINARY_DIR}/doc/${PROJECT_NAME}ReferenceDocs-${BITCOIN_VERSION}.chm DESTINATION doc OPTIONAL COMPONENT btc-doc)
 
     # Process our other doxyfiles but don't create targets for these
     CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/doc/Doxyfiles/all_Doxyfile
@@ -812,16 +812,16 @@ IF(BUILD_DOCUMENTATION)
     # It runs the final generated Doxyfile against it.
     # The DOT_PATH is substituted into the Doxyfile.
     ADD_CUSTOM_TARGET(doc_bitcoin ${DOXYGEN}
-        ${PROJECT_BINARY_DIR}/doc/bitcoin.doxyfile
+        ${PROJECT_BINARY_DIR}/doc/btc.doxyfile
     )
     SET_TARGET_PROPERTIES(doc_bitcoin PROPERTIES FOLDER "Documentation")
     
 ENDIF(BUILD_DOCUMENTATION)
 
-OPTION(BUILD_DASHBOARD_REPORTS "Set to ON to activate reporting of bitcoin builds here http://www.cdash.org/CDashPublic/index.php?project=bitcoin" OFF)
+OPTION(BUILD_DASHBOARD_REPORTS "Set to ON to activate reporting of btc builds here http://www.cdash.org/CDashPublic/index.php?project=btc" OFF)
 IF(BUILD_DASHBOARD_REPORTS)
 # The following are required to uses Dart and the Cdash dashboard
-# viewable here : http://www.cdash.org/CDashPublic/index.php?project=bitcoin
+# viewable here : http://www.cdash.org/CDashPublic/index.php?project=btc
     INCLUDE(Dart)
 ENDIF()
 
@@ -836,16 +836,16 @@ ENDIF()
 # Generate pkg-config configuration files
 
 SET(PKGCONFIG_FILES
-#  bitcoin
-#  bitcoin-btc
-#  bitcoin-btcNode
-#  bitcoin-btcRPC
-#  bitcoin-btcWallet
-#  bitcoin-btcMine
+#  btc
+#  btc-btc
+#  btc-btcNode
+#  btc-btcRPC
+#  btc-btcWallet
+#  btc-btcMine
 )
 
 IF(QT4_FOUND)
-  SET(PKGCONFIG_FILES ${PKGCONFIG_FILES} bitcoin-btcQt)
+  SET(PKGCONFIG_FILES ${PKGCONFIG_FILES} btc-btcQt)
 ENDIF(QT4_FOUND)
 
 FOREACH(PKGCONFIG_FILE ${PKGCONFIG_FILES})
@@ -873,16 +873,16 @@ IF(REQUIRES_LIBPATH_MESSAGE)
         IF(IS_DIRECTORY /etc/ld.so.conf.d)
             MESSAGE("You have an ld.so.conf.d directory on your system, so if you wish to ensure that\n"
                 "applications find the installed btc libraries, system wide, you could install an\n"
-                "bitcoin specific ld.so configuration with:\n"
+                "btc specific ld.so configuration with:\n"
                 "    sudo make install_ld_conf\n")
-            CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/packaging/ld.so.conf.d/bitcoin.conf.in
-                ${PROJECT_BINARY_DIR}/packaging/ld.so.conf.d/bitcoin.conf
+            CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/packaging/ld.so.conf.d/btc.conf.in
+                ${PROJECT_BINARY_DIR}/packaging/ld.so.conf.d/btc.conf
             )
             ADD_CUSTOM_TARGET(install_ld_conf ${CMAKE_COMMAND} -E copy_if_different 
-                ${PROJECT_BINARY_DIR}/packaging/ld.so.conf.d/bitcoin.conf
-                /etc/ld.so.conf.d/bitcoin.conf
+                ${PROJECT_BINARY_DIR}/packaging/ld.so.conf.d/btc.conf
+                /etc/ld.so.conf.d/btc.conf
                 COMMAND ldconfig
-                COMMENT "Copying bitcoin.conf to /etc/ld.so.conf.d and running ldconfig"
+                COMMENT "Copying btc.conf to /etc/ld.so.conf.d and running ldconfig"
             )
         ELSE()
             IF(EXISTS /etc/ld.so.conf)

@@ -19,9 +19,9 @@
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 #ifdef USE_SSL
 #include <boost/asio/ssl.hpp> 
-#include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> SSLStream;
 #endif
@@ -324,7 +324,7 @@ string rfc1123Time()
     return string(buffer);
 }
 
-static string HTTPReply(int nStatus, const string& strMsg)
+static string HTTPReply(int nStatus, const string& strMsg, string mimetype = "application/json")
 {
     if (nStatus == 401)
         return strprintf("HTTP/1.0 401 Authorization Required\r\n"
@@ -354,7 +354,7 @@ static string HTTPReply(int nStatus, const string& strMsg)
             "Date: %s\r\n"
             "Connection: close\r\n"
             "Content-Length: %d\r\n"
-            "Content-Type: application/json\r\n"
+            "Content-Type: %s\r\n"
             "Server: bitcoin-json-rpc/%s\r\n"
             "\r\n"
             "%s",
@@ -362,6 +362,7 @@ static string HTTPReply(int nStatus, const string& strMsg)
         strStatus.c_str(),
         rfc1123Time().c_str(),
         strMsg.size(),
+        mimetype.c_str(),
         FormatFullVersion().c_str(),
         strMsg.c_str());
 }
@@ -394,6 +395,7 @@ int ReadHTTPHeader(std::basic_istream<char>& stream, map<string, string>& mapHea
             boost::to_lower(strHeader);
             string strValue = str.substr(nColon+1);
             boost::trim(strValue);
+        cout << strHeader << " : " << strValue << endl;
             mapHeadersRet[strHeader] = strValue;
             if (strHeader == "content-length")
                 nLen = atoi(strValue.c_str());
@@ -406,23 +408,62 @@ int ReadHTTP(std::basic_istream<char>& stream, map<string, string>& mapHeadersRe
 {
     mapHeadersRet.clear();
     strMessageRet = "";
-
+    
     // Read status
     int nStatus = ReadHTTPStatus(stream);
-
+    
     // Read header
     int nLen = ReadHTTPHeader(stream, mapHeadersRet);
     if (nLen < 0 || nLen > MAX_SIZE)
         return 500;
-
+    
     // Read message
     if (nLen > 0)
-    {
+        {
         vector<char> vch(nLen);
         stream.read(&vch[0], nLen);
         strMessageRet = string(vch.begin(), vch.end());
-    }
+        }
+    
+    return nStatus;
+}
 
+int ReadHTTPRequest(std::basic_istream<char>& stream, string& reqMethod, string& resource, map<string, string>& mapHeadersRet, string& strMessageRet)
+{
+    mapHeadersRet.clear();
+    strMessageRet = "";
+    
+    // Read request method
+    string str;
+    getline(stream, str);
+    vector<string> words;
+    boost::split(words, str, boost::is_any_of(" "));
+    set<string> methods;
+    methods.insert("GET");
+    methods.insert("POST");
+    if(words.size() > 0 && methods.count(words[0]) > 0) {
+        reqMethod = words[0];
+        if(words.size() > 1) resource = words[1];
+        cout<<resource << endl;
+    }
+    else
+        reqMethod = "ERROR";
+
+    int nStatus = ReadHTTPStatus(stream);
+    
+    // Read header
+    int nLen = ReadHTTPHeader(stream, mapHeadersRet);
+    if (nLen < 0 || nLen > MAX_SIZE)
+        return 500;
+    
+    // Read message
+    if (nLen > 0)
+        {
+        vector<char> vch(nLen);
+        stream.read(&vch[0], nLen);
+        strMessageRet = string(vch.begin(), vch.end());
+        }
+    
     return nStatus;
 }
 
@@ -605,6 +646,32 @@ void ThreadRPCServer(void* parg)
     printf("ThreadRPCServer exiting\n");
 }
 
+class Mime {
+private:
+    static const map<string, string> mime_types() {
+        static map<string, string> _mime_types;
+        if(_mime_types.size() == 0) {
+            _mime_types["jpg"] = "image/jpg";
+            _mime_types["gif"] = "image/gif";
+            _mime_types["png"] = "image/png";
+            _mime_types["html"] = "text/html";
+            _mime_types["htm"] = "text/html";
+            _mime_types["js"] = "text/javascript";
+        }
+        return _mime_types;
+    }
+public:
+    Mime() {
+    }
+    
+    const string from_extension(const string ext) const {
+        if(mime_types().count(ext))
+            return mime_types().find(ext)->second;
+        else
+            return "text/plain";
+    }
+};
+
 void ThreadRPCServer2(void* parg)
 {
     printf("ThreadRPCServer started\n");
@@ -690,8 +757,10 @@ void ThreadRPCServer2(void* parg)
 
         map<string, string> mapHeaders;
         string strRequest;
-
-        boost::thread api_caller(ReadHTTP, boost::ref(stream), boost::ref(mapHeaders), boost::ref(strRequest));
+    string method;
+    string resource;
+    
+    boost::thread api_caller(ReadHTTPRequest, boost::ref(stream), boost::ref(method), boost::ref(resource), boost::ref(mapHeaders), boost::ref(strRequest));
         if (!api_caller.timed_join(boost::posix_time::seconds(GetArg("-rpctimeout", 30))))
         {   // Timed out:
             acceptor.cancel();
@@ -719,6 +788,45 @@ void ThreadRPCServer2(void* parg)
             
         }
 
+    // check if this is a GET or a POST
+    if(method == "GET") { // handle GET
+    // find the resource - first, check the extension and then the query
+        size_t pos = resource.find("?");
+        if(pos != string::npos) {
+            string query = resource.substr(pos+1);
+            map<string,string> options;
+            // split 
+            vector<string> keyvalues;
+            split(keyvalues, query, is_any_of("&"));
+            for(vector<string>::iterator i = keyvalues.begin(); i != keyvalues.end(); ++i) {
+                vector<string> keyvalue;
+                split(keyvalue, *i, is_any_of("="));
+                options[keyvalue[0]] = keyvalue.size() > 1 ? keyvalue[1] : "";
+            }
+            resource = resource.substr(0,pos);
+        }
+        // lookup in cache:
+        // if(cache.find(resource))
+        //    reply = cache[resource];
+        
+        filesystem::path filename(resource);
+        if(filename.has_extension()) {
+            // determine the mime
+            string mime = Mime().from_extension(filename.extension().string().substr(1));
+            // if js: look up file - if file not there just assemble it from 
+            if(mime == "text/javascript") {
+                
+            }
+        }
+        string reply = "<html><body>Microbits!</body></html>";
+        stream << HTTPReply(200, reply, "text/html") << std::flush;
+
+        continue;
+    }
+
+    if(method == "ERROR")
+        continue;
+    
         Value id = Value::null;
         try
         {
