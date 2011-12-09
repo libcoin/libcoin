@@ -61,7 +61,7 @@ void ThreadOpenConnections2(void* parg);
 #ifdef USE_UPNP
 void ThreadMapPort2(void* parg);
 #endif
-bool OpenNetworkConnection(const CAddress& addrConnect);
+bool OpenNetworkConnection(const Endpoint& addrConnect);
 
 
 
@@ -73,24 +73,24 @@ bool OpenNetworkConnection(const CAddress& addrConnect);
 bool fClient = false;
 bool fAllowDNS = false;
 uint64 nLocalServices = (fClient ? 0 : NODE_NETWORK);
-CAddress addrLocalHost("0.0.0.0", 0, false, nLocalServices);
+Endpoint addrLocalHost("0.0.0.0", 0, false, nLocalServices);
 uint64 nLocalHostNonce = 0;
 array<int, 10> vnThreadsRunning;
 static SOCKET hListenSocket = INVALID_SOCKET;
 
 vector<CNode*> vNodes;
 CCriticalSection cs_vNodes;
-map<vector<unsigned char>, CAddress> mapAddresses;
+map<vector<unsigned char>, Endpoint> mapAddresses;
 CCriticalSection cs_mapAddresses;
-map<CInv, CDataStream> mapRelay;
-deque<pair<int64, CInv> > vRelayExpiration;
+map<Inventory, CDataStream> mapRelay;
+deque<pair<int64, Inventory> > vRelayExpiration;
 CCriticalSection cs_mapRelay;
-map<CInv, int64> mapAlreadyAskedFor;
+map<Inventory, int64> mapAlreadyAskedFor;
 
 // Settings
 int fUseProxy = false;
 int nConnectTimeout = 5000;
-CAddress addrProxy("127.0.0.1",9050);
+Endpoint addrProxy("127.0.0.1",9050);
 
 
 
@@ -154,12 +154,12 @@ uint256 static GetOrphanRoot(const CBlock* pblock)
 }
 
 
-bool static AlreadyHave(CTxDB& txdb, const CInv& inv)
+bool static AlreadyHave(CTxDB& txdb, const Inventory& inv)
 {
-    switch (inv.type)
+    switch (inv.getType())
     {
-        case MSG_TX:    return mapTransactions.count(inv.hash) || mapOrphanTransactions.count(inv.hash) || txdb.ContainsTx(inv.hash);
-        case MSG_BLOCK: return mapBlockIndex.count(inv.hash) || mapOrphanBlocks.count(inv.hash);
+        case MSG_TX:    return mapTransactions.count(inv.getHash()) || mapOrphanTransactions.count(inv.getHash()) || txdb.ContainsTx(inv.getHash());
+        case MSG_BLOCK: return mapBlockIndex.count(inv.getHash()) || mapOrphanBlocks.count(inv.getHash());
     }
     // Don't know what it is, just say we already got one
     return true;
@@ -175,9 +175,9 @@ bool static ProcessBlock(CNode* pfrom, CBlock* pblock)
     // Check for duplicate
     uint256 hash = pblock->GetHash();
     if (mapBlockIndex.count(hash))
-        return error("ProcessBlock() : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
+        return error("ProcessBlock() : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.toString().substr(0,20).c_str());
     if (mapOrphanBlocks.count(hash))
-        return error("ProcessBlock() : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
+        return error("ProcessBlock() : already have block (orphan) %s", hash.toString().substr(0,20).c_str());
     
     // Preliminary checks
     if (!pblock->CheckBlock())
@@ -186,7 +186,7 @@ bool static ProcessBlock(CNode* pfrom, CBlock* pblock)
     // If don't already have its previous block, shunt it off to holding area until we get it
     if (!mapBlockIndex.count(pblock->hashPrevBlock))
     {
-        printf("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.ToString().substr(0,20).c_str());
+        printf("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.toString().substr(0,20).c_str());
         CBlock* pblock2 = new CBlock(*pblock);
         mapOrphanBlocks.insert(make_pair(hash, pblock2));
         mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
@@ -251,8 +251,8 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
             return false;
         
         int64 nTime;
-        CAddress addrMe;
-        CAddress addrFrom;
+        Endpoint addrMe;
+        Endpoint addrFrom;
         uint64 nNonce = 1;
         vRecv >> pfrom->nVersion >> pfrom->nServices >> nTime >> addrMe;
         if (pfrom->nVersion == 10300)
@@ -270,7 +270,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
         // Disconnect if we connected to ourself
         if (nNonce == nLocalHostNonce && nNonce > 1)
         {
-            printf("connected to self at %s, disconnecting\n", pfrom->addr.ToString().c_str());
+            printf("connected to self at %s, disconnecting\n", pfrom->addr.toString().c_str());
             pfrom->fDisconnect = true;
             return true;
         }
@@ -295,7 +295,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
             // Advertise our address
             if (addrLocalHost.IsRoutable() && !fUseProxy)
             {
-                CAddress addr(addrLocalHost);
+                Endpoint addr(addrLocalHost);
                 addr.nTime = GetAdjustedTime();
                 pfrom->PushAddress(addr);
             }
@@ -344,7 +344,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
     
     else if (strCommand == "addr")
     {
-        vector<CAddress> vAddr;
+        vector<Endpoint> vAddr;
         vRecv >> vAddr;
         
         // Don't want addr from older versions unless seeding
@@ -360,7 +360,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
         addrDB.TxnBegin();
         int64 nNow = GetAdjustedTime();
         int64 nSince = nNow - 10 * 60;
-        BOOST_FOREACH(CAddress& addr, vAddr)
+        BOOST_FOREACH(Endpoint& addr, vAddr)
         {
             if (fShutdown)
                 return true;
@@ -408,25 +408,25 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
     
     else if (strCommand == "inv")
     {
-        vector<CInv> vInv;
+        vector<Inventory> vInv;
         vRecv >> vInv;
         if (vInv.size() > 50000)
             return error("message inv size() = %d", vInv.size());
         
         CTxDB txdb("r");
-        BOOST_FOREACH(const CInv& inv, vInv)
+        BOOST_FOREACH(const Inventory& inv, vInv)
         {
             if (fShutdown)
                 return true;
             pfrom->AddInventoryKnown(inv);
             
             bool fAlreadyHave = AlreadyHave(txdb, inv);
-            printf("  got inventory: %s  %s\n", inv.ToString().c_str(), fAlreadyHave ? "have" : "new");
+            printf("  got inventory: %s  %s\n", inv.toString().c_str(), fAlreadyHave ? "have" : "new");
             
             if (!fAlreadyHave)
                 pfrom->AskFor(inv);
-            else if (inv.type == MSG_BLOCK && mapOrphanBlocks.count(inv.hash))
-                pfrom->PushGetBlocks(pindexBest, GetOrphanRoot(mapOrphanBlocks[inv.hash]));
+            else if (inv.getType() == MSG_BLOCK && mapOrphanBlocks.count(inv.getHash()))
+                pfrom->PushGetBlocks(pindexBest, GetOrphanRoot(mapOrphanBlocks[inv.getHash()]));
             
             // Track requests for our stuff
             //            Inventory(inv.hash);
@@ -436,21 +436,21 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
     
     else if (strCommand == "getdata")
     {
-        vector<CInv> vInv;
+        vector<Inventory> vInv;
         vRecv >> vInv;
         if (vInv.size() > 50000)
             return error("message getdata size() = %d", vInv.size());
         
-        BOOST_FOREACH(const CInv& inv, vInv)
+        BOOST_FOREACH(const Inventory& inv, vInv)
         {
             if (fShutdown)
                 return true;
-            printf("received getdata for: %s\n", inv.ToString().c_str());
+            printf("received getdata for: %s\n", inv.toString().c_str());
             
-            if (inv.type == MSG_BLOCK)
+            if (inv.getType() == MSG_BLOCK)
             {
                 // Send block from disk
-                map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(inv.hash);
+                map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(inv.getHash());
                 if (mi != mapBlockIndex.end())
                 {
                     CBlock block;
@@ -458,26 +458,26 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
                     pfrom->PushMessage("block", block);
                     
                     // Trigger them to send a getblocks request for the next batch of inventory
-                    if (inv.hash == pfrom->hashContinue)
+                    if (inv.getHash() == pfrom->hashContinue)
                     {
                         // Bypass PushInventory, this must send even if redundant,
                         // and we want it right after the last block so they don't
                         // wait for other stuff first.
-                        vector<CInv> vInv;
-                        vInv.push_back(CInv(MSG_BLOCK, hashBestChain));
+                        vector<Inventory> vInv;
+                        vInv.push_back(Inventory(MSG_BLOCK, hashBestChain));
                         pfrom->PushMessage("inv", vInv);
                         pfrom->hashContinue = 0;
                     }
                 }
             }
-            else if (inv.IsKnownType())
+            else if (inv.isKnownType())
             {
                 // Send stream from relay memory
                 CRITICAL_BLOCK(cs_mapRelay)
                 {
-                    map<CInv, CDataStream>::iterator mi = mapRelay.find(inv);
+                    map<Inventory, CDataStream>::iterator mi = mapRelay.find(inv);
                     if (mi != mapRelay.end())
-                        pfrom->PushMessage(inv.GetCommand(), (*mi).second);
+                        pfrom->PushMessage(inv.getCommand(), (*mi).second);
                 }
             }
             
@@ -501,15 +501,15 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
             pindex = pindex->pnext;
         int nLimit = 500 + locator.GetDistanceBack();
         unsigned int nBytes = 0;
-        printf("getblocks %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.ToString().substr(0,20).c_str(), nLimit);
+        printf("getblocks %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.toString().substr(0,20).c_str(), nLimit);
         for (; pindex; pindex = pindex->pnext)
         {
             if (pindex->GetBlockHash() == hashStop)
             {
-                printf("  getblocks stopping at %d %s (%u bytes)\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str(), nBytes);
+                printf("  getblocks stopping at %d %s (%u bytes)\n", pindex->nHeight, pindex->GetBlockHash().toString().substr(0,20).c_str(), nBytes);
                 break;
             }
-            pfrom->PushInventory(CInv(MSG_BLOCK, pindex->GetBlockHash()));
+            pfrom->PushInventory(Inventory(MSG_BLOCK, pindex->GetBlockHash()));
             CBlock block;
             block.ReadFromDisk(pindex, true);
             nBytes += block.GetSerializeSize(SER_NETWORK);
@@ -517,7 +517,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
             {
                 // When this block is requested, we'll send an inv that'll make them
                 // getblocks the next batch of inventory.
-                printf("  getblocks stopping at limit %d %s (%u bytes)\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str(), nBytes);
+                printf("  getblocks stopping at limit %d %s (%u bytes)\n", pindex->nHeight, pindex->GetBlockHash().toString().substr(0,20).c_str(), nBytes);
                 pfrom->hashContinue = pindex->GetBlockHash();
                 break;
             }
@@ -550,7 +550,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
         
         vector<CBlock> vHeaders;
         int nLimit = 2000 + locator.GetDistanceBack();
-        printf("getheaders %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.ToString().substr(0,20).c_str(), nLimit);
+        printf("getheaders %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.toString().substr(0,20).c_str(), nLimit);
         for (; pindex; pindex = pindex->pnext)
         {
             vHeaders.push_back(pindex->GetBlockHeader());
@@ -568,7 +568,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
         CTransaction tx;
         vRecv >> tx;
         
-        CInv inv(MSG_TX, tx.GetHash());
+        Inventory inv(MSG_TX, tx.GetHash());
         pfrom->AddInventoryKnown(inv);
         
         bool fMissingInputs = false;
@@ -577,7 +577,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
             //            SyncWithWallets(tx, NULL, true);
             RelayMessage(inv, vMsg);
             mapAlreadyAskedFor.erase(inv);
-            vWorkQueue.push_back(inv.hash);
+            vWorkQueue.push_back(inv.getHash());
             
             // Recursively process any orphan transactions that depended on this one
             for (int i = 0; i < vWorkQueue.size(); i++)
@@ -590,15 +590,15 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
                     const CDataStream& vMsg = *((*mi).second);
                     CTransaction tx;
                     CDataStream(vMsg) >> tx;
-                    CInv inv(MSG_TX, tx.GetHash());
+                    Inventory inv(MSG_TX, tx.GetHash());
                     
                     if (tx.AcceptToMemoryPool(true))
                     {
-                        printf("   accepted orphan tx %s\n", inv.hash.ToString().substr(0,10).c_str());
+                        printf("   accepted orphan tx %s\n", inv.getHash().toString().substr(0,10).c_str());
                         //                        SyncWithWallets(tx, NULL, true);
                         RelayMessage(inv, vMsg);
                         mapAlreadyAskedFor.erase(inv);
-                        vWorkQueue.push_back(inv.hash);
+                        vWorkQueue.push_back(inv.getHash());
                     }
                 }
             }
@@ -608,7 +608,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
         }
         else if (fMissingInputs)
         {
-            printf("storing orphan tx %s\n", inv.hash.ToString().substr(0,10).c_str());
+            printf("storing orphan tx %s\n", inv.getHash().toString().substr(0,10).c_str());
             AddOrphanTx(vMsg);
         }
     }
@@ -619,10 +619,10 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
         CBlock block;
         vRecv >> block;
         
-        printf("received block %s\n", block.GetHash().ToString().substr(0,20).c_str());
+        printf("received block %s\n", block.GetHash().toString().substr(0,20).c_str());
         // block.print();
         
-        CInv inv(MSG_BLOCK, block.GetHash());
+        Inventory inv(MSG_BLOCK, block.GetHash());
         pfrom->AddInventoryKnown(inv);
         
         if (ProcessBlock(pfrom, &block))
@@ -638,15 +638,15 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
         CRITICAL_BLOCK(cs_mapAddresses)
         {
             unsigned int nCount = 0;
-            BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, CAddress)& item, mapAddresses)
+            BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, Endpoint)& item, mapAddresses)
             {
-                const CAddress& addr = item.second;
+                const Endpoint& addr = item.second;
                 if (addr.nTime > nSince)
                     nCount++;
             }
-            BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, CAddress)& item, mapAddresses)
+            BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, Endpoint)& item, mapAddresses)
             {
-                const CAddress& addr = item.second;
+                const Endpoint& addr = item.second;
                 if (addr.nTime > nSince && GetRand(nCount) < 2500)
                     pfrom->PushAddress(addr);
             }
@@ -711,7 +711,7 @@ bool CNode::ProcessMessages()
     {
         // Scan for message start
         CDataStream::iterator pstart = search(vRecv.begin(), vRecv.end(), BEGIN(pchMessageStart), END(pchMessageStart));
-        int nHeaderSize = vRecv.GetSerializeSize(CMessageHeader());
+        int nHeaderSize = vRecv.GetSerializeSize(MessageHeader());
         if (vRecv.end() - pstart < nHeaderSize)
         {
             if (vRecv.size() > nHeaderSize)
@@ -727,7 +727,7 @@ bool CNode::ProcessMessages()
         
         // Read header
         vector<char> vHeaderSave(vRecv.begin(), vRecv.begin() + nHeaderSize);
-        CMessageHeader hdr;
+        MessageHeader hdr;
         vRecv >> hdr;
         if (!hdr.IsValid())
         {
@@ -845,7 +845,7 @@ void ResendBrokerTransactions()
         }
 
         // rebroadcast tx
-        RelayMessage(CInv(MSG_TX, it->first), it->second);
+        RelayMessage(Inventory(MSG_TX, it->first), it->second);
     }
 }
 
@@ -881,7 +881,7 @@ bool CNode::SendMessages(bool fSendTrickle)
                     // Rebroadcast our address
                     if (addrLocalHost.IsRoutable() && !fUseProxy)
                     {
-                        CAddress addr(addrLocalHost);
+                        Endpoint addr(addrLocalHost);
                         addr.nTime = GetAdjustedTime();
                         pnode->PushAddress(addr);
                     }
@@ -900,10 +900,10 @@ bool CNode::SendMessages(bool fSendTrickle)
             {
                 CAddrDB addrdb;
                 int64 nSince = GetAdjustedTime() - 14 * 24 * 60 * 60;
-                for (map<vector<unsigned char>, CAddress>::iterator mi = mapAddresses.begin();
+                for (map<vector<unsigned char>, Endpoint>::iterator mi = mapAddresses.begin();
                      mi != mapAddresses.end();)
                 {
-                    const CAddress& addr = (*mi).second;
+                    const Endpoint& addr = (*mi).second;
                     if (addr.nTime < nSince)
                     {
                         if (mapAddresses.size() < 1000 || GetTime() > nLastClear + 20)
@@ -923,9 +923,9 @@ bool CNode::SendMessages(bool fSendTrickle)
         //
         if (fSendTrickle)
         {
-            vector<CAddress> vAddr;
+            vector<Endpoint> vAddr;
             vAddr.reserve(pto->vAddrToSend.size());
-            BOOST_FOREACH(const CAddress& addr, pto->vAddrToSend)
+            BOOST_FOREACH(const Endpoint& addr, pto->vAddrToSend)
             {
                 // returns true if wasn't already contained in the set
                 if (pto->setAddrKnown.insert(addr).second)
@@ -948,25 +948,25 @@ bool CNode::SendMessages(bool fSendTrickle)
         //
         // Message: inventory
         //
-        vector<CInv> vInv;
-        vector<CInv> vInvWait;
+        vector<Inventory> vInv;
+        vector<Inventory> vInvWait;
         CRITICAL_BLOCK(pto->cs_inventory)
         {
             vInv.reserve(pto->vInventoryToSend.size());
             vInvWait.reserve(pto->vInventoryToSend.size());
-            BOOST_FOREACH(const CInv& inv, pto->vInventoryToSend)
+            BOOST_FOREACH(const Inventory& inv, pto->vInventoryToSend)
             {
                 if (pto->setInventoryKnown.count(inv))
                     continue;
                 
                 // trickle out tx inv to protect privacy
-                if (inv.type == MSG_TX && !fSendTrickle)
+                if (inv.getType() == MSG_TX && !fSendTrickle)
                 {
                     // 1/4 of tx invs blast to all immediately
                     static uint256 hashSalt;
                     if (hashSalt == 0)
                         RAND_bytes((unsigned char*)&hashSalt, sizeof(hashSalt));
-                    uint256 hashRand = inv.hash ^ hashSalt;
+                    uint256 hashRand = inv.getHash() ^ hashSalt;
                     hashRand = Hash(BEGIN(hashRand), END(hashRand));
                     bool fTrickleWait = ((hashRand & 3) != 0);
                     /*
@@ -1006,15 +1006,15 @@ bool CNode::SendMessages(bool fSendTrickle)
         //
         // Message: getdata
         //
-        vector<CInv> vGetData;
+        vector<Inventory> vGetData;
         int64 nNow = GetTime() * 1000000;
         CTxDB txdb("r");
         while (!pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)
         {
-            const CInv& inv = (*pto->mapAskFor.begin()).second;
+            const Inventory& inv = (*pto->mapAskFor.begin()).second;
             if (!AlreadyHave(txdb, inv))
             {
-                printf("sending getdata: %s\n", inv.ToString().c_str());
+                printf("sending getdata: %s\n", inv.toString().c_str());
                 vGetData.push_back(inv);
                 if (vGetData.size() >= 1000)
                 {
@@ -1049,7 +1049,7 @@ void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
 
 
 
-bool ConnectSocket(const CAddress& addrConnect, SOCKET& hSocketRet, int nTimeout)
+bool ConnectSocket(const Endpoint& addrConnect, SOCKET& hSocketRet, int nTimeout)
 {
     hSocketRet = INVALID_SOCKET;
 
@@ -1151,7 +1151,7 @@ bool ConnectSocket(const CAddress& addrConnect, SOCKET& hSocketRet, int nTimeout
 
     if (fProxy)
     {
-        printf("proxy connecting %s\n", addrConnect.ToString().c_str());
+        printf("proxy connecting %s\n", addrConnect.toString().c_str());
         char pszSocks4IP[] = "\4\1\0\0\0\0\0\0user";
         memcpy(pszSocks4IP + 2, &addrConnect.port, 2);
         memcpy(pszSocks4IP + 4, &addrConnect.ip, 4);
@@ -1177,7 +1177,7 @@ bool ConnectSocket(const CAddress& addrConnect, SOCKET& hSocketRet, int nTimeout
                 printf("ERROR: Proxy returned error %d\n", pchRet[1]);
             return false;
         }
-        printf("proxy connected %s\n", addrConnect.ToString().c_str());
+        printf("proxy connected %s\n", addrConnect.toString().c_str());
     }
 
     hSocketRet = hSocket;
@@ -1185,7 +1185,7 @@ bool ConnectSocket(const CAddress& addrConnect, SOCKET& hSocketRet, int nTimeout
 }
 
 // portDefault is in host order
-bool Lookup(const char *pszName, vector<CAddress>& vaddr, int nServices, int nMaxSolutions, bool fAllowLookup, int portDefault, bool fAllowPort)
+bool Lookup(const char *pszName, vector<Endpoint>& vaddr, int nServices, int nMaxSolutions, bool fAllowLookup, int portDefault, bool fAllowPort)
 {
     vaddr.clear();
     if (pszName[0] == 0)
@@ -1219,7 +1219,7 @@ bool Lookup(const char *pszName, vector<CAddress>& vaddr, int nServices, int nMa
     if (addrIP != INADDR_NONE)
     {
         // valid IP address passed
-        vaddr.push_back(CAddress(addrIP, port, nServices));
+        vaddr.push_back(Endpoint(addrIP, port, nServices));
         return true;
     }
 
@@ -1236,7 +1236,7 @@ bool Lookup(const char *pszName, vector<CAddress>& vaddr, int nServices, int nMa
     char** ppAddr = phostent->h_addr_list;
     while (*ppAddr != NULL && vaddr.size() != nMaxSolutions)
     {
-        CAddress addr(((struct in_addr*)ppAddr[0])->s_addr, port, nServices);
+        Endpoint addr(((struct in_addr*)ppAddr[0])->s_addr, port, nServices);
         if (addr.IsValid())
             vaddr.push_back(addr);
         ppAddr++;
@@ -1246,20 +1246,20 @@ bool Lookup(const char *pszName, vector<CAddress>& vaddr, int nServices, int nMa
 }
 
 // portDefault is in host order
-bool Lookup(const char *pszName, CAddress& addr, int nServices, bool fAllowLookup, int portDefault, bool fAllowPort)
+bool Lookup(const char *pszName, Endpoint& addr, int nServices, bool fAllowLookup, int portDefault, bool fAllowPort)
 {
-    vector<CAddress> vaddr;
+    vector<Endpoint> vaddr;
     bool fRet = Lookup(pszName, vaddr, nServices, 1, fAllowLookup, portDefault, fAllowPort);
     if (fRet)
         addr = vaddr[0];
     return fRet;
 }
 
-bool GetMyExternalIP2(const CAddress& addrConnect, const char* pszGet, const char* pszKeyword, unsigned int& ipRet)
+bool GetMyExternalIP2(const Endpoint& addrConnect, const char* pszGet, const char* pszKeyword, unsigned int& ipRet)
 {
     SOCKET hSocket;
     if (!ConnectSocket(addrConnect, hSocket))
-        return error("GetMyExternalIP() : connection to %s failed", addrConnect.ToString().c_str());
+        return error("GetMyExternalIP() : connection to %s failed", addrConnect.toString().c_str());
 
     send(hSocket, pszGet, strlen(pszGet), MSG_NOSIGNAL);
 
@@ -1289,8 +1289,8 @@ bool GetMyExternalIP2(const CAddress& addrConnect, const char* pszGet, const cha
             strLine = strLine.substr(strspn(strLine.c_str(), " \t\n\r"));
             while (strLine.size() > 0 && isspace(strLine[strLine.size()-1]))
                 strLine.resize(strLine.size()-1);
-            CAddress addr(strLine,0,true);
-            printf("GetMyExternalIP() received [%s] %s\n", strLine.c_str(), addr.ToString().c_str());
+            Endpoint addr(strLine,0,true);
+            printf("GetMyExternalIP() received [%s] %s\n", strLine.c_str(), addr.toString().c_str());
             if (addr.ip == 0 || addr.ip == INADDR_NONE || !addr.IsRoutable())
                 return false;
             ipRet = addr.ip;
@@ -1304,7 +1304,7 @@ bool GetMyExternalIP2(const CAddress& addrConnect, const char* pszGet, const cha
 // We now get our external IP from the IRC server first and only use this as a backup
 bool GetMyExternalIP(unsigned int& ipRet)
 {
-    CAddress addrConnect;
+    Endpoint addrConnect;
     const char* pszGet;
     const char* pszKeyword;
 
@@ -1320,11 +1320,11 @@ bool GetMyExternalIP(unsigned int& ipRet)
         //  <?php echo $_SERVER["REMOTE_ADDR"]; ?>
         if (nHost == 1)
         {
-            addrConnect = CAddress("91.198.22.70",80); // checkip.dyndns.org
+            addrConnect = Endpoint("91.198.22.70",80); // checkip.dyndns.org
 
             if (nLookup == 1)
             {
-                CAddress addrIP("checkip.dyndns.org", 80, true);
+                Endpoint addrIP("checkip.dyndns.org", 80, true);
                 if (addrIP.IsValid())
                     addrConnect = addrIP;
             }
@@ -1339,11 +1339,11 @@ bool GetMyExternalIP(unsigned int& ipRet)
         }
         else if (nHost == 2)
         {
-            addrConnect = CAddress("74.208.43.192", 80); // www.showmyip.com
+            addrConnect = Endpoint("74.208.43.192", 80); // www.showmyip.com
 
             if (nLookup == 1)
             {
-                CAddress addrIP("www.showmyip.com", 80, true);
+                Endpoint addrIP("www.showmyip.com", 80, true);
                 if (addrIP.IsValid())
                     addrConnect = addrIP;
             }
@@ -1385,7 +1385,7 @@ void ThreadGetMyExternalIP(void* parg)
         {
             // If we already connected to a few before we had our IP, go back and addr them.
             // setAddrKnown automatically filters any duplicate sends.
-            CAddress addr(addrLocalHost);
+            Endpoint addr(addrLocalHost);
             addr.nTime = GetAdjustedTime();
             CRITICAL_BLOCK(cs_vNodes)
                 BOOST_FOREACH(CNode* pnode, vNodes)
@@ -1398,7 +1398,7 @@ void ThreadGetMyExternalIP(void* parg)
 
 
 
-bool AddAddress(CAddress addr, int64 nTimePenalty, CAddrDB *pAddrDB)
+bool AddAddress(Endpoint addr, int64 nTimePenalty, CAddrDB *pAddrDB)
 {
     if (!addr.IsRoutable())
         return false;
@@ -1407,15 +1407,15 @@ bool AddAddress(CAddress addr, int64 nTimePenalty, CAddrDB *pAddrDB)
     addr.nTime = max((int64)0, (int64)addr.nTime - nTimePenalty);
     bool fUpdated = false;
     bool fNew = false;
-    CAddress addrFound = addr;
+    Endpoint addrFound = addr;
 
     CRITICAL_BLOCK(cs_mapAddresses)
     {
-        map<vector<unsigned char>, CAddress>::iterator it = mapAddresses.find(addr.GetKey());
+        map<vector<unsigned char>, Endpoint>::iterator it = mapAddresses.find(addr.GetKey());
         if (it == mapAddresses.end())
         {
             // New address
-            printf("AddAddress(%s)\n", addr.ToString().c_str());
+            printf("AddAddress(%s)\n", addr.toString().c_str());
             mapAddresses.insert(make_pair(addr.GetKey(), addr));
             fUpdated = true;
             fNew = true;
@@ -1455,15 +1455,15 @@ bool AddAddress(CAddress addr, int64 nTimePenalty, CAddrDB *pAddrDB)
     return fNew;
 }
 
-void AddressCurrentlyConnected(const CAddress& addr)
+void AddressCurrentlyConnected(const Endpoint& addr)
 {
     CRITICAL_BLOCK(cs_mapAddresses)
     {
         // Only if it's been published already
-        map<vector<unsigned char>, CAddress>::iterator it = mapAddresses.find(addr.GetKey());
+        map<vector<unsigned char>, Endpoint>::iterator it = mapAddresses.find(addr.GetKey());
         if (it != mapAddresses.end())
         {
-            CAddress& addrFound = (*it).second;
+            Endpoint& addrFound = (*it).second;
             int64 nUpdateInterval = 20 * 60;
             if (addrFound.nTime < GetAdjustedTime() - nUpdateInterval)
             {
@@ -1487,7 +1487,7 @@ CNode* FindNode(unsigned int ip)
     return NULL;
 }
 
-CNode* FindNode(CAddress addr)
+CNode* FindNode(Endpoint addr)
 {
     CRITICAL_BLOCK(cs_vNodes)
     {
@@ -1498,7 +1498,7 @@ CNode* FindNode(CAddress addr)
     return NULL;
 }
 
-CNode* ConnectNode(CAddress addrConnect, int64 nTimeout)
+CNode* ConnectNode(Endpoint addrConnect, int64 nTimeout)
 {
     if (addrConnect.ip == addrLocalHost.ip)
         return NULL;
@@ -1516,7 +1516,7 @@ CNode* ConnectNode(CAddress addrConnect, int64 nTimeout)
 
     /// debug print
     printf("trying connection %s lastseen=%.1fhrs lasttry=%.1fhrs\n",
-        addrConnect.ToString().c_str(),
+        addrConnect.toString().c_str(),
         (double)(addrConnect.nTime - GetAdjustedTime())/3600.0,
         (double)(addrConnect.nLastTry - GetAdjustedTime())/3600.0);
 
@@ -1528,7 +1528,7 @@ CNode* ConnectNode(CAddress addrConnect, int64 nTimeout)
     if (ConnectSocket(addrConnect, hSocket))
     {
         /// debug print
-        printf("connected %s\n", addrConnect.ToString().c_str());
+        printf("connected %s\n", addrConnect.toString().c_str());
 
         // Set to nonblocking
 #ifdef _WIN32
@@ -1565,7 +1565,7 @@ void CNode::CloseSocketDisconnect()
     {
         if (fDebug)
             printf("%s ", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());
-        printf("disconnecting node %s\n", addr.ToString().c_str());
+        printf("disconnecting node %s\n", addr.toString().c_str());
         closesocket(hSocket);
         hSocket = INVALID_SOCKET;
     }
@@ -1714,7 +1714,7 @@ void ThreadSocketHandler2(void* parg)
             struct sockaddr_in sockaddr;
             socklen_t len = sizeof(sockaddr);
             SOCKET hSocket = accept(hListenSocket, (struct sockaddr*)&sockaddr, &len);
-            CAddress addr(sockaddr);
+            Endpoint addr(sockaddr);
             int nInbound = 0;
 
             CRITICAL_BLOCK(cs_vNodes)
@@ -1732,7 +1732,7 @@ void ThreadSocketHandler2(void* parg)
             }
             else
             {
-                printf("accepted connection %s\n", addr.ToString().c_str());
+                printf("accepted connection %s\n", addr.toString().c_str());
                 CNode* pnode = new CNode(hSocket, addr, true);
                 pnode->AddRef();
                 CRITICAL_BLOCK(cs_vNodes)
@@ -2008,10 +2008,10 @@ void DNSAddressSeed()
         addrDB.TxnBegin();
 
         for (int seed_idx = 0; seed_idx < ARRAYLEN(strDNSSeed); seed_idx++) {
-            vector<CAddress> vaddr;
+            vector<Endpoint> vaddr;
             if (Lookup(strDNSSeed[seed_idx], vaddr, NODE_NETWORK, -1, true))
             {
-                BOOST_FOREACH (CAddress& addr, vaddr)
+                BOOST_FOREACH (Endpoint& addr, vaddr)
                 {
                     if (addr.GetByte(3) != 127)
                     {
@@ -2131,7 +2131,7 @@ void ThreadOpenConnections2(void* parg)
         {
             BOOST_FOREACH(string strAddr, mapMultiArgs["-connect"])
             {
-                CAddress addr(strAddr, fAllowDNS);
+                Endpoint addr(strAddr, fAllowDNS);
                 if (addr.IsValid())
                     OpenNetworkConnection(addr);
                 for (int i = 0; i < 10 && i < nLoop; i++)
@@ -2149,7 +2149,7 @@ void ThreadOpenConnections2(void* parg)
     {
         BOOST_FOREACH(string strAddr, mapMultiArgs["-addnode"])
         {
-            CAddress addr(strAddr, fAllowDNS);
+            Endpoint addr(strAddr, fAllowDNS);
             if (addr.IsValid())
             {
                 OpenNetworkConnection(addr);
@@ -2199,7 +2199,7 @@ void ThreadOpenConnections2(void* parg)
                     // Seed nodes are given a random 'last seen time' of between one and two
                     // weeks ago.
                     const int64 nOneWeek = 7*24*60*60;
-                    CAddress addr;
+                    Endpoint addr;
                     addr.ip = pnSeed[i];
                     addr.nTime = GetTime()-GetRand(nOneWeek)-nOneWeek;
                     AddAddress(addr);
@@ -2211,7 +2211,7 @@ void ThreadOpenConnections2(void* parg)
         //
         // Choose an address to connect to based on most recently seen
         //
-        CAddress addrConnect;
+        Endpoint addrConnect;
         int64 nBest = INT64_MIN;
 
         // Only connect to one address per a.b.?.? range.
@@ -2223,9 +2223,9 @@ void ThreadOpenConnections2(void* parg)
 
         CRITICAL_BLOCK(cs_mapAddresses)
         {
-            BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, CAddress)& item, mapAddresses)
+            BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, Endpoint)& item, mapAddresses)
             {
-                const CAddress& addr = item.second;
+                const Endpoint& addr = item.second;
                 if (!addr.IsIPv4() || !addr.IsValid() || setConnected.count(addr.ip & 0x0000ffff))
                     continue;
                 int64 nSinceLastSeen = GetAdjustedTime() - addr.nTime;
@@ -2258,7 +2258,7 @@ void ThreadOpenConnections2(void* parg)
 
                 // If we have IRC, we'll be notified when they first come online,
                 // and again every 24 hours by the refresh broadcast.
-                if (nGotIRCAddresses > 0 && vNodes.size() >= 2 && nSinceLastSeen > 24 * 60 * 60)
+                if (nGotIREndpointes > 0 && vNodes.size() >= 2 && nSinceLastSeen > 24 * 60 * 60)
                     continue;
 
                 // Only try the old stuff if we don't have enough connections
@@ -2281,7 +2281,7 @@ void ThreadOpenConnections2(void* parg)
     }
 }
 
-bool OpenNetworkConnection(const CAddress& addrConnect)
+bool OpenNetworkConnection(const Endpoint& addrConnect)
 {
     //
     // Initiate outbound network connection
@@ -2473,9 +2473,9 @@ void StartNode(void* parg)
     char pszHostName[1000] = "";
     if (gethostname(pszHostName, sizeof(pszHostName)) != SOCKET_ERROR)
     {
-        vector<CAddress> vaddr;
+        vector<Endpoint> vaddr;
         if (Lookup(pszHostName, vaddr, nLocalServices, -1, true))
-            BOOST_FOREACH (const CAddress &addr, vaddr)
+            BOOST_FOREACH (const Endpoint &addr, vaddr)
                 if (addr.GetByte(3) != 127)
                 {
                     addrLocalHost = addr;
@@ -2501,7 +2501,7 @@ void StartNode(void* parg)
                     printf("ipv4 %s: %s\n", ifa->ifa_name, pszIP);
 
                 // Take the first IP that isn't loopback 127.x.x.x
-                CAddress addr(*(unsigned int*)&s4->sin_addr, GetListenPort(), nLocalServices);
+                Endpoint addr(*(unsigned int*)&s4->sin_addr, GetListenPort(), nLocalServices);
                 if (addr.IsValid() && addr.GetByte(3) != 127)
                 {
                     addrLocalHost = addr;
@@ -2518,13 +2518,13 @@ void StartNode(void* parg)
         freeifaddrs(myaddrs);
     }
 #endif
-    printf("addrLocalHost = %s\n", addrLocalHost.ToString().c_str());
+    printf("addrLocalHost = %s\n", addrLocalHost.toString().c_str());
 
     if (fUseProxy || mapArgs.count("-connect") || fNoListen)
     {
         // Proxies can't take incoming connections
-        addrLocalHost.ip = CAddress("0.0.0.0").ip;
-        printf("addrLocalHost = %s\n", addrLocalHost.ToString().c_str());
+        addrLocalHost.ip = Endpoint("0.0.0.0").ip;
+        printf("addrLocalHost = %s\n", addrLocalHost.toString().c_str());
     }
     else
     {

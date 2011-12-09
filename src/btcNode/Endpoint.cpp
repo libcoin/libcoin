@@ -3,7 +3,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "btcNode/protocol.h"
+#include "btcNode/Endpoint.h"
 #include "btc/util.h"
 
 #ifndef _WIN32
@@ -15,67 +15,6 @@ bool Lookup(const char *pszName, std::vector<Endpoint>& vaddr, int nServices, in
 bool Lookup(const char *pszName, Endpoint& addr, int nServices, bool fAllowLookup = false, int portDefault = 0, bool fAllowPort = false);
 
 static const unsigned char pchIPv4[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff };
-static const char* ppszTypeName[] =
-{
-    "ERROR",
-    "tx",
-    "block",
-};
-
-CMessageHeader::CMessageHeader()
-{
-    memcpy(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart));
-    memset(pchCommand, 0, sizeof(pchCommand));
-    pchCommand[1] = 1;
-    nMessageSize = -1;
-    nChecksum = 0;
-}
-
-CMessageHeader::CMessageHeader(const char* pszCommand, unsigned int nMessageSizeIn)
-{
-    memcpy(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart));
-    strncpy(pchCommand, pszCommand, COMMAND_SIZE);
-    nMessageSize = nMessageSizeIn;
-    nChecksum = 0;
-}
-
-std::string CMessageHeader::GetCommand() const
-{
-    if (pchCommand[COMMAND_SIZE-1] == 0)
-        return std::string(pchCommand, pchCommand + strlen(pchCommand));
-    else
-        return std::string(pchCommand, pchCommand + COMMAND_SIZE);
-}
-
-bool CMessageHeader::IsValid() const
-{
-    // Check start string
-    if (memcmp(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart)) != 0)
-        return false;
-
-    // Check the command string for errors
-    for (const char* p1 = pchCommand; p1 < pchCommand + COMMAND_SIZE; p1++)
-    {
-        if (*p1 == 0)
-        {
-            // Must be all zeros after the first zero
-            for (; p1 < pchCommand + COMMAND_SIZE; p1++)
-                if (*p1 != 0)
-                    return false;
-        }
-        else if (*p1 < ' ' || *p1 > 0x7E)
-            return false;
-    }
-
-    // Message size
-    if (nMessageSize > MAX_SIZE)
-    {
-        printf("CMessageHeader::IsValid() : (%s, %u bytes) nMessageSize > MAX_SIZE\n", GetCommand().c_str(), nMessageSize);
-        return false;
-    }
-
-    return true;
-}
 
 Endpoint::Endpoint()
 {
@@ -246,67 +185,12 @@ std::string Endpoint::ToStringPort() const
     return strprintf("%u", ntohs(port));
 }
 
-std::string Endpoint::ToString() const
+std::string Endpoint::toString() const
 {
     return strprintf("%u.%u.%u.%u:%u", GetByte(3), GetByte(2), GetByte(1), GetByte(0), ntohs(port));
 }
 
 void Endpoint::print() const
 {
-    printf("Endpoint(%s)\n", ToString().c_str());
-}
-
-Inventory::Inventory()
-{
-    type = 0;
-    hash = 0;
-}
-
-Inventory::Inventory(int typeIn, const uint256& hashIn)
-{
-    type = typeIn;
-    hash = hashIn;
-}
-
-Inventory::Inventory(const std::string& strType, const uint256& hashIn)
-{
-    int i;
-    for (i = 1; i < ARRAYLEN(ppszTypeName); i++)
-    {
-        if (strType == ppszTypeName[i])
-        {
-            type = i;
-            break;
-        }
-    }
-    if (i == ARRAYLEN(ppszTypeName))
-        throw std::out_of_range(strprintf("Inventory::Inventory(string, uint256) : unknown type '%s'", strType.c_str()));
-    hash = hashIn;
-}
-
-bool operator<(const Inventory& a, const Inventory& b)
-{
-    return (a.type < b.type || (a.type == b.type && a.hash < b.hash));
-}
-
-bool Inventory::IsKnownType() const
-{
-    return (type >= 1 && type < ARRAYLEN(ppszTypeName));
-}
-
-const char* Inventory::GetCommand() const
-{
-    if (!IsKnownType())
-        throw std::out_of_range(strprintf("Inventory::GetCommand() : type=%d unknown type", type));
-    return ppszTypeName[type];
-}
-
-std::string Inventory::ToString() const
-{
-    return strprintf("%s %s", GetCommand(), hash.ToString().substr(0,20).c_str());
-}
-
-void Inventory::print() const
-{
-    printf("Inventory(%s)\n", ToString().c_str());
+    printf("Endpoint(%s)\n", toString().c_str());
 }

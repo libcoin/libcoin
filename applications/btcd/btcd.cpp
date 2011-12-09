@@ -461,7 +461,7 @@ bool AppInit2(int argc, char* argv[])
         for (map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.begin(); mi != mapBlockIndex.end(); ++mi)
         {
             uint256 hash = (*mi).first;
-            if (strncmp(hash.ToString().c_str(), strMatch.c_str(), strMatch.size()) == 0)
+            if (strncmp(hash.toString().c_str(), strMatch.c_str(), strMatch.size()) == 0)
             {
                 CBlockIndex* pindex = (*mi).second;
                 CBlock block;
@@ -482,7 +482,7 @@ bool AppInit2(int argc, char* argv[])
     if (mapArgs.count("-proxy"))
     {
         fUseProxy = true;
-        addrProxy = CAddress(mapArgs["-proxy"]);
+        addrProxy = Endpoint(mapArgs["-proxy"]);
         if (!addrProxy.IsValid())
         {
             wxMessageBox(_("Invalid -proxy address"), "Bitcoin");
@@ -494,7 +494,7 @@ bool AppInit2(int argc, char* argv[])
     {
         BOOST_FOREACH(string strAddr, mapMultiArgs["-addnode"])
         {
-            CAddress addr(strAddr, fAllowDNS);
+            Endpoint addr(strAddr, fAllowDNS);
             addr.nTime = 0; // so it won't relay unless successfully connected
             if (addr.IsValid())
                 AddAddress(addr);

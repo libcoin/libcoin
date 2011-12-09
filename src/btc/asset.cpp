@@ -50,7 +50,7 @@ const CTx& CAsset::getTx(uint256 hash) const
     {
         return pair->second;
     }
-    //        cout << "CACHE MISS!!! " << hash.ToString() << endl;
+    //        cout << "CACHE MISS!!! " << hash.toString() << endl;
     // throw something!
 }
 

@@ -210,7 +210,7 @@ void CWallet::WalletUpdateSpent(const CTransaction &tx)
                 CWalletTx& wtx = (*mi).second;
                 if (!wtx.IsSpent(txin.prevout.n) && IsMine(wtx.vout[txin.prevout.n]))
                 {
-                    printf("WalletUpdateSpent found spent coin %sbc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
+                    printf("WalletUpdateSpent found spent coin %sbc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().toString().c_str());
                     wtx.MarkSpent(txin.prevout.n);
                     wtx.WriteToDisk();
                     vWalletUpdated.push_back(txin.prevout.hash);
@@ -257,7 +257,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
         }
 
         //// debug print
-        printf("AddToWallet %s  %s%s\n", wtxIn.GetHash().ToString().substr(0,10).c_str(), (fInsertedNew ? "new" : ""), (fUpdated ? "update" : ""));
+        printf("AddToWallet %s  %s%s\n", wtxIn.GetHash().toString().substr(0,10).c_str(), (fInsertedNew ? "new" : ""), (fUpdated ? "update" : ""));
 
         // Write to disk
         if (fInsertedNew || fUpdated)
@@ -366,13 +366,13 @@ void CWallet::Sync() // sync from the start!
     {
         for(KeyMap::iterator key = mapKeys.begin(); key != mapKeys.end(); ++key)
         {
-            cout << key->first.ToString() << endl;
+            cout << key->first.toString() << endl;
             set<std::pair<uint256, unsigned int> > debit;
             txdb.ReadDrIndex((key->first).GetHash160(), debit);
             for (set<std::pair<uint256, unsigned int> >::iterator pair = debit.begin(); pair != debit.end(); ++pair) {
                 CTransaction tx;
                 txdb.ReadDiskTx(pair->first, tx);
-                cout << "\t" << pair->first.ToString() << " - " << pair->second << endl;
+                cout << "\t" << pair->first.toString() << " - " << pair->second << endl;
                 AddToWalletIfInvolvingMe(tx, NULL);
             }
             set<std::pair<uint256, unsigned int> > credit;
@@ -380,7 +380,7 @@ void CWallet::Sync() // sync from the start!
             for (set<std::pair<uint256, unsigned int> >::iterator pair = credit.begin(); pair != credit.end(); ++pair) {
                 CTransaction tx;
                 txdb.ReadDiskTx(pair->first, tx);
-                cout << "\t" << pair->first.ToString() << " - " << pair->second << endl;
+                cout << "\t" << pair->first.toString() << " - " << pair->second << endl;
                 AddToWalletIfInvolvingMe(tx, NULL);
             }
         }
@@ -465,7 +465,7 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
         if (!ExtractAddress(txout.scriptPubKey, NULL, address))
         {
             printf("CWalletTx::GetAmounts: Unknown transaction type found, txid %s\n",
-                   this->GetHash().ToString().c_str());
+                   this->GetHash().toString().c_str());
             address = " unknown ";
         }
 
@@ -668,7 +668,7 @@ void CWallet::ReacceptWalletTransactions()
                 }
                 if (fUpdated)
                 {
-                    printf("ReacceptWalletTransactions found spent coin %sbc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
+                    printf("ReacceptWalletTransactions found spent coin %sbc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().toString().c_str());
                     wtx.MarkDirty();
                     wtx.WriteToDisk();
                 }
@@ -697,7 +697,7 @@ void CWalletTx::RelayWalletTransaction(CTxDB& txdb)
         {
             uint256 hash = tx.GetHash();
             if (!txdb.ContainsTx(hash))
-                RelayMessage(CInv(MSG_TX, hash), (CTransaction)tx);
+                RelayMessage(Inventory(MSG_TX, hash), (CTransaction)tx);
         }
     }
     if (!IsCoinBase())
@@ -705,8 +705,8 @@ void CWalletTx::RelayWalletTransaction(CTxDB& txdb)
         uint256 hash = GetHash();
         if (!txdb.ContainsTx(hash))
         {
-            printf("Relaying wtx %s\n", hash.ToString().substr(0,10).c_str());
-            RelayMessage(CInv(MSG_TX, hash), (CTransaction)*this);
+            printf("Relaying wtx %s\n", hash.toString().substr(0,10).c_str());
+            RelayMessage(Inventory(MSG_TX, hash), (CTransaction)*this);
         }
     }
 }
@@ -1073,7 +1073,7 @@ bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
     CRITICAL_BLOCK(cs_main)
     CRITICAL_BLOCK(cs_wallet)
     {
-        printf("CommitTransaction:\n%s", wtxNew.ToString().c_str());
+        printf("CommitTransaction:\n%s", wtxNew.toString().c_str());
         {
             // This is only to keep the database open to defeat the auto-flush for the
             // duration of this scope.  This is the only place where this optimization
@@ -1213,7 +1213,7 @@ bool CWallet::SetAddressBookName(const CBitcoinAddress& address, const string& s
     mapAddressBook[address] = strName;
     if (!fFileBacked)
         return false;
-    return CWalletDB(strWalletFile).WriteName(address.ToString(), strName);
+    return CWalletDB(strWalletFile).WriteName(address.toString(), strName);
 }
 
 bool CWallet::DelAddressBookName(const CBitcoinAddress& address)
@@ -1221,7 +1221,7 @@ bool CWallet::DelAddressBookName(const CBitcoinAddress& address)
     mapAddressBook.erase(address);
     if (!fFileBacked)
         return false;
-    return CWalletDB(strWalletFile).EraseName(address.ToString());
+    return CWalletDB(strWalletFile).EraseName(address.toString());
 }
 
 

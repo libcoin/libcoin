@@ -20,8 +20,8 @@ class CBlockIndex;
 
 class CKeyItem;
 
-class CAddress;
-class CInv;
+class Endpoint;
+class Inventory;
 class CRequestTracker;
 class CNode;
 class CBlockIndex;
@@ -170,7 +170,7 @@ public:
         return !(a == b);
     }
 
-    std::string ToString() const
+    std::string toString() const
     {
         if (IsNull())
             return strprintf("null");
@@ -180,7 +180,7 @@ public:
 
     void print() const
     {
-        printf("%s", ToString().c_str());
+        printf("%s", toString().c_str());
     }
 };
 
@@ -544,10 +544,10 @@ public:
     void print() const
     {
         printf("CBlock(hash=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%d)\n",
-            GetHash().ToString().substr(0,20).c_str(),
+            GetHash().toString().substr(0,20).c_str(),
             nVersion,
-            hashPrevBlock.ToString().substr(0,20).c_str(),
-            hashMerkleRoot.ToString().substr(0,10).c_str(),
+            hashPrevBlock.toString().substr(0,20).c_str(),
+            hashMerkleRoot.toString().substr(0,10).c_str(),
             nTime, nBits, nNonce,
             vtx.size());
         for (int i = 0; i < vtx.size(); i++)
@@ -557,7 +557,7 @@ public:
         }
         printf("  vMerkleTree: ");
         for (int i = 0; i < vMerkleTree.size(); i++)
-            printf("%s ", vMerkleTree[i].ToString().substr(0,10).c_str());
+            printf("%s ", vMerkleTree[i].toString().substr(0,10).c_str());
         printf("\n");
     }
 
@@ -724,17 +724,17 @@ public:
 
 
 
-    std::string ToString() const
+    std::string toString() const
     {
         return strprintf("CBlockIndex(nprev=%08x, pnext=%08x, nFile=%d, nBlockPos=%-6d nHeight=%d, merkle=%s, hashBlock=%s)",
             pprev, pnext, nFile, nBlockPos, nHeight,
-            hashMerkleRoot.ToString().substr(0,10).c_str(),
-            GetBlockHash().ToString().substr(0,20).c_str());
+            hashMerkleRoot.toString().substr(0,10).c_str(),
+            GetBlockHash().toString().substr(0,20).c_str());
     }
 
     void print() const
     {
-        printf("%s\n", ToString().c_str());
+        printf("%s\n", toString().c_str());
     }
 };
 
@@ -793,20 +793,20 @@ public:
     }
 
 
-    std::string ToString() const
+    std::string toString() const
     {
         std::string str = "CDiskBlockIndex(";
-        str += CBlockIndex::ToString();
+        str += CBlockIndex::toString();
         str += strprintf("\n                hashBlock=%s, hashPrev=%s, hashNext=%s)",
-            GetBlockHash().ToString().c_str(),
-            hashPrev.ToString().substr(0,20).c_str(),
-            hashNext.ToString().substr(0,20).c_str());
+            GetBlockHash().toString().c_str(),
+            hashPrev.toString().substr(0,20).c_str(),
+            hashNext.toString().substr(0,20).c_str());
         return str;
     }
 
     void print() const
     {
-        printf("%s\n", ToString().c_str());
+        printf("%s\n", toString().c_str());
     }
 };
 
@@ -1011,7 +1011,7 @@ public:
         strReserved.clear();
     }
 
-    std::string ToString() const
+    std::string toString() const
     {
         std::string strSetCancel;
         BOOST_FOREACH(int n, setCancel)
@@ -1050,7 +1050,7 @@ public:
 
     void print() const
     {
-        printf("%s", ToString().c_str());
+        printf("%s", toString().c_str());
     }
 };
 

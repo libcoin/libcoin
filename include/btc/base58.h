@@ -215,7 +215,7 @@ public:
         return SetString(str.c_str());
     }
 
-    std::string ToString() const
+    std::string toString() const
     {
         std::vector<unsigned char> vch(1, nVersion);
         vch.insert(vch.end(), vchData.begin(), vchData.end());

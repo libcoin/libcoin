@@ -111,7 +111,7 @@ public:
     virtual void getCreditCoins(uint160 btc, Coins& coins)
     {
         Array p;
-        p.push_back(CBitcoinAddress(btc).ToString());
+        p.push_back(CBitcoinAddress(btc).toString());
         
         Object reply = callRPC("getcredit", p);
         
@@ -124,7 +124,7 @@ public:
     virtual void getDebitCoins(uint160 btc, Coins& coins)
     {
         Array p;
-        p.push_back(CBitcoinAddress(btc).ToString());
+        p.push_back(CBitcoinAddress(btc).toString());
         
         Object reply = callRPC("getdebit", p);
         
@@ -137,7 +137,7 @@ public:
     virtual void getCoins(uint160 btc, Coins& coins)
     {
         Array p;
-        p.push_back(CBitcoinAddress(btc).ToString());
+        p.push_back(CBitcoinAddress(btc).toString());
         
         Object reply = callRPC("getcoins", p);
         
@@ -150,7 +150,7 @@ public:
     virtual void getTransaction(const Coin& coin, CTx& tx)
     {
         Array p;
-        p.push_back(coin.first.ToString());
+        p.push_back(coin.first.toString());
         Object reply = callRPC("gettxdetails", p);
         
         Object txdetails = find_value(reply, "result").get_obj();
@@ -343,7 +343,7 @@ Value getrecvbyaddress(const Array& params, bool fHelp)
     
     // now we need to call the server... - first create the input
     Array p;
-    p.push_back(address.ToString());
+    p.push_back(address.toString());
 
     Object reply = callRPC("getdebit", p);
     
@@ -405,7 +405,7 @@ Value getrecvbyaccount(const Array& params, bool fHelp)
     for(set<CBitcoinAddress>::iterator it = addresses.begin(); it!= addresses.end(); ++it)
     {
         Array p;
-        p.push_back(it->ToString());
+        p.push_back(it->toString());
         
         Object reply = callRPC("getdebit", p);
         
@@ -499,7 +499,7 @@ Value getaccountbalance(const Array& params, bool fHelp)
     for(set<CBitcoinAddress>::iterator it = addresses.begin(); it!= addresses.end(); ++it)
     {
         Array p;
-        p.push_back(it->ToString());
+        p.push_back(it->toString());
         
         Object reply = callRPC("getvalue", p);
         
@@ -526,7 +526,7 @@ Value listaccnts(const Array& params, bool fHelp)
         if (pwalletMain->HaveKey(entry.first)) // This address belongs to me
         {
             Array p;
-            p.push_back(entry.first.ToString());
+            p.push_back(entry.first.toString());
             
             Object reply = callRPC("getvalue", p);
             
@@ -576,7 +576,7 @@ Value signhashwithkey(const Array& params, bool fHelp)
     
     result.push_back(bn.GetHex());
 
-    result.push_back(key.GetAddress().ToString());
+    result.push_back(key.GetAddress().toString());
     
     return result;    
 }
@@ -682,7 +682,7 @@ Value sendtoaddr(const Array& params, bool fHelp)
     // scheme follows the scheme of blockexplorer:
     // "hash" : hash in hex
     // "ver" : vernum
-    entry.push_back(Pair("hash", tx.GetHash().ToString()));
+    entry.push_back(Pair("hash", tx.GetHash().toString()));
     entry.push_back(Pair("ver", tx.nVersion));
     entry.push_back(Pair("vin_sz", uint64_t(tx.vin.size())));
     entry.push_back(Pair("vout_sz", uint64_t(tx.vout.size())));
@@ -697,13 +697,13 @@ Value sendtoaddr(const Array& params, bool fHelp)
         inentry.clear();
         Object prevout;
         prevout.clear();
-        prevout.push_back(Pair("hash", txin.prevout.hash.ToString()));
+        prevout.push_back(Pair("hash", txin.prevout.hash.toString()));
         prevout.push_back(Pair("n", uint64_t(txin.prevout.n)));
         inentry.push_back(Pair("prev_out", prevout));
         if(tx.IsCoinBase())            
-            inentry.push_back(Pair("coinbase", txin.scriptSig.ToString()));
+            inentry.push_back(Pair("coinbase", txin.scriptSig.toString()));
         else
-            inentry.push_back(Pair("scriptSig", txin.scriptSig.ToString()));
+            inentry.push_back(Pair("scriptSig", txin.scriptSig.toString()));
         txins.push_back(inentry);
     }
     entry.push_back(Pair("in", txins));
@@ -715,7 +715,7 @@ Value sendtoaddr(const Array& params, bool fHelp)
         Object outentry;
         outentry.clear();
         outentry.push_back(Pair("value", strprintf("%"PRI64d".%08"PRI64d"",txout.nValue/COIN, txout.nValue%COIN))); // format correctly
-        outentry.push_back(Pair("scriptPubKey", txout.scriptPubKey.ToString()));
+        outentry.push_back(Pair("scriptPubKey", txout.scriptPubKey.toString()));
         txouts.push_back(outentry);
     }
     entry.push_back(Pair("out", txouts));

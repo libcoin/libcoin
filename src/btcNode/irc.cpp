@@ -15,7 +15,7 @@
 using namespace std;
 using namespace boost;
 
-int nGotIRCAddresses = 0;
+int nGotIREndpointes = 0;
 bool fGotExternalIP = false;
 
 void ThreadIRCSeed2(void* parg);
@@ -31,7 +31,7 @@ struct ircaddr
 };
 #pragma pack(pop)
 
-string EncodeAddress(const CAddress& addr)
+string EncodeAddress(const Endpoint& addr)
 {
     struct ircaddr tmp;
     tmp.ip    = addr.ip;
@@ -41,7 +41,7 @@ string EncodeAddress(const CAddress& addr)
     return string("u") + EncodeBase58Check(vch);
 }
 
-bool DecodeAddress(string str, CAddress& addr)
+bool DecodeAddress(string str, Endpoint& addr)
 {
     vector<unsigned char> vch;
     if (!DecodeBase58Check(str.substr(1), vch))
@@ -52,7 +52,7 @@ bool DecodeAddress(string str, CAddress& addr)
         return false;
     memcpy(&tmp, &vch[0], sizeof(tmp));
 
-    addr = CAddress(tmp.ip, ntohs(tmp.port), NODE_NETWORK);
+    addr = Endpoint(tmp.ip, ntohs(tmp.port), NODE_NETWORK);
     return true;
 }
 
@@ -231,7 +231,7 @@ bool GetIPFromIRC(SOCKET hSocket, string strMyName, unsigned int& ipRet)
     printf("GetIPFromIRC() got userhost %s\n", strHost.c_str());
     if (fUseProxy)
         return false;
-    CAddress addr(strHost, 0, true);
+    Endpoint addr(strHost, 0, true);
     if (!addr.IsValid())
         return false;
     ipRet = addr.ip;
@@ -272,12 +272,12 @@ void ThreadIRCSeed2(void* parg)
 
     while (!fShutdown)
     {
-        //CAddress addrConnect("216.155.130.130:6667"); // chat.freenode.net
-        CAddress addrConnect("92.243.23.21", 6667); // irc.lfnet.org
+        //Endpoint addrConnect("216.155.130.130:6667"); // chat.freenode.net
+        Endpoint addrConnect("92.243.23.21", 6667); // irc.lfnet.org
         if (!fTOR)
         {
             //struct hostent* phostent = gethostbyname("chat.freenode.net");
-            CAddress addrIRC("irc.lfnet.org", 6667, true);
+            Endpoint addrIRC("irc.lfnet.org", 6667, true);
             if (addrIRC.IsValid())
                 addrConnect = addrIRC;
         }
@@ -334,7 +334,7 @@ void ThreadIRCSeed2(void* parg)
         Sleep(500);
 
         // Get our external IP from the IRC server and re-nick before joining the channel
-        CAddress addrFromIRC;
+        Endpoint addrFromIRC;
         if (GetIPFromIRC(hSocket, strMyName, addrFromIRC.ip))
         {
             printf("GetIPFromIRC() returned %s\n", addrFromIRC.ToStringIP().c_str());
@@ -393,13 +393,13 @@ void ThreadIRCSeed2(void* parg)
 
             if (pszName[0] == 'u')
             {
-                CAddress addr;
+                Endpoint addr;
                 if (DecodeAddress(pszName, addr))
                 {
                     addr.nTime = GetAdjustedTime();
                     if (AddAddress(addr, 51 * 60))
-                        printf("IRC got new address: %s\n", addr.ToString().c_str());
-                    nGotIRCAddresses++;
+                        printf("IRC got new address: %s\n", addr.toString().c_str());
+                    nGotIREndpointes++;
                 }
                 else
                 {

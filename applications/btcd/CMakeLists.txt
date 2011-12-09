@@ -3,6 +3,10 @@ SOURCE_GROUP("Document Root\\wallet" FILES
 www/wallet/index.html
 )
 
+SOURCE_GROUP("Document Root\\donate" FILES
+www/donate/index.html
+)
+
 SOURCE_GROUP("Document Root\\js" FILES
 www/js/btc.js_
 www/js/jquery.js_
@@ -40,6 +44,7 @@ proxy.cpp
 proxy.h
 btcd.cpp
 www/wallet/index.html
+www/donate/index.html
 www/js/btc.js_
 www/js/jquery.js_
 www/js/btc/base58.js

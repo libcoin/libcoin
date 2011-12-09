@@ -23,7 +23,7 @@ double reliability(uint256 hash) {
     CTxIndex txindex;
     if(!txdb.ReadTxIndex(hash, txindex)) { // confirmation is 0, check the other maturity
         confirmations = 0;
-        CInv inv(MSG_TX, hash);
+        Inventory inv(MSG_TX, hash);
         CRITICAL_BLOCK(cs_vNodes)
             {
             n_nodes = vNodes.size();
@@ -69,7 +69,7 @@ Value gettxmaturity(const Array& params, bool fHelp)
     if(!txdb.ReadTxIndex(hash, txindex)) // confirmation is 0, check the other maturity
     {
         confirmations = 0;
-        CInv inv(MSG_TX, hash);
+        Inventory inv(MSG_TX, hash);
         CRITICAL_BLOCK(cs_vNodes)
         {
             n_nodes = vNodes.size();
@@ -108,7 +108,7 @@ Object tx2json(CTx &tx, int64 timestamp = 0, int64 blockheight = 0)
     uint256 hash = tx.GetHash();
     entry.push_back(Pair("timestamp", timestamp));
     entry.push_back(Pair("blockheight", blockheight));
-    entry.push_back(Pair("hash", hash.ToString()));
+    entry.push_back(Pair("hash", hash.toString()));
     entry.push_back(Pair("ver", tx.nVersion));
     entry.push_back(Pair("vin_sz", uint64_t(tx.vin.size())));
     entry.push_back(Pair("vout_sz", uint64_t(tx.vout.size())));
@@ -123,13 +123,13 @@ Object tx2json(CTx &tx, int64 timestamp = 0, int64 blockheight = 0)
         inentry.clear();
         Object prevout;
         prevout.clear();
-        prevout.push_back(Pair("hash", txin.prevout.hash.ToString()));
+        prevout.push_back(Pair("hash", txin.prevout.hash.toString()));
         prevout.push_back(Pair("n", uint64_t(txin.prevout.n)));
         inentry.push_back(Pair("prev_out", prevout));
         if(tx.IsCoinBase())            
-            inentry.push_back(Pair("coinbase", txin.scriptSig.ToString()));
+            inentry.push_back(Pair("coinbase", txin.scriptSig.toString()));
         else
-            inentry.push_back(Pair("scriptSig", txin.scriptSig.ToString()));
+            inentry.push_back(Pair("scriptSig", txin.scriptSig.toString()));
         txins.push_back(inentry);
     }
     entry.push_back(Pair("in", txins));
@@ -141,7 +141,7 @@ Object tx2json(CTx &tx, int64 timestamp = 0, int64 blockheight = 0)
         Object outentry;
         outentry.clear();
         outentry.push_back(Pair("value", strprintf("%"PRI64d".%08"PRI64d"",txout.nValue/COIN, txout.nValue%COIN))); // format correctly
-        outentry.push_back(Pair("scriptPubKey", txout.scriptPubKey.ToString()));
+        outentry.push_back(Pair("scriptPubKey", txout.scriptPubKey.toString()));
         txouts.push_back(outentry);
     }
     entry.push_back(Pair("out", txouts));
@@ -350,7 +350,7 @@ Value GetDebit::operator()(const Array& params, bool fHelp) {
     {
         Object obj;
         obj.clear();
-        obj.push_back(Pair("hash", coin->first.ToString()));
+        obj.push_back(Pair("hash", coin->first.toString()));
         obj.push_back(Pair("n", uint64_t(coin->second)));
         list.push_back(obj);
     }
@@ -387,7 +387,7 @@ Value GetCredit::operator()(const Array& params, bool fHelp) {
     {
         Object obj;
         obj.clear();
-        obj.push_back(Pair("hash", coin->first.ToString()));
+        obj.push_back(Pair("hash", coin->first.toString()));
         obj.push_back(Pair("n", uint64_t(coin->second)));
         list.push_back(obj);
     }
@@ -417,7 +417,7 @@ Value getcoins(const Array& params, bool fHelp)
     {
         Object obj;
         obj.clear();
-        obj.push_back(Pair("hash", coin->first.ToString()));
+        obj.push_back(Pair("hash", coin->first.toString()));
         obj.push_back(Pair("n", uint64_t(coin->second)));
         list.push_back(obj);
     }
@@ -491,7 +491,7 @@ CTx json2tx(Object entry)
         tx.vout.push_back(txout);
     }
 
-    cout << tx.GetHash().ToString() << endl;
+    cout << tx.GetHash().toString() << endl;
     cout << find_value(entry, "hash").get_str() << endl;
     
     return tx;
@@ -506,13 +506,13 @@ int64 CalculateFee(CTx& tx)
     {
         CTransaction txin;
         txdb.ReadDiskTx(tx.vin[i].prevout.hash, txin); // OBS - you need to check also the MemoryPool...
-        if (txin.IsNull()) throw runtime_error("Referred transaction not known : " + tx.vin[i].prevout.hash.ToString());
+        if (txin.IsNull()) throw runtime_error("Referred transaction not known : " + tx.vin[i].prevout.hash.toString());
         if (tx.vin[i].prevout.n < txin.vout.size())
             value_in += txin.vout[tx.vin[i].prevout.n].nValue;
         else
         {
             ostringstream err;
-            err << "Referred index " << tx.vin[i].prevout.n << " too big. Transaction: " << tx.vin[i].prevout.hash.ToString() << "has only " << txin.vout.size() << " txouts.";
+            err << "Referred index " << tx.vin[i].prevout.n << " too big. Transaction: " << tx.vin[i].prevout.hash.toString() << "has only " << txin.vout.size() << " txouts.";
             throw runtime_error(err.str());
         }
     }
@@ -570,7 +570,7 @@ Value posttx(const Array& params, bool fHelp)
     if (!tx.IsCoinBase())
     {
         uint256 hash = tx.GetHash();
-        RelayMessage(CInv(MSG_TX, hash), tx);
+        RelayMessage(Inventory(MSG_TX, hash), tx);
     }
     
     // save it to the broker db, from here it will be reposted later if needed
@@ -581,11 +581,11 @@ Value posttx(const Array& params, bool fHelp)
     
     // now we have read the transaction - we need verify and possibly post it to the p2p network
     // We create a fake node and pretend we got this from the network - this ensures that this is handled by the right thread...
-    CNode* pnode = new CNode(INVALID_SOCKET, CAddress("localhost"));
+    CNode* pnode = new CNode(INVALID_SOCKET, Endpoint("localhost"));
     
     CDataStream ss;
     ss << tx;
-    CMessageHeader header("tx", ss.size());
+    MessageHeader header("tx", ss.size());
     uint256 hash = Hash(ss.begin(), ss.begin() + ss.size());
     unsigned int nChecksum;
     memcpy(&nChecksum, &hash, sizeof(nChecksum));    

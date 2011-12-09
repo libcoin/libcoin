@@ -307,7 +307,7 @@ public:
             *this = 0 - *this;
     }
 
-    std::string ToString(int nBase=10) const
+    std::string toString(int nBase=10) const
     {
         CAutoBN_CTX pctx;
         CBigNum bnBase = nBase;
@@ -322,7 +322,7 @@ public:
         while (BN_cmp(&bn, &bn0) > 0)
         {
             if (!BN_div(&dv, &rem, &bn, &bnBase, pctx))
-                throw bignum_error("CBigNum::ToString() : BN_div failed");
+                throw bignum_error("CBigNum::toString() : BN_div failed");
             bn = dv;
             unsigned int c = rem.getulong();
             str += "0123456789abcdef"[c];
@@ -335,7 +335,7 @@ public:
 
     std::string GetHex() const
     {
-        return ToString(16);
+        return toString(16);
     }
 
     unsigned int GetSerializeSize(int nType=0, int nVersion=VERSION) const

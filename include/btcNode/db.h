@@ -19,7 +19,7 @@
 class CTxIndex;
 class CDiskTxPos;
 class COutPoint;
-class CAddress;
+class Endpoint;
 
 extern CCriticalSection cs_db;
 extern DbEnv dbenv;
@@ -313,8 +313,8 @@ private:
     CAddrDB(const CAddrDB&);
     void operator=(const CAddrDB&);
 public:
-    bool WriteAddress(const CAddress& addr);
-    bool EraseAddress(const CAddress& addr);
+    bool WriteAddress(const Endpoint& addr);
+    bool EraseAddress(const Endpoint& addr);
     bool LoadAddresses();
 };
 

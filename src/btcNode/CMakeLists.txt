@@ -14,7 +14,14 @@ SET(TARGET_H
     ${HEADER_PATH}/db.h
     ${HEADER_PATH}/irc.h
     ${HEADER_PATH}/net.h
-    ${HEADER_PATH}/protocol.h
+    ${HEADER_PATH}/Inventory.h
+    ${HEADER_PATH}/Endpoint.h
+    ${HEADER_PATH}/MessageHeader.h
+    ${HEADER_PATH}/MessageHandler.h
+    ${HEADER_PATH}/MessageParser.h
+    ${HEADER_PATH}/Node.h
+    ${HEADER_PATH}/Peer.h
+    ${HEADER_PATH}/PeerManager.h
     ${BITCOIN_CONFIG_HEADER}
 )
 
@@ -26,7 +33,14 @@ SET(TARGET_SRC
     db.cpp
     irc.cpp
     net.cpp
-    protocol.cpp
+    Inventory.cpp
+    Endpoint.cpp
+    MessageHeader.cpp
+    MessageHandler.cpp
+    MessageParser.cpp
+    Node.cpp
+    Peer.cpp
+    PeerManager.cpp
 
     ${BITCOIN_VERSIONINFO_RC}
 )

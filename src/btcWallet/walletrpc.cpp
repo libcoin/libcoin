@@ -65,7 +65,7 @@ Value getnewaddress(const Array& params, bool fHelp)
     
     pwalletMain->SetAddressBookName(address, strAccount);
     
-    return address.ToString();
+    return address.toString();
 }
 
 
@@ -119,7 +119,7 @@ Value getaccountaddress(const Array& params, bool fHelp)
     
     Value ret;
     
-    ret = GetAccountAddress(strAccount).ToString();
+    ret = GetAccountAddress(strAccount).toString();
     
     return ret;
 }
@@ -191,7 +191,7 @@ Value getaddressesbyaccount(const Array& params, bool fHelp)
         const CBitcoinAddress& address = item.first;
         const string& strName = item.second;
         if (strName == strAccount)
-            ret.push_back(address.ToString());
+            ret.push_back(address.toString());
     }
     return ret;
 }
@@ -657,7 +657,7 @@ Value ListReceived(const Array& params, bool fByAccounts)
         else
         {
             Object obj;
-            obj.push_back(Pair("address",       address.ToString()));
+            obj.push_back(Pair("address",       address.toString()));
             obj.push_back(Pair("account",       strAccount));
             obj.push_back(Pair("label",         strAccount)); // deprecated
             obj.push_back(Pair("amount",        ValueFromAmount(nAmount)));
@@ -752,7 +752,7 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
         {
             Object entry;
             entry.push_back(Pair("account", strSentAccount));
-            entry.push_back(Pair("address", s.first.ToString()));
+            entry.push_back(Pair("address", s.first.toString()));
             entry.push_back(Pair("category", "send"));
             entry.push_back(Pair("amount", ValueFromAmount(-s.second)));
             entry.push_back(Pair("fee", ValueFromAmount(-nFee)));
@@ -773,7 +773,7 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
         {
             Object entry;
             entry.push_back(Pair("account", account));
-            entry.push_back(Pair("address", r.first.ToString()));
+            entry.push_back(Pair("address", r.first.toString()));
             entry.push_back(Pair("category", "receive"));
             entry.push_back(Pair("amount", ValueFromAmount(r.second)));
             if (fLong)
@@ -1188,7 +1188,7 @@ Value validateaddress(const Array& params, bool fHelp)
     {
         // Call Hash160ToAddress() so we always return current ADDRESSVERSION
         // version of the address:
-        string currentAddress = address.ToString();
+        string currentAddress = address.toString();
         ret.push_back(Pair("address", currentAddress));
         ret.push_back(Pair("ismine", (pwalletMain->HaveKey(address) > 0)));
         if (pwalletMain->mapAddressBook.count(address))

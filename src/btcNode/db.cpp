@@ -225,14 +225,14 @@ bool CTxDB::ReadDrIndex(uint160 hash160, set<Coin>& debit)
 {
     assert(!fClient);
     //    txindex.SetNull();
-    return Read(make_pair(string("dr"), CBitcoinAddress(hash160).ToString()), debit);
+    return Read(make_pair(string("dr"), CBitcoinAddress(hash160).toString()), debit);
 }
 
 bool CTxDB::ReadCrIndex(uint160 hash160, set<Coin>& credit)
 {
     assert(!fClient);
     //    txindex.SetNull();
-    return Read(make_pair(string("cr"), CBitcoinAddress(hash160).ToString()), credit);
+    return Read(make_pair(string("cr"), CBitcoinAddress(hash160).toString()), credit);
 }
 
 bool Solver(const CScript& scriptPubKey, vector<pair<opcodetype, vector<unsigned char> > >& vSolutionRet);
@@ -241,7 +241,7 @@ bool CTxDB::UpdateTxIndex(uint256 hash, const CTxIndex& txindex)
 {
     assert(!fClient);
 
-//    cout << "update tx: " << hash.ToString() << endl;    
+//    cout << "update tx: " << hash.toString() << endl;    
     
     CTransaction tx;
     tx.ReadFromDisk(txindex.pos);
@@ -307,19 +307,19 @@ bool CTxDB::UpdateTxIndex(uint256 hash, const CTxIndex& txindex)
     for(vector<AssetPair>::iterator hashpair = vDebit.begin(); hashpair != vDebit.end(); ++hashpair)
     {
         set<Coin> txhashes;
-        Read(make_pair(string("dr"), CBitcoinAddress(hashpair->first).ToString()), txhashes);
-//        cout << "\t debit: " << CBitcoinAddress(hashpair->first).ToString() << endl;    
+        Read(make_pair(string("dr"), CBitcoinAddress(hashpair->first).toString()), txhashes);
+//        cout << "\t debit: " << CBitcoinAddress(hashpair->first).toString() << endl;    
         txhashes.insert(Coin(hash, hashpair->second));
-        Write(make_pair(string("dr"), CBitcoinAddress(hashpair->first).ToString()), txhashes); // overwrite!
+        Write(make_pair(string("dr"), CBitcoinAddress(hashpair->first).toString()), txhashes); // overwrite!
     }
     
     for(vector<AssetPair>::iterator hashpair = vCredit.begin(); hashpair != vCredit.end(); ++hashpair)
     {
         set<Coin> txhashes;
-        Read(make_pair(string("cr"), CBitcoinAddress(hashpair->first).ToString()), txhashes);
-//        cout << "\t credit: " << CBitcoinAddress(hashpair->first).ToString() << endl;    
+        Read(make_pair(string("cr"), CBitcoinAddress(hashpair->first).toString()), txhashes);
+//        cout << "\t credit: " << CBitcoinAddress(hashpair->first).toString() << endl;    
         txhashes.insert(Coin(hash, hashpair->second));
-        Write(make_pair(string("cr"), CBitcoinAddress(hashpair->first).ToString()), txhashes); // overwrite!
+        Write(make_pair(string("cr"), CBitcoinAddress(hashpair->first).toString()), txhashes); // overwrite!
     }
 //    cout << "and write tx" << std::endl;
     return Write(make_pair(string("tx"), hash), txindex);
@@ -348,7 +348,7 @@ bool CTxDB::EraseTxIndex(const CTransaction& tx)
     typedef pair<uint160, unsigned int> AssetPair;
     vector<AssetPair> vDebit;
     vector<AssetPair> vCredit;
-    cout << "erase tx: " << hash.ToString() << endl;    
+    cout << "erase tx: " << hash.toString() << endl;    
     // for each tx out in the newly added tx check for a pubkey or a pubkeyhash in the script
     for(unsigned int n = 0; n < tx.vout.size(); n++)
     {
@@ -404,17 +404,17 @@ bool CTxDB::EraseTxIndex(const CTransaction& tx)
     for(vector<AssetPair>::iterator hashpair = vDebit.begin(); hashpair != vDebit.end(); ++hashpair)
     {
         set<Coin> txhashes;
-        Read(make_pair(string("dr"), CBitcoinAddress(hashpair->first).ToString()), txhashes);
+        Read(make_pair(string("dr"), CBitcoinAddress(hashpair->first).toString()), txhashes);
         txhashes.erase(Coin(hash, hashpair->second));
-        Write(make_pair(string("dr"), CBitcoinAddress(hashpair->first).ToString()), txhashes); // overwrite!
+        Write(make_pair(string("dr"), CBitcoinAddress(hashpair->first).toString()), txhashes); // overwrite!
     }
     
     for(vector<AssetPair>::iterator hashpair = vCredit.begin(); hashpair != vCredit.end(); ++hashpair)
     {
         set<Coin> txhashes;
-        Read(make_pair(string("cr"), CBitcoinAddress(hashpair->first).ToString()), txhashes);
+        Read(make_pair(string("cr"), CBitcoinAddress(hashpair->first).toString()), txhashes);
         txhashes.erase(Coin(hash, hashpair->second));
-        Write(make_pair(string("cr"), CBitcoinAddress(hashpair->first).ToString()), txhashes); // overwrite!
+        Write(make_pair(string("cr"), CBitcoinAddress(hashpair->first).toString()), txhashes); // overwrite!
     }
     
     return Erase(make_pair(string("tx"), hash));
@@ -641,7 +641,7 @@ bool CTxDB::LoadBlockIndex()
     pindexBest = mapBlockIndex[hashBestChain];
     nBestHeight = pindexBest->nHeight;
     bnBestChainWork = pindexBest->bnChainWork;
-    printf("LoadBlockIndex(): hashBestChain=%s  height=%d\n", hashBestChain.ToString().substr(0,20).c_str(), nBestHeight);
+    printf("LoadBlockIndex(): hashBestChain=%s  height=%d\n", hashBestChain.toString().substr(0,20).c_str(), nBestHeight);
 
     // Load bnBestInvalidWork, OK if it doesn't exist
     ReadBestInvalidWork(bnBestInvalidWork);
@@ -657,7 +657,7 @@ bool CTxDB::LoadBlockIndex()
             return error("LoadBlockIndex() : block.ReadFromDisk failed");
         if (!block.CheckBlock())
         {
-            printf("LoadBlockIndex() : *** found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().ToString().c_str());
+            printf("LoadBlockIndex() : *** found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().toString().c_str());
             pindexFork = pindex->pprev;
         }
     }
@@ -749,12 +749,12 @@ void CDBAssetSyncronizer::getCoins(uint160 btc, Coins& coins)
 // CAddrDB
 //
 
-bool CAddrDB::WriteAddress(const CAddress& addr)
+bool CAddrDB::WriteAddress(const Endpoint& addr)
 {
     return Write(make_pair(string("addr"), addr.GetKey()), addr);
 }
 
-bool CAddrDB::EraseAddress(const CAddress& addr)
+bool CAddrDB::EraseAddress(const Endpoint& addr)
 {
     return Erase(make_pair(string("addr"), addr.GetKey()));
 }
@@ -772,7 +772,7 @@ bool CAddrDB::LoadAddresses()
                 char psz[1000];
                 while (fgets(psz, sizeof(psz), filein))
                 {
-                    CAddress addr(psz, false, NODE_NETWORK);
+                    Endpoint addr(psz, false, NODE_NETWORK);
                     addr.nTime = 0; // so it won't relay unless successfully connected
                     if (addr.IsValid())
                         AddAddress(addr);
@@ -802,7 +802,7 @@ bool CAddrDB::LoadAddresses()
             ssKey >> strType;
             if (strType == "addr")
             {
-                CAddress addr;
+                Endpoint addr;
                 ssValue >> addr;
                 mapAddresses.insert(make_pair(addr.GetKey(), addr));
             }

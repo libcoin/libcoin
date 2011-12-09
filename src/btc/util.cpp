@@ -936,7 +936,7 @@ struct CLockLocation
         sourceLine = nLine;
     }
 
-    std::string ToString() const
+    std::string toString() const
     {
         return mutexName+"  "+sourceFile+":"+itostr(sourceLine);
     }
@@ -962,14 +962,14 @@ static void potential_deadlock_detected(const std::pair<CCriticalSection*, CCrit
     {
         if (i.first == mismatch.first) printf(" (1)");
         if (i.first == mismatch.second) printf(" (2)");
-        printf(" %s\n", i.second.ToString().c_str());
+        printf(" %s\n", i.second.toString().c_str());
     }
     printf("Current lock order is:\n");
     BOOST_FOREACH(const PAIRTYPE(CCriticalSection*, CLockLocation)& i, s1)
     {
         if (i.first == mismatch.first) printf(" (1)");
         if (i.first == mismatch.second) printf(" (2)");
-        printf(" %s\n", i.second.ToString().c_str());
+        printf(" %s\n", i.second.toString().c_str());
     }
 }
 
@@ -979,7 +979,7 @@ static void push_lock(CCriticalSection* c, const CLockLocation& locklocation)
     if (lockstack.get() == NULL)
         lockstack.reset(new LockStack);
 
-    if (fDebug) printf("Locking: %s\n", locklocation.ToString().c_str());
+    if (fDebug) printf("Locking: %s\n", locklocation.toString().c_str());
     dd_mutex.lock();
 
     (*lockstack).push_back(std::make_pair(c, locklocation));
@@ -1008,7 +1008,7 @@ static void pop_lock()
     if (fDebug) 
     {
         const CLockLocation& locklocation = (*lockstack).rbegin()->second;
-        printf("Unlocked: %s\n", locklocation.ToString().c_str());
+        printf("Unlocked: %s\n", locklocation.toString().c_str());
     }
     dd_mutex.lock();
     (*lockstack).pop_back();

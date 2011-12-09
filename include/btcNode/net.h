@@ -14,7 +14,9 @@
 #include <arpa/inet.h>
 #endif
 
-#include "btcNode/protocol.h"
+#include "btcNode/MessageHeader.h"
+#include "btcNode/Inventory.h"
+#include "btcNode/Endpoint.h"
 
 class CAddrDB;
 class CRequestTracker;
@@ -29,14 +31,14 @@ inline unsigned int ReceiveBufferSize() { return 1000*GetArg("-maxreceivebuffer"
 inline unsigned int SendBufferSize() { return 1000*GetArg("-maxsendbuffer", 10*1000); }
 static const unsigned int PUBLISH_HOPS = 5;
 
-bool ConnectSocket(const CAddress& addrConnect, SOCKET& hSocketRet, int nTimeout=nConnectTimeout);
-bool Lookup(const char *pszName, std::vector<CAddress>& vaddr, int nServices, int nMaxSolutions, bool fAllowLookup = false, int portDefault = 0, bool fAllowPort = false);
-bool Lookup(const char *pszName, CAddress& addr, int nServices, bool fAllowLookup = false, int portDefault = 0, bool fAllowPort = false);
+bool ConnectSocket(const Endpoint& addrConnect, SOCKET& hSocketRet, int nTimeout=nConnectTimeout);
+bool Lookup(const char *pszName, std::vector<Endpoint>& vaddr, int nServices, int nMaxSolutions, bool fAllowLookup = false, int portDefault = 0, bool fAllowPort = false);
+bool Lookup(const char *pszName, Endpoint& addr, int nServices, bool fAllowLookup = false, int portDefault = 0, bool fAllowPort = false);
 bool GetMyExternalIP(unsigned int& ipRet);
-bool AddAddress(CAddress addr, int64 nTimePenalty=0, CAddrDB *pAddrDB=NULL);
-void AddressCurrentlyConnected(const CAddress& addr);
+bool AddAddress(Endpoint addr, int64 nTimePenalty=0, CAddrDB *pAddrDB=NULL);
+void AddressCurrentlyConnected(const Endpoint& addr);
 CNode* FindNode(unsigned int ip);
-CNode* ConnectNode(CAddress addrConnect, int64 nTimeout=0);
+CNode* ConnectNode(Endpoint addrConnect, int64 nTimeout=0);
 bool AnySubscribed(unsigned int nChannel);
 void MapPort(bool fMapPort);
 void DNSAddressSeed();
@@ -75,22 +77,22 @@ public:
 extern bool fClient;
 extern bool fAllowDNS;
 extern uint64 nLocalServices;
-extern CAddress addrLocalHost;
+extern Endpoint addrLocalHost;
 extern uint64 nLocalHostNonce;
 extern boost::array<int, 10> vnThreadsRunning;
 
 extern std::vector<CNode*> vNodes;
 extern CCriticalSection cs_vNodes;
-extern std::map<std::vector<unsigned char>, CAddress> mapAddresses;
+extern std::map<std::vector<unsigned char>, Endpoint> mapAddresses;
 extern CCriticalSection cs_mapAddresses;
-extern std::map<CInv, CDataStream> mapRelay;
-extern std::deque<std::pair<int64, CInv> > vRelayExpiration;
+extern std::map<Inventory, CDataStream> mapRelay;
+extern std::deque<std::pair<int64, Inventory> > vRelayExpiration;
 extern CCriticalSection cs_mapRelay;
-extern std::map<CInv, int64> mapAlreadyAskedFor;
+extern std::map<Inventory, int64> mapAlreadyAskedFor;
 
 // Settings
 extern int fUseProxy;
-extern CAddress addrProxy;
+extern Endpoint addrProxy;
 
 
 
@@ -113,7 +115,7 @@ public:
     int64 nTimeConnected;
     unsigned int nHeaderStart;
     unsigned int nMessageStart;
-    CAddress addr;
+    Endpoint addr;
     int nVersion;
     std::string strSubVer;
     bool fClient;
@@ -133,22 +135,22 @@ public:
     int nStartingHeight;
 
     // flood relay
-    std::vector<CAddress> vAddrToSend;
-    std::set<CAddress> setAddrKnown;
+    std::vector<Endpoint> vAddrToSend;
+    std::set<Endpoint> setAddrKnown;
     bool fGetAddr;
     std::set<uint256> setKnown;
 
     // inventory based relay
-    std::set<CInv> setInventoryKnown;
-    std::vector<CInv> vInventoryToSend;
+    std::set<Inventory> setInventoryKnown;
+    std::vector<Inventory> vInventoryToSend;
     CCriticalSection cs_inventory;
-    std::multimap<int64, CInv> mapAskFor;
+    std::multimap<int64, Inventory> mapAskFor;
 
     // publish and subscription
     std::vector<char> vfSubscribe;
 
 
-    CNode(SOCKET hSocketIn, CAddress addrIn, bool fInboundIn=false)
+    CNode(SOCKET hSocketIn, Endpoint addrIn, bool fInboundIn=false)
     {
         nServices = 0;
         hSocket = hSocketIn;
@@ -226,12 +228,12 @@ public:
 
 
 
-    void AddAddressKnown(const CAddress& addr)
+    void AddAddressKnown(const Endpoint& addr)
     {
         setAddrKnown.insert(addr);
     }
 
-    void PushAddress(const CAddress& addr)
+    void PushAddress(const Endpoint& addr)
     {
         // Known checking here is only to save space from duplicates.
         // SendMessages will filter it again for knowns that were added
@@ -241,25 +243,25 @@ public:
     }
 
 
-    void AddInventoryKnown(const CInv& inv)
+    void AddInventoryKnown(const Inventory& inv)
     {
         CRITICAL_BLOCK(cs_inventory)
             setInventoryKnown.insert(inv);
     }
 
-    void PushInventory(const CInv& inv)
+    void PushInventory(const Inventory& inv)
     {
         CRITICAL_BLOCK(cs_inventory)
             if (!setInventoryKnown.count(inv))
                 vInventoryToSend.push_back(inv);
     }
 
-    void AskFor(const CInv& inv)
+    void AskFor(const Inventory& inv)
     {
         // We're using mapAskFor as a priority queue,
         // the key is the earliest time the request can be sent
         int64& nRequestTime = mapAlreadyAskedFor[inv];
-        printf("askfor %s   %"PRI64d"\n", inv.ToString().c_str(), nRequestTime);
+        printf("askfor %s   %"PRI64d"\n", inv.toString().c_str(), nRequestTime);
 
         // Make sure not to reuse time indexes to keep things in the same order
         int64 nNow = (GetTime() - 1) * 1000000;
@@ -279,7 +281,7 @@ public:
         if (nHeaderStart != -1)
             AbortMessage();
         nHeaderStart = vSend.size();
-        vSend << CMessageHeader(pszCommand, 0);
+        vSend << MessageHeader(pszCommand, 0);
         nMessageStart = vSend.size();
         if (fDebug)
             printf("%s ", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());
@@ -311,7 +313,7 @@ public:
 
         // Set the size
         unsigned int nSize = vSend.size() - nMessageStart;
-        memcpy((char*)&vSend[nHeaderStart] + offsetof(CMessageHeader, nMessageSize), &nSize, sizeof(nSize));
+        memcpy((char*)&vSend[nHeaderStart] + offsetof(MessageHeader, nMessageSize), &nSize, sizeof(nSize));
 
         // Set the checksum
         if (vSend.GetVersion() >= 209)
@@ -319,8 +321,8 @@ public:
             uint256 hash = Hash(vSend.begin() + nMessageStart, vSend.end());
             unsigned int nChecksum = 0;
             memcpy(&nChecksum, &hash, sizeof(nChecksum));
-            assert(nMessageStart - nHeaderStart >= offsetof(CMessageHeader, nChecksum) + sizeof(nChecksum));
-            memcpy((char*)&vSend[nHeaderStart] + offsetof(CMessageHeader, nChecksum), &nChecksum, sizeof(nChecksum));
+            assert(nMessageStart - nHeaderStart >= offsetof(MessageHeader, nChecksum) + sizeof(nChecksum));
+            memcpy((char*)&vSend[nHeaderStart] + offsetof(MessageHeader, nChecksum), &nChecksum, sizeof(nChecksum));
         }
 
         printf("(%d bytes) ", nSize);
@@ -348,8 +350,8 @@ public:
     {
         /// when NTP implemented, change to just nTime = GetAdjustedTime()
         int64 nTime = (fInbound ? GetAdjustedTime() : GetTime());
-        CAddress addrYou = (fUseProxy ? CAddress("0.0.0.0") : addr);
-        CAddress addrMe = (fUseProxy ? CAddress("0.0.0.0") : addrLocalHost);
+        Endpoint addrYou = (fUseProxy ? Endpoint("0.0.0.0") : addr);
+        Endpoint addrMe = (fUseProxy ? Endpoint("0.0.0.0") : addrLocalHost);
         RAND_bytes((unsigned char*)&nLocalHostNonce, sizeof(nLocalHostNonce));
         PushMessage("version", VERSION, nLocalServices, nTime, addrYou, addrMe,
                     nLocalHostNonce, std::string(pszSubVer), nBestHeight);
@@ -574,7 +576,7 @@ public:
 
 
 
-inline void RelayInventory(const CInv& inv)
+inline void RelayInventory(const Inventory& inv)
 {
     // Put on lists to offer to the other nodes
     CRITICAL_BLOCK(cs_vNodes)
@@ -583,7 +585,7 @@ inline void RelayInventory(const CInv& inv)
 }
 
 template<typename T>
-void RelayMessage(const CInv& inv, const T& a)
+void RelayMessage(const Inventory& inv, const T& a)
 {
     CDataStream ss(SER_NETWORK);
     ss.reserve(10000);
@@ -592,7 +594,7 @@ void RelayMessage(const CInv& inv, const T& a)
 }
 
 template<>
-inline void RelayMessage<>(const CInv& inv, const CDataStream& ss)
+inline void RelayMessage<>(const Inventory& inv, const CDataStream& ss)
 {
     CRITICAL_BLOCK(cs_mapRelay)
     {

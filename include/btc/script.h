@@ -657,7 +657,7 @@ public:
         printf("CScript(%s)\n", HexStr(begin(), end(), true).c_str());
     }
 
-    std::string ToString() const
+    std::string toString() const
     {
         std::string str;
         opcodetype opcode;
@@ -682,7 +682,7 @@ public:
 
     void print() const
     {
-        printf("%s\n", ToString().c_str());
+        printf("%s\n", toString().c_str());
     }
 };
 

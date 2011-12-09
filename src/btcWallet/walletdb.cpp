@@ -167,23 +167,23 @@ int CWalletDB::LoadWallet(CWallet* pwallet)
                         char fTmp;
                         char fUnused;
                         ssValue >> fTmp >> fUnused >> wtx.strFromAccount;
-                        printf("LoadWallet() upgrading tx ver=%d %d '%s' %s\n", wtx.fTimeReceivedIsTxTime, fTmp, wtx.strFromAccount.c_str(), hash.ToString().c_str());
+                        printf("LoadWallet() upgrading tx ver=%d %d '%s' %s\n", wtx.fTimeReceivedIsTxTime, fTmp, wtx.strFromAccount.c_str(), hash.toString().c_str());
                         wtx.fTimeReceivedIsTxTime = fTmp;
                     }
                     else
                     {
-                        printf("LoadWallet() repairing tx ver=%d %s\n", wtx.fTimeReceivedIsTxTime, hash.ToString().c_str());
+                        printf("LoadWallet() repairing tx ver=%d %s\n", wtx.fTimeReceivedIsTxTime, hash.toString().c_str());
                         wtx.fTimeReceivedIsTxTime = 0;
                     }
                     vWalletUpgrade.push_back(hash);
                 }
 
                 //// debug print
-                //printf("LoadWallet  %s\n", wtx.GetHash().ToString().c_str());
+                //printf("LoadWallet  %s\n", wtx.GetHash().toString().c_str());
                 //printf(" %12I64d  %s  %s  %s\n",
                 //    wtx.vout[0].nValue,
                 //    DateTimeStrFormat("%x %H:%M:%S", wtx.GetBlockTime()).c_str(),
-                //    wtx.hashBlock.ToString().substr(0,20).c_str(),
+                //    wtx.hashBlock.toString().substr(0,20).c_str(),
                 //    wtx.mapValue["message"].c_str());
             }
             else if (strType == "acentry")
@@ -290,7 +290,7 @@ int CWalletDB::LoadWallet(CWallet* pwallet)
     printf("fMinimizeToTray = %d\n", fMinimizeToTray);
     printf("fMinimizeOnClose = %d\n", fMinimizeOnClose);
     printf("fUseProxy = %d\n", fUseProxy);
-    printf("addrProxy = %s\n", addrProxy.ToString().c_str());
+    printf("addrProxy = %s\n", addrProxy.toString().c_str());
     if (fHaveUPnP)
         printf("fUseUPnP = %d\n", fUseUPnP);
 

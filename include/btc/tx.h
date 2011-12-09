@@ -13,7 +13,7 @@
 
 class CKeyItem;
 
-//class CAddress;
+//class Endpoint;
 //class CRequestTracker;
 
 static const unsigned int MAX_BLOCK_SIZE = 1000000;
@@ -76,14 +76,14 @@ public:
         return !(a == b);
     }
 
-    std::string ToString() const
+    std::string toString() const
     {
-        return strprintf("COutPoint(%s, %d)", hash.ToString().substr(0,10).c_str(), n);
+        return strprintf("COutPoint(%s, %d)", hash.toString().substr(0,10).c_str(), n);
     }
 
     void print() const
     {
-        printf("%s\n", ToString().c_str());
+        printf("%s\n", toString().c_str());
     }
 };
 
@@ -143,15 +143,15 @@ public:
         return !(a == b);
     }
 
-    std::string ToString() const
+    std::string toString() const
     {
         std::string str;
         str += strprintf("CTxIn(");
-        str += prevout.ToString();
+        str += prevout.toString();
         if (prevout.IsNull())
             str += strprintf(", coinbase %s", HexStr(scriptSig).c_str());
         else
-            str += strprintf(", scriptSig=%s", scriptSig.ToString().substr(0,24).c_str());
+            str += strprintf(", scriptSig=%s", scriptSig.toString().substr(0,24).c_str());
         if (nSequence != UINT_MAX)
             str += strprintf(", nSequence=%u", nSequence);
         str += ")";
@@ -160,7 +160,7 @@ public:
 
     void print() const
     {
-        printf("%s\n", ToString().c_str());
+        printf("%s\n", toString().c_str());
     }
 };
 
@@ -222,16 +222,16 @@ public:
         return !(a == b);
     }
 
-    std::string ToString() const
+    std::string toString() const
     {
         if (scriptPubKey.size() < 6)
             return "CTxOut(error)";
-        return strprintf("CTxOut(nValue=%"PRI64d".%08"PRI64d", scriptPubKey=%s)", nValue / COIN, nValue % COIN, scriptPubKey.ToString().substr(0,30).c_str());
+        return strprintf("CTxOut(nValue=%"PRI64d".%08"PRI64d", scriptPubKey=%s)", nValue / COIN, nValue % COIN, scriptPubKey.toString().substr(0,30).c_str());
     }
 
     void print() const
     {
-        printf("%s\n", ToString().c_str());
+        printf("%s\n", toString().c_str());
     }
 };
 
@@ -346,10 +346,10 @@ public:
     {
         BOOST_FOREACH(const CTxIn& txin, vin)
             if (!txin.scriptSig.IsPushOnly())
-                return error("nonstandard txin: %s", txin.scriptSig.ToString().c_str());
+                return error("nonstandard txin: %s", txin.scriptSig.toString().c_str());
         BOOST_FOREACH(const CTxOut& txout, vout)
             if (!::IsStandard(txout.scriptPubKey))
-                return error("nonstandard txout: %s", txout.scriptPubKey.ToString().c_str());
+                return error("nonstandard txout: %s", txout.scriptPubKey.toString().c_str());
         return true;
     }
 
@@ -443,25 +443,25 @@ public:
     }
 
 
-    std::string ToString() const
+    std::string toString() const
     {
         std::string str;
         str += strprintf("CTransaction(hash=%s, ver=%d, vin.size=%d, vout.size=%d, nLockTime=%d)\n",
-            GetHash().ToString().substr(0,10).c_str(),
+            GetHash().toString().substr(0,10).c_str(),
             nVersion,
             vin.size(),
             vout.size(),
             nLockTime);
         for (int i = 0; i < vin.size(); i++)
-            str += "    " + vin[i].ToString() + "\n";
+            str += "    " + vin[i].toString() + "\n";
         for (int i = 0; i < vout.size(); i++)
-            str += "    " + vout[i].ToString() + "\n";
+            str += "    " + vout[i].toString() + "\n";
         return str;
     }
 
     void print() const
     {
-        printf("%s", ToString().c_str());
+        printf("%s", toString().c_str());
     }
 
     bool CheckTransaction() const;
