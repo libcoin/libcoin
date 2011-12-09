@@ -295,7 +295,7 @@ bool AppInit2(int argc, char* argv[])
     fPrintToDebugger = GetBoolArg("-printtodebugger");
 
     fTestNet = GetBoolArg("-testnet");
-    bool fTOR = (fUseProxy && addrProxy.port == htons(9050));
+    bool fTOR = (fUseProxy && addrProxy.getPort() == htons(9050));
     fNoListen = GetBoolArg("-nolisten") || fTOR;
     fLogTimestamps = GetBoolArg("-logtimestamps");
 
@@ -416,9 +416,6 @@ bool AppInit2(int argc, char* argv[])
 
     printf("Loading addresses...\n");
     nStart = GetTimeMillis();
-    if (!LoadAddresses())
-        strErrors += _("Error loading addr.dat      \n");
-    printf(" addresses   %15"PRI64d"ms\n", GetTimeMillis() - nStart);
 
     printf("Loading block index...\n");
     nStart = GetTimeMillis();
@@ -483,24 +480,24 @@ bool AppInit2(int argc, char* argv[])
     {
         fUseProxy = true;
         addrProxy = Endpoint(mapArgs["-proxy"]);
-        if (!addrProxy.IsValid())
+        if (!addrProxy.isValid())
         {
             wxMessageBox(_("Invalid -proxy address"), "Bitcoin");
             return false;
         }
     }
-
+/*
     if (mapArgs.count("-addnode"))
     {
         BOOST_FOREACH(string strAddr, mapMultiArgs["-addnode"])
         {
             Endpoint addr(strAddr, fAllowDNS);
-            addr.nTime = 0; // so it won't relay unless successfully connected
-            if (addr.IsValid())
+            addr.setTime(0); // so it won't relay unless successfully connected
+            if (addr.isValid())
                 AddAddress(addr);
         }
     }
-
+*/
     if (GetBoolArg("-nodnsseed"))
         printf("DNS seeding disabled\n");
     else

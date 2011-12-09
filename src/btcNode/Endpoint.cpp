@@ -18,64 +18,64 @@ static const unsigned char pchIPv4[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0
 
 Endpoint::Endpoint()
 {
-    Init();
+    init();
 }
 
-Endpoint::Endpoint(unsigned int ipIn, unsigned short portIn, uint64 nServicesIn)
+Endpoint::Endpoint(unsigned int ip, unsigned short port, uint64 services)
 {
-    Init();
-    ip = ipIn;
-    port = htons(portIn == 0 ? GetDefaultPort() : portIn);
-    nServices = nServicesIn;
+    init();
+    _ip = ip;
+    _port = htons(port == 0 ? getDefaultPort() : port);
+    _services = services;
 }
 
-Endpoint::Endpoint(const struct sockaddr_in& sockaddr, uint64 nServicesIn)
+Endpoint::Endpoint(const struct sockaddr_in& sockaddr, uint64 services)
 {
-    Init();
-    ip = sockaddr.sin_addr.s_addr;
-    port = sockaddr.sin_port;
-    nServices = nServicesIn;
+    init();
+    _ip = sockaddr.sin_addr.s_addr;
+    _port = sockaddr.sin_port;
+    _services = services;
 }
 
 Endpoint::Endpoint(const char* pszIn, int portIn, bool fNameLookup, uint64 nServicesIn)
 {
-    Init();
+    init();
     Lookup(pszIn, *this, nServicesIn, fNameLookup, portIn);
 }
 
 Endpoint::Endpoint(const char* pszIn, bool fNameLookup, uint64 nServicesIn)
 {
-    Init();
+    init();
     Lookup(pszIn, *this, nServicesIn, fNameLookup, 0, true);
 }
 
 Endpoint::Endpoint(std::string strIn, int portIn, bool fNameLookup, uint64 nServicesIn)
 {
-    Init();
+    init();
     Lookup(strIn.c_str(), *this, nServicesIn, fNameLookup, portIn);
 }
 
 Endpoint::Endpoint(std::string strIn, bool fNameLookup, uint64 nServicesIn)
 {
-    Init();
+    init();
     Lookup(strIn.c_str(), *this, nServicesIn, fNameLookup, 0, true);
 }
 
-void Endpoint::Init()
+void Endpoint::init()
 {
-    nServices = NODE_NETWORK;
-    memcpy(pchReserved, pchIPv4, sizeof(pchReserved));
-    ip = INADDR_NONE;
-    port = htons(GetDefaultPort());
-    nTime = 100000000;
-    nLastTry = 0;
+    _services = NODE_NETWORK;
+    memcpy(_ipv6, pchIPv4, sizeof(_ipv6));
+    _ip = INADDR_NONE;
+    _port = htons(getDefaultPort());
+    _time = 100000000;
+    _lastTry = 0;
 }
 
 bool operator==(const Endpoint& a, const Endpoint& b)
 {
-    return (memcmp(a.pchReserved, b.pchReserved, sizeof(a.pchReserved)) == 0 &&
-            a.ip   == b.ip &&
-            a.port == b.port);
+    return (memcmp(a._ipv6, b._ipv6, sizeof(a._ipv6)) == 0 &&
+            a._ip   == b._ip &&
+            a._port == b._port);
 }
 
 bool operator!=(const Endpoint& a, const Endpoint& b)
@@ -85,24 +85,24 @@ bool operator!=(const Endpoint& a, const Endpoint& b)
 
 bool operator<(const Endpoint& a, const Endpoint& b)
 {
-    int ret = memcmp(a.pchReserved, b.pchReserved, sizeof(a.pchReserved));
+    int ret = memcmp(a._ipv6, b._ipv6, sizeof(a._ipv6));
     if (ret < 0)
         return true;
     else if (ret == 0)
     {
-        if (ntohl(a.ip) < ntohl(b.ip))
+        if (ntohl(a._ip) < ntohl(b._ip))
             return true;
-        else if (a.ip == b.ip)
-            return ntohs(a.port) < ntohs(b.port);
+        else if (a._ip == b._ip)
+            return ntohs(a._port) < ntohs(b._port);
     }
     return false;
 }
 
-std::vector<unsigned char> Endpoint::GetKey() const
+std::vector<unsigned char> Endpoint::getKey() const
 {
     CDataStream ss;
     ss.reserve(18);
-    ss << FLATDATA(pchReserved) << ip << port;
+    ss << FLATDATA(_ipv6) << _ip << _port;
 
     #if defined(_MSC_VER) && _MSC_VER < 1300
     return std::vector<unsigned char>((unsigned char*)&ss.begin()[0], (unsigned char*)&ss.end()[0]);
@@ -111,47 +111,47 @@ std::vector<unsigned char> Endpoint::GetKey() const
     #endif
 }
 
-struct sockaddr_in Endpoint::GetSockAddr() const
+struct sockaddr_in Endpoint::getSockAddr() const
 {
     struct sockaddr_in sockaddr;
     memset(&sockaddr, 0, sizeof(sockaddr));
     sockaddr.sin_family = AF_INET;
-    sockaddr.sin_addr.s_addr = ip;
-    sockaddr.sin_port = port;
+    sockaddr.sin_addr.s_addr = _ip;
+    sockaddr.sin_port = _port;
     return sockaddr;
 }
 
-bool Endpoint::IsIPv4() const
+bool Endpoint::isIPv4() const
 {
-    return (memcmp(pchReserved, pchIPv4, sizeof(pchIPv4)) == 0);
+    return (memcmp(_ipv6, pchIPv4, sizeof(pchIPv4)) == 0);
 }
 
-bool Endpoint::IsRFC1918() const
+bool Endpoint::isRFC1918() const
 {
-  return IsIPv4() && (GetByte(3) == 10 ||
-    (GetByte(3) == 192 && GetByte(2) == 168) ||
-    (GetByte(3) == 172 &&
-      (GetByte(2) >= 16 && GetByte(2) <= 31)));
+  return isIPv4() && (getByte(3) == 10 ||
+    (getByte(3) == 192 && getByte(2) == 168) ||
+    (getByte(3) == 172 &&
+      (getByte(2) >= 16 && getByte(2) <= 31)));
 }
 
-bool Endpoint::IsRFC3927() const
+bool Endpoint::isRFC3927() const
 {
-  return IsIPv4() && (GetByte(3) == 169 && GetByte(2) == 254);
+  return isIPv4() && (getByte(3) == 169 && getByte(2) == 254);
 }
 
-bool Endpoint::IsLocal() const
+bool Endpoint::isLocal() const
 {
-  return IsIPv4() && (GetByte(3) == 127 ||
-      GetByte(3) == 0);
+  return isIPv4() && (getByte(3) == 127 ||
+      getByte(3) == 0);
 }
 
-bool Endpoint::IsRoutable() const
+bool Endpoint::isRoutable() const
 {
-    return IsValid() &&
-        !(IsRFC1918() || IsRFC3927() || IsLocal());
+    return isValid() &&
+        !(isRFC1918() || isRFC3927() || isLocal());
 }
 
-bool Endpoint::IsValid() const
+bool Endpoint::isValid() const
 {
     // Clean up 3-byte shifted addresses caused by garbage in size field
     // of addr messages from versions before 0.2.9 checksum.
@@ -159,35 +159,35 @@ bool Endpoint::IsValid() const
     // header20 vectorlen3 addr26 addr26 addr26 header20 vectorlen3 addr26 addr26 addr26...
     // so if the first length field is garbled, it reads the second batch
     // of addr misaligned by 3 bytes.
-    if (memcmp(pchReserved, pchIPv4+3, sizeof(pchIPv4)-3) == 0)
+    if (memcmp(_ipv6, pchIPv4+3, sizeof(pchIPv4)-3) == 0)
         return false;
 
-    return (ip != 0 && ip != INADDR_NONE && port != htons(USHRT_MAX));
+    return (_ip != 0 && _ip != INADDR_NONE && _port != htons(USHRT_MAX));
 }
 
-unsigned char Endpoint::GetByte(int n) const
+unsigned char Endpoint::getByte(int n) const
 {
-    return ((unsigned char*)&ip)[3-n];
+    return ((unsigned char*)&_ip)[3-n];
 }
 
-std::string Endpoint::ToStringIPPort() const
+std::string Endpoint::toStringIPPort() const
 {
-    return strprintf("%u.%u.%u.%u:%u", GetByte(3), GetByte(2), GetByte(1), GetByte(0), ntohs(port));
+    return strprintf("%u.%u.%u.%u:%u", getByte(3), getByte(2), getByte(1), getByte(0), ntohs(_port));
 }
 
-std::string Endpoint::ToStringIP() const
+std::string Endpoint::toStringIP() const
 {
-    return strprintf("%u.%u.%u.%u", GetByte(3), GetByte(2), GetByte(1), GetByte(0));
+    return strprintf("%u.%u.%u.%u", getByte(3), getByte(2), getByte(1), getByte(0));
 }
 
-std::string Endpoint::ToStringPort() const
+std::string Endpoint::toStringPort() const
 {
-    return strprintf("%u", ntohs(port));
+    return strprintf("%u", ntohs(_port));
 }
 
 std::string Endpoint::toString() const
 {
-    return strprintf("%u.%u.%u.%u:%u", GetByte(3), GetByte(2), GetByte(1), GetByte(0), ntohs(port));
+    return strprintf("%u.%u.%u.%u:%u", getByte(3), getByte(2), getByte(1), getByte(0), ntohs(_port));
 }
 
 void Endpoint::print() const

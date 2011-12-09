@@ -8,6 +8,8 @@
 #include "btcNode/db.h"
 #include "btcNode/net.h"
 
+#include "btcNode/EndpointPool.h"
+
 #include "btc/strlcpy.h"
 
 #ifdef _WIN32
@@ -80,7 +82,8 @@ static SOCKET hListenSocket = INVALID_SOCKET;
 
 vector<CNode*> vNodes;
 CCriticalSection cs_vNodes;
-map<vector<unsigned char>, Endpoint> mapAddresses;
+//map<vector<unsigned char>, Endpoint> mapAddresses;
+EndpointPool _endpointPool;
 CCriticalSection cs_mapAddresses;
 map<Inventory, CDataStream> mapRelay;
 deque<pair<int64, Inventory> > vRelayExpiration;
@@ -97,7 +100,7 @@ Endpoint addrProxy("127.0.0.1",9050);
 
 unsigned short GetListenPort()
 {
-    return (unsigned short)(GetArg("-port", GetDefaultPort()));
+    return (unsigned short)(GetArg("-port", getDefaultPort()));
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -281,7 +284,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
         
         pfrom->fClient = !(pfrom->nServices & NODE_NETWORK);
         
-        AddTimeData(pfrom->addr.ip, nTime);
+        AddTimeData(pfrom->addr.getIP(), nTime);
         
         // Change version
         if (pfrom->nVersion >= 209)
@@ -293,15 +296,15 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
         if (!pfrom->fInbound)
         {
             // Advertise our address
-            if (addrLocalHost.IsRoutable() && !fUseProxy)
+            if (addrLocalHost.isRoutable() && !fUseProxy)
             {
                 Endpoint addr(addrLocalHost);
-                addr.nTime = GetAdjustedTime();
+                addr.setTime(GetAdjustedTime());
                 pfrom->PushAddress(addr);
             }
             
             // Get recent addresses
-            if (pfrom->nVersion >= 31402 || mapAddresses.size() < 1000)
+            if (pfrom->nVersion >= 31402 || _endpointPool.getPoolSize() < 1000)
             {
                 pfrom->PushMessage("getaddr");
                 pfrom->fGetAddr = true;
@@ -350,14 +353,14 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
         // Don't want addr from older versions unless seeding
         if (pfrom->nVersion < 209)
             return true;
-        if (pfrom->nVersion < 31402 && mapAddresses.size() > 1000)
+        if (pfrom->nVersion < 31402 && _endpointPool.getPoolSize() > 1000)
             return true;
         if (vAddr.size() > 1000)
             return error("message addr size() = %d", vAddr.size());
         
         // Store the new addresses
-        CAddrDB addrDB;
-        addrDB.TxnBegin();
+        //        CAddrDB addrDB;
+        //addrDB.TxnBegin();
         int64 nNow = GetAdjustedTime();
         int64 nSince = nNow - 10 * 60;
         BOOST_FOREACH(Endpoint& addr, vAddr)
@@ -365,13 +368,13 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
             if (fShutdown)
                 return true;
             // ignore IPv6 for now, since it isn't implemented anyway
-            if (!addr.IsIPv4())
+            if (!addr.isIPv4())
                 continue;
-            if (addr.nTime <= 100000000 || addr.nTime > nNow + 10 * 60)
-                addr.nTime = nNow - 5 * 24 * 60 * 60;
-            AddAddress(addr, 2 * 60 * 60, &addrDB);
+            if (addr.getTime() <= 100000000 || addr.getTime() > nNow + 10 * 60)
+                addr.setTime(nNow - 5 * 24 * 60 * 60);
+            _endpointPool.addEndpoint(addr, 2 * 60 * 60);
             pfrom->AddAddressKnown(addr);
-            if (addr.nTime > nSince && !pfrom->fGetAddr && vAddr.size() <= 10 && addr.IsRoutable())
+            if (addr.getTime() > nSince && !pfrom->fGetAddr && vAddr.size() <= 10 && addr.isRoutable())
             {
                 // Relay to a limited number of other nodes
                 CRITICAL_BLOCK(cs_vNodes)
@@ -381,7 +384,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
                     static uint256 hashSalt;
                     if (hashSalt == 0)
                         RAND_bytes((unsigned char*)&hashSalt, sizeof(hashSalt));
-                    uint256 hashRand = hashSalt ^ (((int64)addr.ip)<<32) ^ ((GetTime()+addr.ip)/(24*60*60));
+                    uint256 hashRand = hashSalt ^ (((int64)addr.getIP())<<32) ^ ((GetTime() + addr.getIP())/(24*60*60));
                     hashRand = Hash(BEGIN(hashRand), END(hashRand));
                     multimap<uint256, CNode*> mapMix;
                     BOOST_FOREACH(CNode* pnode, vNodes)
@@ -400,7 +403,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
                 }
             }
         }
-        addrDB.TxnCommit();  // Save addresses (it's ok if this fails)
+    //        addrDB.TxnCommit();  // Save addresses (it's ok if this fails)
         if (vAddr.size() < 1000)
             pfrom->fGetAddr = false;
     }
@@ -630,27 +633,12 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
     }
     
     
-    else if (strCommand == "getaddr")
-    {
+    else if (strCommand == "getaddr") {
         // Nodes rebroadcast an addr every 24 hours
         pfrom->vAddrToSend.clear();
-        int64 nSince = GetAdjustedTime() - 3 * 60 * 60; // in the last 3 hours
-        CRITICAL_BLOCK(cs_mapAddresses)
-        {
-            unsigned int nCount = 0;
-            BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, Endpoint)& item, mapAddresses)
-            {
-                const Endpoint& addr = item.second;
-                if (addr.nTime > nSince)
-                    nCount++;
-            }
-            BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, Endpoint)& item, mapAddresses)
-            {
-                const Endpoint& addr = item.second;
-                if (addr.nTime > nSince && GetRand(nCount) < 2500)
-                    pfrom->PushAddress(addr);
-            }
-        }
+        set<Endpoint> endpoints = _endpointPool.getRecent(3*60*60, 2500);
+        for (set<Endpoint>::iterator ep = endpoints.begin(); ep != endpoints.end(); ++ep)
+            pfrom->PushAddress(*ep);
     }
     
     else if (strCommand == "ping")
@@ -683,7 +671,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
     // Update the last seen time for this node's address
     if (pfrom->fNetworkNode)
         if (strCommand == "version" || strCommand == "addr" || strCommand == "inv" || strCommand == "getdata" || strCommand == "ping")
-            AddressCurrentlyConnected(pfrom->addr);
+            _endpointPool.currentlyConnected(pfrom->addr);
     
     
     return true;
@@ -879,10 +867,10 @@ bool CNode::SendMessages(bool fSendTrickle)
                     pnode->setAddrKnown.clear();
                     
                     // Rebroadcast our address
-                    if (addrLocalHost.IsRoutable() && !fUseProxy)
+                    if (addrLocalHost.isRoutable() && !fUseProxy)
                     {
                         Endpoint addr(addrLocalHost);
-                        addr.nTime = GetAdjustedTime();
+                        addr.setTime(GetAdjustedTime());
                         pnode->PushAddress(addr);
                     }
                 }
@@ -890,34 +878,8 @@ bool CNode::SendMessages(bool fSendTrickle)
         }
         
         // Clear out old addresses periodically so it's not too much work at once
-        static int64 nLastClear;
-        if (nLastClear == 0)
-            nLastClear = GetTime();
-        if (GetTime() - nLastClear > 10 * 60 && vNodes.size() >= 3)
-        {
-            nLastClear = GetTime();
-            CRITICAL_BLOCK(cs_mapAddresses)
-            {
-                CAddrDB addrdb;
-                int64 nSince = GetAdjustedTime() - 14 * 24 * 60 * 60;
-                for (map<vector<unsigned char>, Endpoint>::iterator mi = mapAddresses.begin();
-                     mi != mapAddresses.end();)
-                {
-                    const Endpoint& addr = (*mi).second;
-                    if (addr.nTime < nSince)
-                    {
-                        if (mapAddresses.size() < 1000 || GetTime() > nLastClear + 20)
-                            break;
-                        addrdb.EraseAddress(addr);
-                        mapAddresses.erase(mi++);
-                    }
-                    else
-                        mi++;
-                }
-            }
-        }
-        
-        
+        _endpointPool.purge();
+    
         //
         // Message: addr
         //
@@ -1061,8 +1023,8 @@ bool ConnectSocket(const Endpoint& addrConnect, SOCKET& hSocketRet, int nTimeout
     setsockopt(hSocket, SOL_SOCKET, SO_NOSIGPIPE, (void*)&set, sizeof(int));
 #endif
 
-    bool fProxy = (fUseProxy && addrConnect.IsRoutable());
-    struct sockaddr_in sockaddr = (fProxy ? addrProxy.GetSockAddr() : addrConnect.GetSockAddr());
+    bool fProxy = (fUseProxy && addrConnect.isRoutable());
+    struct sockaddr_in sockaddr = (fProxy ? addrProxy.getSockAddr() : addrConnect.getSockAddr());
 
 #ifdef _WIN32
     u_long fNonblock = 1;
@@ -1153,8 +1115,10 @@ bool ConnectSocket(const Endpoint& addrConnect, SOCKET& hSocketRet, int nTimeout
     {
         printf("proxy connecting %s\n", addrConnect.toString().c_str());
         char pszSocks4IP[] = "\4\1\0\0\0\0\0\0user";
-        memcpy(pszSocks4IP + 2, &addrConnect.port, 2);
-        memcpy(pszSocks4IP + 4, &addrConnect.ip, 4);
+        unsigned short port = addrConnect.getPort();
+        unsigned int ip = addrConnect.getIP();
+        memcpy(pszSocks4IP + 2, &port, 2);
+        memcpy(pszSocks4IP + 4, &ip, 4);
         char* pszSocks4 = pszSocks4IP;
         int nSize = sizeof(pszSocks4IP);
 
@@ -1237,7 +1201,7 @@ bool Lookup(const char *pszName, vector<Endpoint>& vaddr, int nServices, int nMa
     while (*ppAddr != NULL && vaddr.size() != nMaxSolutions)
     {
         Endpoint addr(((struct in_addr*)ppAddr[0])->s_addr, port, nServices);
-        if (addr.IsValid())
+        if (addr.isValid())
             vaddr.push_back(addr);
         ppAddr++;
     }
@@ -1291,9 +1255,9 @@ bool GetMyExternalIP2(const Endpoint& addrConnect, const char* pszGet, const cha
                 strLine.resize(strLine.size()-1);
             Endpoint addr(strLine,0,true);
             printf("GetMyExternalIP() received [%s] %s\n", strLine.c_str(), addr.toString().c_str());
-            if (addr.ip == 0 || addr.ip == INADDR_NONE || !addr.IsRoutable())
+            if (addr.getIP() == 0 || addr.getIP() == INADDR_NONE || !addr.isRoutable())
                 return false;
-            ipRet = addr.ip;
+            ipRet = addr.getIP();
             return true;
         }
     }
@@ -1325,7 +1289,7 @@ bool GetMyExternalIP(unsigned int& ipRet)
             if (nLookup == 1)
             {
                 Endpoint addrIP("checkip.dyndns.org", 80, true);
-                if (addrIP.IsValid())
+                if (addrIP.isValid())
                     addrConnect = addrIP;
             }
 
@@ -1344,7 +1308,7 @@ bool GetMyExternalIP(unsigned int& ipRet)
             if (nLookup == 1)
             {
                 Endpoint addrIP("www.showmyip.com", 80, true);
-                if (addrIP.IsValid())
+                if (addrIP.isValid())
                     addrConnect = addrIP;
             }
 
@@ -1378,100 +1342,19 @@ void ThreadGetMyExternalIP(void* parg)
     }
 
     // Fallback in case IRC fails to get it
-    if (GetMyExternalIP(addrLocalHost.ip))
-    {
-        printf("GetMyExternalIP() returned %s\n", addrLocalHost.ToStringIP().c_str());
-        if (addrLocalHost.IsRoutable())
+    unsigned int ip;
+    if (GetMyExternalIP(ip)) {
+        addrLocalHost.setIP(ip);
+        printf("GetMyExternalIP() returned %s\n", addrLocalHost.toStringIP().c_str());
+        if (addrLocalHost.isRoutable())
         {
             // If we already connected to a few before we had our IP, go back and addr them.
             // setAddrKnown automatically filters any duplicate sends.
             Endpoint addr(addrLocalHost);
-            addr.nTime = GetAdjustedTime();
+            addr.setTime(GetAdjustedTime());
             CRITICAL_BLOCK(cs_vNodes)
                 BOOST_FOREACH(CNode* pnode, vNodes)
                     pnode->PushAddress(addr);
-        }
-    }
-}
-
-
-
-
-
-bool AddAddress(Endpoint addr, int64 nTimePenalty, CAddrDB *pAddrDB)
-{
-    if (!addr.IsRoutable())
-        return false;
-    if (addr.ip == addrLocalHost.ip)
-        return false;
-    addr.nTime = max((int64)0, (int64)addr.nTime - nTimePenalty);
-    bool fUpdated = false;
-    bool fNew = false;
-    Endpoint addrFound = addr;
-
-    CRITICAL_BLOCK(cs_mapAddresses)
-    {
-        map<vector<unsigned char>, Endpoint>::iterator it = mapAddresses.find(addr.GetKey());
-        if (it == mapAddresses.end())
-        {
-            // New address
-            printf("AddAddress(%s)\n", addr.toString().c_str());
-            mapAddresses.insert(make_pair(addr.GetKey(), addr));
-            fUpdated = true;
-            fNew = true;
-        }
-        else
-        {
-            addrFound = (*it).second;
-            if ((addrFound.nServices | addr.nServices) != addrFound.nServices)
-            {
-                // Services have been added
-                addrFound.nServices |= addr.nServices;
-                fUpdated = true;
-            }
-            bool fCurrentlyOnline = (GetAdjustedTime() - addr.nTime < 24 * 60 * 60);
-            int64 nUpdateInterval = (fCurrentlyOnline ? 60 * 60 : 24 * 60 * 60);
-            if (addrFound.nTime < addr.nTime - nUpdateInterval)
-            {
-                // Periodically update most recently seen time
-                addrFound.nTime = addr.nTime;
-                fUpdated = true;
-            }
-        }
-    }
-    // There is a nasty deadlock bug if this is done inside the cs_mapAddresses
-    // CRITICAL_BLOCK:
-    // Thread 1:  begin db transaction (locks inside-db-mutex)
-    //            then AddAddress (locks cs_mapAddresses)
-    // Thread 2:  AddAddress (locks cs_mapAddresses)
-    //             ... then db operation hangs waiting for inside-db-mutex
-    if (fUpdated)
-    {
-        if (pAddrDB)
-            pAddrDB->WriteAddress(addrFound);
-        else
-            CAddrDB().WriteAddress(addrFound);
-    }
-    return fNew;
-}
-
-void AddressCurrentlyConnected(const Endpoint& addr)
-{
-    CRITICAL_BLOCK(cs_mapAddresses)
-    {
-        // Only if it's been published already
-        map<vector<unsigned char>, Endpoint>::iterator it = mapAddresses.find(addr.GetKey());
-        if (it != mapAddresses.end())
-        {
-            Endpoint& addrFound = (*it).second;
-            int64 nUpdateInterval = 20 * 60;
-            if (addrFound.nTime < GetAdjustedTime() - nUpdateInterval)
-            {
-                // Periodically update most recently seen time
-                addrFound.nTime = GetAdjustedTime();
-                CAddrDB addrdb;
-                addrdb.WriteAddress(addrFound);
-            }
         }
     }
 }
@@ -1481,7 +1364,7 @@ CNode* FindNode(unsigned int ip)
     CRITICAL_BLOCK(cs_vNodes)
     {
         BOOST_FOREACH(CNode* pnode, vNodes)
-            if (pnode->addr.ip == ip)
+            if (pnode->addr.getIP() == ip)
                 return (pnode);
     }
     return NULL;
@@ -1500,11 +1383,11 @@ CNode* FindNode(Endpoint addr)
 
 CNode* ConnectNode(Endpoint addrConnect, int64 nTimeout)
 {
-    if (addrConnect.ip == addrLocalHost.ip)
+    if (addrConnect.getIP() == addrLocalHost.getIP())
         return NULL;
 
     // Look for an existing connection
-    CNode* pnode = FindNode(addrConnect.ip);
+    CNode* pnode = FindNode(addrConnect.getIP());
     if (pnode)
     {
         if (nTimeout != 0)
@@ -1517,12 +1400,11 @@ CNode* ConnectNode(Endpoint addrConnect, int64 nTimeout)
     /// debug print
     printf("trying connection %s lastseen=%.1fhrs lasttry=%.1fhrs\n",
         addrConnect.toString().c_str(),
-        (double)(addrConnect.nTime - GetAdjustedTime())/3600.0,
-        (double)(addrConnect.nLastTry - GetAdjustedTime())/3600.0);
+        (double)(addrConnect.getTime() - GetAdjustedTime())/3600.0,
+        (double)(addrConnect.getLastTry() - GetAdjustedTime())/3600.0);
 
-    CRITICAL_BLOCK(cs_mapAddresses)
-        mapAddresses[addrConnect.GetKey()].nLastTry = GetAdjustedTime();
-
+    _endpointPool.getEndpoint(addrConnect.getKey()).setLastTry(GetAdjustedTime());
+    
     // Connect
     SOCKET hSocket;
     if (ConnectSocket(addrConnect, hSocket))
@@ -2004,8 +1886,6 @@ void DNSAddressSeed()
     if (!fTestNet)
     {
         printf("Loading addresses from DNS seeds (could take a while)\n");
-        CAddrDB addrDB;
-        addrDB.TxnBegin();
 
         for (int seed_idx = 0; seed_idx < ARRAYLEN(strDNSSeed); seed_idx++) {
             vector<Endpoint> vaddr;
@@ -2013,17 +1893,16 @@ void DNSAddressSeed()
             {
                 BOOST_FOREACH (Endpoint& addr, vaddr)
                 {
-                    if (addr.GetByte(3) != 127)
+                    if (addr.getByte(3) != 127)
                     {
-                        addr.nTime = 0;
-                        AddAddress(addr, 0, &addrDB);
+                        addr.setTime(0);
+                        _endpointPool.addEndpoint(addr, 0);
                         found++;
                     }
                 }
             }
         }
 
-        addrDB.TxnCommit();  // Save addresses (it's ok if this fails)
     }
 
     printf("%d addresses found from DNS seeds\n", found);
@@ -2132,7 +2011,7 @@ void ThreadOpenConnections2(void* parg)
             BOOST_FOREACH(string strAddr, mapMultiArgs["-connect"])
             {
                 Endpoint addr(strAddr, fAllowDNS);
-                if (addr.IsValid())
+                if (addr.isValid())
                     OpenNetworkConnection(addr);
                 for (int i = 0; i < 10 && i < nLoop; i++)
                 {
@@ -2150,7 +2029,7 @@ void ThreadOpenConnections2(void* parg)
         BOOST_FOREACH(string strAddr, mapMultiArgs["-addnode"])
         {
             Endpoint addr(strAddr, fAllowDNS);
-            if (addr.IsValid())
+            if (addr.isValid())
             {
                 OpenNetworkConnection(addr);
                 Sleep(500);
@@ -2189,8 +2068,8 @@ void ThreadOpenConnections2(void* parg)
         CRITICAL_BLOCK(cs_mapAddresses)
         {
             // Add seed nodes if IRC isn't working
-            bool fTOR = (fUseProxy && addrProxy.port == htons(9050));
-            if (mapAddresses.empty() && (GetTime() - nStart > 60 || fTOR) && !fTestNet)
+            bool fTOR = (fUseProxy && addrProxy.getPort() == htons(9050));
+            if ((_endpointPool.getPoolSize() == 0) && (GetTime() - nStart > 60 || fTOR) && !fTestNet)
             {
                 for (int i = 0; i < ARRAYLEN(pnSeed); i++)
                 {
@@ -2200,83 +2079,24 @@ void ThreadOpenConnections2(void* parg)
                     // weeks ago.
                     const int64 nOneWeek = 7*24*60*60;
                     Endpoint addr;
-                    addr.ip = pnSeed[i];
-                    addr.nTime = GetTime()-GetRand(nOneWeek)-nOneWeek;
-                    AddAddress(addr);
+                    addr.setIP(pnSeed[i]);
+                    addr.setTime(GetTime()-GetRand(nOneWeek)-nOneWeek);
+                    _endpointPool.addEndpoint(addr);
                 }
             }
         }
 
 
-        //
-        // Choose an address to connect to based on most recently seen
-        //
-        Endpoint addrConnect;
-        int64 nBest = INT64_MIN;
-
-        // Only connect to one address per a.b.?.? range.
-        // Do this here so we don't have to critsect vNodes inside mapAddresses critsect.
-        set<unsigned int> setConnected;
-        CRITICAL_BLOCK(cs_vNodes)
-            BOOST_FOREACH(CNode* pnode, vNodes)
-                setConnected.insert(pnode->addr.ip & 0x0000ffff);
-
-        CRITICAL_BLOCK(cs_mapAddresses)
-        {
-            BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, Endpoint)& item, mapAddresses)
-            {
-                const Endpoint& addr = item.second;
-                if (!addr.IsIPv4() || !addr.IsValid() || setConnected.count(addr.ip & 0x0000ffff))
-                    continue;
-                int64 nSinceLastSeen = GetAdjustedTime() - addr.nTime;
-                int64 nSinceLastTry = GetAdjustedTime() - addr.nLastTry;
-
-                // Randomize the order in a deterministic way, putting the standard port first
-                int64 nRandomizer = (uint64)(nStart * 4951 + addr.nLastTry * 9567851 + addr.ip * 7789) % (2 * 60 * 60);
-                if (addr.port != htons(GetDefaultPort()))
-                    nRandomizer += 2 * 60 * 60;
-
-                // Last seen  Base retry frequency
-                //   <1 hour   10 min
-                //    1 hour    1 hour
-                //    4 hours   2 hours
-                //   24 hours   5 hours
-                //   48 hours   7 hours
-                //    7 days   13 hours
-                //   30 days   27 hours
-                //   90 days   46 hours
-                //  365 days   93 hours
-                int64 nDelay = (int64)(3600.0 * sqrt(fabs((double)nSinceLastSeen) / 3600.0) + nRandomizer);
-
-                // Fast reconnect for one hour after last seen
-                if (nSinceLastSeen < 60 * 60)
-                    nDelay = 10 * 60;
-
-                // Limit retry frequency
-                if (nSinceLastTry < nDelay)
-                    continue;
-
-                // If we have IRC, we'll be notified when they first come online,
-                // and again every 24 hours by the refresh broadcast.
-                if (nGotIREndpointes > 0 && vNodes.size() >= 2 && nSinceLastSeen > 24 * 60 * 60)
-                    continue;
-
-                // Only try the old stuff if we don't have enough connections
-                if (vNodes.size() >= 8 && nSinceLastSeen > 24 * 60 * 60)
-                    continue;
-
-                // If multiple addresses are ready, prioritize by time since
-                // last seen and time since last tried.
-                int64 nScore = min(nSinceLastTry, (int64)24 * 60 * 60) - nSinceLastSeen - nRandomizer;
-                if (nScore > nBest)
-                {
-                    nBest = nScore;
-                    addrConnect = addr;
-                }
-            }
-        }
-
-        if (addrConnect.IsValid())
+    
+    // Only connect to one address per a.b.?.? range.
+    // Do this here so we don't have to critsect vNodes inside mapAddresses critsect.
+    set<unsigned int> setConnected;
+    CRITICAL_BLOCK(cs_vNodes)
+    BOOST_FOREACH(CNode* pnode, vNodes)
+    setConnected.insert(pnode->addr.getIP() & 0x0000ffff);
+    
+    Endpoint addrConnect = _endpointPool.getCandidate(setConnected, nStart);
+        if (addrConnect.isValid())
             OpenNetworkConnection(addrConnect);
     }
 }
@@ -2288,7 +2108,7 @@ bool OpenNetworkConnection(const Endpoint& addrConnect)
     //
     if (fShutdown)
         return false;
-    if (addrConnect.ip == addrLocalHost.ip || !addrConnect.IsIPv4() || FindNode(addrConnect.ip))
+    if (addrConnect.getIP() == addrLocalHost.getIP() || !addrConnect.isIPv4() || FindNode(addrConnect.getIP()))
         return false;
 
     vnThreadsRunning[1]--;
@@ -2390,7 +2210,7 @@ bool BindListenPort(string& strError)
 {
     strError = "";
     int nOne = 1;
-    addrLocalHost.port = htons(GetListenPort());
+    addrLocalHost.setPort(htons(GetListenPort()));
 
 #ifdef _WIN32
     // Initialize Windows Sockets
@@ -2502,7 +2322,7 @@ void StartNode(void* parg)
 
                 // Take the first IP that isn't loopback 127.x.x.x
                 Endpoint addr(*(unsigned int*)&s4->sin_addr, GetListenPort(), nLocalServices);
-                if (addr.IsValid() && addr.GetByte(3) != 127)
+                if (addr.isValid() && addr.getByte(3) != 127)
                 {
                     addrLocalHost = addr;
                     break;
@@ -2523,7 +2343,7 @@ void StartNode(void* parg)
     if (fUseProxy || mapArgs.count("-connect") || fNoListen)
     {
         // Proxies can't take incoming connections
-        addrLocalHost.ip = Endpoint("0.0.0.0").ip;
+        addrLocalHost.setIP(Endpoint("0.0.0.0").getIP());
         printf("addrLocalHost = %s\n", addrLocalHost.toString().c_str());
     }
     else

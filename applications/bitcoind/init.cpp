@@ -580,7 +580,7 @@ bool AppInit2(int argc, char* argv[])
             return false;
         }
     }
-
+/*
     if (mapArgs.count("-addnode"))
     {
         BOOST_FOREACH(string strAddr, mapMultiArgs["-addnode"])
@@ -591,7 +591,7 @@ bool AppInit2(int argc, char* argv[])
                 AddAddress(addr);
         }
     }
-
+*/
     if (GetBoolArg("-nodnsseed"))
         printf("DNS seeding disabled\n");
     else

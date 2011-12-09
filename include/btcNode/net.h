@@ -17,6 +17,7 @@
 #include "btcNode/MessageHeader.h"
 #include "btcNode/Inventory.h"
 #include "btcNode/Endpoint.h"
+//#include "btcNode/EndpointPool.h"
 
 class CAddrDB;
 class CRequestTracker;
@@ -35,8 +36,8 @@ bool ConnectSocket(const Endpoint& addrConnect, SOCKET& hSocketRet, int nTimeout
 bool Lookup(const char *pszName, std::vector<Endpoint>& vaddr, int nServices, int nMaxSolutions, bool fAllowLookup = false, int portDefault = 0, bool fAllowPort = false);
 bool Lookup(const char *pszName, Endpoint& addr, int nServices, bool fAllowLookup = false, int portDefault = 0, bool fAllowPort = false);
 bool GetMyExternalIP(unsigned int& ipRet);
-bool AddAddress(Endpoint addr, int64 nTimePenalty=0, CAddrDB *pAddrDB=NULL);
-void AddressCurrentlyConnected(const Endpoint& addr);
+//bool AddAddress(Endpoint addr, int64 nTimePenalty=0, CAddrDB *pAddrDB=NULL);
+//void AddressCurrentlyConnected(const Endpoint& addr);
 CNode* FindNode(unsigned int ip);
 CNode* ConnectNode(Endpoint addrConnect, int64 nTimeout=0);
 bool AnySubscribed(unsigned int nChannel);
@@ -83,8 +84,13 @@ extern boost::array<int, 10> vnThreadsRunning;
 
 extern std::vector<CNode*> vNodes;
 extern CCriticalSection cs_vNodes;
-extern std::map<std::vector<unsigned char>, Endpoint> mapAddresses;
-extern CCriticalSection cs_mapAddresses;
+//extern std::map<std::vector<unsigned char>, Endpoint> mapAddresses;
+//extern CCriticalSection cs_mapAddresses;
+
+class EndpointPool;
+extern EndpointPool _endpointPool;
+
+
 extern std::map<Inventory, CDataStream> mapRelay;
 extern std::deque<std::pair<int64, Inventory> > vRelayExpiration;
 extern CCriticalSection cs_mapRelay;
@@ -238,7 +244,7 @@ public:
         // Known checking here is only to save space from duplicates.
         // SendMessages will filter it again for knowns that were added
         // after addresses were pushed.
-        if (addr.IsValid() && !setAddrKnown.count(addr))
+        if (addr.isValid() && !setAddrKnown.count(addr))
             vAddrToSend.push_back(addr);
     }
 

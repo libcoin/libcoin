@@ -304,22 +304,6 @@ private:
     CTxDB& _txdb;
 };
 
-
-class CAddrDB : public CDB
-{
-public:
-    CAddrDB(const char* pszMode="r+") : CDB("addr.dat", pszMode) { }
-private:
-    CAddrDB(const CAddrDB&);
-    void operator=(const CAddrDB&);
-public:
-    bool WriteAddress(const Endpoint& addr);
-    bool EraseAddress(const Endpoint& addr);
-    bool LoadAddresses();
-};
-
-bool LoadAddresses();
-
 class CBrokerDB : public CDB
 {
 public:

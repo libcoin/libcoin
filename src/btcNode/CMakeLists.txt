@@ -16,6 +16,7 @@ SET(TARGET_H
     ${HEADER_PATH}/net.h
     ${HEADER_PATH}/Inventory.h
     ${HEADER_PATH}/Endpoint.h
+    ${HEADER_PATH}/EndpointPool.h
     ${HEADER_PATH}/MessageHeader.h
     ${HEADER_PATH}/MessageHandler.h
     ${HEADER_PATH}/MessageParser.h
@@ -35,6 +36,7 @@ SET(TARGET_SRC
     net.cpp
     Inventory.cpp
     Endpoint.cpp
+    EndpointPool.cpp
     MessageHeader.cpp
     MessageHandler.cpp
     MessageParser.cpp

@@ -5,6 +5,7 @@
 
 #include "btcNode/irc.h"
 #include "btcNode/net.h"
+#include "btcNode/EndpointPool.h"
 
 #include "btc/base58.h"
 #include "btc/strlcpy.h"
@@ -34,8 +35,8 @@ struct ircaddr
 string EncodeAddress(const Endpoint& addr)
 {
     struct ircaddr tmp;
-    tmp.ip    = addr.ip;
-    tmp.port  = addr.port;
+    tmp.ip    = addr.getIP();
+    tmp.port  = addr.getPort();
 
     vector<unsigned char> vch(UBEGIN(tmp), UEND(tmp));
     return string("u") + EncodeBase58Check(vch);
@@ -231,10 +232,10 @@ bool GetIPFromIRC(SOCKET hSocket, string strMyName, unsigned int& ipRet)
     printf("GetIPFromIRC() got userhost %s\n", strHost.c_str());
     if (fUseProxy)
         return false;
-    Endpoint addr(strHost, 0, true);
-    if (!addr.IsValid())
+    Endpoint endpoint(strHost, 0, true);
+    if (!endpoint.isValid())
         return false;
-    ipRet = addr.ip;
+    ipRet = endpoint.getIP();
 
     return true;
 }
@@ -268,7 +269,7 @@ void ThreadIRCSeed2(void* parg)
     int nErrorWait = 10;
     int nRetryWait = 10;
     bool fNameInUse = false;
-    bool fTOR = (fUseProxy && addrProxy.port == htons(9050));
+    bool fTOR = (fUseProxy && addrProxy.getPort() == htons(9050));
 
     while (!fShutdown)
     {
@@ -278,7 +279,7 @@ void ThreadIRCSeed2(void* parg)
         {
             //struct hostent* phostent = gethostbyname("chat.freenode.net");
             Endpoint addrIRC("irc.lfnet.org", 6667, true);
-            if (addrIRC.IsValid())
+            if (addrIRC.isValid())
                 addrConnect = addrIRC;
         }
 
@@ -305,7 +306,7 @@ void ThreadIRCSeed2(void* parg)
         }
 
         string strMyName;
-        if (addrLocalHost.IsRoutable() && !fUseProxy && !fNameInUse)
+        if (addrLocalHost.isRoutable() && !fUseProxy && !fNameInUse)
             strMyName = EncodeAddress(addrLocalHost);
         else
             strMyName = strprintf("x%u", GetRand(1000000000));
@@ -335,14 +336,16 @@ void ThreadIRCSeed2(void* parg)
 
         // Get our external IP from the IRC server and re-nick before joining the channel
         Endpoint addrFromIRC;
-        if (GetIPFromIRC(hSocket, strMyName, addrFromIRC.ip))
+        unsigned int ip;
+        if (GetIPFromIRC(hSocket, strMyName, ip))
         {
-            printf("GetIPFromIRC() returned %s\n", addrFromIRC.ToStringIP().c_str());
-            if (!fUseProxy && addrFromIRC.IsRoutable())
+            addrFromIRC.setIP(ip);
+            printf("GetIPFromIRC() returned %s\n", addrFromIRC.toStringIP().c_str());
+            if (!fUseProxy && addrFromIRC.isRoutable())
             {
                 // IRC lets you to re-nick
                 fGotExternalIP = true;
-                addrLocalHost.ip = addrFromIRC.ip;
+                addrLocalHost.setIP(addrFromIRC.getIP());
                 strMyName = EncodeAddress(addrLocalHost);
                 Send(hSocket, strprintf("NICK %s\r", strMyName.c_str()).c_str());
             }
@@ -393,12 +396,12 @@ void ThreadIRCSeed2(void* parg)
 
             if (pszName[0] == 'u')
             {
-                Endpoint addr;
-                if (DecodeAddress(pszName, addr))
+                Endpoint endpoint;
+                if (DecodeAddress(pszName, endpoint))
                 {
-                    addr.nTime = GetAdjustedTime();
-                    if (AddAddress(addr, 51 * 60))
-                        printf("IRC got new address: %s\n", addr.toString().c_str());
+                    endpoint.setTime(GetAdjustedTime());
+                    if (_endpointPool.addEndpoint(endpoint, 51 * 60))
+                        printf("IRC got new address: %s\n", endpoint.toString().c_str());
                     nGotIREndpointes++;
                 }
                 else
