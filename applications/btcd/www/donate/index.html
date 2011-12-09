@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+            <script type="text/javascript">
+                function onloadfunc() {
+                    alert("onload");
+                }
+                if ( document.addEventListener ) {
+                    // Use the handy event callback
+                    document.addEventListener( "DOMContentLoaded", DOMContentLoaded, false );
+                    
+                    // A fallback to window.onload, that will always work
+                    window.addEventListener( "load", onloadfunc, false );
+                    
+                    // If IE event model is used
+                } else if ( document.attachEvent ) {
+                    // ensure firing before onload,
+                    // maybe late but safe also for iframes
+                    document.attachEvent( "onreadystatechange", DOMContentLoaded );
+                    
+                    // A fallback to window.onload, that will always work
+                    window.attachEvent( "onload", onloadfunc );                    
+                }
+                </script>
+                <script type="text/javascript" src="js/btc.js"></script>
+                <link rel="stylesheet" href="css/demos.css">
+                    <script type="text/javascript">    
+                        // we only implement the asset syncronizer in this file - the rest is left for the btc library...
+                        var AssetSyncronizer = function() {
+                            this.URL="http:://localhost:9332/broker";
+                            this.debit = [];
+                            this.credit = [];
+                            this.getDebitCoins = function(addr) {
+                                $.jsonRPC.setup({
+                                                endPoint: '/broker',
+                                                namespace: null
+                                                });
+                                var params = new Array();
+                                
+                                params.push(addr);
+                                this.debit = [];
+                                this.succD = function(result) {
+                                    for(var count in result.result) {
+                                        this.debit.push(result.result[count]);
+                                    }
+                                };
+                                var self = this;
+                                $.jsonRPC.request('getdebit', {
+                                                  async: false,
+                                                  params: params,
+                                                  success: function(result) { self.succD(result); },
+                                                  error: function(result) {
+                                                  console.log("error: " + result);
+                                                  }
+                                                  });
+                                return this.debit;
+                            }
+                            this.getCreditCoins = function(addr) {
+                                $.jsonRPC.setup({
+                                                endPoint: '/broker',
+                                                namespace: null
+                                                });
+                                var params = new Array();
+                                
+                                params.push(addr);
+                                
+                                this.credit = [];
+                                this.succC = function(result) {
+                                    for(var count in result.result)
+                                    {
+                                        this.credit.push(result.result[count]);
+                                    }
+                                };
+                                var self = this;
+                                $.jsonRPC.request('getcredit',
+                                                  {
+                                                  async: false,
+                                                  params: params,
+                                                  success: function(result) { self.succC(result); },
+                                                  error: function(result) {
+                                                  console.log("error: " + result);
+                                                  }
+                                                  });
+                                return this.credit;
+                            }
+                            this.getCoins = function(addr) {
+                                $.jsonRPC.setup({
+                                                endPoint: '/broker',
+                                                namespace: null
+                                                });
+                                var params = new Array();
+                                
+                                params.push(addr);
+                                
+                                this.coins = [];
+                                this.succS = function(result) {
+                                    for(var count in result.result)
+                                    {
+                                        this.coins.push(result.result[count]);
+                                    }
+                                };
+                                var self = this;
+                                $.jsonRPC.request('getcoins',
+                                                  {
+                                                  async: false,
+                                                  params: params,
+                                                  success: function(result) { self.succS(result); },
+                                                  error: function(result) {
+                                                  console.log("error: " + result);
+                                                  }
+                                                  });
+                                return this.coins;
+                            }
+                            this.getTx = function(hash) {
+                                $.jsonRPC.setup({
+                                                endPoint: '/broker',
+                                                namespace: null
+                                                });
+                                var params = new Array();
+                                
+                                params.push(hash);
+                                
+                                this.json = {};
+                                this.succT = function(result) {
+                                    this.json = result.result;
+                                };
+                                var self = this;
+                                $.jsonRPC.request('gettxdetails',
+                                                  {
+                                                  async: false,
+                                                  params: params,
+                                                  success: function(result) { self.succT(result); },
+                                                  error: function(result) {
+                                                  console.log("error: " + result);
+                                                  }
+                                                  });
+                                console.log("TX recv: " + JSON.stringify(this.json));
+                                var tx = new btc.Tx(this.json);
+                                console.log("TX stored: " + JSON.stringify(tx.toJSON()));
+                                //                console.log("got Tx: " + JSON.stringify(tx));
+                                return tx;
+                            }
+                            
+                        };
+                        
+                        var balance = 0;
+                        
+                        var asset = new btc.Asset();
+                        
+                        function updateBalance() {
+                            var sync = new AssetSyncronizer();
+                            asset.syncronize(sync, true);
+                            
+                            var balance = 0.00000001*asset.balance();
+                            console.log("balance: " + balance);
+                            $('#balance').html(balance.toFixed(4) + "&curren;");
+                            
+                            // list the content of the localStore
+                            
+                            
+                            // get the balance by traversing over keys and asking the server for the balance pr key
+                            $.jsonRPC.setup({
+                                            endPoint: '/broker',
+                                            namespace: null
+                                            });
+                            
+                            // here we sketch the transaction list - i.e. we loop over transactions and for each transaction we get a +/- amount, and a date, we then sort the transactions according to date and insert them into a table
+                            //            asset.getTxes();
+                            var ledger = asset.getLedger();
+                            var prevhash = "";
+                            var tx_value = 0;
+                            var date;
+                            var entries = {};
+                            for(var i in ledger) {
+                                var entry = ledger[i];
+                                if(entries[entry.coin.hash] == undefined)
+                                {
+                                    entries[entry.coin.hash] = { timestamp: entry.tx.timestamp, value: entry.value };
+                                }
+                                else
+                                entries[entry.coin.hash].value += entry.value;
+                            }
+                            var sorted_entries = [];
+                            for(var hash in entries)
+                            sorted_entries.push({ timestamp: entries[hash].timestamp, hash: hash, value: entries[hash].value }); 
+                            sorted_entries.sort(function(a, b) { return a.timestamp-b.timestamp; });
+                            
+                            function zeroPad(num, places) {
+                                var zero = places - num.toString().length + 1;
+                                return Array(+(zero > 0 && zero)).join("0") + num;
+                            }
+                            
+                            var ledger_balance = 0;
+                            ledgerData = [];
+                            for(var i in sorted_entries) {
+                                var row = [];
+                                ledger_balance += sorted_entries[i].value;
+                                var date = new Date(1000*sorted_entries[i].timestamp);
+                                row.push(zeroPad(date.getDate(),2) + "-" + zeroPad(date.getMonth()+1,2) + "-" + date.getFullYear()+ " " + zeroPad(date.getHours(),2) + ":" + zeroPad(date.getMinutes(),2) + ":" + zeroPad(date.getSeconds(),2));
+                                var debit = "", credit = "";
+                                if(sorted_entries[i].value < 0)
+                                credit = (-0.00000001*sorted_entries[i].value).toFixed(8);
+                                else
+                                debit =  (0.00000001*sorted_entries[i].value).toFixed(8);
+                                row.push(debit);
+                                row.push(credit);
+                                row.push((0.00000001*ledger_balance).toFixed(8));
+                                ledgerData.push(row);
+                                //                console.log(date.toLocaleString() + " : " + (0.00000001*sorted_entries[i].value).toFixed(4) + " : " + (0.00000001*ledger_balance).toFixed(4));                
+                            }
+                            ledgerData.reverse();
+                        }
+                        
+                        function createTx() {
+                            var addr = new btc.Address("1FRsBLVfxooZKyaiDQKZjP8MYQEk6uyQcB");
+                            console.log("addr: " + JSON.stringify(addr));
+                            var tx = asset.generateTx(addr, 50000);
+                            console.log("tx: " + JSON.stringify(tx.toJSON()));
+                            
+                            $.jsonRPC.setup({
+                                            endPoint: '/broker',
+                                            namespace: null
+                                            });
+                            var params = new Array();
+                            
+                            params.push(tx.toJSON());
+                            
+                            this.txhash = [];
+                            this.succT = function(result) {
+                                for(var count in result.result)
+                                {
+                                    this.txhash.push(result.result[count]);
+                                }
+                            };
+                            var self = this;
+                            $.jsonRPC.request('posttx',
+                                              {
+                                              async: false,
+                                              params: params,
+                                              success: function(result) { self.succT(result); },
+                                              error: function(result) {
+                                              console.log("error: " + result);
+                                              }
+                                              });
+                            return this.txhash;
+                        }
+                        
+                        
+                        
+                        $(document).ready(function() {
+                                          updateBalance();
+                                          $("#tabs").tabs( {
+                                                          "show": function(event, ui) {
+                                                          var oTable = $('div.dataTables_scrollBody>#ledgerTable', ui.panel).dataTable();
+                                                          if ( oTable.length > 0 ) {
+                                                          oTable.fnAdjustColumnSizing();
+                                                          }
+                                                          }
+                                                          } );
+                                          $('#ledger').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="ledgerTable"></table>' );
+                                          $('#ledgerTable').dataTable( {
+                                                                      "aoColumns": [
+                                                                                    { "sTitle": "Date", sClass:"alignLeft"},
+                                                                                    { "sTitle": "Debit", sClass:"alignRight" },
+                                                                                    { "sTitle": "Credit", sClass:"alignRRight" },
+                                                                                    { "sTitle": "Balance", sClass:"alignRight"}
+                                                                                    ],
+                                                                      "aaData": ledgerData,
+                                                                      "aaSortingFixed": [],
+                                                                      "aaSorting": [],
+                                                                      "bSort":false,
+                                                                      "sScrollY": "200px",
+                                                                      "bScrollCollapse": true,
+                                                                      "bPaginate": false,
+                                                                      "bJQueryUI": true,
+                                                                      "bFilter":false,
+                                                                      "bInfo":false
+                                                                      } );	
+                                          $('#localstoreMonitor').css({'width': "100%", 'height':"100px"});
+                                          
+                                          $('input[name="choice"]').change(function () {
+                                                                           
+                                                                           if(asset == undefined) return;
+                                                                           var addresses = asset.getAddresses();
+                                                                           var keyList = [];
+                                                                           var addressList = [];
+                                                                           for(var i in addresses) {
+                                                                           //                                                           console.log("addresses["+i+"] = " + addresses[i]);
+                                                                           var address = new btc.Address(Crypto.util.hexToBytes(addresses[i]));
+                                                                           addressList.push(address.toString());
+                                                                           var eckey = asset.getKeyForAddr(addresses[i]);
+                                                                           if(eckey != undefined)
+                                                                           keyList.push(eckey.toString());
+                                                                           }
+                                                                           
+                                                                           var monitorText;
+                                                                           
+                                                                           switch($('input:radio[name=choice]:checked').val()) {
+                                                                           case 'addresses':
+                                                                           monitorText = addressList.join("\n");
+                                                                           break;
+                                                                           case 'keys':
+                                                                           monitorText = keyList.join("\n");
+                                                                           break;
+                                                                           case 'cache':
+                                                                           break;
+                                                                           }
+                                                                           $('textarea#localstoreMonitor').val(monitorText);
+                                                                           })
+                                          .change();
+                                          
+                                          $("#selectUpdate").click(function () {
+                                                                   if(asset == undefined) return;
+                                                                   var monitorText = $('textarea#localstoreMonitor').val();
+                                                                   var elements = monitorText.split("\n");
+                                                                   switch($('input:radio[name=choice]:checked').val()) {
+                                                                   case 'addresses': // check that we do not already have this address (if so - we will just silently ignore it)
+                                                                   var new_keymap = {};
+                                                                   for(i in elements) {
+                                                                   var addr = new btc.Address(elements[i]);
+                                                                   new_keymap[addr.getHashHex()] = asset._keymap[addr.getHashHex()];                                                                
+                                                                   }
+                                                                   asset._keymap = new_keymap;
+                                                                   break;
+                                                                   case 'keys': // check that we do not already have this address (if so - we will just silently ignore it)
+                                                                   var new_keymap = {};
+                                                                   for(i in elements) {
+                                                                   var key = new btc.ECKey(elements[i]);
+                                                                   var addr = Crypto.util.bytesToHex(key.getPubKeyHash());
+                                                                   new_keymap[addr] = key;
+                                                                   }
+                                                                   asset._keymap = new_keymap;
+                                                                   break;
+                                                                   
+                                                                   }
+                                                                   asset.commitKeymap(); 
+                                                                   });
+                                          
+                                          $("#selectCancel").click(function () {
+                                                                   
+                                                                   switch($('input:radio[name=choice]:checked').val()) {
+                                                                   case 'addresses':
+                                                                   $('input:radio[name=choice]:nth(0)').attr('checked',true);
+                                                                   break;
+                                                                   case 'keys':
+                                                                   $('input:radio[name=choice]:nth(1)').attr('checked',true);
+                                                                   break;
+                                                                   case 'cache':
+                                                                   $('input:radio[name=choice]:nth(2)').attr('checked',true);
+                                                                   break;
+                                                                   }
+                                                                   
+                                                                   });
+                                          
+                                          $("#selectClearDocCache").click(function () {
+                                                                          
+                                                                          $.jsonRPC.request('dirtydoccache',
+                                                                                            {
+                                                                                            async: false,
+                                                                                            success: function(result) { },
+                                                                                            error: function(result) {
+                                                                                            console.log("error: " + result);
+                                                                                            }
+                                                                                            });
+                                                                          
+                                                                          });
+                                          
+                                          });            
+                        </script>
+                    
+                    </head>
+    <body>
+        
+        <div class="demo">
+            
+            <div id="tabs">
+                <ul>
+                    <li><a href="#tabs-1">Balance</a></li>
+                    <li><a href="#tabs-2">Transactions</a></li>
+                    <li><a href="#tabs-3">Cash</a></li>
+                    <li><a href="#tabs-4">Advanced</a></li>
+                </ul>
+                <div id="tabs-1">
+                    <table border = "0">
+                        <tr>
+                            <td>Balance:</td>
+                            <td>
+                                <div id="balance">
+                                    0.00&curren;
+                                </div>
+                            </td>
+                            <td>
+                                <div id="refresh">
+                                    <button type="button" onclick="updateBalance()">Refresh</button>
+                                </div>
+                            </td>
+                            <td>
+                                <div id="pay">
+                                    <button type="button" onclick="createTx()">Pay</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div id="tabs-2">
+                    <div id="ledger"></div>
+                </div>
+                <div id="tabs-3">
+                    <p>Mauris eleifend est et turpis. Duis id erat. Suspendisse potenti. Aliquam vulputate, pede vel vehicula accumsan, mi neque rutrum erat, eu congue orci lorem eget lorem. Vestibulum non ante. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Fusce sodales. Quisque eu urna vel enim commodo pellentesque. Praesent eu risus hendrerit ligula tempus pretium. Curabitur lorem enim, pretium nec, feugiat nec, luctus a, lacus.</p>
+                    <p>Duis cursus. Maecenas ligula eros, blandit nec, pharetra at, semper at, magna. Nullam ac lacus. Nulla facilisi. Praesent viverra justo vitae neque. Praesent blandit adipiscing velit. Suspendisse potenti. Donec mattis, pede vel pharetra blandit, magna ligula faucibus eros, id euismod lacus dolor eget odio. Nam scelerisque. Donec non libero sed nulla mattis commodo. Ut sagittis. Donec nisi lectus, feugiat porttitor, tempor ac, tempor vitae, pede. Aenean vehicula velit eu tellus interdum rutrum. Maecenas commodo. Pellentesque nec elit. Fusce in lacus. Vivamus a libero vitae lectus hendrerit hendrerit.</p>
+                </div>
+                <div id="tabs-4">
+                    <p>
+                    <input type="radio" name='choice' value='addresses' checked='checked'>Addresses</input>
+                    <input type="radio" name='choice' value='keys' >Keys</input>
+                    <input type="radio" name='choice' value='cache' >Cache</input>
+                    <input type="button" value="Update" id="selectUpdate"/>
+                    <input type="button" value="Cancel" id="selectCancel"/>
+                    <input type="button" value="Clear Document Cache" id="selectClearDocCache"/>
+                    </p>
+                    <p>
+                    <textarea id = "localstoreMonitor">
+                    </textarea>
+                    </p>
+                </div>
+            </div>
+            
+        </div><!-- End demo -->
+        
+        
+        
+        <div class="demo-description">
+            <p>Click tabs to swap between content that is broken into logical sections.</p>
+        </div><!-- End demo-description -->
+        
+    </body>
+</html>
