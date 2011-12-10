@@ -14,6 +14,7 @@ SET(TARGET_H
     ${HEADER_PATH}/db.h
     ${HEADER_PATH}/irc.h
     ${HEADER_PATH}/net.h
+    ${HEADER_PATH}/Block.h
     ${HEADER_PATH}/Inventory.h
     ${HEADER_PATH}/Endpoint.h
     ${HEADER_PATH}/EndpointPool.h
@@ -34,6 +35,7 @@ SET(TARGET_SRC
     db.cpp
     irc.cpp
     net.cpp
+    Block.cpp
     Inventory.cpp
     Endpoint.cpp
     EndpointPool.cpp
