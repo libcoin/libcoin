@@ -9,6 +9,7 @@
 #include "btcNode/net.h"
 
 #include "btcNode/EndpointPool.h"
+#include "btcNode/Alert.h"
 
 #include "btc/strlcpy.h"
 
@@ -323,8 +324,8 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
         
         // Relay alerts
         CRITICAL_BLOCK(cs_mapAlerts)
-        BOOST_FOREACH(PAIRTYPE(const uint256, CAlert)& item, mapAlerts)
-        item.second.RelayTo(pfrom);
+        BOOST_FOREACH(PAIRTYPE(const uint256, Alert)& item, mapAlerts)
+        item.second.relayTo(pfrom);
         
         pfrom->fSuccessfullyConnected = true;
         
@@ -648,16 +649,16 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
     
     else if (strCommand == "alert")
     {
-        CAlert alert;
+        Alert alert;
         vRecv >> alert;
         
-        if (alert.ProcessAlert())
+        if (alert.processAlert())
         {
             // Relay
-            pfrom->setKnown.insert(alert.GetHash());
+            pfrom->setKnown.insert(alert.getHash());
             CRITICAL_BLOCK(cs_vNodes)
             BOOST_FOREACH(CNode* pnode, vNodes)
-            alert.RelayTo(pnode);
+            alert.relayTo(pnode);
         }
     }
     
