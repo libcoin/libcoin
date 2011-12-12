@@ -111,17 +111,16 @@ void static InvalidChainFound(CBlockIndex* pindexNew)
         printf("InvalidChainFound: WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.\n");
 }
 
-bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
+bool Block::disconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
     // Disconnect in reverse order
-    for (int i = vtx.size()-1; i >= 0; i--)
-        if (!vtx[i].DisconnectInputs(txdb))
+    for (int i = _transactions.size()-1; i >= 0; i--)
+        if (!_transactions[i].DisconnectInputs(txdb))
             return false;
 
     // Update block index on disk without changing it in memory.
     // The memory index structure will be changed after the db commits.
-    if (pindex->pprev)
-    {
+    if (pindex->pprev) {
         CDiskBlockIndex blockindexPrev(pindex->pprev);
         blockindexPrev.hashNext = 0;
         if (!txdb.WriteBlockIndex(blockindexPrev))
@@ -131,33 +130,31 @@ bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     return true;
 }
 
-bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
+bool Block::connectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
     // Check it again in case a previous version let a bad block in
-    if (!CheckBlock())
+    if (!checkBlock())
         return false;
 
     //// issue here: it doesn't know the version
-    unsigned int nTxPos = pindex->nBlockPos + ::GetSerializeSize(CBlock(), SER_DISK) - 1 + GetSizeOfCompactSize(vtx.size());
+    unsigned int nTxPos = pindex->nBlockPos + ::GetSerializeSize(Block(), SER_DISK) - 1 + GetSizeOfCompactSize(_transactions.size());
 
-    map<uint256, CTxIndex> mapQueuedChanges;
-    int64 nFees = 0;
-    BOOST_FOREACH(CTransaction& tx, vtx)
-    {
+    map<uint256, CTxIndex> queuedChanges;
+    int64 fees = 0;
+    BOOST_FOREACH(CTransaction& tx, _transactions) {
         CDiskTxPos posThisTx(pindex->nFile, pindex->nBlockPos, nTxPos);
         nTxPos += ::GetSerializeSize(tx, SER_DISK);
 
-        if (!tx.ConnectInputs(txdb, mapQueuedChanges, posThisTx, pindex, nFees, true, false))
+        if (!tx.ConnectInputs(txdb, queuedChanges, posThisTx, pindex, fees, true, false))
             return false;
     }
     // Write queued txindex changes
-    for (map<uint256, CTxIndex>::iterator mi = mapQueuedChanges.begin(); mi != mapQueuedChanges.end(); ++mi)
-    {
+    for (map<uint256, CTxIndex>::iterator mi = queuedChanges.begin(); mi != queuedChanges.end(); ++mi) {
         if (!txdb.UpdateTxIndex((*mi).first, (*mi).second))
             return error("ConnectBlock() : UpdateTxIndex failed");
     }
 
-    if (vtx[0].GetValueOut() > GetBlockValue(pindex->nHeight, nFees))
+    if (_transactions[0].GetValueOut() > GetBlockValue(pindex->nHeight, fees))
         return false;
 
     // Update block index on disk without changing it in memory.
@@ -210,14 +207,14 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
     vector<CTransaction> vResurrect;
     BOOST_FOREACH(CBlockIndex* pindex, vDisconnect)
     {
-    CBlock block;
+    Block block;
     if (!__blockFile.readFromDisk(block, pindex))
         return error("Reorganize() : ReadFromDisk for disconnect failed");
-    if (!block.DisconnectBlock(txdb, pindex))
+    if (!block.disconnectBlock(txdb, pindex))
         return error("Reorganize() : DisconnectBlock failed");
     
     // Queue memory transactions to resurrect
-    BOOST_FOREACH(const CTransaction& tx, block.vtx)
+    BOOST_FOREACH(const CTransaction& tx, block.getTransactions())
     if (!tx.IsCoinBase())
         vResurrect.push_back(tx);
     }
@@ -227,10 +224,10 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
     for (int i = 0; i < vConnect.size(); i++)
         {
         CBlockIndex* pindex = vConnect[i];
-        CBlock block;
+        Block block;
         if (!__blockFile.readFromDisk(block,pindex))
             return error("Reorganize() : ReadFromDisk for connect failed");
-        if (!block.ConnectBlock(txdb, pindex))
+        if (!block.connectBlock(txdb, pindex))
             {
             // Invalid block
             txdb.TxnAbort();
@@ -238,7 +235,7 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
             }
         
         // Queue memory transactions to delete
-        BOOST_FOREACH(const CTransaction& tx, block.vtx)
+        BOOST_FOREACH(const CTransaction& tx, block.getTransactions())
         vDelete.push_back(tx);
         }
     if (!txdb.WriteHashBestChain(pindexNew->GetBlockHash()))
@@ -269,22 +266,20 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
     return true;
 }
 
-bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
+bool Block::setBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 {
-    uint256 hash = GetHash();
+    uint256 hash = getHash();
 
     txdb.TxnBegin();
-    if (pindexGenesisBlock == NULL && hash == hashGenesisBlock)
-    {
+    if (pindexGenesisBlock == NULL && hash == hashGenesisBlock) {
         txdb.WriteHashBestChain(hash);
         if (!txdb.TxnCommit())
             return error("SetBestChain() : TxnCommit failed");
         pindexGenesisBlock = pindexNew;
     }
-    else if (hashPrevBlock == hashBestChain)
-    {
+    else if (_prevBlock == hashBestChain) {
         // Adding to current best branch
-        if (!ConnectBlock(txdb, pindexNew) || !txdb.WriteHashBestChain(hash))
+        if (!connectBlock(txdb, pindexNew) || !txdb.WriteHashBestChain(hash))
         {
             txdb.TxnAbort();
             InvalidChainFound(pindexNew);
@@ -297,7 +292,7 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
         pindexNew->pprev->pnext = pindexNew;
 
         // Delete redundant memory transactions
-        BOOST_FOREACH(CTransaction& tx, vtx)
+        BOOST_FOREACH(CTransaction& tx, _transactions)
             tx.RemoveFromMemoryPool();
     }
     else
@@ -331,10 +326,10 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 }
 
 
-bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos)
+bool Block::addToBlockIndex(unsigned int nFile, unsigned int nBlockPos)
 {
     // Check for duplicate
-    uint256 hash = GetHash();
+    uint256 hash = getHash();
     if (mapBlockIndex.count(hash))
         return error("AddToBlockIndex() : %s already exists", hash.toString().substr(0,20).c_str());
 
@@ -344,7 +339,7 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos)
         return error("AddToBlockIndex() : new CBlockIndex failed");
     map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.insert(make_pair(hash, pindexNew)).first;
     pindexNew->phashBlock = &((*mi).first);
-    map<uint256, CBlockIndex*>::iterator miPrev = mapBlockIndex.find(hashPrevBlock);
+    map<uint256, CBlockIndex*>::iterator miPrev = mapBlockIndex.find(_prevBlock);
     if (miPrev != mapBlockIndex.end())
     {
         pindexNew->pprev = (*miPrev).second;
@@ -360,7 +355,7 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos)
 
     // New best
     if (pindexNew->bnChainWork > bnBestChainWork)
-        if (!SetBestChain(txdb, pindexNew))
+        if (!setBestChain(txdb, pindexNew))
             return false;
 
     txdb.Close();
@@ -370,39 +365,39 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos)
         // Notify UI to display prev block's coinbase if it was ours
         static uint256 hashPrevBestCoinBase;
 //        UpdatedTransaction(hashPrevBestCoinBase);
-        hashPrevBestCoinBase = vtx[0].GetHash();
+        hashPrevBestCoinBase = _transactions[0].GetHash();
     }
 
     MainFrameRepaint();
     return true;
 }
 
-bool CBlock::CheckBlock() const
+bool Block::checkBlock() const
 {
     // These are checks that are independent of context
     // that can be verified before saving an orphan block.
 
     // Size limits
-    if (vtx.empty() || vtx.size() > MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK) > MAX_BLOCK_SIZE)
+    if (_transactions.empty() || _transactions.size() > MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK) > MAX_BLOCK_SIZE)
         return error("CheckBlock() : size limits failed");
 
     // Check proof of work matches claimed amount
-    if (!CheckProofOfWork(GetHash(), nBits))
+    if (!CheckProofOfWork(getHash(), _bits))
         return error("CheckBlock() : proof of work failed");
 
     // Check timestamp
-    if (GetBlockTime() > GetAdjustedTime() + 2 * 60 * 60)
+    if (getBlockTime() > GetAdjustedTime() + 2 * 60 * 60)
         return error("CheckBlock() : block timestamp too far in the future");
 
     // First transaction must be coinbase, the rest must not be
-    if (vtx.empty() || !vtx[0].IsCoinBase())
+    if (_transactions.empty() || !_transactions[0].IsCoinBase())
         return error("CheckBlock() : first tx is not coinbase");
-    for (int i = 1; i < vtx.size(); i++)
-        if (vtx[i].IsCoinBase())
+    for (int i = 1; i < _transactions.size(); i++)
+        if (_transactions[i].IsCoinBase())
             return error("CheckBlock() : more than one coinbase");
 
     // Check transactions
-    BOOST_FOREACH(const CTransaction& tx, vtx)
+    BOOST_FOREACH(const CTransaction& tx, _transactions)
         if (!tx.CheckTransaction())
             return error("CheckBlock() : CheckTransaction failed");
 
@@ -411,51 +406,51 @@ bool CBlock::CheckBlock() const
         return error("CheckBlock() : too many nonstandard transactions");
 
     // Check merkleroot
-    if (hashMerkleRoot != BuildMerkleTree())
+    if (_merkleRoot != buildMerkleTree())
         return error("CheckBlock() : hashMerkleRoot mismatch");
 
     return true;
 }
 
-bool CBlock::AcceptBlock()
+bool Block::acceptBlock()
 {
     // Check for duplicate
-    uint256 hash = GetHash();
+    uint256 hash = getHash();
     if (mapBlockIndex.count(hash))
         return error("AcceptBlock() : block already in mapBlockIndex");
 
     // Get prev block index
-    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashPrevBlock);
+    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(_prevBlock);
     if (mi == mapBlockIndex.end())
         return error("AcceptBlock() : prev block not found");
     CBlockIndex* pindexPrev = (*mi).second;
-    int nHeight = pindexPrev->nHeight+1;
+    int height = pindexPrev->nHeight+1;
 
     // Check proof of work
-    if (nBits != GetNextWorkRequired(pindexPrev))
+    if (_bits != GetNextWorkRequired(pindexPrev))
         return error("AcceptBlock() : incorrect proof of work");
 
     // Check timestamp against prev
-    if (GetBlockTime() <= pindexPrev->GetMedianTimePast())
+    if (getBlockTime() <= pindexPrev->GetMedianTimePast())
         return error("AcceptBlock() : block's timestamp is too early");
 
     // Check that all transactions are finalized
-    BOOST_FOREACH(const CTransaction& tx, vtx)
-        if (!tx.IsFinal(nHeight, GetBlockTime()))
+    BOOST_FOREACH(const CTransaction& tx, _transactions)
+        if (!tx.IsFinal(height, getBlockTime()))
             return error("AcceptBlock() : contains a non-final transaction");
 
     // Check that the block chain matches the known block chain up to a checkpoint
     if (!fTestNet)
-        if ((nHeight ==  11111 && hash != uint256("0x0000000069e244f73d78e8fd29ba2fd2ed618bd6fa2ee92559f542fdb26e7c1d")) ||
-            (nHeight ==  33333 && hash != uint256("0x000000002dd5588a74784eaa7ab0507a18ad16a236e7b1ce69f00d7ddfb5d0a6")) ||
-            (nHeight ==  68555 && hash != uint256("0x00000000001e1b4903550a0b96e9a9405c8a95f387162e4944e8d9fbe501cd6a")) ||
-            (nHeight ==  70567 && hash != uint256("0x00000000006a49b14bcf27462068f1264c961f11fa2e0eddd2be0791e1d4124a")) ||
-            (nHeight ==  74000 && hash != uint256("0x0000000000573993a3c9e41ce34471c079dcf5f52a0e824a81e7f953b8661a20")) ||
-            (nHeight == 105000 && hash != uint256("0x00000000000291ce28027faea320c8d2b054b2e0fe44a773f3eefb151d6bdc97")) ||
-            (nHeight == 118000 && hash != uint256("0x000000000000774a7f8a7a12dc906ddb9e17e75d684f15e00f8767f9e8f36553")) ||
-            (nHeight == 134444 && hash != uint256("0x00000000000005b12ffd4cd315cd34ffd4a594f430ac814c91184a0d42d2b0fe")) ||
-            (nHeight == 140700 && hash != uint256("0x000000000000033b512028abb90e1626d8b346fd0ed598ac0a3c371138dce2bd")))
-            return error("AcceptBlock() : rejected by checkpoint lockin at %d", nHeight);
+        if ((height ==  11111 && hash != uint256("0x0000000069e244f73d78e8fd29ba2fd2ed618bd6fa2ee92559f542fdb26e7c1d")) ||
+            (height ==  33333 && hash != uint256("0x000000002dd5588a74784eaa7ab0507a18ad16a236e7b1ce69f00d7ddfb5d0a6")) ||
+            (height ==  68555 && hash != uint256("0x00000000001e1b4903550a0b96e9a9405c8a95f387162e4944e8d9fbe501cd6a")) ||
+            (height ==  70567 && hash != uint256("0x00000000006a49b14bcf27462068f1264c961f11fa2e0eddd2be0791e1d4124a")) ||
+            (height ==  74000 && hash != uint256("0x0000000000573993a3c9e41ce34471c079dcf5f52a0e824a81e7f953b8661a20")) ||
+            (height == 105000 && hash != uint256("0x00000000000291ce28027faea320c8d2b054b2e0fe44a773f3eefb151d6bdc97")) ||
+            (height == 118000 && hash != uint256("0x000000000000774a7f8a7a12dc906ddb9e17e75d684f15e00f8767f9e8f36553")) ||
+            (height == 134444 && hash != uint256("0x00000000000005b12ffd4cd315cd34ffd4a594f430ac814c91184a0d42d2b0fe")) ||
+            (height == 140700 && hash != uint256("0x000000000000033b512028abb90e1626d8b346fd0ed598ac0a3c371138dce2bd")))
+            return error("AcceptBlock() : rejected by checkpoint lockin at %d", height);
 
     // Write block to history file
     if (!BlockFile::checkDiskSpace(::GetSerializeSize(*this, SER_DISK)))
@@ -464,7 +459,7 @@ bool CBlock::AcceptBlock()
     unsigned int nBlockPos = 0;
     if (!__blockFile.writeToDisk(*this, nFile, nBlockPos))
         return error("AcceptBlock() : WriteToDisk failed");
-    if (!AddToBlockIndex(nFile, nBlockPos))
+    if (!addToBlockIndex(nFile, nBlockPos))
         return error("AcceptBlock() : AddToBlockIndex failed");
 
     // Relay inventory, but don't relay old inventory during initial block download
