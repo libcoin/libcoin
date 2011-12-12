@@ -16,6 +16,7 @@ SET(TARGET_H
     ${HEADER_PATH}/net.h
     ${HEADER_PATH}/Alert.h
     ${HEADER_PATH}/Block.h
+    ${HEADER_PATH}/BlockIndex.h
     ${HEADER_PATH}/BlockFile.h
     ${HEADER_PATH}/Inventory.h
     ${HEADER_PATH}/Endpoint.h
@@ -39,6 +40,7 @@ SET(TARGET_SRC
     net.cpp
     Alert.cpp
     Block.cpp
+    BlockIndex.cpp
     BlockFile.cpp
     Inventory.cpp
     Endpoint.cpp

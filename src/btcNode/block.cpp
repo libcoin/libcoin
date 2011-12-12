@@ -1,5 +1,6 @@
 
 #include "btcNode/Block.h"
+#include "btcNode/BlockIndex.h"
 
 #include "btcNode/main.h"
 #include "btcNode/db.h"
@@ -110,6 +111,89 @@ void static InvalidChainFound(CBlockIndex* pindexNew)
     if (pindexBest && bnBestInvalidWork > bnBestChainWork + pindexBest->GetBlockWork() * 6)
         printf("InvalidChainFound: WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.\n");
 }
+
+uint256 Block::getHash() const
+{
+    return Hash(BEGIN(_version), END(_nonce));
+}
+
+int Block::GetSigOpCount() const
+{
+    int n = 0;
+    BOOST_FOREACH(const CTransaction& tx, _transactions)
+    n += tx.GetSigOpCount();
+    return n;
+}
+
+uint256 Block::buildMerkleTree() const
+{
+    _merkleTree.clear();
+    BOOST_FOREACH(const CTransaction& tx, _transactions)
+    _merkleTree.push_back(tx.GetHash());
+    int j = 0;
+    for (int size = _transactions.size(); size > 1; size = (size + 1) / 2) {
+        for (int i = 0; i < size; i += 2) {
+            int i2 = std::min(i+1, size-1);
+            _merkleTree.push_back(Hash(BEGIN(_merkleTree[j+i]),  END(_merkleTree[j+i]),
+                                       BEGIN(_merkleTree[j+i2]), END(_merkleTree[j+i2])));
+        }
+        j += size;
+    }
+    return (_merkleTree.empty() ? 0 : _merkleTree.back());
+}
+
+std::vector<uint256> Block::getMerkleBranch(int index) const
+{
+    if (_merkleTree.empty())
+        buildMerkleTree();
+    std::vector<uint256> merkleBranch;
+    int j = 0;
+    for (int size = _transactions.size(); size > 1; size = (size + 1) / 2) {
+        int i = std::min(index^1, size-1);
+        merkleBranch.push_back(_merkleTree[j+i]);
+        index >>= 1;
+        j += size;
+    }
+    return merkleBranch;
+}
+
+uint256 Block::checkMerkleBranch(uint256 hash, const std::vector<uint256>& merkleBranch, int index)
+{
+    if (index == -1)
+        return 0;
+    BOOST_FOREACH(const uint256& otherside, merkleBranch)
+    {
+    if (index & 1)
+        hash = Hash(BEGIN(otherside), END(otherside), BEGIN(hash), END(hash));
+    else
+        hash = Hash(BEGIN(hash), END(hash), BEGIN(otherside), END(otherside));
+    index >>= 1;
+    }
+    return hash;
+}
+
+void Block::print() const
+{
+    printf("Block(hash=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%d)\n",
+           getHash().toString().substr(0,20).c_str(),
+           _version,
+           _prevBlock.toString().substr(0,20).c_str(),
+           _merkleRoot.toString().substr(0,10).c_str(),
+           _time, _bits, _nonce,
+           _transactions.size());
+    for (int i = 0; i < _transactions.size(); i++)
+        {
+        printf("  ");
+        _transactions[i].print();
+        }
+    printf("  vMerkleTree: ");
+    for (int i = 0; i < _merkleTree.size(); i++)
+        printf("%s ", _merkleTree[i].toString().substr(0,10).c_str());
+    printf("\n");
+}
+
+
+
 
 bool Block::disconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {

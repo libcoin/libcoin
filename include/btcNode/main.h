@@ -82,10 +82,7 @@ void PrintBlockTree();
 Block* CreateNewBlock(CReserveKey& reservekey);
 void IncrementExtraNonce(Block* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce);
 void FormatHashBuffers(Block* pblock, char* pmidstate, char* pdata, char* phash1);
-//bool CheckWork(Block* pblock, CWallet& wallet, CReserveKey& reservekey);
-bool CheckProofOfWork(uint256 hash, unsigned int nBits);
-int GetTotalBlocksEstimate();
-bool IsInitialBlockDownload();
+
 std::string GetWarnings(std::string strFor);
 
 class CHandler

@@ -3,6 +3,7 @@
 
 #include "btcNode/net.h"
 #include "btcNode/Block.h"
+#include "btcNode/BlockIndex.h"
 #include "btc/key.h"
 
 #include "boost/foreach.hpp"

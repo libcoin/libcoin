@@ -2,6 +2,7 @@
 #include "btcNode/BlockFile.h"
 
 #include "btcNode/Block.h"
+#include "btcNode/BlockIndex.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
