@@ -18,8 +18,8 @@
 
 #include <db_cxx.h>
 
-class CTxIndex;
-class CDiskTxPos;
+class TxIndex;
+class DiskTxPos;
 class COutPoint;
 class Endpoint;
 
@@ -271,17 +271,17 @@ private:
     CTxDB(const CTxDB&);
     void operator=(const CTxDB&);
 public:
-    bool ReadTxIndex(uint256 hash, CTxIndex& txindex);
+    bool ReadTxIndex(uint256 hash, TxIndex& txindex);
     bool ReadDrIndex(uint160 hash160, std::set<std::pair<uint256, unsigned int> >& debit);
     bool ReadCrIndex(uint160 hash160, std::set<std::pair<uint256, unsigned int> >& credit);
-    bool UpdateTxIndex(uint256 hash, const CTxIndex& txindex);
-    bool AddTxIndex(const CTransaction& tx, const CDiskTxPos& pos, int nHeight);
+    bool UpdateTxIndex(uint256 hash, const TxIndex& txindex);
+    bool AddTxIndex(const CTransaction& tx, const DiskTxPos& pos, int nHeight);
     bool EraseTxIndex(const CTransaction& tx);
     bool ContainsTx(uint256 hash);
     bool ReadOwnerTxes(uint160 hash160, int nHeight, std::vector<CTransaction>& vtx);
-    bool ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex);
+    bool ReadDiskTx(uint256 hash, CTransaction& tx, TxIndex& txindex);
     bool ReadDiskTx(uint256 hash, CTransaction& tx);
-    bool ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex);
+    bool ReadDiskTx(COutPoint outpoint, CTransaction& tx, TxIndex& txindex);
     bool ReadDiskTx(COutPoint outpoint, CTransaction& tx);
     bool WriteBlockIndex(const CDiskBlockIndex& blockindex);
     bool EraseBlockIndex(uint256 hash);

@@ -3,6 +3,7 @@
 
 #include "btcNode/Block.h"
 #include "btcNode/BlockIndex.h"
+#include "btcNode/BlockChain.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -75,20 +76,20 @@ bool BlockFile::readFromDisk(Block& block, const CBlockIndex* pindex, bool fRead
     return true;
 }
 
-bool BlockFile::readFromDisk(CTransaction& tx, CDiskTxPos pos, FILE** pfileRet)
+bool BlockFile::readFromDisk(CTransaction& tx, DiskTxPos pos, FILE** pfileRet)
 {
-    CAutoFile filein = openBlockFile(pos.nFile, 0, pfileRet ? "rb+" : "rb");
+    CAutoFile filein = openBlockFile(pos.getFile(), 0, pfileRet ? "rb+" : "rb");
     if (!filein)
         return error("CTransaction::ReadFromDisk() : OpenBlockFile failed");
     
     // Read transaction
-    if (fseek(filein, pos.nTxPos, SEEK_SET) != 0)
+    if (fseek(filein, pos.getTxPos(), SEEK_SET) != 0)
         return error("CTransaction::ReadFromDisk() : fseek failed");
     filein >> tx;
     
     // Return file pointer
     if (pfileRet) {
-        if (fseek(filein, pos.nTxPos, SEEK_SET) != 0)
+        if (fseek(filein, pos.getTxPos(), SEEK_SET) != 0)
             return error("CTransaction::ReadFromDisk() : second fseek failed");
         *pfileRet = filein.release();
     }

@@ -72,7 +72,7 @@ extern int fUseUPnP;
 
 class CReserveKey;
 class CTxDB;
-class CTxIndex;
+class TxIndex;
 
 bool LoadBlockIndex(bool fAllowNew=true);
 void PrintBlockTree();
@@ -132,56 +132,6 @@ public:
 void MainFrameRepaint();
 void Shutdown(void* ptr);
 
-class CDiskTxPos
-{
-public:
-    unsigned int nFile;
-    unsigned int nBlockPos;
-    unsigned int nTxPos;
-
-    CDiskTxPos()
-    {
-        SetNull();
-    }
-
-    CDiskTxPos(unsigned int nFileIn, unsigned int nBlockPosIn, unsigned int nTxPosIn)
-    {
-        nFile = nFileIn;
-        nBlockPos = nBlockPosIn;
-        nTxPos = nTxPosIn;
-    }
-
-    IMPLEMENT_SERIALIZE( READWRITE(FLATDATA(*this)); )
-    void SetNull() { nFile = -1; nBlockPos = 0; nTxPos = 0; }
-    bool IsNull() const { return (nFile == -1); }
-
-    friend bool operator==(const CDiskTxPos& a, const CDiskTxPos& b)
-    {
-        return (a.nFile     == b.nFile &&
-                a.nBlockPos == b.nBlockPos &&
-                a.nTxPos    == b.nTxPos);
-    }
-
-    friend bool operator!=(const CDiskTxPos& a, const CDiskTxPos& b)
-    {
-        return !(a == b);
-    }
-
-    std::string toString() const
-    {
-        if (IsNull())
-            return strprintf("null");
-        else
-            return strprintf("(nFile=%d, nBlockPos=%d, nTxPos=%d)", nFile, nBlockPos, nTxPos);
-    }
-
-    void print() const
-    {
-        printf("%s", toString().c_str());
-    }
-};
-
-
 //
 // The basic transaction that is broadcasted on the network and contained in
 // blocks.  A transaction can contain multiple inputs and outputs.
@@ -193,11 +143,11 @@ public:
     CTransaction() : CTx() {}
     CTransaction(const CTx& tx) : CTx(tx) {} // nothing to be initialized in CTransaction
     
-    bool ReadFromDisk(CTxDB& txdb, COutPoint prevout, CTxIndex& txindexRet);
+    bool ReadFromDisk(CTxDB& txdb, COutPoint prevout, TxIndex& txindexRet);
     bool ReadFromDisk(CTxDB& txdb, COutPoint prevout);
     bool ReadFromDisk(COutPoint prevout);
     bool DisconnectInputs(CTxDB& txdb);
-    bool ConnectInputs(CTxDB& txdb, std::map<uint256, CTxIndex>& mapTestPool, CDiskTxPos posThisTx,
+    bool ConnectInputs(CTxDB& txdb, std::map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx,
                        CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee=0);
     bool ClientConnectInputs();
     bool CheckTransaction() const;
@@ -207,61 +157,6 @@ protected:
     bool AddToMemoryPoolUnchecked();
 public:
     bool RemoveFromMemoryPool();
-};
-
-
-//
-// A txdb record that contains the disk location of a transaction and the
-// locations of transactions that spend its outputs.  vSpent is really only
-// used as a flag, but having the location is very helpful for debugging.
-//
-class CTxIndex
-{
-public:
-    CDiskTxPos pos;
-    std::vector<CDiskTxPos> vSpent;
-
-    CTxIndex()
-    {
-        SetNull();
-    }
-
-    CTxIndex(const CDiskTxPos& posIn, unsigned int nOutputs)
-    {
-        pos = posIn;
-        vSpent.resize(nOutputs);
-    }
-
-    IMPLEMENT_SERIALIZE
-    (
-        if (!(nType & SER_GETHASH))
-            READWRITE(nVersion);
-        READWRITE(pos);
-        READWRITE(vSpent);
-    )
-
-    void SetNull()
-    {
-        pos.SetNull();
-        vSpent.clear();
-    }
-
-    bool IsNull()
-    {
-        return pos.IsNull();
-    }
-
-    friend bool operator==(const CTxIndex& a, const CTxIndex& b)
-    {
-        return (a.pos    == b.pos &&
-                a.vSpent == b.vSpent);
-    }
-
-    friend bool operator!=(const CTxIndex& a, const CTxIndex& b)
-    {
-        return !(a == b);
-    }
-    int GetDepthInMainChain() const;
 };
 
 

@@ -1,6 +1,7 @@
 
 #include "btcNode/Block.h"
 #include "btcNode/BlockIndex.h"
+#include "btcNode/BlockChain.h"
 
 #include "btcNode/main.h"
 #include "btcNode/db.h"
@@ -192,17 +193,17 @@ bool Block::connectBlock(CTxDB& txdb, CBlockIndex* pindex)
     //// issue here: it doesn't know the version
     unsigned int nTxPos = pindex->nBlockPos + ::GetSerializeSize(Block(), SER_DISK) - 1 + GetSizeOfCompactSize(_transactions.size());
 
-    map<uint256, CTxIndex> queuedChanges;
+    map<uint256, TxIndex> queuedChanges;
     int64 fees = 0;
     BOOST_FOREACH(CTransaction& tx, _transactions) {
-        CDiskTxPos posThisTx(pindex->nFile, pindex->nBlockPos, nTxPos);
+        DiskTxPos posThisTx(pindex->nFile, pindex->nBlockPos, nTxPos);
         nTxPos += ::GetSerializeSize(tx, SER_DISK);
 
         if (!tx.ConnectInputs(txdb, queuedChanges, posThisTx, pindex, fees, true, false))
             return false;
     }
     // Write queued txindex changes
-    for (map<uint256, CTxIndex>::iterator mi = queuedChanges.begin(); mi != queuedChanges.end(); ++mi) {
+    for (map<uint256, TxIndex>::iterator mi = queuedChanges.begin(); mi != queuedChanges.end(); ++mi) {
         if (!txdb.UpdateTxIndex((*mi).first, (*mi).second))
             return error("ConnectBlock() : UpdateTxIndex failed");
     }

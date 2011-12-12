@@ -15,7 +15,7 @@
 class Block;
 class CBlockIndex;
 class CTransaction;
-class CDiskTxPos;
+class DiskTxPos;
 
 class BlockFile : private boost::noncopyable
 {
@@ -26,7 +26,7 @@ public:
     bool readFromDisk(Block& block, unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true);
     bool readFromDisk(Block& block, const CBlockIndex* pindex, bool fReadTransactions=true);
     
-    bool readFromDisk(CTransaction& tx, CDiskTxPos pos, FILE** pfileRet=NULL);    
+    bool readFromDisk(CTransaction& tx, DiskTxPos pos, FILE** pfileRet=NULL);    
     
     bool eraseBlockFromDisk(CBlockIndex bindex);
 

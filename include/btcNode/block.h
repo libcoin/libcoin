@@ -27,7 +27,7 @@ class CBlockIndex;
 class CTransaction;
 
 class CTxDB;
-class CTxIndex;
+class TxIndex;
 
 
 //

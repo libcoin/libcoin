@@ -7,6 +7,7 @@
 #include "btcNode/net.h"
 #include "btcNode/Block.h"
 #include "btcNode/BlockFile.h"
+#include "btcNode/BlockChain.h"
 
 //#include "init.h"
 //#include "cryptopp/sha.h"
@@ -72,15 +73,15 @@ void Shutdown(void* ptr)
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// CTransaction and CTxIndex
+// CTransaction and TxIndex
 //
 
-bool CTransaction::ReadFromDisk(CTxDB& txdb, COutPoint prevout, CTxIndex& txindexRet)
+bool CTransaction::ReadFromDisk(CTxDB& txdb, COutPoint prevout, TxIndex& txindexRet)
 {
     SetNull();
     if (!txdb.ReadTxIndex(prevout.hash, txindexRet))
         return false;
-    if (!__blockFile.readFromDisk(*this, txindexRet.pos))
+    if (!__blockFile.readFromDisk(*this, txindexRet.getPos()))
         return false;
     if (prevout.n >= vout.size())
     {
@@ -92,14 +93,14 @@ bool CTransaction::ReadFromDisk(CTxDB& txdb, COutPoint prevout, CTxIndex& txinde
 
 bool CTransaction::ReadFromDisk(CTxDB& txdb, COutPoint prevout)
 {
-    CTxIndex txindex;
+    TxIndex txindex;
     return ReadFromDisk(txdb, prevout, txindex);
 }
 
 bool CTransaction::ReadFromDisk(COutPoint prevout)
 {
     CTxDB txdb("r");
-    CTxIndex txindex;
+    TxIndex txindex;
     return ReadFromDisk(txdb, prevout, txindex);
 }
 
@@ -225,9 +226,9 @@ bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMi
     if (fCheckInputs)
     {
         // Check against previous transactions
-        map<uint256, CTxIndex> mapUnused;
+        map<uint256, TxIndex> mapUnused;
         int64 nFees = 0;
-        if (!ConnectInputs(txdb, mapUnused, CDiskTxPos(1,1,1), pindexBest, nFees, false, false))
+        if (!ConnectInputs(txdb, mapUnused, DiskTxPos(1,1,1), pindexBest, nFees, false, false))
         {
             if (pfMissingInputs)
                 *pfMissingInputs = true;
@@ -393,27 +394,6 @@ bool CTransaction::RemoveFromMemoryPool()
     return true;
 }
 
-
-int CTxIndex::GetDepthInMainChain() const
-{
-    // Read block header
-    Block block;
-    if (!__blockFile.readFromDisk(block, pos.nFile, pos.nBlockPos, false))
-        return 0;
-    // Find the block in the index
-    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(block.getHash());
-    if (mi == mapBlockIndex.end())
-        return 0;
-    CBlockIndex* pindex = (*mi).second;
-    if (!pindex || !pindex->IsInMainChain())
-        return 0;
-    return 1 + nBestHeight - pindex->nHeight;
-}
-
-
-
-
-
 bool CTransaction::DisconnectInputs(CTxDB& txdb)
 {
     // Relinquish previous transactions' spent pointers
@@ -424,15 +404,15 @@ bool CTransaction::DisconnectInputs(CTxDB& txdb)
             COutPoint prevout = txin.prevout;
 
             // Get prev txindex from disk
-            CTxIndex txindex;
+            TxIndex txindex;
             if (!txdb.ReadTxIndex(prevout.hash, txindex))
                 return error("DisconnectInputs() : ReadTxIndex failed");
 
-            if (prevout.n >= txindex.vSpent.size())
+            if (prevout.n >= txindex.getNumSpents())
                 return error("DisconnectInputs() : prevout.n out of range");
 
             // Mark outpoint as not spent
-            txindex.vSpent[prevout.n].SetNull();
+            txindex.setNotSpent(prevout.n);
 
             // Write back
             if (!txdb.UpdateTxIndex(prevout.hash, txindex))
@@ -448,7 +428,7 @@ bool CTransaction::DisconnectInputs(CTxDB& txdb)
 }
 
 
-bool CTransaction::ConnectInputs(CTxDB& txdb, map<uint256, CTxIndex>& mapTestPool, CDiskTxPos posThisTx,
+bool CTransaction::ConnectInputs(CTxDB& txdb, map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx,
                                  CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee)
 {
     // Take over previous transactions' spent pointers
@@ -460,7 +440,7 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, map<uint256, CTxIndex>& mapTestPoo
             COutPoint prevout = vin[i].prevout;
 
             // Read txindex
-            CTxIndex txindex;
+            TxIndex txindex;
             bool fFound = true;
             if ((fBlock || fMiner) && mapTestPool.count(prevout.hash))
             {
@@ -477,7 +457,7 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, map<uint256, CTxIndex>& mapTestPoo
 
             // Read txPrev
             CTransaction txPrev;
-            if (!fFound || txindex.pos == CDiskTxPos(1,1,1))
+            if (!fFound || txindex.getPos() == DiskTxPos(1,1,1))
             {
                 // Get prev tx from single transactions in memory
                 CRITICAL_BLOCK(cs_mapTransactions)
@@ -487,22 +467,22 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, map<uint256, CTxIndex>& mapTestPoo
                     txPrev = mapTransactions[prevout.hash];
                 }
                 if (!fFound)
-                    txindex.vSpent.resize(txPrev.vout.size());
+                    txindex.resizeSpents(txPrev.vout.size());
             }
             else
             {
                 // Get prev tx from disk
-                if (!__blockFile.readFromDisk(txPrev, txindex.pos))
+                if (!__blockFile.readFromDisk(txPrev, txindex.getPos()))
                     return error("ConnectInputs() : %s ReadFromDisk prev tx %s failed", GetHash().toString().substr(0,10).c_str(),  prevout.hash.toString().substr(0,10).c_str());
             }
 
-            if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.vSpent.size())
-                return error("ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", GetHash().toString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.toString().substr(0,10).c_str(), txPrev.toString().c_str());
+            if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.getNumSpents())
+                return error("ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", GetHash().toString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.getNumSpents(), prevout.hash.toString().substr(0,10).c_str(), txPrev.toString().c_str());
 
             // If prev is coinbase, check that it's matured
             if (txPrev.IsCoinBase())
                 for (CBlockIndex* pindex = pindexBlock; pindex && pindexBlock->nHeight - pindex->nHeight < COINBASE_MATURITY; pindex = pindex->pprev)
-                    if (pindex->nBlockPos == txindex.pos.nBlockPos && pindex->nFile == txindex.pos.nFile)
+                    if (pindex->nBlockPos == txindex.getPos().getBlockPos() && pindex->nFile == txindex.getPos().getFile())
                         return error("ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
 
             // Verify signature
@@ -510,8 +490,8 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, map<uint256, CTxIndex>& mapTestPoo
                 return error("ConnectInputs() : %s VerifySignature failed", GetHash().toString().substr(0,10).c_str());
 
             // Check for conflicts
-            if (!txindex.vSpent[prevout.n].IsNull())
-                return fMiner ? false : error("ConnectInputs() : %s prev tx already used at %s", GetHash().toString().substr(0,10).c_str(), txindex.vSpent[prevout.n].toString().c_str());
+            if (!txindex.getSpent(prevout.n).isNull())
+                return fMiner ? false : error("ConnectInputs() : %s prev tx already used at %s", GetHash().toString().substr(0,10).c_str(), txindex.getSpent(prevout.n).toString().c_str());
 
             // Check for negative or overflow input values
             nValueIn += txPrev.vout[prevout.n].nValue;
@@ -519,7 +499,7 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, map<uint256, CTxIndex>& mapTestPoo
                 return error("ConnectInputs() : txin values out of range");
 
             // Mark outpoints as spent
-            txindex.vSpent[prevout.n] = posThisTx;
+            txindex.setSpent(prevout.n, posThisTx);
 
             // Write back
             if (fBlock || fMiner)
@@ -545,12 +525,12 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, map<uint256, CTxIndex>& mapTestPoo
     if (fBlock)
     {
         // Add transaction to changes
-        mapTestPool[GetHash()] = CTxIndex(posThisTx, vout.size());
+        mapTestPool[GetHash()] = TxIndex(posThisTx, vout.size());
     }
     else if (fMiner)
     {
         // Add transaction to test pool
-        mapTestPool[GetHash()] = CTxIndex(CDiskTxPos(1,1,1), vout.size());
+        mapTestPool[GetHash()] = TxIndex(DiskTxPos(1,1,1), vout.size());
     }
 
     return true;
@@ -888,7 +868,7 @@ Block* CreateNewBlock(CReserveKey& reservekey)
             {
                 // Read prev transaction
                 CTransaction txPrev;
-                CTxIndex txindex;
+                TxIndex txindex;
                 if (!txPrev.ReadFromDisk(txdb, txin.prevout, txindex))
                 {
                     // Has to wait for dependencies
@@ -931,7 +911,7 @@ Block* CreateNewBlock(CReserveKey& reservekey)
         }
 
         // Collect transactions into block
-        map<uint256, CTxIndex> mapTestPool;
+        map<uint256, TxIndex> mapTestPool;
         uint64 nBlockSize = 1000;
         int nBlockSigOps = 100;
         while (!mapPriority.empty())
@@ -955,8 +935,8 @@ Block* CreateNewBlock(CReserveKey& reservekey)
 
             // Connecting shouldn't fail due to dependency on other memory pool transactions
             // because we're already processing them in order of dependency
-            map<uint256, CTxIndex> mapTestPoolTmp(mapTestPool);
-            if (!tx.ConnectInputs(txdb, mapTestPoolTmp, CDiskTxPos(1,1,1), pindexPrev, nFees, false, true, nMinFee))
+            map<uint256, TxIndex> mapTestPoolTmp(mapTestPool);
+            if (!tx.ConnectInputs(txdb, mapTestPoolTmp, DiskTxPos(1,1,1), pindexPrev, nFees, false, true, nMinFee))
                 continue;
             swap(mapTestPool, mapTestPoolTmp);
 

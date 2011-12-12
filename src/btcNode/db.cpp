@@ -6,6 +6,7 @@
 //#include "headers.h"
 #include "btcNode/db.h"
 #include "btcNode/net.h"
+#include "btcNode/BlockChain.h"
 
 #include "btc/util.h"
 
@@ -212,10 +213,10 @@ void DBFlush(bool fShutdown)
 // CTxDB
 //
 
-bool CTxDB::ReadTxIndex(uint256 hash, CTxIndex& txindex)
+bool CTxDB::ReadTxIndex(uint256 hash, TxIndex& txindex)
 {
     assert(!fClient);
-    txindex.SetNull();
+    txindex.setNull();
     return Read(make_pair(string("tx"), hash), txindex);
 }
 
@@ -237,14 +238,14 @@ bool CTxDB::ReadCrIndex(uint160 hash160, set<Coin>& credit)
 
 bool Solver(const CScript& scriptPubKey, vector<pair<opcodetype, vector<unsigned char> > >& vSolutionRet);
 
-bool CTxDB::UpdateTxIndex(uint256 hash, const CTxIndex& txindex)
+bool CTxDB::UpdateTxIndex(uint256 hash, const TxIndex& txindex)
 {
     assert(!fClient);
 
 //    cout << "update tx: " << hash.toString() << endl;    
     
     CTransaction tx;
-    __blockFile.readFromDisk(tx, txindex.pos);
+    __blockFile.readFromDisk(tx, txindex.getPos());
     
     // gronager: hook to enable public key / hash160 lookups by a separate database
     // first find the keys and hash160s that are referenced in this transaction
@@ -325,13 +326,13 @@ bool CTxDB::UpdateTxIndex(uint256 hash, const CTxIndex& txindex)
     return Write(make_pair(string("tx"), hash), txindex);
 }
 
-bool CTxDB::AddTxIndex(const CTransaction& tx, const CDiskTxPos& pos, int nHeight)
+bool CTxDB::AddTxIndex(const CTransaction& tx, const DiskTxPos& pos, int nHeight)
 {
     assert(!fClient);
     
     // Add to tx index
     uint256 hash = tx.GetHash();
-    CTxIndex txindex(pos, tx.vout.size());
+    TxIndex txindex(pos, tx.vout.size());
     
     return UpdateTxIndex(hash, txindex);
 //    return Write(make_pair(string("tx"), hash), txindex);
@@ -442,7 +443,7 @@ bool CTxDB::ReadOwnerTxes(uint160 hash160, int nMinHeight, vector<CTransaction>&
         // Read next record
         CDataStream ssKey;
         if (fFlags == DB_SET_RANGE)
-            ssKey << string("owner") << hash160 << CDiskTxPos(0, 0, 0);
+            ssKey << string("owner") << hash160 << DiskTxPos(0, 0, 0);
         CDataStream ssValue;
         int ret = ReadAtCursor(pcursor, ssKey, ssValue, fFlags);
         fFlags = DB_NEXT;
@@ -457,7 +458,7 @@ bool CTxDB::ReadOwnerTxes(uint160 hash160, int nMinHeight, vector<CTransaction>&
         // Unserialize
         string strType;
         uint160 hashItem;
-        CDiskTxPos pos;
+        DiskTxPos pos;
         ssKey >> strType >> hashItem >> pos;
         int nItemHeight;
         ssValue >> nItemHeight;
@@ -480,29 +481,29 @@ bool CTxDB::ReadOwnerTxes(uint160 hash160, int nMinHeight, vector<CTransaction>&
     return true;
 }
 
-bool CTxDB::ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex)
+bool CTxDB::ReadDiskTx(uint256 hash, CTransaction& tx, TxIndex& txindex)
 {
     assert(!fClient);
     tx.SetNull();
     if (!ReadTxIndex(hash, txindex))
         return false;
-    return (__blockFile.readFromDisk(tx, txindex.pos));
+    return (__blockFile.readFromDisk(tx, txindex.getPos()));
 }
 
 bool CTxDB::ReadDiskTx(uint256 hash, CTransaction& tx)
 {
-    CTxIndex txindex;
+    TxIndex txindex;
     return ReadDiskTx(hash, tx, txindex);
 }
 
-bool CTxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex)
+bool CTxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx, TxIndex& txindex)
 {
     return ReadDiskTx(outpoint.hash, tx, txindex);
 }
 
 bool CTxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx)
 {
-    CTxIndex txindex;
+    TxIndex txindex;
     return ReadDiskTx(outpoint.hash, tx, txindex);
 }
 

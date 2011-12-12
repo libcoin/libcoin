@@ -3,6 +3,7 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 #include "btcNode/db.h"
+#include "btcNode/BlockChain.h"
 
 #include "btc/asset.h"
 
@@ -20,7 +21,7 @@ double reliability(uint256 hash) {
     unsigned int confirmations, known_in_nodes, n_nodes;
     CTxDB txdb("r");
     
-    CTxIndex txindex;
+    TxIndex txindex;
     if(!txdb.ReadTxIndex(hash, txindex)) { // confirmation is 0, check the other maturity
         confirmations = 0;
         Inventory inv(MSG_TX, hash);
@@ -40,7 +41,7 @@ double reliability(uint256 hash) {
         n_nodes = vNodes.size();
         known_in_nodes = 0;
         // now get # block the tx is in.
-        confirmations = txindex.GetDepthInMainChain();
+        confirmations = txindex.getDepthInMainChain();
     }
     
     if(confirmations > 0)
@@ -65,7 +66,7 @@ Value gettxmaturity(const Array& params, bool fHelp)
     
     CTxDB txdb("r");
     
-    CTxIndex txindex;
+    TxIndex txindex;
     if(!txdb.ReadTxIndex(hash, txindex)) // confirmation is 0, check the other maturity
     {
         confirmations = 0;
@@ -87,7 +88,7 @@ Value gettxmaturity(const Array& params, bool fHelp)
         n_nodes = vNodes.size();
         known_in_nodes = 0;
 // now get # block the tx is in.
-        confirmations = txindex.GetDepthInMainChain();
+        confirmations = txindex.getDepthInMainChain();
     }
 
     Object entry;
@@ -164,12 +165,12 @@ Value GetTxDetails::operator()(const Array& params, bool fHelp) {
     int64 timestamp = 0;
     int64 blockheight = 0;
     
-    CTxIndex txindex;
+    TxIndex txindex;
     if(txdb.ReadTxIndex(hash, txindex)) { // Read block header
-        blockheight = 1 + nBestHeight - txindex.GetDepthInMainChain();
+        blockheight = 1 + nBestHeight - txindex.getDepthInMainChain();
 
         Block block;
-        if (__blockFile.readFromDisk(block, txindex.pos.nFile, txindex.pos.nBlockPos, false)) {
+        if (__blockFile.readFromDisk(block, txindex.getPos().getFile(), txindex.getPos().getBlockPos(), false)) {
         // Find the block in the index
             timestamp = block.getBlockTime();
         }
@@ -262,12 +263,12 @@ Value checkvalue(const Array& params, bool fHelp)
     if(within > 0) { // we only want a subset
         for(Coins::iterator coin = coins.begin(); coin != coins.end(); ++coin) {
             // now get the txes belonging to this coin!
-            CTxIndex txindex;
+            TxIndex txindex;
             if(txdb.ReadTxIndex(coin->first, txindex)) { // Read block header
-                int blockheight = 1 + nBestHeight - txindex.GetDepthInMainChain();
+                int blockheight = 1 + nBestHeight - txindex.getDepthInMainChain();
                 int64 timestamp = 0;
                 Block block;
-                if (__blockFile.readFromDisk(block, txindex.pos.nFile, txindex.pos.nBlockPos, false)) {
+                if (__blockFile.readFromDisk(block, txindex.getPos().getFile(), txindex.getPos().getBlockPos(), false)) {
                     // Find the block in the index
                     timestamp = block.getBlockTime();
                 }

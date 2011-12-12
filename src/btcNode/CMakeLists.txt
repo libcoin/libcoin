@@ -18,6 +18,7 @@ SET(TARGET_H
     ${HEADER_PATH}/Block.h
     ${HEADER_PATH}/BlockIndex.h
     ${HEADER_PATH}/BlockFile.h
+    ${HEADER_PATH}/BlockChain.h
     ${HEADER_PATH}/Inventory.h
     ${HEADER_PATH}/Endpoint.h
     ${HEADER_PATH}/EndpointPool.h
@@ -42,6 +43,7 @@ SET(TARGET_SRC
     Block.cpp
     BlockIndex.cpp
     BlockFile.cpp
+    BlockChain.cpp
     Inventory.cpp
     Endpoint.cpp
     EndpointPool.cpp

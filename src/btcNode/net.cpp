@@ -10,6 +10,7 @@
 
 #include "btcNode/EndpointPool.h"
 #include "btcNode/Alert.h"
+#include "btcNode/BlockChain.h"
 
 #include "btc/strlcpy.h"
 
@@ -825,10 +826,10 @@ void ResendBrokerTransactions()
     
     for(map<uint256, CTx>::iterator it = txes.begin(); it != txes.end(); ++it)
     {
-        CTxIndex txindex;
+        TxIndex txindex;
         if (txdb.ReadTxIndex(it->first, txindex))
         {
-            if(txindex.GetDepthInMainChain() > 100)
+            if(txindex.getDepthInMainChain() > 100)
                 brokerdb.EraseTx(it->second);
             continue;
         }

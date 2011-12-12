@@ -460,7 +460,7 @@ int CMerkleTx::SetMerkleBranch(const Block* pblock)
         if (pblock == NULL)
             {
             // Load the block this tx is in
-            CTxIndex txindex;
+            TxIndex txindex;
             if (!CTxDB("r").ReadTxIndex(GetHash(), txindex))
                 return 0;
             if (!blockTmp.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos))
@@ -749,14 +749,14 @@ void CWallet::ReacceptWalletTransactions()
     while (fRepeat) CRITICAL_BLOCK(cs_wallet)
     {
         fRepeat = false;
-        vector<CDiskTxPos> vMissingTx;
+        vector<DiskTxPos> vMissingTx;
         BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, mapWallet)
         {
             CWalletTx& wtx = item.second;
             if (wtx.IsCoinBase() && wtx.IsSpent(0))
                 continue;
 
-            CTxIndex txindex;
+            TxIndex txindex;
             bool fUpdated = false;
             if (txdb.ReadTxIndex(wtx.GetHash(), txindex))
             {
