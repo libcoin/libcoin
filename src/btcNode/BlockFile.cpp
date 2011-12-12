@@ -9,12 +9,12 @@
 using namespace std;
 using namespace boost;
 
-bool BlockFile::writeToDisk(const CBlock& block, unsigned int& nFileRet, unsigned int& nBlockPosRet)
+bool BlockFile::writeToDisk(const Block& block, unsigned int& nFileRet, unsigned int& nBlockPosRet)
 {
     // Open history file to append
     CAutoFile fileout = appendBlockFile(nFileRet);
     if (!fileout)
-        return error("CBlock::WriteToDisk() : AppendBlockFile failed");
+        return error("Block::WriteToDisk() : AppendBlockFile failed");
     
     // Write index header
     unsigned int nSize = fileout.GetSerializeSize(block);
@@ -23,7 +23,7 @@ bool BlockFile::writeToDisk(const CBlock& block, unsigned int& nFileRet, unsigne
     // Write block
     nBlockPosRet = ftell(fileout);
     if (nBlockPosRet == -1)
-        return error("CBlock::WriteToDisk() : ftell failed");
+        return error("Block::WriteToDisk() : ftell failed");
     fileout << block;
     
     // Flush stdio buffers and commit to disk before returning
@@ -39,14 +39,14 @@ bool BlockFile::writeToDisk(const CBlock& block, unsigned int& nFileRet, unsigne
     return true;
 }
 
-bool BlockFile::readFromDisk(CBlock& block, unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions)
+bool BlockFile::readFromDisk(Block& block, unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions)
 {
-    block.SetNull();
+    block.setNull();
     
     // Open history file to read
     CAutoFile filein = openBlockFile(nFile, nBlockPos, "rb");
     if (!filein)
-        return error("CBlock::ReadFromDisk() : OpenBlockFile failed");
+        return error("Block::ReadFromDisk() : OpenBlockFile failed");
     if (!fReadTransactions)
         filein.nType |= SER_BLOCKHEADERONLY;
     
@@ -54,13 +54,13 @@ bool BlockFile::readFromDisk(CBlock& block, unsigned int nFile, unsigned int nBl
     filein >> block;
     
     // Check the header
-    if (!CheckProofOfWork(block.GetHash(), block.nBits))
-        return error("CBlock::ReadFromDisk() : errors in block header");
+    if (!CheckProofOfWork(block.getHash(), block.getBits()))
+        return error("Block::ReadFromDisk() : errors in block header");
     
     return true;
 }
 
-bool BlockFile::readFromDisk(CBlock& block, const CBlockIndex* pindex, bool fReadTransactions)
+bool BlockFile::readFromDisk(Block& block, const CBlockIndex* pindex, bool fReadTransactions)
 {
     if (!fReadTransactions)
         {
@@ -69,8 +69,8 @@ bool BlockFile::readFromDisk(CBlock& block, const CBlockIndex* pindex, bool fRea
         }
     if (!readFromDisk(block, pindex->nFile, pindex->nBlockPos, fReadTransactions))
         return false;
-    if (block.GetHash() != pindex->GetBlockHash())
-        return error("CBlock::ReadFromDisk() : GetHash() doesn't match index");
+    if (block.getHash() != pindex->GetBlockHash())
+        return error("Block::ReadFromDisk() : GetHash() doesn't match index");
     return true;
 }
 
@@ -102,8 +102,8 @@ bool BlockFile::eraseBlockFromDisk(CBlockIndex bindex)
         return false;
     
     // Overwrite with empty null block
-    CBlock block;
-    block.SetNull();
+    Block block;
+    block.setNull();
     fileout << block;
     
     return true;

@@ -109,8 +109,8 @@ unsigned short GetListenPort()
 // mapOrphanTransactions
 //
 
-map<uint256, CBlock*> mapOrphanBlocks;
-multimap<uint256, CBlock*> mapOrphanBlocksByPrev;
+map<uint256, Block*> mapOrphanBlocks;
+multimap<uint256, Block*> mapOrphanBlocksByPrev;
 
 map<uint256, CDataStream*> mapOrphanTransactions;
 multimap<uint256, CDataStream*> mapOrphanTransactionsByPrev;
@@ -149,12 +149,12 @@ void static EraseOrphanTx(uint256 hash)
     mapOrphanTransactions.erase(hash);
 }
 
-uint256 static GetOrphanRoot(const CBlock* pblock)
+uint256 static GetOrphanRoot(const Block* pblock)
 {
     // Work back to the first block in the orphan chain
-    while (mapOrphanBlocks.count(pblock->hashPrevBlock))
-        pblock = mapOrphanBlocks[pblock->hashPrevBlock];
-    return pblock->GetHash();
+    while (mapOrphanBlocks.count(pblock->getPrevBlock()))
+        pblock = mapOrphanBlocks[pblock->getPrevBlock()];
+    return pblock->getHash();
 }
 
 
@@ -174,26 +174,26 @@ bool static AlreadyHave(CTxDB& txdb, const Inventory& inv)
 // Messages
 //
 
-bool static ProcessBlock(CNode* pfrom, CBlock* pblock)
+bool static ProcessBlock(CNode* pfrom, Block* pblock)
 {
     // Check for duplicate
-    uint256 hash = pblock->GetHash();
+    uint256 hash = pblock->getHash();
     if (mapBlockIndex.count(hash))
         return error("ProcessBlock() : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.toString().substr(0,20).c_str());
     if (mapOrphanBlocks.count(hash))
         return error("ProcessBlock() : already have block (orphan) %s", hash.toString().substr(0,20).c_str());
     
     // Preliminary checks
-    if (!pblock->CheckBlock())
+    if (!pblock->checkBlock())
         return error("ProcessBlock() : CheckBlock FAILED");
     
     // If don't already have its previous block, shunt it off to holding area until we get it
-    if (!mapBlockIndex.count(pblock->hashPrevBlock))
+    if (!mapBlockIndex.count(pblock->getPrevBlock()))
     {
-        printf("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.toString().substr(0,20).c_str());
-        CBlock* pblock2 = new CBlock(*pblock);
+        printf("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->getPrevBlock().toString().substr(0,20).c_str());
+        Block* pblock2 = new Block(*pblock);
         mapOrphanBlocks.insert(make_pair(hash, pblock2));
-        mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
+        mapOrphanBlocksByPrev.insert(make_pair(pblock2->getPrevBlock(), pblock2));
         
         // Ask this guy to fill in what we're missing
         if (pfrom)
@@ -202,7 +202,7 @@ bool static ProcessBlock(CNode* pfrom, CBlock* pblock)
     }
     
     // Store to disk
-    if (!pblock->AcceptBlock())
+    if (!pblock->acceptBlock())
         return error("ProcessBlock() : AcceptBlock FAILED");
     
     // Recursively process any orphan blocks that depended on this one
@@ -211,14 +211,14 @@ bool static ProcessBlock(CNode* pfrom, CBlock* pblock)
     for (int i = 0; i < vWorkQueue.size(); i++)
     {
         uint256 hashPrev = vWorkQueue[i];
-        for (multimap<uint256, CBlock*>::iterator mi = mapOrphanBlocksByPrev.lower_bound(hashPrev);
+        for (multimap<uint256, Block*>::iterator mi = mapOrphanBlocksByPrev.lower_bound(hashPrev);
              mi != mapOrphanBlocksByPrev.upper_bound(hashPrev);
              ++mi)
         {
-            CBlock* pblockOrphan = (*mi).second;
-            if (pblockOrphan->AcceptBlock())
-                vWorkQueue.push_back(pblockOrphan->GetHash());
-            mapOrphanBlocks.erase(pblockOrphan->GetHash());
+            Block* pblockOrphan = (*mi).second;
+            if (pblockOrphan->acceptBlock())
+                vWorkQueue.push_back(pblockOrphan->getHash());
+            mapOrphanBlocks.erase(pblockOrphan->getHash());
             delete pblockOrphan;
         }
         mapOrphanBlocksByPrev.erase(hashPrev);
@@ -457,7 +457,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
                 map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(inv.getHash());
                 if (mi != mapBlockIndex.end())
                 {
-                    CBlock block;
+                    Block block;
                     __blockFile.readFromDisk(block, (*mi).second);
                     pfrom->PushMessage("block", block);
                     
@@ -514,7 +514,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
                 break;
             }
             pfrom->PushInventory(Inventory(MSG_BLOCK, pindex->GetBlockHash()));
-            CBlock block;
+            Block block;
             __blockFile.readFromDisk(block, pindex, true);
             nBytes += block.GetSerializeSize(SER_NETWORK);
             if (--nLimit <= 0 || nBytes >= SendBufferSize()/2)
@@ -552,7 +552,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
                 pindex = pindex->pnext;
         }
         
-        vector<CBlock> vHeaders;
+        vector<Block> vHeaders;
         int nLimit = 2000 + locator.GetDistanceBack();
         printf("getheaders %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.toString().substr(0,20).c_str(), nLimit);
         for (; pindex; pindex = pindex->pnext)
@@ -620,13 +620,13 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
     
     else if (strCommand == "block")
     {
-        CBlock block;
+        Block block;
         vRecv >> block;
         
-        printf("received block %s\n", block.GetHash().toString().substr(0,20).c_str());
+        printf("received block %s\n", block.getHash().toString().substr(0,20).c_str());
         // block.print();
         
-        Inventory inv(MSG_BLOCK, block.GetHash());
+        Inventory inv(MSG_BLOCK, block.getHash());
         pfrom->AddInventoryKnown(inv);
         
         if (ProcessBlock(pfrom, &block))

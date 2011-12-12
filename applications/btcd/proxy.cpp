@@ -168,10 +168,10 @@ Value GetTxDetails::operator()(const Array& params, bool fHelp) {
     if(txdb.ReadTxIndex(hash, txindex)) { // Read block header
         blockheight = 1 + nBestHeight - txindex.GetDepthInMainChain();
 
-        CBlock block;
+        Block block;
         if (__blockFile.readFromDisk(block, txindex.pos.nFile, txindex.pos.nBlockPos, false)) {
         // Find the block in the index
-            timestamp = block.GetBlockTime();
+            timestamp = block.getBlockTime();
         }
     }
 
@@ -266,10 +266,10 @@ Value checkvalue(const Array& params, bool fHelp)
             if(txdb.ReadTxIndex(coin->first, txindex)) { // Read block header
                 int blockheight = 1 + nBestHeight - txindex.GetDepthInMainChain();
                 int64 timestamp = 0;
-                CBlock block;
+                Block block;
                 if (__blockFile.readFromDisk(block, txindex.pos.nFile, txindex.pos.nBlockPos, false)) {
                     // Find the block in the index
-                    timestamp = block.GetBlockTime();
+                    timestamp = block.getBlockTime();
                 }
                 else
                     continue;

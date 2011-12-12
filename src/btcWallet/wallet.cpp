@@ -292,7 +292,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
     return true;
 }
 
-bool CWallet::AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pblock, bool fUpdate)
+bool CWallet::AddToWalletIfInvolvingMe(const CTransaction& tx, const Block* pblock, bool fUpdate)
 {
     uint256 hash = tx.GetHash();
     CRITICAL_BLOCK(cs_wallet)
@@ -409,7 +409,7 @@ int CMerkleTx::GetDepthInMainChain(int& nHeightRet) const
     // Make sure the merkle branch connects to this block
     if (!fMerkleVerified)
         {
-        if (CBlock::CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != pindex->hashMerkleRoot)
+        if (Block::CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != pindex->hashMerkleRoot)
             return 0;
         fMerkleVerified = true;
         }
@@ -447,7 +447,7 @@ bool CMerkleTx::AcceptToMemoryPool()
     return AcceptToMemoryPool(txdb);
 }
 
-int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
+int CMerkleTx::SetMerkleBranch(const Block* pblock)
 {
     if (fClient)
         {
@@ -456,7 +456,7 @@ int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
         }
     else
         {
-        CBlock blockTmp;
+        Block blockTmp;
         if (pblock == NULL)
             {
             // Load the block this tx is in
@@ -703,7 +703,7 @@ int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
     {
         while (pindex)
         {
-            CBlock block;
+            Block block;
             block.ReadFromDisk(pindex, true);
             BOOST_FOREACH(CTransaction& tx, block.vtx)
             {
@@ -1336,7 +1336,7 @@ bool CWallet::DelAddressBookName(const CBitcoinAddress& address)
 }
 
 
-void CWallet::PrintWallet(const CBlock& block)
+void CWallet::PrintWallet(const Block& block)
 {
     CRITICAL_BLOCK(cs_wallet)
     {
@@ -1564,7 +1564,7 @@ void static EraseFromWallets(uint256 hash)
     pwallet->EraseFromWallet(hash);
 }
 
-void static SyncWithWallets(const CTransaction& tx, const CBlock* pblock = NULL, bool fUpdate = false)
+void static SyncWithWallets(const CTransaction& tx, const Block* pblock = NULL, bool fUpdate = false)
 {
     BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
     pwallet->AddToWalletIfInvolvingMe(tx, pblock, fUpdate);
@@ -1582,7 +1582,7 @@ void static UpdatedTransaction(const uint256& hashTx)
     pwallet->UpdatedTransaction(hashTx);
 }
 
-void static PrintWallets(const CBlock& block)
+void static PrintWallets(const Block& block)
 {
     BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
     pwallet->PrintWallet(block);

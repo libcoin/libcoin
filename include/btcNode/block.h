@@ -11,7 +11,7 @@
 
 #include <list>
 
-class CBlock;
+class Block;
 class CBlockIndex;
 
 class CKeyItem;
@@ -39,161 +39,188 @@ class CTxIndex;
 // Blocks are appended to blk0001.dat files on disk.  Their location on disk
 // is indexed by CBlockIndex objects in memory.
 //
-class CBlock
+
+typedef std::vector<CTransaction> TransactionList;
+typedef std::vector<uint256> MerkleTree;
+
+class Block
 {
 public:
-    // header
-    int nVersion;
-    uint256 hashPrevBlock;
-    uint256 hashMerkleRoot;
-    unsigned int nTime;
-    unsigned int nBits;
-    unsigned int nNonce;
-
-    // network and disk
-    std::vector<CTransaction> vtx;
-
-    // memory only
-    mutable std::vector<uint256> vMerkleTree;
-
-
-    CBlock()
+    Block()
     {
-        SetNull();
+        setNull();
     }
 
+    Block(const int version, const uint256 prevBlock, const uint256 merkleRoot, const int time, const int bits, const int nonce) : _version(version), _prevBlock(prevBlock), _merkleRoot(merkleRoot), _time(time), _bits(bits), _nonce(nonce)
+    {
+        _transactions.clear();
+        _merkleTree.clear();
+    }
+
+    
     IMPLEMENT_SERIALIZE
     (
-        READWRITE(this->nVersion);
-        nVersion = this->nVersion;
-        READWRITE(hashPrevBlock);
-        READWRITE(hashMerkleRoot);
-        READWRITE(nTime);
-        READWRITE(nBits);
-        READWRITE(nNonce);
+        READWRITE(this->_version);
+        nVersion = this->_version;
+        READWRITE(_prevBlock);
+        READWRITE(_merkleRoot);
+        READWRITE(_time);
+        READWRITE(_bits);
+        READWRITE(_nonce);
 
         // ConnectBlock depends on vtx being last so it can calculate offset
         if (!(nType & (SER_GETHASH|SER_BLOCKHEADERONLY)))
-            READWRITE(vtx);
+            READWRITE(_transactions);
         else if (fRead)
-            const_cast<CBlock*>(this)->vtx.clear();
+            const_cast<Block*>(this)->_transactions.clear();
     )
 
-    void SetNull()
+    void setNull()
     {
-        nVersion = 1;
-        hashPrevBlock = 0;
-        hashMerkleRoot = 0;
-        nTime = 0;
-        nBits = 0;
-        nNonce = 0;
-        vtx.clear();
-        vMerkleTree.clear();
+        _version = 1;
+        _prevBlock = 0;
+        _merkleRoot = 0;
+        _time = 0;
+        _bits = 0;
+        _nonce = 0;
+        _transactions.clear();
+        _merkleTree.clear();
     }
 
-    bool IsNull() const
+    bool isNull() const
     {
-        return (nBits == 0);
+        return (_bits == 0);
     }
 
-    uint256 GetHash() const
+    uint256 getHash() const
     {
-        return Hash(BEGIN(nVersion), END(nNonce));
+        return Hash(BEGIN(_version), END(_nonce));
     }
 
-    int64 GetBlockTime() const
+    int64 getBlockTime() const
     {
-        return (int64)nTime;
+        return (int64)_time;
     }
 
     int GetSigOpCount() const
     {
         int n = 0;
-        BOOST_FOREACH(const CTransaction& tx, vtx)
+        BOOST_FOREACH(const CTransaction& tx, _transactions)
             n += tx.GetSigOpCount();
         return n;
     }
 
-
-    uint256 BuildMerkleTree() const
+    void addTransaction(const CTransaction& tx) { _transactions.push_back(tx); }
+    size_t getNumTransactions() { return _transactions.size(); }
+    const TransactionList getTransactions() const { return _transactions; }
+    
+    uint256 buildMerkleTree() const
     {
-        vMerkleTree.clear();
-        BOOST_FOREACH(const CTransaction& tx, vtx)
-            vMerkleTree.push_back(tx.GetHash());
+        _merkleTree.clear();
+        BOOST_FOREACH(const CTransaction& tx, _transactions)
+            _merkleTree.push_back(tx.GetHash());
         int j = 0;
-        for (int nSize = vtx.size(); nSize > 1; nSize = (nSize + 1) / 2)
-        {
-            for (int i = 0; i < nSize; i += 2)
-            {
-                int i2 = std::min(i+1, nSize-1);
-                vMerkleTree.push_back(Hash(BEGIN(vMerkleTree[j+i]),  END(vMerkleTree[j+i]),
-                                           BEGIN(vMerkleTree[j+i2]), END(vMerkleTree[j+i2])));
+        for (int size = _transactions.size(); size > 1; size = (size + 1) / 2) {
+            for (int i = 0; i < size; i += 2) {
+                int i2 = std::min(i+1, size-1);
+                _merkleTree.push_back(Hash(BEGIN(_merkleTree[j+i]),  END(_merkleTree[j+i]),
+                                           BEGIN(_merkleTree[j+i2]), END(_merkleTree[j+i2])));
             }
-            j += nSize;
+            j += size;
         }
-        return (vMerkleTree.empty() ? 0 : vMerkleTree.back());
+        return (_merkleTree.empty() ? 0 : _merkleTree.back());
     }
 
-    std::vector<uint256> GetMerkleBranch(int nIndex) const
+    std::vector<uint256> getMerkleBranch(int index) const
     {
-        if (vMerkleTree.empty())
-            BuildMerkleTree();
-        std::vector<uint256> vMerkleBranch;
+        if (_merkleTree.empty())
+            buildMerkleTree();
+        std::vector<uint256> merkleBranch;
         int j = 0;
-        for (int nSize = vtx.size(); nSize > 1; nSize = (nSize + 1) / 2)
-        {
-            int i = std::min(nIndex^1, nSize-1);
-            vMerkleBranch.push_back(vMerkleTree[j+i]);
-            nIndex >>= 1;
-            j += nSize;
+        for (int size = _transactions.size(); size > 1; size = (size + 1) / 2) {
+            int i = std::min(index^1, size-1);
+            merkleBranch.push_back(_merkleTree[j+i]);
+            index >>= 1;
+            j += size;
         }
-        return vMerkleBranch;
+        return merkleBranch;
     }
 
-    static uint256 CheckMerkleBranch(uint256 hash, const std::vector<uint256>& vMerkleBranch, int nIndex)
+    static uint256 checkMerkleBranch(uint256 hash, const std::vector<uint256>& merkleBranch, int index)
     {
-        if (nIndex == -1)
+        if (index == -1)
             return 0;
-        BOOST_FOREACH(const uint256& otherside, vMerkleBranch)
+        BOOST_FOREACH(const uint256& otherside, merkleBranch)
         {
-            if (nIndex & 1)
+            if (index & 1)
                 hash = Hash(BEGIN(otherside), END(otherside), BEGIN(hash), END(hash));
             else
                 hash = Hash(BEGIN(hash), END(hash), BEGIN(otherside), END(otherside));
-            nIndex >>= 1;
+            index >>= 1;
         }
         return hash;
     }
 
-
-
     void print() const
     {
-        printf("CBlock(hash=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%d)\n",
-            GetHash().toString().substr(0,20).c_str(),
-            nVersion,
-            hashPrevBlock.toString().substr(0,20).c_str(),
-            hashMerkleRoot.toString().substr(0,10).c_str(),
-            nTime, nBits, nNonce,
-            vtx.size());
-        for (int i = 0; i < vtx.size(); i++)
+        printf("Block(hash=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%d)\n",
+            getHash().toString().substr(0,20).c_str(),
+            _version,
+            _prevBlock.toString().substr(0,20).c_str(),
+            _merkleRoot.toString().substr(0,10).c_str(),
+            _time, _bits, _nonce,
+            _transactions.size());
+        for (int i = 0; i < _transactions.size(); i++)
         {
             printf("  ");
-            vtx[i].print();
+            _transactions[i].print();
         }
         printf("  vMerkleTree: ");
-        for (int i = 0; i < vMerkleTree.size(); i++)
-            printf("%s ", vMerkleTree[i].toString().substr(0,10).c_str());
+        for (int i = 0; i < _merkleTree.size(); i++)
+            printf("%s ", _merkleTree[i].toString().substr(0,10).c_str());
         printf("\n");
     }
 
+    bool disconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
+    bool connectBlock(CTxDB& txdb, CBlockIndex* pindex);
+    bool setBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
+    bool addToBlockIndex(unsigned int nFile, unsigned int nBlockPos);
+    bool checkBlock() const;
+    bool acceptBlock();
+    
+    const int getVersion() const { return _version; }
+    //    void setVersion(const int version) { _version = version; }
+    
+    const uint256 getPrevBlock() const { return _prevBlock; }
+    //    void setPrevBlock(const uint256 pb) { _prevBlock = pb; }
 
-    bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
-    bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex);
-    bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
-    bool AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos);
-    bool CheckBlock() const;
-    bool AcceptBlock();
+    const uint256 getMerkleRoot() const { return _merkleRoot; }
+    //    void getMerkleRoot(const uint256 mr) { _merkleRoot = mr; }
+
+    const int getTime() const { return _time; }
+    //    void setTime(const int time) { _time = time; }
+    
+    const int getBits() const { return _bits; }
+    //    void setBits(const int bits) { _bits = bits; }
+    
+    const int getNonce() const { return _nonce; }
+    //    void setNonce(const int nonce) { _nonce = nonce; }
+    
+    
+private:
+    // header
+    int _version;
+    uint256 _prevBlock;
+    uint256 _merkleRoot;
+    unsigned int _time;
+    unsigned int _bits;
+    unsigned int _nonce;
+    
+    // network and disk
+    TransactionList _transactions;
+    
+    // memory only
+    mutable MerkleTree _merkleTree;
 };
 
 
@@ -245,7 +272,7 @@ public:
         nNonce         = 0;
     }
 
-    CBlockIndex(unsigned int nFileIn, unsigned int nBlockPosIn, CBlock& block)
+    CBlockIndex(unsigned int nFileIn, unsigned int nBlockPosIn, Block& block)
     {
         phashBlock = NULL;
         pprev = NULL;
@@ -255,23 +282,19 @@ public:
         nHeight = 0;
         bnChainWork = 0;
 
-        nVersion       = block.nVersion;
-        hashMerkleRoot = block.hashMerkleRoot;
-        nTime          = block.nTime;
-        nBits          = block.nBits;
-        nNonce         = block.nNonce;
+        nVersion       = block.getVersion();
+        hashMerkleRoot = block.getMerkleRoot();
+        nTime          = block.getTime();
+        nBits          = block.getBits();
+        nNonce         = block.getNonce();
     }
 
-    CBlock GetBlockHeader() const
+    Block GetBlockHeader() const
     {
-        CBlock block;
-        block.nVersion       = nVersion;
+        uint256 prevBlock;
         if (pprev)
-            block.hashPrevBlock = pprev->GetBlockHash();
-        block.hashMerkleRoot = hashMerkleRoot;
-        block.nTime          = nTime;
-        block.nBits          = nBits;
-        block.nNonce         = nNonce;
+            prevBlock = pprev->GetBlockHash();
+        Block block(nVersion, prevBlock, hashMerkleRoot, nTime, nBits, nNonce);
         return block;
     }
 
@@ -392,14 +415,8 @@ public:
 
     uint256 GetBlockHash() const
     {
-        CBlock block;
-        block.nVersion        = nVersion;
-        block.hashPrevBlock   = hashPrev;
-        block.hashMerkleRoot  = hashMerkleRoot;
-        block.nTime           = nTime;
-        block.nBits           = nBits;
-        block.nNonce          = nNonce;
-        return block.GetHash();
+        Block block(nVersion, hashPrev, hashMerkleRoot, nTime, nBits, nNonce);
+        return block.getHash();
     }
 
 

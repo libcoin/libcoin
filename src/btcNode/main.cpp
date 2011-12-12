@@ -397,11 +397,11 @@ bool CTransaction::RemoveFromMemoryPool()
 int CTxIndex::GetDepthInMainChain() const
 {
     // Read block header
-    CBlock block;
+    Block block;
     if (!__blockFile.readFromDisk(block, pos.nFile, pos.nBlockPos, false))
         return 0;
     // Find the block in the index
-    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(block.GetHash());
+    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(block.getHash());
     if (mi == mapBlockIndex.end())
         return 0;
     CBlockIndex* pindex = (*mi).second;
@@ -631,7 +631,7 @@ bool LoadBlockIndex(bool fAllowNew)
             return false;
 
         // Genesis Block:
-        // CBlock(hash=000000000019d6, ver=1, hashPrevBlock=00000000000000, hashMerkleRoot=4a5e1e, nTime=1231006505, nBits=1d00ffff, nNonce=2083236893, vtx=1)
+        // Block(hash=000000000019d6, ver=1, hashPrevBlock=00000000000000, hashMerkleRoot=4a5e1e, nTime=1231006505, nBits=1d00ffff, nNonce=2083236893, vtx=1)
         //   CTransaction(hash=4a5e1e, ver=1, vin.size=1, vout.size=1, nLockTime=0)
         //     CTxIn(COutPoint(000000, -1), coinbase 04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73)
         //     CTxOut(nValue=50.00000000, scriptPubKey=0x5F1DF16B2B704C8A578D0B)
@@ -645,36 +645,36 @@ bool LoadBlockIndex(bool fAllowNew)
         txNew.vin[0].scriptSig = CScript() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
         txNew.vout[0].nValue = 50 * COIN;
         txNew.vout[0].scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
-        CBlock block;
-        block.vtx.push_back(txNew);
-        block.hashPrevBlock = 0;
-        block.hashMerkleRoot = block.BuildMerkleTree();
-        block.nVersion = 1;
-        block.nTime    = 1231006505;
-        block.nBits    = 0x1d00ffff;
-        block.nNonce   = 2083236893;
-
+        Block block;
         if (fTestNet)
-        {
-            block.nTime    = 1296688602;
-            block.nBits    = 0x1d07fff8;
-            block.nNonce   = 384568319;
-        }
+            block = Block(1, 0, 0, 1296688602, 0x1d07fff8, 384568319);
+        else
+            block = Block(1, 0, 0, 1231006505, 0x1d00ffff, 2083236893);
+        block.addTransaction(txNew);
+        block.buildMerkleTree();
+    //block.vtx.push_back(txNew);
+    //block.hashPrevBlock = 0;
+    //block.hashMerkleRoot = block.BuildMerkleTree();
+    //block.nVersion = 1;
+    //block.nTime    = 1231006505;
+    //block.nBits    = 0x1d00ffff;
+    //block.nNonce   = 2083236893;
+
 
         //// debug print
-        printf("%s\n", block.GetHash().toString().c_str());
+        printf("%s\n", block.getHash().toString().c_str());
         printf("%s\n", hashGenesisBlock.toString().c_str());
-        printf("%s\n", block.hashMerkleRoot.toString().c_str());
-        assert(block.hashMerkleRoot == uint256("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
+        printf("%s\n", block.getMerkleRoot().toString().c_str());
+        assert(block.getMerkleRoot() == uint256("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
         block.print();
-        assert(block.GetHash() == hashGenesisBlock);
+        assert(block.getHash() == hashGenesisBlock);
 
         // Start new block file
         unsigned int nFile;
         unsigned int nBlockPos;
         if (!__blockFile.writeToDisk(block, nFile, nBlockPos))
             return error("LoadBlockIndex() : writing genesis block to disk failed");
-        if (!block.AddToBlockIndex(nFile, nBlockPos))
+        if (!block.addToBlockIndex(nFile, nBlockPos))
             return error("LoadBlockIndex() : genesis block not accepted");
     }
 
@@ -726,15 +726,15 @@ void PrintBlockTree()
             printf("| ");
 
         // print item
-        CBlock block;
+        Block block;
         __blockFile.readFromDisk(block, pindex);
         printf("%d (%u,%u) %s  %s  tx %d",
             pindex->nHeight,
             pindex->nFile,
             pindex->nBlockPos,
-            block.GetHash().toString().substr(0,20).c_str(),
-            DateTimeStrFormat("%x %H:%M:%S", block.GetBlockTime()).c_str(),
-            block.vtx.size());
+            block.getHash().toString().substr(0,20).c_str(),
+            DateTimeStrFormat("%x %H:%M:%S", block.getBlockTime()).c_str(),
+            block.getNumTransactions());
 
 //        PrintWallets(block);
 
@@ -846,12 +846,12 @@ public:
     }
 };
 
-CBlock* CreateNewBlock(CReserveKey& reservekey)
+Block* CreateNewBlock(CReserveKey& reservekey)
 {
     CBlockIndex* pindexPrev = pindexBest;
 
     // Create new block
-    auto_ptr<CBlock> pblock(new CBlock());
+    auto_ptr<Block> pblock(new Block());
     if (!pblock.get())
         return NULL;
 
@@ -994,7 +994,7 @@ CBlock* CreateNewBlock(CReserveKey& reservekey)
 }
 
 
-void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce)
+void IncrementExtraNonce(Block* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce)
 {
     // Update nExtraNonce
     static uint256 hashPrevBlock;
@@ -1009,7 +1009,7 @@ void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& 
 }
 
 
-void FormatHashBuffers(CBlock* pblock, char* pmidstate, char* pdata, char* phash1)
+void FormatHashBuffers(Block* pblock, char* pmidstate, char* pdata, char* phash1)
 {
     //
     // Prebuild hash buffers
@@ -1055,7 +1055,7 @@ void FormatHashBuffers(CBlock* pblock, char* pmidstate, char* pdata, char* phash
 }
 
 
-bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
+bool CheckWork(Block* pblock, CWallet& wallet, CReserveKey& reservekey)
 {
     uint256 hash = pblock->GetHash();
     uint256 hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
@@ -1125,7 +1125,7 @@ void static BitcoinMiner(CWallet *pwallet)
         unsigned int nTransactionsUpdatedLast = nTransactionsUpdated;
         CBlockIndex* pindexPrev = pindexBest;
 
-        auto_ptr<CBlock> pblock(CreateNewBlock(reservekey));
+        auto_ptr<Block> pblock(CreateNewBlock(reservekey));
         if (!pblock.get())
             return;
         IncrementExtraNonce(pblock.get(), pindexPrev, nExtraNonce);

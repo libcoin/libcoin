@@ -555,7 +555,7 @@ bool AppInit2(int argc, char* argv[])
             if (strncmp(hash.toString().c_str(), strMatch.c_str(), strMatch.size()) == 0)
             {
                 CBlockIndex* pindex = (*mi).second;
-                CBlock block;
+                Block block;
                 block.ReadFromDisk(pindex);
                 block.BuildMerkleTree();
                 block.print();

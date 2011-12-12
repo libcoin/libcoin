@@ -80,7 +80,7 @@ public:
     bool EncryptWallet(const std::string& strWalletPassphrase);
 
     bool AddToWallet(const CWalletTx& wtxIn);
-    bool AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pblock, bool fUpdate = false);
+    bool AddToWalletIfInvolvingMe(const CTransaction& tx, const Block* pblock, bool fUpdate = false);
     bool EraseFromWallet(uint256 hash);
     void WalletUpdateSpent(const CTransaction& prevout);
     int ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate = false);
@@ -187,7 +187,7 @@ public:
             vWalletUpdated.push_back(hashTx);
     }
 
-    void PrintWallet(const CBlock& block);
+    void PrintWallet(const Block& block);
 
     void Inventory(const uint256 &hash)
     {
@@ -282,7 +282,7 @@ public:
      )
     
     
-    int SetMerkleBranch(const CBlock* pblock=NULL);
+    int SetMerkleBranch(const Block* pblock=NULL);
     int GetDepthInMainChain(int& nHeightRet) const;
     int GetDepthInMainChain() const { int nHeight; return GetDepthInMainChain(nHeight); }
     bool IsInMainChain() const { return GetDepthInMainChain() > 0; }

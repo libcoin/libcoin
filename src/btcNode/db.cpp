@@ -652,10 +652,10 @@ bool CTxDB::LoadBlockIndex()
     {
         if (pindex->nHeight < nBestHeight-2500 && !mapArgs.count("-checkblocks"))
             break;
-        CBlock block;
+        Block block;
         if (!__blockFile.readFromDisk(block, pindex))
             return error("LoadBlockIndex() : block.ReadFromDisk failed");
-        if (!block.CheckBlock())
+        if (!block.checkBlock())
         {
             printf("LoadBlockIndex() : *** found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().toString().c_str());
             pindexFork = pindex->pprev;
@@ -665,11 +665,11 @@ bool CTxDB::LoadBlockIndex()
     {
         // Reorg back to the fork
         printf("LoadBlockIndex() : *** moving best chain pointer back to block %d\n", pindexFork->nHeight);
-        CBlock block;
+        Block block;
         if (!__blockFile.readFromDisk(block, pindexFork))
             return error("LoadBlockIndex() : block.ReadFromDisk failed");
         CTxDB txdb;
-        block.SetBestChain(txdb, pindexFork);
+        block.setBestChain(txdb, pindexFork);
     }
 
     return true;
