@@ -6,6 +6,7 @@
 #include "btcNode/db.h"
 #include "btcNode/net.h"
 #include "btcNode/Block.h"
+#include "btcNode/BlockFile.h"
 
 //#include "init.h"
 //#include "cryptopp/sha.h"
@@ -33,6 +34,8 @@ uint256 hashGenesisBlock("0x000000000019d6689c085ae165831e934ff763ae46a2a6c172b3
 CBigNum bnProofOfWorkLimit(~uint256(0) >> 32);
 
 CBlockIndex* pindexGenesisBlock = NULL;
+
+BlockFile __blockFile;
 
 CBigNum bnBestChainWork = 0;
 CBigNum bnBestInvalidWork = 0;
@@ -77,7 +80,7 @@ bool CTransaction::ReadFromDisk(CTxDB& txdb, COutPoint prevout, CTxIndex& txinde
     SetNull();
     if (!txdb.ReadTxIndex(prevout.hash, txindexRet))
         return false;
-    if (!ReadFromDisk(txindexRet.pos))
+    if (!__blockFile.readFromDisk(*this, txindexRet.pos))
         return false;
     if (prevout.n >= vout.size())
     {
@@ -395,7 +398,7 @@ int CTxIndex::GetDepthInMainChain() const
 {
     // Read block header
     CBlock block;
-    if (!block.ReadFromDisk(pos.nFile, pos.nBlockPos, false))
+    if (!__blockFile.readFromDisk(block, pos.nFile, pos.nBlockPos, false))
         return 0;
     // Find the block in the index
     map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(block.GetHash());
@@ -489,7 +492,7 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, map<uint256, CTxIndex>& mapTestPoo
             else
             {
                 // Get prev tx from disk
-                if (!txPrev.ReadFromDisk(txindex.pos))
+                if (!__blockFile.readFromDisk(txPrev, txindex.pos))
                     return error("ConnectInputs() : %s ReadFromDisk prev tx %s failed", GetHash().toString().substr(0,10).c_str(),  prevout.hash.toString().substr(0,10).c_str());
             }
 
@@ -599,66 +602,6 @@ bool CTransaction::ClientConnectInputs()
     return true;
 }
 
-
-bool CheckDiskSpace(uint64 nAdditionalBytes)
-{
-    uint64 nFreeBytesAvailable = filesystem::space(GetDataDir()).available;
-
-    // Check for 15MB because database could create another 10MB log file at any time
-    if (nFreeBytesAvailable < (uint64)15000000 + nAdditionalBytes)
-    {
-        fShutdown = true;
-        string strMessage = _("Warning: Disk space is low  ");
-        strMiscWarning = strMessage;
-        printf("*** %s\n", strMessage.c_str());
-//        ThreadSafeMessageBox(strMessage, "Bitcoin", wxOK | wxICON_EXCLAMATION);
-        CreateThread(Shutdown, NULL);
-        return false;
-    }
-    return true;
-}
-
-FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode)
-{
-    if (nFile == -1)
-        return NULL;
-    FILE* file = fopen(strprintf("%s/blk%04d.dat", GetDataDir().c_str(), nFile).c_str(), pszMode);
-    if (!file)
-        return NULL;
-    if (nBlockPos != 0 && !strchr(pszMode, 'a') && !strchr(pszMode, 'w'))
-    {
-        if (fseek(file, nBlockPos, SEEK_SET) != 0)
-        {
-            fclose(file);
-            return NULL;
-        }
-    }
-    return file;
-}
-
-static unsigned int nCurrentBlockFile = 1;
-
-FILE* AppendBlockFile(unsigned int& nFileRet)
-{
-    nFileRet = 0;
-    loop
-    {
-        FILE* file = OpenBlockFile(nCurrentBlockFile, 0, "ab");
-        if (!file)
-            return NULL;
-        if (fseek(file, 0, SEEK_END) != 0)
-            return NULL;
-        // FAT32 filesize max 4GB, fseek and ftell max 2GB, so we must stay under 2GB
-        if (ftell(file) < 0x7F000000 - MAX_SIZE)
-        {
-            nFileRet = nCurrentBlockFile;
-            return file;
-        }
-        fclose(file);
-        nCurrentBlockFile++;
-    }
-}
-
 bool LoadBlockIndex(bool fAllowNew)
 {
     if (fTestNet)
@@ -729,7 +672,7 @@ bool LoadBlockIndex(bool fAllowNew)
         // Start new block file
         unsigned int nFile;
         unsigned int nBlockPos;
-        if (!block.WriteToDisk(nFile, nBlockPos))
+        if (!__blockFile.writeToDisk(block, nFile, nBlockPos))
             return error("LoadBlockIndex() : writing genesis block to disk failed");
         if (!block.AddToBlockIndex(nFile, nBlockPos))
             return error("LoadBlockIndex() : genesis block not accepted");
@@ -784,7 +727,7 @@ void PrintBlockTree()
 
         // print item
         CBlock block;
-        block.ReadFromDisk(pindex);
+        __blockFile.readFromDisk(block, pindex);
         printf("%d (%u,%u) %s  %s  tx %d",
             pindex->nHeight,
             pindex->nFile,

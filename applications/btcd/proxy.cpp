@@ -169,7 +169,7 @@ Value GetTxDetails::operator()(const Array& params, bool fHelp) {
         blockheight = 1 + nBestHeight - txindex.GetDepthInMainChain();
 
         CBlock block;
-        if (block.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos, false)) {
+        if (__blockFile.readFromDisk(block, txindex.pos.nFile, txindex.pos.nBlockPos, false)) {
         // Find the block in the index
             timestamp = block.GetBlockTime();
         }
@@ -267,7 +267,7 @@ Value checkvalue(const Array& params, bool fHelp)
                 int blockheight = 1 + nBestHeight - txindex.GetDepthInMainChain();
                 int64 timestamp = 0;
                 CBlock block;
-                if (block.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos, false)) {
+                if (__blockFile.readFromDisk(block, txindex.pos.nFile, txindex.pos.nBlockPos, false)) {
                     // Find the block in the index
                     timestamp = block.GetBlockTime();
                 }

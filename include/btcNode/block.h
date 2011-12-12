@@ -166,59 +166,6 @@ public:
     }
 
 
-    bool WriteToDisk(unsigned int& nFileRet, unsigned int& nBlockPosRet)
-    {
-        // Open history file to append
-        CAutoFile fileout = AppendBlockFile(nFileRet);
-        if (!fileout)
-            return error("CBlock::WriteToDisk() : AppendBlockFile failed");
-
-        // Write index header
-        unsigned int nSize = fileout.GetSerializeSize(*this);
-        fileout << FLATDATA(pchMessageStart) << nSize;
-
-        // Write block
-        nBlockPosRet = ftell(fileout);
-        if (nBlockPosRet == -1)
-            return error("CBlock::WriteToDisk() : ftell failed");
-        fileout << *this;
-
-        // Flush stdio buffers and commit to disk before returning
-        fflush(fileout);
-        if (!IsInitialBlockDownload() || (nBestHeight+1) % 500 == 0)
-        {
-#ifdef _WIN32
-            _commit(_fileno(fileout));
-#else
-            fsync(fileno(fileout));
-#endif
-        }
-
-        return true;
-    }
-
-    bool ReadFromDisk(unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true)
-    {
-        SetNull();
-
-        // Open history file to read
-        CAutoFile filein = OpenBlockFile(nFile, nBlockPos, "rb");
-        if (!filein)
-            return error("CBlock::ReadFromDisk() : OpenBlockFile failed");
-        if (!fReadTransactions)
-            filein.nType |= SER_BLOCKHEADERONLY;
-
-        // Read block
-        filein >> *this;
-
-        // Check the header
-        if (!CheckProofOfWork(GetHash(), nBits))
-            return error("CBlock::ReadFromDisk() : errors in block header");
-
-        return true;
-    }
-
-
 
     void print() const
     {
@@ -243,7 +190,6 @@ public:
 
     bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
     bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex);
-    bool ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions=true);
     bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
     bool AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos);
     bool CheckBlock() const;
@@ -356,21 +302,6 @@ public:
     bool CheckIndex() const
     {
         return CheckProofOfWork(GetBlockHash(), nBits);
-    }
-
-    bool EraseBlockFromDisk()
-    {
-        // Open history file
-        CAutoFile fileout = OpenBlockFile(nFile, nBlockPos, "rb+");
-        if (!fileout)
-            return false;
-
-        // Overwrite with empty null block
-        CBlock block;
-        block.SetNull();
-        fileout << block;
-
-        return true;
     }
 
     enum { nMedianTimeSpan=11 };

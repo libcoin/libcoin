@@ -417,12 +417,13 @@ bool AppInit2(int argc, char* argv[])
     printf("Loading addresses...\n");
     nStart = GetTimeMillis();
 
+    
     printf("Loading block index...\n");
     nStart = GetTimeMillis();
     if (!LoadBlockIndex())
         strErrors += _("Error loading blkindex.dat      \n");
     printf(" block index %15"PRI64d"ms\n", GetTimeMillis() - nStart);
-
+    
     printf("Done loading\n");
 
         //// debug print
@@ -462,7 +463,7 @@ bool AppInit2(int argc, char* argv[])
             {
                 CBlockIndex* pindex = (*mi).second;
                 CBlock block;
-                block.ReadFromDisk(pindex);
+                __blockFile.readFromDisk(block, pindex);
                 block.BuildMerkleTree();
                 block.print();
                 printf("\n");
@@ -489,12 +490,12 @@ bool AppInit2(int argc, char* argv[])
 /*
     if (mapArgs.count("-addnode"))
     {
-        BOOST_FOREACH(string strAddr, mapMultiArgs["-addnode"])
+        BOOST_FOREACH(string hostname, mapMultiArgs["-addnode"])
         {
-            Endpoint addr(strAddr, fAllowDNS);
-            addr.setTime(0); // so it won't relay unless successfully connected
-            if (addr.isValid())
-                AddAddress(addr);
+            Endpoint ep(hostname, fAllowDNS);
+            hostname.setTime(0); // so it won't relay unless successfully connected
+            if (hostname.isValid())
+                AddEndpoint(hostname);
         }
     }
 */
@@ -525,7 +526,7 @@ bool AppInit2(int argc, char* argv[])
 #endif
     }
 
-    if (!CheckDiskSpace())
+    if (!BlockFile::checkDiskSpace())
         return false;
 
     RandAddSeedPerfmon();

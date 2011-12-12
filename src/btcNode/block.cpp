@@ -10,21 +10,6 @@
 using namespace std;
 using namespace boost;
 
-
-bool CBlock::ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions)
-{
-    if (!fReadTransactions)
-    {
-        *this = pindex->GetBlockHeader();
-        return true;
-    }
-    if (!ReadFromDisk(pindex->nFile, pindex->nBlockPos, fReadTransactions))
-        return false;
-    if (GetHash() != pindex->GetBlockHash())
-        return error("CBlock::ReadFromDisk() : GetHash() doesn't match index");
-    return true;
-}
-
 int64 static GetBlockValue(int nHeight, int64 nFees)
 {
     int64 nSubsidy = 50 * COIN;
@@ -226,7 +211,7 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
     BOOST_FOREACH(CBlockIndex* pindex, vDisconnect)
     {
     CBlock block;
-    if (!block.ReadFromDisk(pindex))
+    if (!__blockFile.readFromDisk(block, pindex))
         return error("Reorganize() : ReadFromDisk for disconnect failed");
     if (!block.DisconnectBlock(txdb, pindex))
         return error("Reorganize() : DisconnectBlock failed");
@@ -243,7 +228,7 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
         {
         CBlockIndex* pindex = vConnect[i];
         CBlock block;
-        if (!block.ReadFromDisk(pindex))
+        if (!__blockFile.readFromDisk(block,pindex))
             return error("Reorganize() : ReadFromDisk for connect failed");
         if (!block.ConnectBlock(txdb, pindex))
             {
@@ -473,11 +458,11 @@ bool CBlock::AcceptBlock()
             return error("AcceptBlock() : rejected by checkpoint lockin at %d", nHeight);
 
     // Write block to history file
-    if (!CheckDiskSpace(::GetSerializeSize(*this, SER_DISK)))
+    if (!BlockFile::checkDiskSpace(::GetSerializeSize(*this, SER_DISK)))
         return error("AcceptBlock() : out of disk space");
     unsigned int nFile = -1;
     unsigned int nBlockPos = 0;
-    if (!WriteToDisk(nFile, nBlockPos))
+    if (!__blockFile.writeToDisk(*this, nFile, nBlockPos))
         return error("AcceptBlock() : WriteToDisk failed");
     if (!AddToBlockIndex(nFile, nBlockPos))
         return error("AcceptBlock() : AddToBlockIndex failed");

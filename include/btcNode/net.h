@@ -78,7 +78,7 @@ public:
 extern bool fClient;
 extern bool fAllowDNS;
 extern uint64 nLocalServices;
-extern Endpoint addrLocalHost;
+extern Endpoint __localhost;
 extern uint64 nLocalHostNonce;
 extern boost::array<int, 10> vnThreadsRunning;
 
@@ -357,7 +357,7 @@ public:
         /// when NTP implemented, change to just nTime = GetAdjustedTime()
         int64 nTime = (fInbound ? GetAdjustedTime() : GetTime());
         Endpoint addrYou = (fUseProxy ? Endpoint("0.0.0.0") : addr);
-        Endpoint addrMe = (fUseProxy ? Endpoint("0.0.0.0") : addrLocalHost);
+        Endpoint addrMe = (fUseProxy ? Endpoint("0.0.0.0") : __localhost);
         RAND_bytes((unsigned char*)&nLocalHostNonce, sizeof(nLocalHostNonce));
         PushMessage("version", VERSION, nLocalServices, nTime, addrYou, addrMe,
                     nLocalHostNonce, std::string(pszSubVer), nBestHeight);

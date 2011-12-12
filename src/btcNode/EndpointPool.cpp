@@ -59,7 +59,7 @@ bool EndpointPool::addEndpoint(Endpoint endpoint, int64 penalty)
 {
     if (!endpoint.isRoutable())
         return false;
-    if (endpoint.getIP() == addrLocalHost.getIP())
+    if (endpoint.getIP() == __localhost.getIP())
         return false;
     endpoint.setTime(max((int64)0, (int64)endpoint.getTime() - penalty));
     bool updated = false;

@@ -244,7 +244,7 @@ bool CTxDB::UpdateTxIndex(uint256 hash, const CTxIndex& txindex)
 //    cout << "update tx: " << hash.toString() << endl;    
     
     CTransaction tx;
-    tx.ReadFromDisk(txindex.pos);
+    __blockFile.readFromDisk(tx, txindex.pos);
     
     // gronager: hook to enable public key / hash160 lookups by a separate database
     // first find the keys and hash160s that are referenced in this transaction
@@ -468,7 +468,7 @@ bool CTxDB::ReadOwnerTxes(uint160 hash160, int nMinHeight, vector<CTransaction>&
         if (nItemHeight >= nMinHeight)
         {
             vtx.resize(vtx.size()+1);
-            if (!vtx.back().ReadFromDisk(pos))
+            if (!__blockFile.readFromDisk(vtx.back(), pos))
             {
                 pcursor->close();
                 return false;
@@ -486,7 +486,7 @@ bool CTxDB::ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex)
     tx.SetNull();
     if (!ReadTxIndex(hash, txindex))
         return false;
-    return (tx.ReadFromDisk(txindex.pos));
+    return (__blockFile.readFromDisk(tx, txindex.pos));
 }
 
 bool CTxDB::ReadDiskTx(uint256 hash, CTransaction& tx)
@@ -653,7 +653,7 @@ bool CTxDB::LoadBlockIndex()
         if (pindex->nHeight < nBestHeight-2500 && !mapArgs.count("-checkblocks"))
             break;
         CBlock block;
-        if (!block.ReadFromDisk(pindex))
+        if (!__blockFile.readFromDisk(block, pindex))
             return error("LoadBlockIndex() : block.ReadFromDisk failed");
         if (!block.CheckBlock())
         {
@@ -666,7 +666,7 @@ bool CTxDB::LoadBlockIndex()
         // Reorg back to the fork
         printf("LoadBlockIndex() : *** moving best chain pointer back to block %d\n", pindexFork->nHeight);
         CBlock block;
-        if (!block.ReadFromDisk(pindexFork))
+        if (!__blockFile.readFromDisk(block, pindexFork))
             return error("LoadBlockIndex() : block.ReadFromDisk failed");
         CTxDB txdb;
         block.SetBestChain(txdb, pindexFork);

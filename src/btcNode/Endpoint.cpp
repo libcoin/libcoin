@@ -12,7 +12,7 @@
 
 // Prototypes from net.h, but that header (currently) stinks, can't #include it without breaking things
 bool Lookup(const char *pszName, std::vector<Endpoint>& vaddr, int nServices, int nMaxSolutions, bool fAllowLookup = false, int portDefault = 0, bool fAllowPort = false);
-bool Lookup(const char *pszName, Endpoint& addr, int nServices, bool fAllowLookup = false, int portDefault = 0, bool fAllowPort = false);
+bool Lookup(const char *pszName, Endpoint& ep, int nServices, bool fAllowLookup = false, int portDefault = 0, bool fAllowPort = false);
 
 static const unsigned char pchIPv4[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff };
 

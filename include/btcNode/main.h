@@ -10,6 +10,7 @@
 #include "btc/script.h"
 #include "btc/tx.h"
 
+#include "btcNode/BlockFile.h"
 #include "btcNode/net.h"
 //#include "btcNode/db.h"
 
@@ -24,7 +25,6 @@ class Endpoint;
 class Inventory;
 class CRequestTracker;
 class CNode;
-class CBlockIndex;
 
 #ifdef USE_UPNP
 static const int fHaveUPnP = true;
@@ -39,6 +39,8 @@ extern std::map<uint256, CTransaction> mapTransactions;
 extern std::map<uint160, std::set<std::pair<uint256, unsigned int> > > mapCredits;
 extern std::map<uint160, std::set<std::pair<uint256, unsigned int> > > mapDebits;
 extern CCriticalSection cs_mapTransactions;
+
+extern BlockFile __blockFile;
 
 extern std::map<uint256, CBlockIndex*> mapBlockIndex;
 extern uint256 hashGenesisBlock;
@@ -72,11 +74,6 @@ class CReserveKey;
 class CTxDB;
 class CTxIndex;
 
-//void RegisterWallet(CWallet* pwalletIn);
-//void UnregisterWallet(CWallet* pwalletIn);
-bool CheckDiskSpace(uint64 nAdditionalBytes=0);
-FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode="rb");
-FILE* AppendBlockFile(unsigned int& nFileRet);
 bool LoadBlockIndex(bool fAllowNew=true);
 void PrintBlockTree();
 //bool ProcessMessages(CNode* pfrom);
@@ -199,27 +196,6 @@ public:
     CTransaction() : CTx() {}
     CTransaction(const CTx& tx) : CTx(tx) {} // nothing to be initialized in CTransaction
     
-    bool ReadFromDisk(CDiskTxPos pos, FILE** pfileRet=NULL)
-    {
-        CAutoFile filein = OpenBlockFile(pos.nFile, 0, pfileRet ? "rb+" : "rb");
-        if (!filein)
-            return error("CTransaction::ReadFromDisk() : OpenBlockFile failed");
-
-        // Read transaction
-        if (fseek(filein, pos.nTxPos, SEEK_SET) != 0)
-            return error("CTransaction::ReadFromDisk() : fseek failed");
-        filein >> *this;
-
-        // Return file pointer
-        if (pfileRet)
-        {
-            if (fseek(filein, pos.nTxPos, SEEK_SET) != 0)
-                return error("CTransaction::ReadFromDisk() : second fseek failed");
-            *pfileRet = filein.release();
-        }
-        return true;
-    }
-
     bool ReadFromDisk(CTxDB& txdb, COutPoint prevout, CTxIndex& txindexRet);
     bool ReadFromDisk(CTxDB& txdb, COutPoint prevout);
     bool ReadFromDisk(COutPoint prevout);

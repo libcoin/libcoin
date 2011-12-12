@@ -76,7 +76,7 @@ bool OpenNetworkConnection(const Endpoint& addrConnect);
 bool fClient = false;
 bool fAllowDNS = false;
 uint64 nLocalServices = (fClient ? 0 : NODE_NETWORK);
-Endpoint addrLocalHost("0.0.0.0", 0, false, nLocalServices);
+Endpoint __localhost("0.0.0.0", 0, false, nLocalServices);
 uint64 nLocalHostNonce = 0;
 array<int, 10> vnThreadsRunning;
 static SOCKET hListenSocket = INVALID_SOCKET;
@@ -297,9 +297,9 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
         if (!pfrom->fInbound)
         {
             // Advertise our address
-            if (addrLocalHost.isRoutable() && !fUseProxy)
+            if (__localhost.isRoutable() && !fUseProxy)
             {
-                Endpoint addr(addrLocalHost);
+                Endpoint addr(__localhost);
                 addr.setTime(GetAdjustedTime());
                 pfrom->PushAddress(addr);
             }
@@ -458,7 +458,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
                 if (mi != mapBlockIndex.end())
                 {
                     CBlock block;
-                    block.ReadFromDisk((*mi).second);
+                    __blockFile.readFromDisk(block, (*mi).second);
                     pfrom->PushMessage("block", block);
                     
                     // Trigger them to send a getblocks request for the next batch of inventory
@@ -515,7 +515,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
             }
             pfrom->PushInventory(Inventory(MSG_BLOCK, pindex->GetBlockHash()));
             CBlock block;
-            block.ReadFromDisk(pindex, true);
+            __blockFile.readFromDisk(block, pindex, true);
             nBytes += block.GetSerializeSize(SER_NETWORK);
             if (--nLimit <= 0 || nBytes >= SendBufferSize()/2)
             {
@@ -868,9 +868,9 @@ bool CNode::SendMessages(bool fSendTrickle)
                     pnode->setAddrKnown.clear();
                     
                     // Rebroadcast our address
-                    if (addrLocalHost.isRoutable() && !fUseProxy)
+                    if (__localhost.isRoutable() && !fUseProxy)
                     {
-                        Endpoint addr(addrLocalHost);
+                        Endpoint addr(__localhost);
                         addr.setTime(GetAdjustedTime());
                         pnode->PushAddress(addr);
                     }
@@ -1345,13 +1345,13 @@ void ThreadGetMyExternalIP(void* parg)
     // Fallback in case IRC fails to get it
     unsigned int ip;
     if (GetMyExternalIP(ip)) {
-        addrLocalHost.setIP(ip);
-        printf("GetMyExternalIP() returned %s\n", addrLocalHost.toStringIP().c_str());
-        if (addrLocalHost.isRoutable())
+        __localhost.setIP(ip);
+        printf("GetMyExternalIP() returned %s\n", __localhost.toStringIP().c_str());
+        if (__localhost.isRoutable())
         {
             // If we already connected to a few before we had our IP, go back and addr them.
             // setAddrKnown automatically filters any duplicate sends.
-            Endpoint addr(addrLocalHost);
+            Endpoint addr(__localhost);
             addr.setTime(GetAdjustedTime());
             CRITICAL_BLOCK(cs_vNodes)
                 BOOST_FOREACH(CNode* pnode, vNodes)
@@ -1384,7 +1384,7 @@ CNode* FindNode(Endpoint addr)
 
 CNode* ConnectNode(Endpoint addrConnect, int64 nTimeout)
 {
-    if (addrConnect.getIP() == addrLocalHost.getIP())
+    if (addrConnect.getIP() == __localhost.getIP())
         return NULL;
 
     // Look for an existing connection
@@ -2109,7 +2109,7 @@ bool OpenNetworkConnection(const Endpoint& addrConnect)
     //
     if (fShutdown)
         return false;
-    if (addrConnect.getIP() == addrLocalHost.getIP() || !addrConnect.isIPv4() || FindNode(addrConnect.getIP()))
+    if (addrConnect.getIP() == __localhost.getIP() || !addrConnect.isIPv4() || FindNode(addrConnect.getIP()))
         return false;
 
     vnThreadsRunning[1]--;
@@ -2211,7 +2211,7 @@ bool BindListenPort(string& strError)
 {
     strError = "";
     int nOne = 1;
-    addrLocalHost.setPort(htons(GetListenPort()));
+    __localhost.setPort(htons(GetListenPort()));
 
 #ifdef _WIN32
     // Initialize Windows Sockets
@@ -2299,7 +2299,7 @@ void StartNode(void* parg)
             BOOST_FOREACH (const Endpoint &addr, vaddr)
                 if (addr.GetByte(3) != 127)
                 {
-                    addrLocalHost = addr;
+                    __localhost = addr;
                     break;
                 }
     }
@@ -2325,7 +2325,7 @@ void StartNode(void* parg)
                 Endpoint addr(*(unsigned int*)&s4->sin_addr, GetListenPort(), nLocalServices);
                 if (addr.isValid() && addr.getByte(3) != 127)
                 {
-                    addrLocalHost = addr;
+                    __localhost = addr;
                     break;
                 }
             }
@@ -2339,13 +2339,13 @@ void StartNode(void* parg)
         freeifaddrs(myaddrs);
     }
 #endif
-    printf("addrLocalHost = %s\n", addrLocalHost.toString().c_str());
+    printf("addrLocalHost = %s\n", __localhost.toString().c_str());
 
     if (fUseProxy || mapArgs.count("-connect") || fNoListen)
     {
         // Proxies can't take incoming connections
-        addrLocalHost.setIP(Endpoint("0.0.0.0").getIP());
-        printf("addrLocalHost = %s\n", addrLocalHost.toString().c_str());
+        __localhost.setIP(Endpoint("0.0.0.0").getIP());
+        printf("addrLocalHost = %s\n", __localhost.toString().c_str());
     }
     else
     {

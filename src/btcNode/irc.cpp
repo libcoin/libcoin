@@ -306,8 +306,8 @@ void ThreadIRCSeed2(void* parg)
         }
 
         string strMyName;
-        if (addrLocalHost.isRoutable() && !fUseProxy && !fNameInUse)
-            strMyName = EncodeAddress(addrLocalHost);
+        if (__localhost.isRoutable() && !fUseProxy && !fNameInUse)
+            strMyName = EncodeAddress(__localhost);
         else
             strMyName = strprintf("x%u", GetRand(1000000000));
 
@@ -345,8 +345,8 @@ void ThreadIRCSeed2(void* parg)
             {
                 // IRC lets you to re-nick
                 fGotExternalIP = true;
-                addrLocalHost.setIP(addrFromIRC.getIP());
-                strMyName = EncodeAddress(addrLocalHost);
+                __localhost.setIP(addrFromIRC.getIP());
+                strMyName = EncodeAddress(__localhost);
                 Send(hSocket, strprintf("NICK %s\r", strMyName.c_str()).c_str());
             }
         }
