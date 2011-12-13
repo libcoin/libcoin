@@ -11,6 +11,7 @@
 #include "btcNode/EndpointPool.h"
 #include "btcNode/Alert.h"
 #include "btcNode/BlockChain.h"
+#include "btcNode/Block.h"
 
 #include "btc/strlcpy.h"
 
@@ -85,7 +86,7 @@ static SOCKET hListenSocket = INVALID_SOCKET;
 vector<CNode*> vNodes;
 CCriticalSection cs_vNodes;
 //map<vector<unsigned char>, Endpoint> mapAddresses;
-EndpointPool _endpointPool;
+EndpointPool* _endpointPool;
 CCriticalSection cs_mapAddresses;
 map<Inventory, CDataStream> mapRelay;
 deque<pair<int64, Inventory> > vRelayExpiration;
@@ -159,12 +160,12 @@ uint256 static GetOrphanRoot(const Block* pblock)
 }
 
 
-bool static AlreadyHave(CTxDB& txdb, const Inventory& inv)
+bool static AlreadyHave(const Inventory& inv)
 {
     switch (inv.getType())
     {
-        case MSG_TX:    return mapTransactions.count(inv.getHash()) || mapOrphanTransactions.count(inv.getHash()) || txdb.ContainsTx(inv.getHash());
-        case MSG_BLOCK: return mapBlockIndex.count(inv.getHash()) || mapOrphanBlocks.count(inv.getHash());
+        case MSG_TX:    return mapTransactions.count(inv.getHash()) || mapOrphanTransactions.count(inv.getHash()) || __blockChain->containsTx(inv.getHash());
+        case MSG_BLOCK: return __blockChain->containsBlock(inv.getHash()) || mapOrphanBlocks.count(inv.getHash());
     }
     // Don't know what it is, just say we already got one
     return true;
@@ -179,8 +180,8 @@ bool static ProcessBlock(CNode* pfrom, Block* pblock)
 {
     // Check for duplicate
     uint256 hash = pblock->getHash();
-    if (mapBlockIndex.count(hash))
-        return error("ProcessBlock() : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.toString().substr(0,20).c_str());
+    if (__blockChain->containsBlock(hash))
+        return error("ProcessBlock() : already have block %d %s", __blockChain->getBlockIndex(hash)->nHeight, hash.toString().substr(0,20).c_str());
     if (mapOrphanBlocks.count(hash))
         return error("ProcessBlock() : already have block (orphan) %s", hash.toString().substr(0,20).c_str());
     
@@ -189,7 +190,7 @@ bool static ProcessBlock(CNode* pfrom, Block* pblock)
         return error("ProcessBlock() : CheckBlock FAILED");
     
     // If don't already have its previous block, shunt it off to holding area until we get it
-    if (!mapBlockIndex.count(pblock->getPrevBlock()))
+    if (!__blockChain->containsBlock(pblock->getPrevBlock()))
     {
         printf("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->getPrevBlock().toString().substr(0,20).c_str());
         Block* pblock2 = new Block(*pblock);
@@ -198,12 +199,12 @@ bool static ProcessBlock(CNode* pfrom, Block* pblock)
         
         // Ask this guy to fill in what we're missing
         if (pfrom)
-            pfrom->PushGetBlocks(pindexBest, GetOrphanRoot(pblock2));
+            pfrom->PushGetBlocks(__blockChain->getBestIndex(), GetOrphanRoot(pblock2));
         return true;
     }
     
     // Store to disk
-    if (!pblock->acceptBlock())
+    if (!__blockChain->acceptBlock(*pblock))
         return error("ProcessBlock() : AcceptBlock FAILED");
     
     // Recursively process any orphan blocks that depended on this one
@@ -217,7 +218,7 @@ bool static ProcessBlock(CNode* pfrom, Block* pblock)
              ++mi)
         {
             Block* pblockOrphan = (*mi).second;
-            if (pblockOrphan->acceptBlock())
+            if (__blockChain->acceptBlock(*pblockOrphan))
                 vWorkQueue.push_back(pblockOrphan->getHash());
             mapOrphanBlocks.erase(pblockOrphan->getHash());
             delete pblockOrphan;
@@ -306,7 +307,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
             }
             
             // Get recent addresses
-            if (pfrom->nVersion >= 31402 || _endpointPool.getPoolSize() < 1000)
+            if (pfrom->nVersion >= 31402 || _endpointPool->getPoolSize() < 1000)
             {
                 pfrom->PushMessage("getaddr");
                 pfrom->fGetAddr = true;
@@ -320,7 +321,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
             (nAskedForBlocks < 1 || vNodes.size() <= 1))
         {
             nAskedForBlocks++;
-            pfrom->PushGetBlocks(pindexBest, uint256(0));
+            pfrom->PushGetBlocks(__blockChain->getBestIndex(), uint256(0));
         }
         
         // Relay alerts
@@ -355,7 +356,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
         // Don't want addr from older versions unless seeding
         if (pfrom->nVersion < 209)
             return true;
-        if (pfrom->nVersion < 31402 && _endpointPool.getPoolSize() > 1000)
+        if (pfrom->nVersion < 31402 && _endpointPool->getPoolSize() > 1000)
             return true;
         if (vAddr.size() > 1000)
             return error("message addr size() = %d", vAddr.size());
@@ -374,7 +375,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
                 continue;
             if (addr.getTime() <= 100000000 || addr.getTime() > nNow + 10 * 60)
                 addr.setTime(nNow - 5 * 24 * 60 * 60);
-            _endpointPool.addEndpoint(addr, 2 * 60 * 60);
+            _endpointPool->addEndpoint(addr, 2 * 60 * 60);
             pfrom->AddAddressKnown(addr);
             if (addr.getTime() > nSince && !pfrom->fGetAddr && vAddr.size() <= 10 && addr.isRoutable())
             {
@@ -418,20 +419,20 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
         if (vInv.size() > 50000)
             return error("message inv size() = %d", vInv.size());
         
-        CTxDB txdb("r");
+    //        CTxDB txdb("r");
         BOOST_FOREACH(const Inventory& inv, vInv)
         {
             if (fShutdown)
                 return true;
             pfrom->AddInventoryKnown(inv);
             
-            bool fAlreadyHave = AlreadyHave(txdb, inv);
+            bool fAlreadyHave = AlreadyHave(inv);
             printf("  got inventory: %s  %s\n", inv.toString().c_str(), fAlreadyHave ? "have" : "new");
             
             if (!fAlreadyHave)
                 pfrom->AskFor(inv);
             else if (inv.getType() == MSG_BLOCK && mapOrphanBlocks.count(inv.getHash()))
-                pfrom->PushGetBlocks(pindexBest, GetOrphanRoot(mapOrphanBlocks[inv.getHash()]));
+                pfrom->PushGetBlocks(__blockChain->getBestIndex(), GetOrphanRoot(mapOrphanBlocks[inv.getHash()]));
             
             // Track requests for our stuff
             //            Inventory(inv.hash);
@@ -452,14 +453,11 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
                 return true;
             printf("received getdata for: %s\n", inv.toString().c_str());
             
-            if (inv.getType() == MSG_BLOCK)
-            {
+            if (inv.getType() == MSG_BLOCK) {
                 // Send block from disk
-                map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(inv.getHash());
-                if (mi != mapBlockIndex.end())
-                {
-                    Block block;
-                    __blockFile.readFromDisk(block, (*mi).second);
+                Block block;
+                __blockChain->readBlock(inv.getHash(), block);
+                if (!block.isNull()) {
                     pfrom->PushMessage("block", block);
                     
                     // Trigger them to send a getblocks request for the next batch of inventory
@@ -469,7 +467,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
                         // and we want it right after the last block so they don't
                         // wait for other stuff first.
                         vector<Inventory> vInv;
-                        vInv.push_back(Inventory(MSG_BLOCK, hashBestChain));
+                        vInv.push_back(Inventory(MSG_BLOCK, __blockChain->getBestChain()));
                         pfrom->PushMessage("inv", vInv);
                         pfrom->hashContinue = 0;
                     }
@@ -499,12 +497,12 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
         vRecv >> locator >> hashStop;
         
         // Find the last block the caller has in the main chain
-        CBlockIndex* pindex = locator.GetBlockIndex();
+        CBlockIndex* pindex = __blockChain->getBlockIndex(locator);
         
         // Send the rest of the chain
         if (pindex)
             pindex = pindex->pnext;
-        int nLimit = 500 + locator.GetDistanceBack();
+        int nLimit = 500 + __blockChain->getDistanceBack(locator);
         unsigned int nBytes = 0;
         printf("getblocks %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.toString().substr(0,20).c_str(), nLimit);
         for (; pindex; pindex = pindex->pnext)
@@ -516,7 +514,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
             }
             pfrom->PushInventory(Inventory(MSG_BLOCK, pindex->GetBlockHash()));
             Block block;
-            __blockFile.readFromDisk(block, pindex, true);
+            __blockChain->readBlock(pindex->GetBlockHash(), block);
             nBytes += block.GetSerializeSize(SER_NETWORK);
             if (--nLimit <= 0 || nBytes >= SendBufferSize()/2)
             {
@@ -537,24 +535,21 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
         vRecv >> locator >> hashStop;
         
         CBlockIndex* pindex = NULL;
-        if (locator.IsNull())
-        {
+        if (locator.IsNull()) {
             // If locator is null, return the hashStop block
-            map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashStop);
-            if (mi == mapBlockIndex.end())
-                return true;
-            pindex = (*mi).second;
+            pindex = __blockChain->getHashStopIndex(hashStop);
+            if (pindex == NULL) return true;
         }
         else
         {
             // Find the last block the caller has in the main chain
-            pindex = locator.GetBlockIndex();
+            pindex = __blockChain->getBlockIndex(locator);
             if (pindex)
                 pindex = pindex->pnext;
         }
         
         vector<Block> vHeaders;
-        int nLimit = 2000 + locator.GetDistanceBack();
+        int nLimit = 2000 + __blockChain->getDistanceBack(locator);
         printf("getheaders %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.toString().substr(0,20).c_str(), nLimit);
         for (; pindex; pindex = pindex->pnext)
         {
@@ -638,7 +633,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
     else if (strCommand == "getaddr") {
         // Nodes rebroadcast an addr every 24 hours
         pfrom->vAddrToSend.clear();
-        set<Endpoint> endpoints = _endpointPool.getRecent(3*60*60, 2500);
+        set<Endpoint> endpoints = _endpointPool->getRecent(3*60*60, 2500);
         for (set<Endpoint>::iterator ep = endpoints.begin(); ep != endpoints.end(); ++ep)
             pfrom->PushAddress(*ep);
     }
@@ -673,7 +668,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
     // Update the last seen time for this node's address
     if (pfrom->fNetworkNode)
         if (strCommand == "version" || strCommand == "addr" || strCommand == "inv" || strCommand == "getdata" || strCommand == "ping")
-            _endpointPool.currentlyConnected(pfrom->addr);
+            _endpointPool->currentlyConnected(pfrom->addr);
     
     
     return true;
@@ -812,7 +807,7 @@ void ResendBrokerTransactions()
     
     // Only do it if there's been a new block since last time
     static int64 nLastTime;
-    if (nTimeBestReceived < nLastTime)
+    if (__blockChain->getBestReceivedTime() < nLastTime)
         return;
     nLastTime = GetTime();
     
@@ -822,14 +817,10 @@ void ResendBrokerTransactions()
     map<uint256, CTx> txes;
     brokerdb.LoadTxes(txes);
     
-    CTxDB txdb;
-    
-    for(map<uint256, CTx>::iterator it = txes.begin(); it != txes.end(); ++it)
-    {
-        TxIndex txindex;
-        if (txdb.ReadTxIndex(it->first, txindex))
-        {
-            if(txindex.getDepthInMainChain() > 100)
+    for(map<uint256, CTx>::iterator it = txes.begin(); it != txes.end(); ++it) {
+        int depth = __blockChain->getDepthInMainChain(it->first);
+        if (depth > 0) {
+            if(depth > 100)
                 brokerdb.EraseTx(it->second);
             continue;
         }
@@ -880,7 +871,7 @@ bool CNode::SendMessages(bool fSendTrickle)
         }
         
         // Clear out old addresses periodically so it's not too much work at once
-        _endpointPool.purge();
+        _endpointPool->purge();
     
         //
         // Message: addr
@@ -972,11 +963,11 @@ bool CNode::SendMessages(bool fSendTrickle)
         //
         vector<Inventory> vGetData;
         int64 nNow = GetTime() * 1000000;
-        CTxDB txdb("r");
+
         while (!pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)
         {
             const Inventory& inv = (*pto->mapAskFor.begin()).second;
-            if (!AlreadyHave(txdb, inv))
+            if (!AlreadyHave(inv))
             {
                 printf("sending getdata: %s\n", inv.toString().c_str());
                 vGetData.push_back(inv);
@@ -998,7 +989,7 @@ bool CNode::SendMessages(bool fSendTrickle)
 
 
 
-void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
+void CNode::PushGetBlocks(const CBlockIndex* pindexBegin, uint256 hashEnd)
 {
     // Filter out duplicate requests
     if (pindexBegin == pindexLastGetBlocksBegin && hashEnd == hashLastGetBlocksEnd)
@@ -1405,7 +1396,7 @@ CNode* ConnectNode(Endpoint addrConnect, int64 nTimeout)
         (double)(addrConnect.getTime() - GetAdjustedTime())/3600.0,
         (double)(addrConnect.getLastTry() - GetAdjustedTime())/3600.0);
 
-    _endpointPool.getEndpoint(addrConnect.getKey()).setLastTry(GetAdjustedTime());
+    _endpointPool->getEndpoint(addrConnect.getKey()).setLastTry(GetAdjustedTime());
     
     // Connect
     SOCKET hSocket;
@@ -1898,7 +1889,7 @@ void DNSAddressSeed()
                     if (addr.getByte(3) != 127)
                     {
                         addr.setTime(0);
-                        _endpointPool.addEndpoint(addr, 0);
+                        _endpointPool->addEndpoint(addr, 0);
                         found++;
                     }
                 }
@@ -2071,7 +2062,7 @@ void ThreadOpenConnections2(void* parg)
         {
             // Add seed nodes if IRC isn't working
             bool fTOR = (fUseProxy && addrProxy.getPort() == htons(9050));
-            if ((_endpointPool.getPoolSize() == 0) && (GetTime() - nStart > 60 || fTOR) && !fTestNet)
+            if ((_endpointPool->getPoolSize() == 0) && (GetTime() - nStart > 60 || fTOR) && !fTestNet)
             {
                 for (int i = 0; i < ARRAYLEN(pnSeed); i++)
                 {
@@ -2083,7 +2074,7 @@ void ThreadOpenConnections2(void* parg)
                     Endpoint addr;
                     addr.setIP(pnSeed[i]);
                     addr.setTime(GetTime()-GetRand(nOneWeek)-nOneWeek);
-                    _endpointPool.addEndpoint(addr);
+                    _endpointPool->addEndpoint(addr);
                 }
             }
         }
@@ -2097,7 +2088,7 @@ void ThreadOpenConnections2(void* parg)
     BOOST_FOREACH(CNode* pnode, vNodes)
     setConnected.insert(pnode->addr.getIP() & 0x0000ffff);
     
-    Endpoint addrConnect = _endpointPool.getCandidate(setConnected, nStart);
+    Endpoint addrConnect = _endpointPool->getCandidate(setConnected, nStart);
         if (addrConnect.isValid())
             OpenNetworkConnection(addrConnect);
     }

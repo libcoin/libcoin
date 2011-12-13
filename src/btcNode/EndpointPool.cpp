@@ -2,6 +2,7 @@
 #include "btcNode/EndpointPool.h"
 #include "btcNode/db.h"
 #include "btcNode/irc.h"
+#include "btcNode/net.h"
 
 #include "btc/util.h"
 

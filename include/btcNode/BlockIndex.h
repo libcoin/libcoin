@@ -7,13 +7,13 @@
 #include "btc/script.h"
 #include "btc/tx.h"
 
-#include "btcNode/Block.h"
-#include "btcNode/main.h"
+//#include "btcNode/Block.h"
 
 #include <list>
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits);
-bool IsInitialBlockDownload();
+
+class Block;
 
 //
 // The block chain is a tree shaped structure starting with the
@@ -59,31 +59,9 @@ public:
         nNonce         = 0;
     }
 
-    CBlockIndex(unsigned int nFileIn, unsigned int nBlockPosIn, Block& block)
-    {
-        phashBlock = NULL;
-        pprev = NULL;
-        pnext = NULL;
-        nFile = nFileIn;
-        nBlockPos = nBlockPosIn;
-        nHeight = 0;
-        bnChainWork = 0;
+    CBlockIndex(unsigned int nFileIn, unsigned int nBlockPosIn, Block& block);
 
-        nVersion       = block.getVersion();
-        hashMerkleRoot = block.getMerkleRoot();
-        nTime          = block.getTime();
-        nBits          = block.getBits();
-        nNonce         = block.getNonce();
-    }
-
-    Block GetBlockHeader() const
-    {
-        uint256 prevBlock;
-        if (pprev)
-            prevBlock = pprev->GetBlockHash();
-        Block block(nVersion, prevBlock, hashMerkleRoot, nTime, nBits, nNonce);
-        return block;
-    }
+    Block GetBlockHeader() const;
 
     uint256 GetBlockHash() const
     {
@@ -102,11 +80,6 @@ public:
         if (bnTarget <= 0)
             return 0;
         return (CBigNum(1)<<256) / (bnTarget+1);
-    }
-
-    bool IsInMainChain() const
-    {
-        return (pnext || this == pindexBest);
     }
 
     bool CheckIndex() const
@@ -200,12 +173,7 @@ public:
         READWRITE(nNonce);
     )
 
-    uint256 GetBlockHash() const
-    {
-        Block block(nVersion, hashPrev, hashMerkleRoot, nTime, nBits, nNonce);
-        return block.getHash();
-    }
-
+    uint256 GetBlockHash() const;
 
     std::string toString() const
     {
@@ -238,7 +206,7 @@ public:
 //
 class CBlockLocator
 {
-protected:
+public:
     std::vector<uint256> vHave;
 public:
 
@@ -249,13 +217,6 @@ public:
     explicit CBlockLocator(const CBlockIndex* pindex)
     {
         Set(pindex);
-    }
-
-    explicit CBlockLocator(uint256 hashBlock)
-    {
-        std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
-        if (mi != mapBlockIndex.end())
-            Set((*mi).second);
     }
 
     IMPLEMENT_SERIALIZE
@@ -275,83 +236,9 @@ public:
         return vHave.empty();
     }
 
-    void Set(const CBlockIndex* pindex)
-    {
-        vHave.clear();
-        int nStep = 1;
-        while (pindex)
-        {
-            vHave.push_back(pindex->GetBlockHash());
-
-            // Exponentially larger steps back
-            for (int i = 0; pindex && i < nStep; i++)
-                pindex = pindex->pprev;
-            if (vHave.size() > 10)
-                nStep *= 2;
-        }
-        vHave.push_back(hashGenesisBlock);
-    }
-
-    int GetDistanceBack()
-    {
-        // Retrace how far back it was in the sender's branch
-        int nDistance = 0;
-        int nStep = 1;
-        BOOST_FOREACH(const uint256& hash, vHave)
-        {
-            std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hash);
-            if (mi != mapBlockIndex.end())
-            {
-                CBlockIndex* pindex = (*mi).second;
-                if (pindex->IsInMainChain())
-                    return nDistance;
-            }
-            nDistance += nStep;
-            if (nDistance > 10)
-                nStep *= 2;
-        }
-        return nDistance;
-    }
-
-    CBlockIndex* GetBlockIndex()
-    {
-        // Find the first block the caller has in the main chain
-        BOOST_FOREACH(const uint256& hash, vHave)
-        {
-            std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hash);
-            if (mi != mapBlockIndex.end())
-            {
-                CBlockIndex* pindex = (*mi).second;
-                if (pindex->IsInMainChain())
-                    return pindex;
-            }
-        }
-        return pindexGenesisBlock;
-    }
-
-    uint256 GetBlockHash()
-    {
-        // Find the first block the caller has in the main chain
-        BOOST_FOREACH(const uint256& hash, vHave)
-        {
-            std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hash);
-            if (mi != mapBlockIndex.end())
-            {
-                CBlockIndex* pindex = (*mi).second;
-                if (pindex->IsInMainChain())
-                    return hash;
-            }
-        }
-        return hashGenesisBlock;
-    }
-
-    int GetHeight()
-    {
-        CBlockIndex* pindex = GetBlockIndex();
-        if (!pindex)
-            return 0;
-        return pindex->nHeight;
-    }
+    void Set(const CBlockIndex* pindex);
+    
+    int GetHeight();
 };
 
 #endif // BLOCK_H

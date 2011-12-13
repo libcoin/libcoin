@@ -17,13 +17,13 @@
 #include "btcNode/MessageHeader.h"
 #include "btcNode/Inventory.h"
 #include "btcNode/Endpoint.h"
-//#include "btcNode/EndpointPool.h"
+#include "btcNode/EndpointPool.h"
+#include "btcNode/main.h"
 
 class CAddrDB;
 class CRequestTracker;
 class CNode;
 class CBlockIndex;
-extern int nBestHeight;
 extern int nConnectTimeout;
 
 
@@ -87,8 +87,7 @@ extern CCriticalSection cs_vNodes;
 //extern std::map<std::vector<unsigned char>, Endpoint> mapAddresses;
 //extern CCriticalSection cs_mapAddresses;
 
-class EndpointPool;
-extern EndpointPool _endpointPool;
+extern EndpointPool* _endpointPool;
 
 
 extern std::map<Inventory, CDataStream> mapRelay;
@@ -136,7 +135,7 @@ public:
     std::map<uint256, CRequestTracker> mapRequests;
     CCriticalSection cs_mapRequests;
     uint256 hashContinue;
-    CBlockIndex* pindexLastGetBlocksBegin;
+    const CBlockIndex* pindexLastGetBlocksBegin;
     uint256 hashLastGetBlocksEnd;
     int nStartingHeight;
 
@@ -360,7 +359,7 @@ public:
         Endpoint addrMe = (fUseProxy ? Endpoint("0.0.0.0") : __localhost);
         RAND_bytes((unsigned char*)&nLocalHostNonce, sizeof(nLocalHostNonce));
         PushMessage("version", VERSION, nLocalServices, nTime, addrYou, addrMe,
-                    nLocalHostNonce, std::string(pszSubVer), nBestHeight);
+                    nLocalHostNonce, std::string(pszSubVer), __blockChain->getBestHeight());
     }
 
 
@@ -568,7 +567,7 @@ public:
     bool SendMessages(bool fSendTrickle);    
 
 
-    void PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd);
+    void PushGetBlocks(const CBlockIndex* pindexBegin, uint256 hashEnd);
 
     void CloseSocketDisconnect();
 };

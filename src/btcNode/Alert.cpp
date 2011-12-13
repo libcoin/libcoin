@@ -57,7 +57,7 @@ string UnsignedAlert::toString() const
 
 map<uint256, Alert> mapAlerts;
 CCriticalSection cs_mapAlerts;
-
+/*
 string getWarnings(string strFor)
 {
     int nPriority = 0;
@@ -74,7 +74,7 @@ string getWarnings(string strFor)
     }
 
     // Longer invalid proof-of-work chain
-    if (pindexBest && bnBestInvalidWork > bnBestChainWork + pindexBest->GetBlockWork() * 6)
+    if (_bestIndex && _bestInvalidWork > _bestChainWork + _bestIndex->GetBlockWork() * 6)
     {
         nPriority = 2000;
         strStatusBar = strRPC = "WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.";
@@ -101,7 +101,7 @@ string getWarnings(string strFor)
     assert(!"GetWarnings() : invalid parameter");
     return "error";
 }
-
+*/
 bool Alert::relayTo(CNode* pnode) const
 {
     if (!isInEffect())
@@ -175,6 +175,6 @@ bool Alert::processAlert()
     }
 
     printf("accepted alert %d, AppliesToMe()=%d\n", _id, appliesToMe());
-    MainFrameRepaint();
+    //    MainFrameRepaint();
     return true;
 }

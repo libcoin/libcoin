@@ -8,20 +8,15 @@
 #include "btc/key.h"
 #include "btc/tx.h"
 #include "btc/asset.h"
-#include "btcNode/main.h"
-#include "btcNode/Block.h"
-#include "btcNode/BlockIndex.h"
+//#include "btcNode/main.h"
+//#include "btcNode/Block.h"
+//#include "btcNode/BlockIndex.h"
 
 #include <map>
 #include <string>
 #include <vector>
 
 #include <db_cxx.h>
-
-class TxIndex;
-class DiskTxPos;
-class COutPoint;
-class Endpoint;
 
 extern CCriticalSection cs_db;
 extern DbEnv dbenv;
@@ -254,56 +249,6 @@ public:
     {
         return Write(std::string("version"), nVersion);
     }
-};
-
-
-
-
-
-
-
-
-class CTxDB : public CDB
-{
-public:
-    CTxDB(const char* pszMode="r+") : CDB("blkindex.dat", pszMode) { }
-private:
-    CTxDB(const CTxDB&);
-    void operator=(const CTxDB&);
-public:
-    bool ReadTxIndex(uint256 hash, TxIndex& txindex);
-    bool ReadDrIndex(uint160 hash160, std::set<std::pair<uint256, unsigned int> >& debit);
-    bool ReadCrIndex(uint160 hash160, std::set<std::pair<uint256, unsigned int> >& credit);
-    bool UpdateTxIndex(uint256 hash, const TxIndex& txindex);
-    bool AddTxIndex(const CTransaction& tx, const DiskTxPos& pos, int nHeight);
-    bool EraseTxIndex(const CTransaction& tx);
-    bool ContainsTx(uint256 hash);
-    bool ReadOwnerTxes(uint160 hash160, int nHeight, std::vector<CTransaction>& vtx);
-    bool ReadDiskTx(uint256 hash, CTransaction& tx, TxIndex& txindex);
-    bool ReadDiskTx(uint256 hash, CTransaction& tx);
-    bool ReadDiskTx(COutPoint outpoint, CTransaction& tx, TxIndex& txindex);
-    bool ReadDiskTx(COutPoint outpoint, CTransaction& tx);
-    bool WriteBlockIndex(const CDiskBlockIndex& blockindex);
-    bool EraseBlockIndex(uint256 hash);
-    bool ReadHashBestChain(uint256& hashBestChain);
-    bool WriteHashBestChain(uint256 hashBestChain);
-    bool ReadBestInvalidWork(CBigNum& bnBestInvalidWork);
-    bool WriteBestInvalidWork(CBigNum bnBestInvalidWork);
-    bool LoadBlockIndex();
-};
-
-
-class CDBAssetSyncronizer : public CAssetSyncronizer
-{
-public:
-    CDBAssetSyncronizer(CTxDB& txdb) : _txdb(txdb) {}
-    virtual void getCreditCoins(uint160 btc, Coins& coins);
-    virtual void getDebitCoins(uint160 btc, Coins& coins);
-    virtual void getCoins(uint160 btc, Coins& coins);
-    
-    virtual void getTransaction(const Coin& coin, CTx&);
-private:
-    CTxDB& _txdb;
 };
 
 class CBrokerDB : public CDB

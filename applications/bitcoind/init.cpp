@@ -493,7 +493,7 @@ bool AppInit2(int argc, char* argv[])
 
     RegisterWallet(pwalletMain);
 
-    CBlockIndex *pindexRescan = pindexBest;
+    CBlockIndex *pindexRescan = _bestIndex;
     if (GetBoolArg("-rescan"))
         pindexRescan = pindexGenesisBlock;
     else
@@ -503,9 +503,9 @@ bool AppInit2(int argc, char* argv[])
         if (walletdb.ReadBestBlock(locator))
             pindexRescan = locator.GetBlockIndex();
     }
-    if (pindexBest != pindexRescan)
+    if (_bestIndex != pindexRescan)
     {
-        printf("Rescanning last %i blocks (from block %i)...\n", pindexBest->nHeight - pindexRescan->nHeight, pindexRescan->nHeight);
+        printf("Rescanning last %i blocks (from block %i)...\n", _bestIndex->nHeight - pindexRescan->nHeight, pindexRescan->nHeight);
         nStart = GetTimeMillis();
         pwalletMain->ScanForWalletTransactions(pindexRescan, true);
         printf(" rescan      %15"PRI64d"ms\n", GetTimeMillis() - nStart);
@@ -515,7 +515,7 @@ bool AppInit2(int argc, char* argv[])
 
         //// debug print
         printf("mapBlockIndex.size() = %d\n",   mapBlockIndex.size());
-        printf("nBestHeight = %d\n",            nBestHeight);
+        printf("nBestHeight = %d\n",            __blockChain->getBestHeight());
         printf("setKeyPool.size() = %d\n",      pwalletMain->setKeyPool.size());
         printf("mapWallet.size() = %d\n",       pwalletMain->mapWallet.size());
         printf("mapAddressBook.size() = %d\n",  pwalletMain->mapAddressBook.size());

@@ -4,11 +4,12 @@
 
 #include "db.h"
 
+#include "btcNode/Endpoint.h"
+
 #include <map>
 #include <string>
 #include <vector>
 
-class Endpoint;
 
 typedef std::map<std::vector<unsigned char>, Endpoint> EndpointMap;
  

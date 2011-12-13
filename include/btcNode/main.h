@@ -10,8 +10,8 @@
 #include "btc/script.h"
 #include "btc/tx.h"
 
-#include "btcNode/BlockFile.h"
-#include "btcNode/net.h"
+#include "btcNode/BlockChain.h"
+//#include "btcNode/net.h"
 //#include "btcNode/db.h"
 
 #include <list>
@@ -25,6 +25,7 @@ class Endpoint;
 class Inventory;
 class CRequestTracker;
 class CNode;
+class BlockChain;
 
 #ifdef USE_UPNP
 static const int fHaveUPnP = true;
@@ -40,19 +41,13 @@ extern std::map<uint160, std::set<std::pair<uint256, unsigned int> > > mapCredit
 extern std::map<uint160, std::set<std::pair<uint256, unsigned int> > > mapDebits;
 extern CCriticalSection cs_mapTransactions;
 
-extern BlockFile __blockFile;
+extern BlockChain* __blockChain;
 
-extern std::map<uint256, CBlockIndex*> mapBlockIndex;
-extern uint256 hashGenesisBlock;
+//extern std::map<uint256, CBlockIndex*> mapBlockIndex;
 extern CBlockIndex* pindexGenesisBlock;
-extern CBigNum bnBestChainWork;
-extern CBigNum bnBestInvalidWork;
-extern uint256 hashBestChain;
-extern CBlockIndex* pindexBest;
 extern unsigned int nTransactionsUpdated;
 extern double dHashesPerSec;
 extern int64 nHPSTimerStart;
-extern int64 nTimeBestReceived;
 extern CBigNum bnProofOfWorkLimit;
 
 const int nInitialBlockThreshold = 120; // Regard blocks up until N-threshold as "initial download"
@@ -71,19 +66,11 @@ extern int fUseUPnP;
 
 
 class CReserveKey;
-class CTxDB;
 class TxIndex;
 
-bool LoadBlockIndex(bool fAllowNew=true);
-void PrintBlockTree();
-//bool ProcessMessages(CNode* pfrom);
-//bool SendMessages(CNode* pto, bool fSendTrickle);
-//void GenerateBitcoins(bool fGenerate, CWallet* pwallet);
 Block* CreateNewBlock(CReserveKey& reservekey);
 void IncrementExtraNonce(Block* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce);
 void FormatHashBuffers(Block* pblock, char* pmidstate, char* pdata, char* phash1);
-
-std::string GetWarnings(std::string strFor);
 
 class CHandler
 {
@@ -143,15 +130,8 @@ public:
     CTransaction() : CTx() {}
     CTransaction(const CTx& tx) : CTx(tx) {} // nothing to be initialized in CTransaction
     
-    bool ReadFromDisk(CTxDB& txdb, COutPoint prevout, TxIndex& txindexRet);
-    bool ReadFromDisk(CTxDB& txdb, COutPoint prevout);
-    bool ReadFromDisk(COutPoint prevout);
-    bool DisconnectInputs(CTxDB& txdb);
-    bool ConnectInputs(CTxDB& txdb, std::map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx,
-                       CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee=0);
     bool ClientConnectInputs();
     bool CheckTransaction() const;
-    bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true, bool* pfMissingInputs=NULL);
     bool AcceptToMemoryPool(bool fCheckInputs=true, bool* pfMissingInputs=NULL);
 protected:
     bool AddToMemoryPoolUnchecked();

@@ -20,7 +20,6 @@ using namespace boost;
 // Global state
 //
 
-int nBestHeight = -1;
 const int nTotalBlocksEstimate = 140700; // Conservative estimate of total nr of blocks on main chain
 
 //////////////////////////////////////////////////////////////////////////////
@@ -99,17 +98,4 @@ bool CTx::CheckTransaction() const
     }
 
     return true;
-}
-
-// Return conservative estimate of total number of blocks, 0 if unknown
-int GetTotalBlocksEstimate()
-{
-    if(fTestNet)
-    {
-        return 0;
-    }
-    else
-    {
-        return nTotalBlocksEstimate;
-    }
 }

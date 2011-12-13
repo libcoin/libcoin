@@ -7,6 +7,7 @@
 
 #include "btcNode/db.h"
 #include "btcNode/net.h"
+#include "btcNode/main.h"
 
 #include "btcHTTP/Server.h"
 
@@ -336,11 +337,9 @@ bool AppInit2(int argc, char* argv[])
 #endif
     printf("Default data directory %s\n", GetDefaultDataDir().c_str());
 
-    if (GetBoolArg("-loadblockindextest"))
-    {
-        CTxDB txdb("r");
-        txdb.LoadBlockIndex();
-        PrintBlockTree();
+    if (GetBoolArg("-loadblockindextest")) {
+        __blockChain->load();
+        __blockChain->print();
         return false;
     }
 
@@ -417,18 +416,20 @@ bool AppInit2(int argc, char* argv[])
     printf("Loading addresses...\n");
     nStart = GetTimeMillis();
 
+    _endpointPool = new EndpointPool();
+    __blockChain = new BlockChain();
     
     printf("Loading block index...\n");
     nStart = GetTimeMillis();
-    if (!LoadBlockIndex())
+    if (!__blockChain->load())
         strErrors += _("Error loading blkindex.dat      \n");
     printf(" block index %15"PRI64d"ms\n", GetTimeMillis() - nStart);
     
     printf("Done loading\n");
 
         //// debug print
-        printf("mapBlockIndex.size() = %d\n",   mapBlockIndex.size());
-        printf("nBestHeight = %d\n",            nBestHeight);
+        printf("mapBlockIndex.size() = %d\n",   __blockChain->getBlockChainIndexSize());
+        printf("nBestHeight = %d\n",            __blockChain->getBestHeight() );
 
     if (!strErrors.empty())
     {
@@ -441,7 +442,7 @@ bool AppInit2(int argc, char* argv[])
     //
     if (GetBoolArg("-printblockindex") || GetBoolArg("-printblocktree"))
     {
-        PrintBlockTree();
+        __blockChain->print();
         return false;
     }
 
@@ -452,6 +453,7 @@ bool AppInit2(int argc, char* argv[])
             nConnectTimeout = nNewTimeout;
     }
 
+    /*
     if (mapArgs.count("-printblock"))
     {
         string strMatch = mapArgs["-printblock"];
@@ -474,6 +476,7 @@ bool AppInit2(int argc, char* argv[])
             printf("No blocks matching %s were found\n", strMatch.c_str());
         return false;
     }
+     */
 
     fGenerateBitcoins = GetBoolArg("-gen");
 
@@ -579,6 +582,10 @@ bool AppInit2(int argc, char* argv[])
     }
 
     // kill the node!
+    
+    delete _endpointPool;
+    delete __blockChain;
+
     
     return true;
 }

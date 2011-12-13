@@ -4,6 +4,7 @@
 #include "btcNode/Block.h"
 #include "btcNode/BlockIndex.h"
 #include "btcNode/BlockChain.h"
+#include "btcNode/MessageHeader.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -30,7 +31,7 @@ bool BlockFile::writeToDisk(const Block& block, unsigned int& nFileRet, unsigned
     
     // Flush stdio buffers and commit to disk before returning
     fflush(fileout);
-    if (!IsInitialBlockDownload() || (nBestHeight+1) % 500 == 0) {
+    if (!__blockChain->isInitialBlockDownload() || (__blockChain->getBestHeight()+1) % 500 == 0) {
 #ifdef _WIN32
         _commit(_fileno(fileout));
 #else

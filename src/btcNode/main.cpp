@@ -30,19 +30,12 @@ CCriticalSection cs_mapTransactions;
 unsigned int nTransactionsUpdated = 0;
 map<COutPoint, CInPoint> mapNextTx;
 
-map<uint256, CBlockIndex*> mapBlockIndex;
-uint256 hashGenesisBlock("0x000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f");
 CBigNum bnProofOfWorkLimit(~uint256(0) >> 32);
 
 CBlockIndex* pindexGenesisBlock = NULL;
 
-BlockFile __blockFile;
-
-CBigNum bnBestChainWork = 0;
-CBigNum bnBestInvalidWork = 0;
-uint256 hashBestChain = 0;
-CBlockIndex* pindexBest = NULL;
-int64 nTimeBestReceived = 0;
+//BlockFile __blockFile;
+BlockChain* __blockChain;
 
 double dHashesPerSec;
 int64 nHPSTimerStart;
@@ -69,42 +62,6 @@ void Shutdown(void* ptr)
 {
     CMain::instance().shutdown();
 }
-
-
-//////////////////////////////////////////////////////////////////////////////
-//
-// CTransaction and TxIndex
-//
-
-bool CTransaction::ReadFromDisk(CTxDB& txdb, COutPoint prevout, TxIndex& txindexRet)
-{
-    SetNull();
-    if (!txdb.ReadTxIndex(prevout.hash, txindexRet))
-        return false;
-    if (!__blockFile.readFromDisk(*this, txindexRet.getPos()))
-        return false;
-    if (prevout.n >= vout.size())
-    {
-        SetNull();
-        return false;
-    }
-    return true;
-}
-
-bool CTransaction::ReadFromDisk(CTxDB& txdb, COutPoint prevout)
-{
-    TxIndex txindex;
-    return ReadFromDisk(txdb, prevout, txindex);
-}
-
-bool CTransaction::ReadFromDisk(COutPoint prevout)
-{
-    CTxDB txdb("r");
-    TxIndex txindex;
-    return ReadFromDisk(txdb, prevout, txindex);
-}
-
-
 
 
 
@@ -157,7 +114,7 @@ bool CTransaction::CheckTransaction() const
     return true;
 }
 
-bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMissingInputs)
+bool CTransaction::AcceptToMemoryPool(bool fCheckInputs, bool* pfMissingInputs)
 {
     if (pfMissingInputs)
         *pfMissingInputs = false;
@@ -192,7 +149,7 @@ bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMi
         if (mapTransactions.count(hash))
             return false;
     if (fCheckInputs)
-        if (txdb.ContainsTx(hash))
+        if (__blockChain->containsTx(hash))
             return false;
 
     // Check for conflicts with in-memory transactions
@@ -209,7 +166,7 @@ bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMi
             if (i != 0)
                 return false;
             ptxOld = (CTransaction*)mapNextTx[outpoint].ptx;
-            if (ptxOld->IsFinal())
+            if (__blockChain->isFinal(*ptxOld))
                 return false;
             if (!IsNewerThan(*ptxOld))
                 return false;
@@ -228,7 +185,7 @@ bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMi
         // Check against previous transactions
         map<uint256, TxIndex> mapUnused;
         int64 nFees = 0;
-        if (!ConnectInputs(txdb, mapUnused, DiskTxPos(1,1,1), pindexBest, nFees, false, false))
+        if (!__blockChain->connectInputs(*this, mapUnused, DiskTxPos(1,1,1), __blockChain->getBestIndex(), nFees, false, false))
         {
             if (pfMissingInputs)
                 *pfMissingInputs = true;
@@ -285,20 +242,12 @@ bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMi
     return true;
 }
 
-bool CTransaction::AcceptToMemoryPool(bool fCheckInputs, bool* pfMissingInputs)
-{
-    CTxDB txdb("r");
-    return AcceptToMemoryPool(txdb, fCheckInputs, pfMissingInputs);
-}
-
 bool CTransaction::AddToMemoryPoolUnchecked()
 {
     // Add to memory pool without checking anything.  Don't call this directly,
     // call AcceptToMemoryPool to properly check the transaction first.
     
     uint256 hash = GetHash();
-    
-    CTxDB txdb("r");
     
     typedef pair<uint160, unsigned int> AssetPair;
     vector<AssetPair> debits;
@@ -314,7 +263,7 @@ bool CTransaction::AddToMemoryPoolUnchecked()
         {
             const CTxIn& txin = vin[n];
             CTransaction prevtx;
-            if(!txdb.ReadDiskTx(txin.prevout, prevtx))
+            if(!__blockChain->readDiskTx(txin.prevout.hash, prevtx))
                 continue; // OK ???
             CTxOut txout = prevtx.vout[txin.prevout.n];        
             
@@ -346,8 +295,6 @@ bool CTransaction::RemoveFromMemoryPool()
     
     uint256 hash = GetHash();
     
-    CTxDB txdb("r");
-    
     typedef pair<uint160, unsigned int> AssetPair;
     vector<AssetPair> debits;
     vector<AssetPair> credits;
@@ -362,7 +309,7 @@ bool CTransaction::RemoveFromMemoryPool()
         {
             const CTxIn& txin = vin[n];
             CTransaction prevtx;
-            if(!txdb.ReadDiskTx(txin.prevout, prevtx))
+            if(!__blockChain->readDiskTx(txin.prevout.hash, prevtx))
                 continue; // OK ???
             CTxOut txout = prevtx.vout[txin.prevout.n];        
             
@@ -393,149 +340,6 @@ bool CTransaction::RemoveFromMemoryPool()
     }
     return true;
 }
-
-bool CTransaction::DisconnectInputs(CTxDB& txdb)
-{
-    // Relinquish previous transactions' spent pointers
-    if (!IsCoinBase())
-    {
-        BOOST_FOREACH(const CTxIn& txin, vin)
-        {
-            COutPoint prevout = txin.prevout;
-
-            // Get prev txindex from disk
-            TxIndex txindex;
-            if (!txdb.ReadTxIndex(prevout.hash, txindex))
-                return error("DisconnectInputs() : ReadTxIndex failed");
-
-            if (prevout.n >= txindex.getNumSpents())
-                return error("DisconnectInputs() : prevout.n out of range");
-
-            // Mark outpoint as not spent
-            txindex.setNotSpent(prevout.n);
-
-            // Write back
-            if (!txdb.UpdateTxIndex(prevout.hash, txindex))
-                return error("DisconnectInputs() : UpdateTxIndex failed");
-        }
-    }
-
-    // Remove transaction from index
-    if (!txdb.EraseTxIndex(*this))
-        return error("DisconnectInputs() : EraseTxPos failed");
-
-    return true;
-}
-
-
-bool CTransaction::ConnectInputs(CTxDB& txdb, map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx,
-                                 CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee)
-{
-    // Take over previous transactions' spent pointers
-    if (!IsCoinBase())
-    {
-        int64 nValueIn = 0;
-        for (int i = 0; i < vin.size(); i++)
-        {
-            COutPoint prevout = vin[i].prevout;
-
-            // Read txindex
-            TxIndex txindex;
-            bool fFound = true;
-            if ((fBlock || fMiner) && mapTestPool.count(prevout.hash))
-            {
-                // Get txindex from current proposed changes
-                txindex = mapTestPool[prevout.hash];
-            }
-            else
-            {
-                // Read txindex from txdb
-                fFound = txdb.ReadTxIndex(prevout.hash, txindex);
-            }
-            if (!fFound && (fBlock || fMiner))
-                return fMiner ? false : error("ConnectInputs() : %s prev tx %s index entry not found", GetHash().toString().substr(0,10).c_str(),  prevout.hash.toString().substr(0,10).c_str());
-
-            // Read txPrev
-            CTransaction txPrev;
-            if (!fFound || txindex.getPos() == DiskTxPos(1,1,1))
-            {
-                // Get prev tx from single transactions in memory
-                CRITICAL_BLOCK(cs_mapTransactions)
-                {
-                    if (!mapTransactions.count(prevout.hash))
-                        return error("ConnectInputs() : %s mapTransactions prev not found %s", GetHash().toString().substr(0,10).c_str(),  prevout.hash.toString().substr(0,10).c_str());
-                    txPrev = mapTransactions[prevout.hash];
-                }
-                if (!fFound)
-                    txindex.resizeSpents(txPrev.vout.size());
-            }
-            else
-            {
-                // Get prev tx from disk
-                if (!__blockFile.readFromDisk(txPrev, txindex.getPos()))
-                    return error("ConnectInputs() : %s ReadFromDisk prev tx %s failed", GetHash().toString().substr(0,10).c_str(),  prevout.hash.toString().substr(0,10).c_str());
-            }
-
-            if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.getNumSpents())
-                return error("ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", GetHash().toString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.getNumSpents(), prevout.hash.toString().substr(0,10).c_str(), txPrev.toString().c_str());
-
-            // If prev is coinbase, check that it's matured
-            if (txPrev.IsCoinBase())
-                for (CBlockIndex* pindex = pindexBlock; pindex && pindexBlock->nHeight - pindex->nHeight < COINBASE_MATURITY; pindex = pindex->pprev)
-                    if (pindex->nBlockPos == txindex.getPos().getBlockPos() && pindex->nFile == txindex.getPos().getFile())
-                        return error("ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
-
-            // Verify signature
-            if (!VerifySignature(txPrev, *this, i))
-                return error("ConnectInputs() : %s VerifySignature failed", GetHash().toString().substr(0,10).c_str());
-
-            // Check for conflicts
-            if (!txindex.getSpent(prevout.n).isNull())
-                return fMiner ? false : error("ConnectInputs() : %s prev tx already used at %s", GetHash().toString().substr(0,10).c_str(), txindex.getSpent(prevout.n).toString().c_str());
-
-            // Check for negative or overflow input values
-            nValueIn += txPrev.vout[prevout.n].nValue;
-            if (!MoneyRange(txPrev.vout[prevout.n].nValue) || !MoneyRange(nValueIn))
-                return error("ConnectInputs() : txin values out of range");
-
-            // Mark outpoints as spent
-            txindex.setSpent(prevout.n, posThisTx);
-
-            // Write back
-            if (fBlock || fMiner)
-            {
-                mapTestPool[prevout.hash] = txindex;
-            }
-        }
-
-        if (nValueIn < GetValueOut())
-            return error("ConnectInputs() : %s value in < value out", GetHash().toString().substr(0,10).c_str());
-
-        // Tally transaction fees
-        int64 nTxFee = nValueIn - GetValueOut();
-        if (nTxFee < 0)
-            return error("ConnectInputs() : %s nTxFee < 0", GetHash().toString().substr(0,10).c_str());
-        if (nTxFee < nMinFee)
-            return false;
-        nFees += nTxFee;
-        if (!MoneyRange(nFees))
-            return error("ConnectInputs() : nFees out of range");
-    }
-
-    if (fBlock)
-    {
-        // Add transaction to changes
-        mapTestPool[GetHash()] = TxIndex(posThisTx, vout.size());
-    }
-    else if (fMiner)
-    {
-        // Add transaction to test pool
-        mapTestPool[GetHash()] = TxIndex(DiskTxPos(1,1,1), vout.size());
-    }
-
-    return true;
-}
-
 
 bool CTransaction::ClientConnectInputs()
 {
@@ -581,160 +385,6 @@ bool CTransaction::ClientConnectInputs()
 
     return true;
 }
-
-bool LoadBlockIndex(bool fAllowNew)
-{
-    if (fTestNet)
-    {
-        hashGenesisBlock = uint256("0x00000007199508e34a9ff81e6ec0c477a4cccff2a4767a8eee39c11db367b008");
-        bnProofOfWorkLimit = CBigNum(~uint256(0) >> 28);
-        pchMessageStart[0] = 0xfa;
-        pchMessageStart[1] = 0xbf;
-        pchMessageStart[2] = 0xb5;
-        pchMessageStart[3] = 0xda;
-    }
-
-    //
-    // Load block index
-    //
-    CTxDB txdb("cr");
-    if (!txdb.LoadBlockIndex())
-        return false;
-    txdb.Close();
-
-    //
-    // Init with genesis block
-    //
-    if (mapBlockIndex.empty())
-    {
-        if (!fAllowNew)
-            return false;
-
-        // Genesis Block:
-        // Block(hash=000000000019d6, ver=1, hashPrevBlock=00000000000000, hashMerkleRoot=4a5e1e, nTime=1231006505, nBits=1d00ffff, nNonce=2083236893, vtx=1)
-        //   CTransaction(hash=4a5e1e, ver=1, vin.size=1, vout.size=1, nLockTime=0)
-        //     CTxIn(COutPoint(000000, -1), coinbase 04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73)
-        //     CTxOut(nValue=50.00000000, scriptPubKey=0x5F1DF16B2B704C8A578D0B)
-        //   vMerkleTree: 4a5e1e
-
-        // Genesis block
-        const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
-        CTransaction txNew;
-        txNew.vin.resize(1);
-        txNew.vout.resize(1);
-        txNew.vin[0].scriptSig = CScript() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-        txNew.vout[0].nValue = 50 * COIN;
-        txNew.vout[0].scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
-        Block block;
-        if (fTestNet)
-            block = Block(1, 0, 0, 1296688602, 0x1d07fff8, 384568319);
-        else
-            block = Block(1, 0, 0, 1231006505, 0x1d00ffff, 2083236893);
-        block.addTransaction(txNew);
-        block.buildMerkleTree();
-    //block.vtx.push_back(txNew);
-    //block.hashPrevBlock = 0;
-    //block.hashMerkleRoot = block.BuildMerkleTree();
-    //block.nVersion = 1;
-    //block.nTime    = 1231006505;
-    //block.nBits    = 0x1d00ffff;
-    //block.nNonce   = 2083236893;
-
-
-        //// debug print
-        printf("%s\n", block.getHash().toString().c_str());
-        printf("%s\n", hashGenesisBlock.toString().c_str());
-        printf("%s\n", block.getMerkleRoot().toString().c_str());
-        assert(block.getMerkleRoot() == uint256("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
-        block.print();
-        assert(block.getHash() == hashGenesisBlock);
-
-        // Start new block file
-        unsigned int nFile;
-        unsigned int nBlockPos;
-        if (!__blockFile.writeToDisk(block, nFile, nBlockPos))
-            return error("LoadBlockIndex() : writing genesis block to disk failed");
-        if (!block.addToBlockIndex(nFile, nBlockPos))
-            return error("LoadBlockIndex() : genesis block not accepted");
-    }
-
-    return true;
-}
-
-
-
-void PrintBlockTree()
-{
-    // precompute tree structure
-    map<CBlockIndex*, vector<CBlockIndex*> > mapNext;
-    for (map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.begin(); mi != mapBlockIndex.end(); ++mi)
-    {
-        CBlockIndex* pindex = (*mi).second;
-        mapNext[pindex->pprev].push_back(pindex);
-        // test
-        //while (rand() % 3 == 0)
-        //    mapNext[pindex->pprev].push_back(pindex);
-    }
-
-    vector<pair<int, CBlockIndex*> > vStack;
-    vStack.push_back(make_pair(0, pindexGenesisBlock));
-
-    int nPrevCol = 0;
-    while (!vStack.empty())
-    {
-        int nCol = vStack.back().first;
-        CBlockIndex* pindex = vStack.back().second;
-        vStack.pop_back();
-
-        // print split or gap
-        if (nCol > nPrevCol)
-        {
-            for (int i = 0; i < nCol-1; i++)
-                printf("| ");
-            printf("|\\\n");
-        }
-        else if (nCol < nPrevCol)
-        {
-            for (int i = 0; i < nCol; i++)
-                printf("| ");
-            printf("|\n");
-       }
-        nPrevCol = nCol;
-
-        // print columns
-        for (int i = 0; i < nCol; i++)
-            printf("| ");
-
-        // print item
-        Block block;
-        __blockFile.readFromDisk(block, pindex);
-        printf("%d (%u,%u) %s  %s  tx %d",
-            pindex->nHeight,
-            pindex->nFile,
-            pindex->nBlockPos,
-            block.getHash().toString().substr(0,20).c_str(),
-            DateTimeStrFormat("%x %H:%M:%S", block.getBlockTime()).c_str(),
-            block.getNumTransactions());
-
-//        PrintWallets(block);
-
-        // put the main timechain first
-        vector<CBlockIndex*>& vNext = mapNext[pindex];
-        for (int i = 0; i < vNext.size(); i++)
-        {
-            if (vNext[i]->pnext)
-            {
-                swap(vNext[0], vNext[i]);
-                break;
-            }
-        }
-
-        // iterate children
-        for (int i = 0; i < vNext.size(); i++)
-            vStack.push_back(make_pair(nCol+i, vNext[i]));
-    }
-}
-
 
 /*
 
@@ -828,7 +478,7 @@ public:
 
 Block* CreateNewBlock(CReserveKey& reservekey)
 {
-    CBlockIndex* pindexPrev = pindexBest;
+    CBlockIndex* pindexPrev = _bestIndex;
 
     // Create new block
     auto_ptr<Block> pblock(new Block());
@@ -859,7 +509,7 @@ Block* CreateNewBlock(CReserveKey& reservekey)
         for (map<uint256, CTransaction>::iterator mi = mapTransactions.begin(); mi != mapTransactions.end(); ++mi)
         {
             CTransaction& tx = (*mi).second;
-            if (tx.IsCoinBase() || !tx.IsFinal())
+            if (tx.IsCoinBase() || !__blockChain->isFinal(tx))
                 continue;
 
             COrphan* porphan = NULL;
@@ -1089,7 +739,7 @@ void static BitcoinMiner(CWallet *pwallet)
             return;
         if (fShutdown)
             return;
-        while (vNodes.empty() || IsInitialBlockDownload())
+        while (vNodes.empty() || __blockChain->isInitialBlockDownload())
         {
             Sleep(1000);
             if (fShutdown)
@@ -1103,7 +753,7 @@ void static BitcoinMiner(CWallet *pwallet)
         // Create new block
         //
         unsigned int nTransactionsUpdatedLast = nTransactionsUpdated;
-        CBlockIndex* pindexPrev = pindexBest;
+        CBlockIndex* pindexPrev = _bestIndex;
 
         auto_ptr<Block> pblock(CreateNewBlock(reservekey));
         if (!pblock.get())
@@ -1206,7 +856,7 @@ void static BitcoinMiner(CWallet *pwallet)
                 break;
             if (nTransactionsUpdated != nTransactionsUpdatedLast && GetTime() - nStart > 60)
                 break;
-            if (pindexPrev != pindexBest)
+            if (pindexPrev != _bestIndex)
                 break;
 
             // Update nTime every few seconds

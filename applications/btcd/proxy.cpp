@@ -2,8 +2,9 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "btcNode/db.h"
 #include "btcNode/BlockChain.h"
+#include "btcNode/net.h"
+#include "btcNode/main.h"
 
 #include "btc/asset.h"
 
@@ -19,11 +20,9 @@ using namespace json_spirit;
 
 double reliability(uint256 hash) {
     unsigned int confirmations, known_in_nodes, n_nodes;
-    CTxDB txdb("r");
     
-    TxIndex txindex;
-    if(!txdb.ReadTxIndex(hash, txindex)) { // confirmation is 0, check the other maturity
-        confirmations = 0;
+    confirmations = __blockChain->getDepthInMainChain(hash);
+    if (confirmations == 0) { // confirmation is 0, check the other maturity
         Inventory inv(MSG_TX, hash);
         CRITICAL_BLOCK(cs_vNodes)
             {
@@ -41,7 +40,6 @@ double reliability(uint256 hash) {
         n_nodes = vNodes.size();
         known_in_nodes = 0;
         // now get # block the tx is in.
-        confirmations = txindex.getDepthInMainChain();
     }
     
     if(confirmations > 0)
@@ -63,13 +61,10 @@ Value gettxmaturity(const Array& params, bool fHelp)
     
     uint256 hash;
     hash.SetHex(params[0].get_str());
-    
-    CTxDB txdb("r");
-    
-    TxIndex txindex;
-    if(!txdb.ReadTxIndex(hash, txindex)) // confirmation is 0, check the other maturity
+
+    confirmations = __blockChain->getDepthInMainChain(hash);
+    if(confirmations == 0) // confirmation is 0, check the other maturity
     {
-        confirmations = 0;
         Inventory inv(MSG_TX, hash);
         CRITICAL_BLOCK(cs_vNodes)
         {
@@ -88,7 +83,6 @@ Value gettxmaturity(const Array& params, bool fHelp)
         n_nodes = vNodes.size();
         known_in_nodes = 0;
 // now get # block the tx is in.
-        confirmations = txindex.getDepthInMainChain();
     }
 
     Object entry;
@@ -160,32 +154,18 @@ Value GetTxDetails::operator()(const Array& params, bool fHelp) {
     uint256 hash;
     hash.SetHex(params[0].get_str());
     
-    CTxDB txdb("r");
-
     int64 timestamp = 0;
     int64 blockheight = 0;
     
-    TxIndex txindex;
-    if(txdb.ReadTxIndex(hash, txindex)) { // Read block header
-        blockheight = 1 + nBestHeight - txindex.getDepthInMainChain();
-
-        Block block;
-        if (__blockFile.readFromDisk(block, txindex.getPos().getFile(), txindex.getPos().getBlockPos(), false)) {
-        // Find the block in the index
-            timestamp = block.getBlockTime();
-        }
-    }
-
     CTransaction tx;
-    if(!txdb.ReadDiskTx(hash, tx))
-    {
+    if(!__blockChain->readDiskTx(hash, tx, blockheight, timestamp)) {
         CRITICAL_BLOCK(cs_mapTransactions)
         {
-            if(mapTransactions.count(hash))
-                tx = mapTransactions[hash];
-            else
-                throw RPC::error(RPC::invalid_params, "Invalid transaction id");        
-        }
+        if(mapTransactions.count(hash))
+            tx = mapTransactions[hash];
+        else
+            throw RPC::error(RPC::invalid_params, "Invalid transaction id");        
+        }        
     }
 /*    
     CDataStream ss(SER_GETHASH, VERSION);
@@ -213,8 +193,8 @@ Value getvalue(const Array& params, bool fHelp)
     
     CAsset asset;
     asset.addAddress(hash160);
-    CTxDB txdb;
-    CDBAssetSyncronizer sync(txdb);
+    
+    CDBAssetSyncronizer sync(*__blockChain);
     asset.syncronize(sync, true);
     int64 balance = asset.balance();
     
@@ -253,8 +233,8 @@ Value checkvalue(const Array& params, bool fHelp)
 
     CAsset asset;
     asset.addAddress(hash160); // only one address in this asset
-    CTxDB txdb;
-    CDBAssetSyncronizer sync(txdb);
+
+    CDBAssetSyncronizer sync(*__blockChain);
     asset.syncronize(sync, true); // we now have all tx'es (incl those in memory! - we need to sort them according to time)
     
     Coins coins = asset.getCoins();
@@ -263,18 +243,9 @@ Value checkvalue(const Array& params, bool fHelp)
     if(within > 0) { // we only want a subset
         for(Coins::iterator coin = coins.begin(); coin != coins.end(); ++coin) {
             // now get the txes belonging to this coin!
-            TxIndex txindex;
-            if(txdb.ReadTxIndex(coin->first, txindex)) { // Read block header
-                int blockheight = 1 + nBestHeight - txindex.getDepthInMainChain();
-                int64 timestamp = 0;
-                Block block;
-                if (__blockFile.readFromDisk(block, txindex.getPos().getFile(), txindex.getPos().getBlockPos(), false)) {
-                    // Find the block in the index
-                    timestamp = block.getBlockTime();
-                }
-                else
-                    continue;
-                cout << now-timestamp << endl;
+            CTransaction tx;
+            int64 blockheight, timestamp;
+            if(__blockChain->readDiskTx(coin->first, tx, blockheight, timestamp)) {
                 if(now-timestamp < within)
                     coins_within.insert(*coin);
                 else
@@ -335,11 +306,9 @@ Value GetDebit::operator()(const Array& params, bool fHelp) {
     
     uint160 hash160 = CBitcoinAddress(params[0].get_str()).GetHash160();
     
-    CTxDB txdb("r");
-    
     set<Coin> debit;
     
-    txdb.ReadDrIndex(hash160, debit);
+    __blockChain->readDrIndex(hash160, debit);
     
     CRITICAL_BLOCK(cs_mapTransactions)
         if(mapDebits.count(hash160))
@@ -372,11 +341,9 @@ Value GetCredit::operator()(const Array& params, bool fHelp) {
     uint160 hash160 = addr.GetHash160();
         
     
-    CTxDB txdb("r");
-    
     set<Coin> credit;
     
-    txdb.ReadCrIndex(hash160, credit);
+    __blockChain->readCrIndex(hash160, credit);
 
     CRITICAL_BLOCK(cs_mapTransactions)
         if(mapCredits.count(hash160))
@@ -407,8 +374,8 @@ Value getcoins(const Array& params, bool fHelp)
     
     CAsset asset;
     asset.addAddress(hash160);
-    CTxDB txdb;
-    CDBAssetSyncronizer sync(txdb);
+
+    CDBAssetSyncronizer sync(*__blockChain);
     asset.syncronize(sync, true);
     set<Coin> coins = asset.getCoins();
     
@@ -500,13 +467,12 @@ CTx json2tx(Object entry)
 
 int64 CalculateFee(CTx& tx)
 {
-    CTxDB txdb;
     // calculate the inputs:
     int64 value_in = 0;
     for(int i = 0; i < tx.vin.size(); i++)
     {
         CTransaction txin;
-        txdb.ReadDiskTx(tx.vin[i].prevout.hash, txin); // OBS - you need to check also the MemoryPool...
+        __blockChain->readDiskTx(tx.vin[i].prevout.hash, txin); // OBS - you need to check also the MemoryPool...
         if (txin.IsNull()) throw runtime_error("Referred transaction not known : " + tx.vin[i].prevout.hash.toString());
         if (tx.vin[i].prevout.n < txin.vout.size())
             value_in += txin.vout[tx.vin[i].prevout.n].nValue;

@@ -400,7 +400,7 @@ void ThreadIRCSeed2(void* parg)
                 if (DecodeAddress(pszName, endpoint))
                 {
                     endpoint.setTime(GetAdjustedTime());
-                    if (_endpointPool.addEndpoint(endpoint, 51 * 60))
+                    if (_endpointPool->addEndpoint(endpoint, 51 * 60))
                         printf("IRC got new address: %s\n", endpoint.toString().c_str());
                     nGotIREndpointes++;
                 }

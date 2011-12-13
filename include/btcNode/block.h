@@ -2,16 +2,11 @@
 #ifndef BLOCK_H
 #define BLOCK_H
 
-//#include "btc/bignum.h"
-//#include "btc/key.h"
-//#include "btc/script.h"
-//#include "btc/tx.h"
-
-//#include "btcNode/main.h"
-
 #include "btc/uint256.h"
 
 #include <vector>
+
+#include "main.h"
 
 class Block;
 class CBlockIndex;
@@ -23,8 +18,6 @@ class Inventory;
 class CRequestTracker;
 class CNode;
 class CBlockIndex;
-
-class CTransaction;
 
 class CTxDB;
 class TxIndex;
@@ -106,6 +99,7 @@ public:
     void addTransaction(const CTransaction& tx) { _transactions.push_back(tx); }
     size_t getNumTransactions() { return _transactions.size(); }
     const TransactionList getTransactions() const { return _transactions; }
+    CTransaction& getTransaction(size_t i) { return _transactions[i]; }
     
     uint256 buildMerkleTree() const;
 
@@ -115,12 +109,7 @@ public:
 
     void print() const;
 
-    bool disconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
-    bool connectBlock(CTxDB& txdb, CBlockIndex* pindex);
-    bool setBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
-    bool addToBlockIndex(unsigned int nFile, unsigned int nBlockPos);
     bool checkBlock() const;
-    bool acceptBlock();
     
     const int getVersion() const { return _version; }
     

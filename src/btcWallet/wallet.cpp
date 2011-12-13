@@ -842,7 +842,7 @@ void CWallet::ResendWalletTransactions()
 
     // Only do it if there's been a new block since last time
     static int64 nLastTime;
-    if (nTimeBestReceived < nLastTime)
+    if (_bestReceivedTime < nLastTime)
         return;
     nLastTime = GetTime();
 
@@ -858,7 +858,7 @@ void CWallet::ResendWalletTransactions()
             CWalletTx& wtx = item.second;
             // Don't rebroadcast until it's had plenty of time that
             // it should have gotten in already by now.
-            if (nTimeBestReceived - (int64)wtx.nTimeReceived > 5 * 60)
+            if (_bestReceivedTime - (int64)wtx.nTimeReceived > 5 * 60)
                 mapSorted.insert(make_pair(wtx.nTimeReceived, &wtx));
         }
         BOOST_FOREACH(PAIRTYPE(const unsigned int, CWalletTx*)& item, mapSorted)
