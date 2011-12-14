@@ -57,7 +57,7 @@ bool BlockFile::readFromDisk(Block& block, unsigned int nFile, unsigned int nBlo
     filein >> block;
     
     // Check the header
-    if (!CheckProofOfWork(block.getHash(), block.getBits()))
+    if (!Block::CheckProofOfWork(block.getHash(), block.getBits()))
         return error("Block::ReadFromDisk() : errors in block header");
     
     return true;
@@ -77,21 +77,21 @@ bool BlockFile::readFromDisk(Block& block, const CBlockIndex* pindex, bool fRead
     return true;
 }
 
-bool BlockFile::readFromDisk(CTransaction& tx, DiskTxPos pos, FILE** pfileRet)
+bool BlockFile::readFromDisk(Transaction& tx, DiskTxPos pos, FILE** pfileRet)
 {
     CAutoFile filein = openBlockFile(pos.getFile(), 0, pfileRet ? "rb+" : "rb");
     if (!filein)
-        return error("CTransaction::ReadFromDisk() : OpenBlockFile failed");
+        return error("Transaction::ReadFromDisk() : OpenBlockFile failed");
     
     // Read transaction
     if (fseek(filein, pos.getTxPos(), SEEK_SET) != 0)
-        return error("CTransaction::ReadFromDisk() : fseek failed");
+        return error("Transaction::ReadFromDisk() : fseek failed");
     filein >> tx;
     
     // Return file pointer
     if (pfileRet) {
         if (fseek(filein, pos.getTxPos(), SEEK_SET) != 0)
-            return error("CTransaction::ReadFromDisk() : second fseek failed");
+            return error("Transaction::ReadFromDisk() : second fseek failed");
         *pfileRet = filein.release();
     }
     return true;

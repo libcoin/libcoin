@@ -12,22 +12,6 @@
 using namespace std;
 using namespace boost;
 
-bool CheckProofOfWork(uint256 hash, unsigned int nBits)
-{
-    CBigNum bnTarget;
-    bnTarget.SetCompact(nBits);
-
-    // Check range
-    if (bnTarget <= 0 || bnTarget > bnProofOfWorkLimit)
-        return error("CheckProofOfWork() : nBits below minimum work");
-
-    // Check proof of work matches claimed amount
-    if (hash > bnTarget.getuint256())
-        return error("CheckProofOfWork() : hash doesn't match nBits");
-
-    return true;
-}
-
 CBlockIndex::CBlockIndex(unsigned int nFileIn, unsigned int nBlockPosIn, Block& block)
 {
     phashBlock = NULL;
@@ -43,6 +27,10 @@ CBlockIndex::CBlockIndex(unsigned int nFileIn, unsigned int nBlockPosIn, Block& 
     nTime          = block.getTime();
     nBits          = block.getBits();
     nNonce         = block.getNonce();
+}
+
+bool CBlockIndex::CheckIndex() const {
+    return Block::CheckProofOfWork(GetBlockHash(), nBits);
 }
 
 Block CBlockIndex::GetBlockHeader() const

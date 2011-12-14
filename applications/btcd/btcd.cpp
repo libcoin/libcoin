@@ -88,7 +88,7 @@ class CShutdown : public CHandler
         if (fFirstThread)
         {
             fShutdown = true;
-            nTransactionsUpdated++;
+        //            nTransactionsUpdated++; ????
             DBFlush(false);
             StopNode();
             DBFlush(true);

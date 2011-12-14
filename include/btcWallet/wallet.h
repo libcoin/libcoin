@@ -80,9 +80,9 @@ public:
     bool EncryptWallet(const std::string& strWalletPassphrase);
 
     bool AddToWallet(const CWalletTx& wtxIn);
-    bool AddToWalletIfInvolvingMe(const CTransaction& tx, const Block* pblock, bool fUpdate = false);
+    bool AddToWalletIfInvolvingMe(const Transaction& tx, const Block* pblock, bool fUpdate = false);
     bool EraseFromWallet(uint256 hash);
-    void WalletUpdateSpent(const CTransaction& prevout);
+    void WalletUpdateSpent(const Transaction& prevout);
     int ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate = false);
     void ReacceptWalletTransactions();
     void ResendWalletTransactions();
@@ -128,18 +128,18 @@ public:
             throw std::runtime_error("CWallet::GetChange() : value out of range");
         return (IsChange(txout) ? txout.nValue : 0);
     }
-    bool IsMine(const CTransaction& tx) const
+    bool IsMine(const Transaction& tx) const
     {
         BOOST_FOREACH(const CTxOut& txout, tx.vout)
             if (IsMine(txout))
                 return true;
         return false;
     }
-    bool IsFromMe(const CTransaction& tx) const
+    bool IsFromMe(const Transaction& tx) const
     {
         return (GetDebit(tx) > 0);
     }
-    int64 GetDebit(const CTransaction& tx) const
+    int64 GetDebit(const Transaction& tx) const
     {
         int64 nDebit = 0;
         BOOST_FOREACH(const CTxIn& txin, tx.vin)
@@ -150,7 +150,7 @@ public:
         }
         return nDebit;
     }
-    int64 GetCredit(const CTransaction& tx) const
+    int64 GetCredit(const Transaction& tx) const
     {
         int64 nCredit = 0;
         BOOST_FOREACH(const CTxOut& txout, tx.vout)
@@ -161,7 +161,7 @@ public:
         }
         return nCredit;
     }
-    int64 GetChange(const CTransaction& tx) const
+    int64 GetChange(const Transaction& tx) const
     {
         int64 nChange = 0;
         BOOST_FOREACH(const CTxOut& txout, tx.vout)
@@ -243,7 +243,7 @@ public:
 //
 // A transaction with a merkle branch linking it to the block chain
 //
-class CMerkleTx : public CTransaction
+class CMerkleTx : public Transaction
 {
 public:
     uint256 hashBlock;
@@ -259,7 +259,7 @@ public:
     Init();
     }
     
-    CMerkleTx(const CTransaction& txIn) : CTransaction(txIn)
+    CMerkleTx(const Transaction& txIn) : Transaction(txIn)
     {
     Init();
     }
@@ -274,7 +274,7 @@ public:
     
     IMPLEMENT_SERIALIZE
     (
-     nSerSize += SerReadWrite(s, *(CTransaction*)this, nType, nVersion, ser_action);
+     nSerSize += SerReadWrite(s, *(Transaction*)this, nType, nVersion, ser_action);
      nVersion = this->nVersion;
      READWRITE(hashBlock);
      READWRITE(vMerkleBranch);
@@ -340,7 +340,7 @@ public:
         Init(pwalletIn);
     }
 
-    CWalletTx(const CWallet* pwalletIn, const CTransaction& txIn) : CMerkleTx(txIn)
+    CWalletTx(const CWallet* pwalletIn, const Transaction& txIn) : CMerkleTx(txIn)
     {
         Init(pwalletIn);
     }

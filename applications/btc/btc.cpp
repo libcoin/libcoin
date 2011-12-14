@@ -147,7 +147,7 @@ public:
             coins.insert(make_pair(uint256(find_value(it->get_obj(), "hash").get_str()), find_value(it->get_obj(), "n").get_int()));
     }
     
-    virtual void getTransaction(const Coin& coin, CTx& tx)
+    virtual void getTransaction(const Coin& coin, Transaction& tx)
     {
         Array p;
         p.push_back(coin.first.toString());
@@ -669,7 +669,7 @@ Value sendtoaddr(const Array& params, bool fHelp)
     CRPCAssetSyncronizer rpc;
     asset.syncronize(rpc);
 
-    CTx tx;    
+    Transaction tx;    
     set<CAsset::Payment> payments;
     payments.insert(CAsset::Payment(to_address.GetHash160(), amount));
     CBitcoinAddress btcbroker("19bvWMvxddxbDrrN6kXZxqhZsApfVFDxB6");

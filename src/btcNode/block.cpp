@@ -20,7 +20,7 @@ uint256 Block::getHash() const
 int Block::GetSigOpCount() const
 {
     int n = 0;
-    BOOST_FOREACH(const CTransaction& tx, _transactions)
+    BOOST_FOREACH(const Transaction& tx, _transactions)
     n += tx.GetSigOpCount();
     return n;
 }
@@ -28,7 +28,7 @@ int Block::GetSigOpCount() const
 uint256 Block::buildMerkleTree() const
 {
     _merkleTree.clear();
-    BOOST_FOREACH(const CTransaction& tx, _transactions)
+    BOOST_FOREACH(const Transaction& tx, _transactions)
     _merkleTree.push_back(tx.GetHash());
     int j = 0;
     for (int size = _transactions.size(); size > 1; size = (size + 1) / 2) {
@@ -117,7 +117,7 @@ bool Block::checkBlock() const
             return error("CheckBlock() : more than one coinbase");
     
     // Check transactions
-    BOOST_FOREACH(const CTransaction& tx, _transactions)
+    BOOST_FOREACH(const Transaction& tx, _transactions)
     if (!tx.CheckTransaction())
         return error("CheckBlock() : CheckTransaction failed");
     

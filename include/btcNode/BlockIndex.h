@@ -11,8 +11,6 @@
 
 #include <list>
 
-bool CheckProofOfWork(uint256 hash, unsigned int nBits);
-
 class Block;
 
 //
@@ -82,11 +80,8 @@ public:
         return (CBigNum(1)<<256) / (bnTarget+1);
     }
 
-    bool CheckIndex() const
-    {
-        return CheckProofOfWork(GetBlockHash(), nBits);
-    }
-
+    bool CheckIndex() const;
+    
     enum { nMedianTimeSpan=11 };
 
     int64 GetMedianTimePast() const

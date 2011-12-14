@@ -13,7 +13,7 @@
 
 #include <boost/foreach.hpp>
 
-class CTx;
+class Transaction;
 
 enum
 {
@@ -693,12 +693,12 @@ public:
 
 bool Solver(const CScript& scriptPubKey, std::vector<std::pair<opcodetype, std::vector<unsigned char> > >& vSolutionRet);
 
-bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, const CTx& txTo, unsigned int nIn, int nHashType);
+bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, const Transaction& txTo, unsigned int nIn, int nHashType);
 
 bool IsStandard(const CScript& scriptPubKey);
 bool IsMine(const CKeyStore& keystore, const CScript& scriptPubKey);
 bool ExtractAddress(const CScript& scriptPubKey, const CKeyStore* pkeystore, CBitcoinAddress& addressRet);
-bool SignSignature(const CKeyStore& keystore, const CTx& txFrom, CTx& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL, CScript scriptPrereq=CScript());
-bool VerifySignature(const CTx& txFrom, const CTx& txTo, unsigned int nIn, int nHashType=0);
+bool SignSignature(const CKeyStore& keystore, const Transaction& txFrom, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL, CScript scriptPrereq=CScript());
+bool VerifySignature(const Transaction& txFrom, const Transaction& txTo, unsigned int nIn, int nHashType=0);
 
 #endif

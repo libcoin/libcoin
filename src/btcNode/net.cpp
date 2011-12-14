@@ -119,7 +119,7 @@ multimap<uint256, CDataStream*> mapOrphanTransactionsByPrev;
 
 void static AddOrphanTx(const CDataStream& vMsg)
 {
-    CTransaction tx;
+    Transaction tx;
     CDataStream(vMsg) >> tx;
     uint256 hash = tx.GetHash();
     if (mapOrphanTransactions.count(hash))
@@ -134,7 +134,7 @@ void static EraseOrphanTx(uint256 hash)
     if (!mapOrphanTransactions.count(hash))
         return;
     const CDataStream* pvMsg = mapOrphanTransactions[hash];
-    CTransaction tx;
+    Transaction tx;
     CDataStream(*pvMsg) >> tx;
     BOOST_FOREACH(const CTxIn& txin, tx.vin)
     {
@@ -164,8 +164,8 @@ bool static AlreadyHave(const Inventory& inv)
 {
     switch (inv.getType())
     {
-        case MSG_TX:    return mapTransactions.count(inv.getHash()) || mapOrphanTransactions.count(inv.getHash()) || __blockChain->containsTx(inv.getHash());
-        case MSG_BLOCK: return __blockChain->containsBlock(inv.getHash()) || mapOrphanBlocks.count(inv.getHash());
+        case MSG_TX:    return mapOrphanTransactions.count(inv.getHash()) || __blockChain->haveTx(inv.getHash());
+        case MSG_BLOCK: return __blockChain->haveBlock(inv.getHash()) || mapOrphanBlocks.count(inv.getHash());
     }
     // Don't know what it is, just say we already got one
     return true;
@@ -180,7 +180,7 @@ bool static ProcessBlock(CNode* pfrom, Block* pblock)
 {
     // Check for duplicate
     uint256 hash = pblock->getHash();
-    if (__blockChain->containsBlock(hash))
+    if (__blockChain->haveBlock(hash))
         return error("ProcessBlock() : already have block %d %s", __blockChain->getBlockIndex(hash)->nHeight, hash.toString().substr(0,20).c_str());
     if (mapOrphanBlocks.count(hash))
         return error("ProcessBlock() : already have block (orphan) %s", hash.toString().substr(0,20).c_str());
@@ -190,7 +190,7 @@ bool static ProcessBlock(CNode* pfrom, Block* pblock)
         return error("ProcessBlock() : CheckBlock FAILED");
     
     // If don't already have its previous block, shunt it off to holding area until we get it
-    if (!__blockChain->containsBlock(pblock->getPrevBlock()))
+    if (!__blockChain->haveBlock(pblock->getPrevBlock()))
     {
         printf("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->getPrevBlock().toString().substr(0,20).c_str());
         Block* pblock2 = new Block(*pblock);
@@ -239,7 +239,6 @@ unsigned char pchMessageStart[4] = { 0xf9, 0xbe, 0xb4, 0xd9 };
 bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
 {
     CNode* pfrom = this;
-    static map<unsigned int, vector<unsigned char> > mapReuseKey;
     RandAddSeedPerfmon();
     if (fDebug)
         printf("%s ", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());
@@ -456,7 +455,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
             if (inv.getType() == MSG_BLOCK) {
                 // Send block from disk
                 Block block;
-                __blockChain->readBlock(inv.getHash(), block);
+                __blockChain->getBlock(inv.getHash(), block);
                 if (!block.isNull()) {
                     pfrom->PushMessage("block", block);
                     
@@ -514,7 +513,7 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
             }
             pfrom->PushInventory(Inventory(MSG_BLOCK, pindex->GetBlockHash()));
             Block block;
-            __blockChain->readBlock(pindex->GetBlockHash(), block);
+            __blockChain->getBlock(pindex->GetBlockHash(), block);
             nBytes += block.GetSerializeSize(SER_NETWORK);
             if (--nLimit <= 0 || nBytes >= SendBufferSize()/2)
             {
@@ -565,14 +564,14 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
     {
         vector<uint256> vWorkQueue;
         CDataStream vMsg(vRecv);
-        CTransaction tx;
+        Transaction tx;
         vRecv >> tx;
         
         Inventory inv(MSG_TX, tx.GetHash());
         pfrom->AddInventoryKnown(inv);
         
         bool fMissingInputs = false;
-        if (tx.AcceptToMemoryPool(true, &fMissingInputs))
+        if (__blockChain->acceptTransaction(tx, fMissingInputs))
         {
             //            SyncWithWallets(tx, NULL, true);
             RelayMessage(inv, vMsg);
@@ -588,11 +587,11 @@ bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
                      ++mi)
                 {
                     const CDataStream& vMsg = *((*mi).second);
-                    CTransaction tx;
+                    Transaction tx;
                     CDataStream(vMsg) >> tx;
                     Inventory inv(MSG_TX, tx.GetHash());
                     
-                    if (tx.AcceptToMemoryPool(true))
+                    if (__blockChain->acceptTransaction(tx))
                     {
                         printf("   accepted orphan tx %s\n", inv.getHash().toString().substr(0,10).c_str());
                         //                        SyncWithWallets(tx, NULL, true);
@@ -814,10 +813,10 @@ void ResendBrokerTransactions()
     // Rebroadcast any of our txes that aren't in a block yet, if we have reached 100 confirmations forget about it
     printf("ResendBrokerTransactions()\n");
     CBrokerDB brokerdb;
-    map<uint256, CTx> txes;
+    map<uint256, Transaction> txes;
     brokerdb.LoadTxes(txes);
     
-    for(map<uint256, CTx>::iterator it = txes.begin(); it != txes.end(); ++it) {
+    for(map<uint256, Transaction>::iterator it = txes.begin(); it != txes.end(); ++it) {
         int depth = __blockChain->getDepthInMainChain(it->first);
         if (depth > 0) {
             if(depth > 100)
@@ -2375,7 +2374,7 @@ bool StopNode()
 {
     printf("StopNode()\n");
     fShutdown = true;
-    nTransactionsUpdated++;
+    //    nTransactionsUpdated++; ?????
     int64 nStart = GetTime();
     while (vnThreadsRunning[0] > 0 || vnThreadsRunning[2] > 0 || vnThreadsRunning[3] > 0 || vnThreadsRunning[4] > 0
 #ifdef USE_UPNP

@@ -18,7 +18,7 @@ public:
     virtual void getDebitCoins(uint160 btc, Coins& coins) = 0;
     virtual void getCoins(uint160 btc, Coins& coins) = 0;
     
-    virtual void getTransaction(const Coin& coin, CTx&) = 0;
+    virtual void getTransaction(const Coin& coin, Transaction&) = 0;
 };
 
 class CAsset;
@@ -27,7 +27,7 @@ class CAsset : public CKeyStore
 {
 public:
     //    typedef COutPoint Coin;
-    typedef std::map<uint256, CTx> TxCache;
+    typedef std::map<uint256, Transaction> TxCache;
     typedef std::set<uint256> TxSet;
     typedef std::map<uint160, CKey> KeyMap;
 private:
@@ -52,7 +52,7 @@ public:
     //    virtual bool GetPubKey(const CBitcoinAddress &address, std::vector<unsigned char>& vchPubKeyOut) const
     //    virtual std::vector<unsigned char> GenerateNewKey();
     
-    const CTx& getTx(uint256 hash) const;
+    const Transaction& getTx(uint256 hash) const;
     
     uint160 getAddress(const CTxOut& out);
     
@@ -81,9 +81,9 @@ public:
     int64 spendable_balance();
     
     typedef std::pair<uint160, int64> Payment;
-    CTx generateTx(std::set<Payment> payments, uint160 changeaddr = 0);
+    Transaction generateTx(std::set<Payment> payments, uint160 changeaddr = 0);
     
-    CTx generateTx(uint160 to, int64 amount, uint160 change = 0);
+    Transaction generateTx(uint160 to, int64 amount, uint160 change = 0);
 };
 
 #endif

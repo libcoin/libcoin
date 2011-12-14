@@ -29,16 +29,16 @@ static const int COINBASE_MATURITY = 100;
 // Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp.
 static const int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 
-class CTx;
+class Transaction;
 
 class CInPoint
 {
 public:
-    CTx* ptx;
+    Transaction* ptx;
     unsigned int n;
 
     CInPoint() { SetNull(); }
-    CInPoint(CTx* ptxIn, unsigned int nIn) { ptx = ptxIn; n = nIn; }
+    CInPoint(Transaction* ptxIn, unsigned int nIn) { ptx = ptxIn; n = nIn; }
     void SetNull() { ptx = NULL; n = -1; }
     bool IsNull() const { return (ptx == NULL && n == -1); }
 };
@@ -234,7 +234,7 @@ public:
 // The basic transaction that is broadcasted on the network and contained in
 // blocks.  A transaction can contain multiple inputs and outputs.
 //
-class CTx
+class Transaction
 {
 public:
     int nVersion;
@@ -243,7 +243,7 @@ public:
     unsigned int nLockTime;
 
 
-    CTx()
+    Transaction()
     {
         SetNull();
     }
@@ -275,7 +275,7 @@ public:
         return SerializeHash(*this);
     }
 
-    bool IsNewerThan(const CTx& old) const
+    bool IsNewerThan(const Transaction& old) const
     {
         if (vin.size() != old.vin.size())
             return false;
@@ -337,7 +337,7 @@ public:
         {
             nValueOut += txout.nValue;
             if (!MoneyRange(txout.nValue) || !MoneyRange(nValueOut))
-                throw std::runtime_error("CTx::GetValueOut() : value out of range");
+                throw std::runtime_error("Transaction::GetValueOut() : value out of range");
         }
         return nValueOut;
     }
@@ -406,7 +406,7 @@ public:
         return nMinFee;
     }
 
-    friend bool operator==(const CTx& a, const CTx& b)
+    friend bool operator==(const Transaction& a, const Transaction& b)
     {
         return (a.nVersion  == b.nVersion &&
                 a.vin       == b.vin &&
@@ -414,7 +414,7 @@ public:
                 a.nLockTime == b.nLockTime);
     }
 
-    friend bool operator!=(const CTx& a, const CTx& b)
+    friend bool operator!=(const Transaction& a, const Transaction& b)
     {
         return !(a == b);
     }
@@ -423,7 +423,7 @@ public:
     std::string toString() const
     {
         std::string str;
-        str += strprintf("CTransaction(hash=%s, ver=%d, vin.size=%d, vout.size=%d, nLockTime=%d)\n",
+        str += strprintf("Transaction(hash=%s, ver=%d, vin.size=%d, vout.size=%d, nLockTime=%d)\n",
             GetHash().toString().substr(0,10).c_str(),
             nVersion,
             vin.size(),

@@ -13,7 +13,7 @@
 using namespace std;
 using namespace boost;
 
-bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CScript scriptCode, const CTx& txTo, unsigned int nIn, int nHashType);
+bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CScript scriptCode, const Transaction& txTo, unsigned int nIn, int nHashType);
 
 
 
@@ -76,7 +76,7 @@ static inline void popstack(vector<valtype>& stack)
 }
 
 
-bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, const CTx& txTo, unsigned int nIn, int nHashType)
+bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, const Transaction& txTo, unsigned int nIn, int nHashType)
 {
     CAutoBN_CTX pctx;
     CScript::const_iterator pc = script.begin();
@@ -879,14 +879,14 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, co
 
 
 
-uint256 SignatureHash(CScript scriptCode, const CTx& txTo, unsigned int nIn, int nHashType)
+uint256 SignatureHash(CScript scriptCode, const Transaction& txTo, unsigned int nIn, int nHashType)
 {
     if (nIn >= txTo.vin.size())
     {
         printf("ERROR: SignatureHash() : nIn=%d out of range\n", nIn);
         return 1;
     }
-    CTx txTmp(txTo);
+    Transaction txTmp(txTo);
 
     // In case concatenating two scripts ends up with two codeseparators,
     // or an extra one at the end, this prevents all those possible incompatibilities.
@@ -955,7 +955,7 @@ uint256 SignatureHash(CScript scriptCode, const CTx& txTo, unsigned int nIn, int
 
 
 bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CScript scriptCode,
-              const CTx& txTo, unsigned int nIn, int nHashType)
+              const Transaction& txTo, unsigned int nIn, int nHashType)
 {
     CKey key;
     if (!key.SetPubKey(vchPubKey))
@@ -1164,7 +1164,7 @@ bool ExtractAddress(const CScript& scriptPubKey, const CKeyStore* keystore, CBit
 }
 
 
-bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CTx& txTo, unsigned int nIn, int nHashType)
+bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const Transaction& txTo, unsigned int nIn, int nHashType)
 {
     vector<vector<unsigned char> > stack;
     if (!EvalScript(stack, scriptSig, txTo, nIn, nHashType))
@@ -1177,7 +1177,7 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
 }
 
 
-bool SignSignature(const CKeyStore &keystore, const CTx& txFrom, CTx& txTo, unsigned int nIn, int nHashType, CScript scriptPrereq)
+bool SignSignature(const CKeyStore &keystore, const Transaction& txFrom, Transaction& txTo, unsigned int nIn, int nHashType, CScript scriptPrereq)
 {
     assert(nIn < txTo.vin.size());
     CTxIn& txin = txTo.vin[nIn];
@@ -1202,7 +1202,7 @@ bool SignSignature(const CKeyStore &keystore, const CTx& txFrom, CTx& txTo, unsi
 }
 
 
-bool VerifySignature(const CTx& txFrom, const CTx& txTo, unsigned int nIn, int nHashType)
+bool VerifySignature(const Transaction& txFrom, const Transaction& txTo, unsigned int nIn, int nHashType)
 {
     assert(nIn < txTo.vin.size());
     const CTxIn& txin = txTo.vin[nIn];

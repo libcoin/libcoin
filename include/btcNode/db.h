@@ -259,9 +259,9 @@ private:
     CBrokerDB(const CBrokerDB&);
     void operator=(const CBrokerDB&);
 public:
-    bool WriteTx(const CTx& addr);
-    bool EraseTx(const CTx& addr);
-    bool LoadTxes(std::map<uint256, CTx>& txes);
+    bool WriteTx(const Transaction& addr);
+    bool EraseTx(const Transaction& addr);
+    bool LoadTxes(std::map<uint256, Transaction>& txes);
 };
 
 enum DBErrors

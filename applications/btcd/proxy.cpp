@@ -93,7 +93,7 @@ Value gettxmaturity(const Array& params, bool fHelp)
     return entry;
 }
 
-Object tx2json(CTx &tx, int64 timestamp = 0, int64 blockheight = 0)
+Object tx2json(Transaction &tx, int64 timestamp = 0, int64 blockheight = 0)
 {
     Object entry;
     
@@ -157,25 +157,10 @@ Value GetTxDetails::operator()(const Array& params, bool fHelp) {
     int64 timestamp = 0;
     int64 blockheight = 0;
     
-    CTransaction tx;
-    if(!__blockChain->readDiskTx(hash, tx, blockheight, timestamp)) {
-        CRITICAL_BLOCK(cs_mapTransactions)
-        {
-        if(mapTransactions.count(hash))
-            tx = mapTransactions[hash];
-        else
-            throw RPC::error(RPC::invalid_params, "Invalid transaction id");        
-        }        
-    }
-/*    
-    CDataStream ss(SER_GETHASH, VERSION);
-    ss.reserve(10000);
-    ss << tx;
-
-    for(int i = 0; i < ss.size(); i++)
-        cout << (int)(unsigned char)ss[i] << ",";
-    cout << endl;
-*/    
+    Transaction tx;
+    __blockChain->getTransaction(hash, tx, blockheight, timestamp);
+    if(tx.IsNull())
+        throw RPC::error(RPC::invalid_params, "Invalid transaction id");        
     
     Object entry = tx2json(tx, timestamp, blockheight);
     
@@ -243,23 +228,11 @@ Value checkvalue(const Array& params, bool fHelp)
     if(within > 0) { // we only want a subset
         for(Coins::iterator coin = coins.begin(); coin != coins.end(); ++coin) {
             // now get the txes belonging to this coin!
-            CTransaction tx;
+            Transaction tx;
             int64 blockheight, timestamp;
-            if(__blockChain->readDiskTx(coin->first, tx, blockheight, timestamp)) {
-                if(now-timestamp < within)
-                    coins_within.insert(*coin);
-                else
-                    continue;
-            }
-            else { // this is a memory tx
-                   // does memory txes have a timestamp ? // nope - until we have a proper interface we will assume that all keys in memory are within the timeinterval (which should hence be larger than 10 minutes...)
-                if(mapTransactions.count(coin->first)) {
-                    coins_within.insert(*coin);
-                }
-                else
-                    continue;
-                
-            }
+            __blockChain->getTransaction(coin->first, tx, blockheight, timestamp);
+            if(timestamp < 0 || now-timestamp < within) // if in memory tx (timestamp<0) OR time is within...
+                coins_within.insert(*coin);
         }
     }
     else {
@@ -308,12 +281,8 @@ Value GetDebit::operator()(const Array& params, bool fHelp) {
     
     set<Coin> debit;
     
-    __blockChain->readDrIndex(hash160, debit);
+    __blockChain->getDebit(hash160, debit);
     
-    CRITICAL_BLOCK(cs_mapTransactions)
-        if(mapDebits.count(hash160))
-            debit.insert(mapDebits[hash160].begin(), mapDebits[hash160].end());
-
     Array list;
     
     for(set<Coin>::iterator coin = debit.begin(); coin != debit.end(); ++coin)
@@ -343,11 +312,7 @@ Value GetCredit::operator()(const Array& params, bool fHelp) {
     
     set<Coin> credit;
     
-    __blockChain->readCrIndex(hash160, credit);
-
-    CRITICAL_BLOCK(cs_mapTransactions)
-        if(mapCredits.count(hash160))
-            credit.insert(mapCredits[hash160].begin(), mapCredits[hash160].end());
+    __blockChain->getCredit(hash160, credit);
     
     Array list;
     
@@ -393,9 +358,9 @@ Value getcoins(const Array& params, bool fHelp)
     return list;
 }
 
-CTx json2tx(Object entry)
+Transaction json2tx(Object entry)
 {
-    CTransaction tx;
+    Transaction tx;
     
     // find first the version
     tx.nVersion = find_value(entry, "ver").get_int();
@@ -465,14 +430,14 @@ CTx json2tx(Object entry)
     return tx;
 }
 
-int64 CalculateFee(CTx& tx)
+int64 CalculateFee(Transaction& tx)
 {
     // calculate the inputs:
     int64 value_in = 0;
     for(int i = 0; i < tx.vin.size(); i++)
     {
-        CTransaction txin;
-        __blockChain->readDiskTx(tx.vin[i].prevout.hash, txin); // OBS - you need to check also the MemoryPool...
+        Transaction txin;
+        __blockChain->getTransaction(tx.vin[i].prevout.hash, txin); // OBS - you need to check also the MemoryPool...
         if (txin.IsNull()) throw runtime_error("Referred transaction not known : " + tx.vin[i].prevout.hash.toString());
         if (tx.vin[i].prevout.n < txin.vout.size())
             value_in += txin.vout[tx.vin[i].prevout.n].nValue;
@@ -496,7 +461,7 @@ Value posttx(const Array& params, bool fHelp)
     
     Object entry = params[0].get_obj();
     
-    CTransaction tx = json2tx(entry);
+    Transaction tx = json2tx(entry);
     
     cout << write_formatted(tx2json(tx)) << endl;
 
@@ -524,7 +489,7 @@ Value posttx(const Array& params, bool fHelp)
     }
         
     // accept to memory pool
-    if(!tx.AcceptToMemoryPool())
+    if(!__blockChain->acceptTransaction(tx))
     {
         ostringstream err;
         err << "Could not accept transaction - coins already spent?";

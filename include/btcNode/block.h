@@ -35,7 +35,7 @@ class TxIndex;
 // is indexed by CBlockIndex objects in memory.
 //
 
-typedef std::vector<CTransaction> TransactionList;
+typedef std::vector<Transaction> TransactionList;
 typedef std::vector<uint256> MerkleBranch;
 
 class Block
@@ -96,10 +96,10 @@ public:
 
     int GetSigOpCount() const;
 
-    void addTransaction(const CTransaction& tx) { _transactions.push_back(tx); }
+    void addTransaction(const Transaction& tx) { _transactions.push_back(tx); }
     size_t getNumTransactions() { return _transactions.size(); }
     const TransactionList getTransactions() const { return _transactions; }
-    CTransaction& getTransaction(size_t i) { return _transactions[i]; }
+    Transaction& getTransaction(size_t i) { return _transactions[i]; }
     
     uint256 buildMerkleTree() const;
 
@@ -123,6 +123,26 @@ public:
     
     const int getNonce() const { return _nonce; }
     
+    static const CBigNum proofOfWorkLimit() {
+        const CBigNum pwl(~uint256(0) >> 32);
+        const CBigNum pwl_test(~uint256(0) >> 28);
+        return fTestNet ? pwl_test : pwl;
+    }
+    
+    static const bool CheckProofOfWork(uint256 hash, unsigned int nBits) {
+        CBigNum bnTarget;
+        bnTarget.SetCompact(nBits);
+        
+        // Check range
+        if (bnTarget <= 0 || bnTarget > proofOfWorkLimit())
+            return error("CheckProofOfWork() : nBits below minimum work");
+        
+        // Check proof of work matches claimed amount
+        if (hash > bnTarget.getuint256())
+            return error("CheckProofOfWork() : hash doesn't match nBits");
+        
+        return true;
+    }
     
 private:
     // header

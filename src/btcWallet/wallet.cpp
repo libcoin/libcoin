@@ -195,7 +195,7 @@ bool CWallet::EncryptWallet(const string& strWalletPassphrase)
     return true;
 }
 
-void CWallet::WalletUpdateSpent(const CTransaction &tx)
+void CWallet::WalletUpdateSpent(const Transaction &tx)
 {
     // Anytime a signature is successfully verified, it's proof the outpoint is spent.
     // Update the wallet spent flag if it doesn't know due to wallet.dat being
@@ -292,7 +292,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
     return true;
 }
 
-bool CWallet::AddToWalletIfInvolvingMe(const CTransaction& tx, const Block* pblock, bool fUpdate)
+bool CWallet::AddToWalletIfInvolvingMe(const Transaction& tx, const Block* pblock, bool fUpdate)
 {
     uint256 hash = tx.GetHash();
     CRITICAL_BLOCK(cs_wallet)
@@ -370,7 +370,7 @@ void CWallet::Sync() // sync from the start!
             set<std::pair<uint256, unsigned int> > debit;
             txdb.ReadDrIndex((key->first).GetHash160(), debit);
             for (set<std::pair<uint256, unsigned int> >::iterator pair = debit.begin(); pair != debit.end(); ++pair) {
-                CTransaction tx;
+                Transaction tx;
                 txdb.ReadDiskTx(pair->first, tx);
                 cout << "\t" << pair->first.toString() << " - " << pair->second << endl;
                 AddToWalletIfInvolvingMe(tx, NULL);
@@ -378,7 +378,7 @@ void CWallet::Sync() // sync from the start!
             set<std::pair<uint256, unsigned int> > credit;
             txdb.ReadCrIndex((key->first).GetHash160(), credit);
             for (set<std::pair<uint256, unsigned int> >::iterator pair = credit.begin(); pair != credit.end(); ++pair) {
-                CTransaction tx;
+                Transaction tx;
                 txdb.ReadDiskTx(pair->first, tx);
                 cout << "\t" << pair->first.toString() << " - " << pair->second << endl;
                 AddToWalletIfInvolvingMe(tx, NULL);
@@ -433,11 +433,11 @@ bool CMerkleTx::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs)
         {
         if (!IsInMainChain() && !ClientConnectInputs())
             return false;
-        return CTransaction::AcceptToMemoryPool(txdb, false);
+        return Transaction::AcceptToMemoryPool(txdb, false);
         }
     else
         {
-        return CTransaction::AcceptToMemoryPool(txdb, fCheckInputs);
+        return Transaction::AcceptToMemoryPool(txdb, fCheckInputs);
         }
 }
 
@@ -473,7 +473,7 @@ int CMerkleTx::SetMerkleBranch(const Block* pblock)
         
         // Locate the transaction
         for (nIndex = 0; nIndex < pblock->vtx.size(); nIndex++)
-            if (pblock->vtx[nIndex] == *(CTransaction*)this)
+            if (pblock->vtx[nIndex] == *(Transaction*)this)
                 break;
         if (nIndex == pblock->vtx.size())
             {
@@ -705,7 +705,7 @@ int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
         {
             Block block;
             block.ReadFromDisk(pindex, true);
-            BOOST_FOREACH(CTransaction& tx, block.vtx)
+            BOOST_FOREACH(Transaction& tx, block.vtx)
             {
                 if (AddToWalletIfInvolvingMe(tx, &block, fUpdate))
                     ret++;
@@ -794,7 +794,7 @@ void CWallet::ReacceptWalletTransactions()
         if (!vMissingTx.empty())
         {
             // TODO: optimize this to scan just part of the block chain?
-            if (ScanForWalletTransactions(pindexGenesisBlock))
+            if (ScanForWalletTransactions(_genesisBlockIndex))
                 fRepeat = true;  // Found missing transactions: re-do Reaccept.
         }
     }
@@ -808,7 +808,7 @@ void CWalletTx::RelayWalletTransaction(CTxDB& txdb)
         {
             uint256 hash = tx.GetHash();
             if (!txdb.ContainsTx(hash))
-                RelayMessage(Inventory(MSG_TX, hash), (CTransaction)tx);
+                RelayMessage(Inventory(MSG_TX, hash), (Transaction)tx);
         }
     }
     if (!IsCoinBase())
@@ -817,7 +817,7 @@ void CWalletTx::RelayWalletTransaction(CTxDB& txdb)
         if (!txdb.ContainsTx(hash))
         {
             printf("Relaying wtx %s\n", hash.toString().substr(0,10).c_str());
-            RelayMessage(Inventory(MSG_TX, hash), (CTransaction)*this);
+            RelayMessage(Inventory(MSG_TX, hash), (Transaction)*this);
         }
     }
 }
@@ -1145,14 +1145,14 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CW
                         return false;
 
                 // Limit size
-                unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK);
+                unsigned int nBytes = ::GetSerializeSize(*(Transaction*)&wtxNew, SER_NETWORK);
                 if (nBytes >= MAX_BLOCK_SIZE_GEN/5)
                     return false;
                 dPriority /= nBytes;
 
                 // Check that enough fee is included
                 int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
-                bool fAllowFree = CTransaction::AllowFree(dPriority);
+                bool fAllowFree = Transaction::AllowFree(dPriority);
                 int64 nMinFee = wtxNew.GetMinFee(1, fAllowFree);
                 if (nFeeRet < max(nPayFee, nMinFee))
                 {
@@ -1542,7 +1542,7 @@ void UnregisterWallet(CWallet* pwalletIn)
     }
 }
 
-bool static IsFromMe(CTransaction& tx)
+bool static IsFromMe(Transaction& tx)
 {
     BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
     if (pwallet->IsFromMe(tx))
@@ -1564,7 +1564,7 @@ void static EraseFromWallets(uint256 hash)
     pwallet->EraseFromWallet(hash);
 }
 
-void static SyncWithWallets(const CTransaction& tx, const Block* pblock = NULL, bool fUpdate = false)
+void static SyncWithWallets(const Transaction& tx, const Block* pblock = NULL, bool fUpdate = false)
 {
     BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
     pwallet->AddToWalletIfInvolvingMe(tx, pblock, fUpdate);

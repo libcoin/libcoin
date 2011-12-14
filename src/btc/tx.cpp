@@ -49,31 +49,31 @@ uint160 CTxOut::getAsset() const
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// CTx
+// Transaction
 //
 
-bool CTx::CheckTransaction() const
+bool Transaction::CheckTransaction() const
 {
     // Basic checks that don't depend on any context
     if (vin.empty())
-        return error("CTransaction::CheckTransaction() : vin empty");
+        return error("Transaction::CheckTransaction() : vin empty");
     if (vout.empty())
-        return error("CTransaction::CheckTransaction() : vout empty");
+        return error("Transaction::CheckTransaction() : vout empty");
     // Size limits
     if (::GetSerializeSize(*this, SER_NETWORK) > MAX_BLOCK_SIZE)
-        return error("CTransaction::CheckTransaction() : size limits failed");
+        return error("Transaction::CheckTransaction() : size limits failed");
 
     // Check for negative or overflow output values
     int64 nValueOut = 0;
     BOOST_FOREACH(const CTxOut& txout, vout)
     {
         if (txout.nValue < 0)
-            return error("CTransaction::CheckTransaction() : txout.nValue negative");
+            return error("Transaction::CheckTransaction() : txout.nValue negative");
         if (txout.nValue > MAX_MONEY)
-            return error("CTransaction::CheckTransaction() : txout.nValue too high");
+            return error("Transaction::CheckTransaction() : txout.nValue too high");
         nValueOut += txout.nValue;
         if (!MoneyRange(nValueOut))
-            return error("CTransaction::CheckTransaction() : txout total out of range");
+            return error("Transaction::CheckTransaction() : txout total out of range");
     }
 
     // Check for duplicate inputs
@@ -88,13 +88,13 @@ bool CTx::CheckTransaction() const
     if (IsCoinBase())
     {
         if (vin[0].scriptSig.size() < 2 || vin[0].scriptSig.size() > 100)
-            return error("CTransaction::CheckTransaction() : coinbase script size");
+            return error("Transaction::CheckTransaction() : coinbase script size");
     }
     else
     {
         BOOST_FOREACH(const CTxIn& txin, vin)
             if (txin.prevout.IsNull())
-                return error("CTransaction::CheckTransaction() : prevout is null");
+                return error("Transaction::CheckTransaction() : prevout is null");
     }
 
     return true;

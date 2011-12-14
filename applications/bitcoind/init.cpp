@@ -495,7 +495,7 @@ bool AppInit2(int argc, char* argv[])
 
     CBlockIndex *pindexRescan = _bestIndex;
     if (GetBoolArg("-rescan"))
-        pindexRescan = pindexGenesisBlock;
+        pindexRescan = _genesisBlockIndex;
     else
     {
         CWalletDB walletdb("wallet.dat");
