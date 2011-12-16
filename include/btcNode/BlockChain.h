@@ -189,7 +189,7 @@ public:
     bool acceptBlock(Block& block);
     
     /// Locate blocks in the block chain
-    CBlockLocator blockLocator(uint256 hashBlock);
+    //CBlockLocator blockLocator(uint256 hashBlock);
     
     int getDistanceBack(const CBlockLocator& locator);
 

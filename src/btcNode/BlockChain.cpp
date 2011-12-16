@@ -236,6 +236,7 @@ bool BlockChain::isInitialBlockDownload()
 }
 
 // BlockLocator interface
+/*
 CBlockLocator BlockChain::blockLocator(uint256 hashBlock)
 {
     CBlockLocator locator;
@@ -244,7 +245,7 @@ CBlockLocator BlockChain::blockLocator(uint256 hashBlock)
         locator.Set((*mi).second);
     return locator;
 }
-
+*/
 int BlockChain::getDistanceBack(const CBlockLocator& locator)
 {
     // Retrace how far back it was in the sender's branch

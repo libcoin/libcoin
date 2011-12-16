@@ -19,9 +19,15 @@ SET(TARGET_H
     ${HEADER_PATH}/BlockIndex.h
     ${HEADER_PATH}/BlockFile.h
     ${HEADER_PATH}/BlockChain.h
-    ${HEADER_PATH}/Inventory.h
+    ${HEADER_PATH}/Inventory.h    
     ${HEADER_PATH}/Endpoint.h
     ${HEADER_PATH}/EndpointPool.h
+    ${HEADER_PATH}/Filter.h
+    ${HEADER_PATH}/TransactionFilter.h
+    ${HEADER_PATH}/BlockFilter.h
+    ${HEADER_PATH}/EndpointFilter.h
+    ${HEADER_PATH}/VersionFilter.h
+    ${HEADER_PATH}/AlertFilter.h
     ${HEADER_PATH}/MessageHeader.h
     ${HEADER_PATH}/MessageHandler.h
     ${HEADER_PATH}/MessageParser.h
@@ -47,6 +53,11 @@ SET(TARGET_SRC
     Inventory.cpp
     Endpoint.cpp
     EndpointPool.cpp
+    TransactionFilter.cpp
+    BlockFilter.cpp
+    EndpointFilter.cpp
+    VersionFilter.cpp
+    AlertFilter.cpp
     MessageHeader.cpp
     MessageHandler.cpp
     MessageParser.cpp

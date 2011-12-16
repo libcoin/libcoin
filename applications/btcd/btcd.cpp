@@ -9,6 +9,13 @@
 #include "btcNode/net.h"
 #include "btcNode/main.h"
 
+#include "btcNode/MessageHandler.h"
+#include "btcNode/VersionFilter.h"
+#include "btcNode/EndpointFilter.h"
+#include "btcNode/BlockFilter.h"
+#include "btcNode/TransactionFilter.h"
+#include "btcNode/AlertFilter.h"
+
 #include "btcHTTP/Server.h"
 
 #include "proxy.h"
@@ -424,6 +431,14 @@ bool AppInit2(int argc, char* argv[])
     if (!__blockChain->load())
         strErrors += _("Error loading blkindex.dat      \n");
     printf(" block index %15"PRI64d"ms\n", GetTimeMillis() - nStart);
+    
+    _msgHandler = new MessageHandler;
+    _msgHandler->installFilter(filter_ptr(new VersionFilter));
+    _msgHandler->installFilter(filter_ptr(new EndpointFilter(*_endpointPool)));
+    _msgHandler->installFilter(filter_ptr(new BlockFilter(*__blockChain)));
+    _msgHandler->installFilter(filter_ptr(new TransactionFilter(*__blockChain)));
+    _msgHandler->installFilter(filter_ptr(new AlertFilter));
+    
     
     printf("Done loading\n");
 

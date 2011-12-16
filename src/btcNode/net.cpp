@@ -12,6 +12,7 @@
 #include "btcNode/Alert.h"
 #include "btcNode/BlockChain.h"
 #include "btcNode/Block.h"
+#include "btcNode/MessageHandler.h"
 
 #include "btc/strlcpy.h"
 
@@ -85,7 +86,6 @@ static SOCKET hListenSocket = INVALID_SOCKET;
 
 vector<CNode*> vNodes;
 CCriticalSection cs_vNodes;
-//map<vector<unsigned char>, Endpoint> mapAddresses;
 EndpointPool* _endpointPool;
 CCriticalSection cs_mapAddresses;
 map<Inventory, CDataStream> mapRelay;
@@ -106,572 +106,15 @@ unsigned short GetListenPort()
     return (unsigned short)(GetArg("-port", getDefaultPort()));
 }
 
-//////////////////////////////////////////////////////////////////////////////
-//
-// mapOrphanTransactions
-//
-
-map<uint256, Block*> mapOrphanBlocks;
-multimap<uint256, Block*> mapOrphanBlocksByPrev;
-
-map<uint256, CDataStream*> mapOrphanTransactions;
-multimap<uint256, CDataStream*> mapOrphanTransactionsByPrev;
-
-void static AddOrphanTx(const CDataStream& vMsg)
-{
-    Transaction tx;
-    CDataStream(vMsg) >> tx;
-    uint256 hash = tx.GetHash();
-    if (mapOrphanTransactions.count(hash))
-        return;
-    CDataStream* pvMsg = mapOrphanTransactions[hash] = new CDataStream(vMsg);
-    BOOST_FOREACH(const CTxIn& txin, tx.vin)
-    mapOrphanTransactionsByPrev.insert(make_pair(txin.prevout.hash, pvMsg));
-}
-
-void static EraseOrphanTx(uint256 hash)
-{
-    if (!mapOrphanTransactions.count(hash))
-        return;
-    const CDataStream* pvMsg = mapOrphanTransactions[hash];
-    Transaction tx;
-    CDataStream(*pvMsg) >> tx;
-    BOOST_FOREACH(const CTxIn& txin, tx.vin)
-    {
-        for (multimap<uint256, CDataStream*>::iterator mi = mapOrphanTransactionsByPrev.lower_bound(txin.prevout.hash);
-             mi != mapOrphanTransactionsByPrev.upper_bound(txin.prevout.hash);)
-        {
-            if ((*mi).second == pvMsg)
-                mapOrphanTransactionsByPrev.erase(mi++);
-            else
-                mi++;
-        }
-    }
-    delete pvMsg;
-    mapOrphanTransactions.erase(hash);
-}
-
-uint256 static GetOrphanRoot(const Block* pblock)
-{
-    // Work back to the first block in the orphan chain
-    while (mapOrphanBlocks.count(pblock->getPrevBlock()))
-        pblock = mapOrphanBlocks[pblock->getPrevBlock()];
-    return pblock->getHash();
-}
-
-
-bool static AlreadyHave(const Inventory& inv)
-{
-    switch (inv.getType())
-    {
-        case MSG_TX:    return mapOrphanTransactions.count(inv.getHash()) || __blockChain->haveTx(inv.getHash());
-        case MSG_BLOCK: return __blockChain->haveBlock(inv.getHash()) || mapOrphanBlocks.count(inv.getHash());
-    }
-    // Don't know what it is, just say we already got one
-    return true;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-//
-// Messages
-//
-
-bool static ProcessBlock(CNode* pfrom, Block* pblock)
-{
-    // Check for duplicate
-    uint256 hash = pblock->getHash();
-    if (__blockChain->haveBlock(hash))
-        return error("ProcessBlock() : already have block %d %s", __blockChain->getBlockIndex(hash)->nHeight, hash.toString().substr(0,20).c_str());
-    if (mapOrphanBlocks.count(hash))
-        return error("ProcessBlock() : already have block (orphan) %s", hash.toString().substr(0,20).c_str());
-    
-    // Preliminary checks
-    if (!pblock->checkBlock())
-        return error("ProcessBlock() : CheckBlock FAILED");
-    
-    // If don't already have its previous block, shunt it off to holding area until we get it
-    if (!__blockChain->haveBlock(pblock->getPrevBlock()))
-    {
-        printf("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->getPrevBlock().toString().substr(0,20).c_str());
-        Block* pblock2 = new Block(*pblock);
-        mapOrphanBlocks.insert(make_pair(hash, pblock2));
-        mapOrphanBlocksByPrev.insert(make_pair(pblock2->getPrevBlock(), pblock2));
-        
-        // Ask this guy to fill in what we're missing
-        if (pfrom)
-            pfrom->PushGetBlocks(__blockChain->getBestIndex(), GetOrphanRoot(pblock2));
-        return true;
-    }
-    
-    // Store to disk
-    if (!__blockChain->acceptBlock(*pblock))
-        return error("ProcessBlock() : AcceptBlock FAILED");
-    
-    // Recursively process any orphan blocks that depended on this one
-    vector<uint256> vWorkQueue;
-    vWorkQueue.push_back(hash);
-    for (int i = 0; i < vWorkQueue.size(); i++)
-    {
-        uint256 hashPrev = vWorkQueue[i];
-        for (multimap<uint256, Block*>::iterator mi = mapOrphanBlocksByPrev.lower_bound(hashPrev);
-             mi != mapOrphanBlocksByPrev.upper_bound(hashPrev);
-             ++mi)
-        {
-            Block* pblockOrphan = (*mi).second;
-            if (__blockChain->acceptBlock(*pblockOrphan))
-                vWorkQueue.push_back(pblockOrphan->getHash());
-            mapOrphanBlocks.erase(pblockOrphan->getHash());
-            delete pblockOrphan;
-        }
-        mapOrphanBlocksByPrev.erase(hashPrev);
-    }
-    
-    printf("ProcessBlock: ACCEPTED\n");
-    return true;
-}
-
 // The message start string is designed to be unlikely to occur in normal data.
 // The characters are rarely used upper ascii, not valid as UTF-8, and produce
 // a large 4-byte int at any alignment.
 unsigned char pchMessageStart[4] = { 0xf9, 0xbe, 0xb4, 0xd9 };
 
 
-bool CNode::ProcessMessage(string strCommand, CDataStream& vRecv)
-{
-    CNode* pfrom = this;
-    RandAddSeedPerfmon();
-    if (fDebug)
-        printf("%s ", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());
-    printf("received: %s (%d bytes)\n", strCommand.c_str(), vRecv.size());
-    if (mapArgs.count("-dropmessagestest") && GetRand(atoi(mapArgs["-dropmessagestest"])) == 0)
-    {
-        printf("dropmessagestest DROPPING RECV MESSAGE\n");
-        return true;
-    }
-    
-    if (strCommand == "version")
-    {
-        // Each connection can only send one version message
-        if (pfrom->nVersion != 0)
-            return false;
-        
-        int64 nTime;
-        Endpoint addrMe;
-        Endpoint addrFrom;
-        uint64 nNonce = 1;
-        vRecv >> pfrom->nVersion >> pfrom->nServices >> nTime >> addrMe;
-        if (pfrom->nVersion == 10300)
-            pfrom->nVersion = 300;
-        if (pfrom->nVersion >= 106 && !vRecv.empty())
-            vRecv >> addrFrom >> nNonce;
-        if (pfrom->nVersion >= 106 && !vRecv.empty())
-            vRecv >> pfrom->strSubVer;
-        if (pfrom->nVersion >= 209 && !vRecv.empty())
-            vRecv >> pfrom->nStartingHeight;
-        
-        if (pfrom->nVersion == 0)
-            return false;
-        
-        // Disconnect if we connected to ourself
-        if (nNonce == nLocalHostNonce && nNonce > 1)
-        {
-            printf("connected to self at %s, disconnecting\n", pfrom->addr.toString().c_str());
-            pfrom->fDisconnect = true;
-            return true;
-        }
-        
-        // Be shy and don't send version until we hear
-        if (pfrom->fInbound)
-            pfrom->PushVersion();
-        
-        pfrom->fClient = !(pfrom->nServices & NODE_NETWORK);
-        
-        AddTimeData(pfrom->addr.getIP(), nTime);
-        
-        // Change version
-        if (pfrom->nVersion >= 209)
-            pfrom->PushMessage("verack");
-        pfrom->vSend.SetVersion(min(pfrom->nVersion, VERSION));
-        if (pfrom->nVersion < 209)
-            pfrom->vRecv.SetVersion(min(pfrom->nVersion, VERSION));
-        
-        if (!pfrom->fInbound)
-        {
-            // Advertise our address
-            if (__localhost.isRoutable() && !fUseProxy)
-            {
-                Endpoint addr(__localhost);
-                addr.setTime(GetAdjustedTime());
-                pfrom->PushAddress(addr);
-            }
-            
-            // Get recent addresses
-            if (pfrom->nVersion >= 31402 || _endpointPool->getPoolSize() < 1000)
-            {
-                pfrom->PushMessage("getaddr");
-                pfrom->fGetAddr = true;
-            }
-        }
-        
-        // Ask the first connected node for block updates
-        static int nAskedForBlocks;
-        if (!pfrom->fClient &&
-            (pfrom->nVersion < 32000 || pfrom->nVersion >= 32400) &&
-            (nAskedForBlocks < 1 || vNodes.size() <= 1))
-        {
-            nAskedForBlocks++;
-            pfrom->PushGetBlocks(__blockChain->getBestIndex(), uint256(0));
-        }
-        
-        // Relay alerts
-        CRITICAL_BLOCK(cs_mapAlerts)
-        BOOST_FOREACH(PAIRTYPE(const uint256, Alert)& item, mapAlerts)
-        item.second.relayTo(pfrom);
-        
-        pfrom->fSuccessfullyConnected = true;
-        
-        printf("version message: version %d, blocks=%d\n", pfrom->nVersion, pfrom->nStartingHeight);
-    }
-    
-    
-    else if (pfrom->nVersion == 0)
-    {
-        // Must have a version message before anything else
-        return false;
-    }
-    
-    
-    else if (strCommand == "verack")
-    {
-        pfrom->vRecv.SetVersion(min(pfrom->nVersion, VERSION));
-    }
-    
-    
-    else if (strCommand == "addr")
-    {
-        vector<Endpoint> vAddr;
-        vRecv >> vAddr;
-        
-        // Don't want addr from older versions unless seeding
-        if (pfrom->nVersion < 209)
-            return true;
-        if (pfrom->nVersion < 31402 && _endpointPool->getPoolSize() > 1000)
-            return true;
-        if (vAddr.size() > 1000)
-            return error("message addr size() = %d", vAddr.size());
-        
-        // Store the new addresses
-        //        CAddrDB addrDB;
-        //addrDB.TxnBegin();
-        int64 nNow = GetAdjustedTime();
-        int64 nSince = nNow - 10 * 60;
-        BOOST_FOREACH(Endpoint& addr, vAddr)
-        {
-            if (fShutdown)
-                return true;
-            // ignore IPv6 for now, since it isn't implemented anyway
-            if (!addr.isIPv4())
-                continue;
-            if (addr.getTime() <= 100000000 || addr.getTime() > nNow + 10 * 60)
-                addr.setTime(nNow - 5 * 24 * 60 * 60);
-            _endpointPool->addEndpoint(addr, 2 * 60 * 60);
-            pfrom->AddAddressKnown(addr);
-            if (addr.getTime() > nSince && !pfrom->fGetAddr && vAddr.size() <= 10 && addr.isRoutable())
-            {
-                // Relay to a limited number of other nodes
-                CRITICAL_BLOCK(cs_vNodes)
-                {
-                    // Use deterministic randomness to send to the same nodes for 24 hours
-                    // at a time so the setAddrKnowns of the chosen nodes prevent repeats
-                    static uint256 hashSalt;
-                    if (hashSalt == 0)
-                        RAND_bytes((unsigned char*)&hashSalt, sizeof(hashSalt));
-                    uint256 hashRand = hashSalt ^ (((int64)addr.getIP())<<32) ^ ((GetTime() + addr.getIP())/(24*60*60));
-                    hashRand = Hash(BEGIN(hashRand), END(hashRand));
-                    multimap<uint256, CNode*> mapMix;
-                    BOOST_FOREACH(CNode* pnode, vNodes)
-                    {
-                        if (pnode->nVersion < 31402)
-                            continue;
-                        unsigned int nPointer;
-                        memcpy(&nPointer, &pnode, sizeof(nPointer));
-                        uint256 hashKey = hashRand ^ nPointer;
-                        hashKey = Hash(BEGIN(hashKey), END(hashKey));
-                        mapMix.insert(make_pair(hashKey, pnode));
-                    }
-                    int nRelayNodes = 2;
-                    for (multimap<uint256, CNode*>::iterator mi = mapMix.begin(); mi != mapMix.end() && nRelayNodes-- > 0; ++mi)
-                        ((*mi).second)->PushAddress(addr);
-                }
-            }
-        }
-    //        addrDB.TxnCommit();  // Save addresses (it's ok if this fails)
-        if (vAddr.size() < 1000)
-            pfrom->fGetAddr = false;
-    }
-    
-    
-    else if (strCommand == "inv")
-    {
-        vector<Inventory> vInv;
-        vRecv >> vInv;
-        if (vInv.size() > 50000)
-            return error("message inv size() = %d", vInv.size());
-        
-    //        CTxDB txdb("r");
-        BOOST_FOREACH(const Inventory& inv, vInv)
-        {
-            if (fShutdown)
-                return true;
-            pfrom->AddInventoryKnown(inv);
-            
-            bool fAlreadyHave = AlreadyHave(inv);
-            printf("  got inventory: %s  %s\n", inv.toString().c_str(), fAlreadyHave ? "have" : "new");
-            
-            if (!fAlreadyHave)
-                pfrom->AskFor(inv);
-            else if (inv.getType() == MSG_BLOCK && mapOrphanBlocks.count(inv.getHash()))
-                pfrom->PushGetBlocks(__blockChain->getBestIndex(), GetOrphanRoot(mapOrphanBlocks[inv.getHash()]));
-            
-            // Track requests for our stuff
-            //            Inventory(inv.hash);
-        }
-    }
-    
-    
-    else if (strCommand == "getdata")
-    {
-        vector<Inventory> vInv;
-        vRecv >> vInv;
-        if (vInv.size() > 50000)
-            return error("message getdata size() = %d", vInv.size());
-        
-        BOOST_FOREACH(const Inventory& inv, vInv)
-        {
-            if (fShutdown)
-                return true;
-            printf("received getdata for: %s\n", inv.toString().c_str());
-            
-            if (inv.getType() == MSG_BLOCK) {
-                // Send block from disk
-                Block block;
-                __blockChain->getBlock(inv.getHash(), block);
-                if (!block.isNull()) {
-                    pfrom->PushMessage("block", block);
-                    
-                    // Trigger them to send a getblocks request for the next batch of inventory
-                    if (inv.getHash() == pfrom->hashContinue)
-                    {
-                        // Bypass PushInventory, this must send even if redundant,
-                        // and we want it right after the last block so they don't
-                        // wait for other stuff first.
-                        vector<Inventory> vInv;
-                        vInv.push_back(Inventory(MSG_BLOCK, __blockChain->getBestChain()));
-                        pfrom->PushMessage("inv", vInv);
-                        pfrom->hashContinue = 0;
-                    }
-                }
-            }
-            else if (inv.isKnownType())
-            {
-                // Send stream from relay memory
-                CRITICAL_BLOCK(cs_mapRelay)
-                {
-                    map<Inventory, CDataStream>::iterator mi = mapRelay.find(inv);
-                    if (mi != mapRelay.end())
-                        pfrom->PushMessage(inv.getCommand(), (*mi).second);
-                }
-            }
-            
-            // Track requests for our stuff
-            //            Inventory(inv.hash);
-        }
-    }
-    
-    
-    else if (strCommand == "getblocks")
-    {
-        CBlockLocator locator;
-        uint256 hashStop;
-        vRecv >> locator >> hashStop;
-        
-        // Find the last block the caller has in the main chain
-        CBlockIndex* pindex = __blockChain->getBlockIndex(locator);
-        
-        // Send the rest of the chain
-        if (pindex)
-            pindex = pindex->pnext;
-        int nLimit = 500 + __blockChain->getDistanceBack(locator);
-        unsigned int nBytes = 0;
-        printf("getblocks %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.toString().substr(0,20).c_str(), nLimit);
-        for (; pindex; pindex = pindex->pnext)
-        {
-            if (pindex->GetBlockHash() == hashStop)
-            {
-                printf("  getblocks stopping at %d %s (%u bytes)\n", pindex->nHeight, pindex->GetBlockHash().toString().substr(0,20).c_str(), nBytes);
-                break;
-            }
-            pfrom->PushInventory(Inventory(MSG_BLOCK, pindex->GetBlockHash()));
-            Block block;
-            __blockChain->getBlock(pindex->GetBlockHash(), block);
-            nBytes += block.GetSerializeSize(SER_NETWORK);
-            if (--nLimit <= 0 || nBytes >= SendBufferSize()/2)
-            {
-                // When this block is requested, we'll send an inv that'll make them
-                // getblocks the next batch of inventory.
-                printf("  getblocks stopping at limit %d %s (%u bytes)\n", pindex->nHeight, pindex->GetBlockHash().toString().substr(0,20).c_str(), nBytes);
-                pfrom->hashContinue = pindex->GetBlockHash();
-                break;
-            }
-        }
-    }
-    
-    
-    else if (strCommand == "getheaders")
-    {
-        CBlockLocator locator;
-        uint256 hashStop;
-        vRecv >> locator >> hashStop;
-        
-        CBlockIndex* pindex = NULL;
-        if (locator.IsNull()) {
-            // If locator is null, return the hashStop block
-            pindex = __blockChain->getHashStopIndex(hashStop);
-            if (pindex == NULL) return true;
-        }
-        else
-        {
-            // Find the last block the caller has in the main chain
-            pindex = __blockChain->getBlockIndex(locator);
-            if (pindex)
-                pindex = pindex->pnext;
-        }
-        
-        vector<Block> vHeaders;
-        int nLimit = 2000 + __blockChain->getDistanceBack(locator);
-        printf("getheaders %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.toString().substr(0,20).c_str(), nLimit);
-        for (; pindex; pindex = pindex->pnext)
-        {
-            vHeaders.push_back(pindex->GetBlockHeader());
-            if (--nLimit <= 0 || pindex->GetBlockHash() == hashStop)
-                break;
-        }
-        pfrom->PushMessage("headers", vHeaders);
-    }
-    
-    
-    else if (strCommand == "tx")
-    {
-        vector<uint256> vWorkQueue;
-        CDataStream vMsg(vRecv);
-        Transaction tx;
-        vRecv >> tx;
-        
-        Inventory inv(MSG_TX, tx.GetHash());
-        pfrom->AddInventoryKnown(inv);
-        
-        bool fMissingInputs = false;
-        if (__blockChain->acceptTransaction(tx, fMissingInputs))
-        {
-            //            SyncWithWallets(tx, NULL, true);
-            RelayMessage(inv, vMsg);
-            mapAlreadyAskedFor.erase(inv);
-            vWorkQueue.push_back(inv.getHash());
-            
-            // Recursively process any orphan transactions that depended on this one
-            for (int i = 0; i < vWorkQueue.size(); i++)
-            {
-                uint256 hashPrev = vWorkQueue[i];
-                for (multimap<uint256, CDataStream*>::iterator mi = mapOrphanTransactionsByPrev.lower_bound(hashPrev);
-                     mi != mapOrphanTransactionsByPrev.upper_bound(hashPrev);
-                     ++mi)
-                {
-                    const CDataStream& vMsg = *((*mi).second);
-                    Transaction tx;
-                    CDataStream(vMsg) >> tx;
-                    Inventory inv(MSG_TX, tx.GetHash());
-                    
-                    if (__blockChain->acceptTransaction(tx))
-                    {
-                        printf("   accepted orphan tx %s\n", inv.getHash().toString().substr(0,10).c_str());
-                        //                        SyncWithWallets(tx, NULL, true);
-                        RelayMessage(inv, vMsg);
-                        mapAlreadyAskedFor.erase(inv);
-                        vWorkQueue.push_back(inv.getHash());
-                    }
-                }
-            }
-            
-            BOOST_FOREACH(uint256 hash, vWorkQueue)
-            EraseOrphanTx(hash);
-        }
-        else if (fMissingInputs)
-        {
-            printf("storing orphan tx %s\n", inv.getHash().toString().substr(0,10).c_str());
-            AddOrphanTx(vMsg);
-        }
-    }
-    
-    
-    else if (strCommand == "block")
-    {
-        Block block;
-        vRecv >> block;
-        
-        printf("received block %s\n", block.getHash().toString().substr(0,20).c_str());
-        // block.print();
-        
-        Inventory inv(MSG_BLOCK, block.getHash());
-        pfrom->AddInventoryKnown(inv);
-        
-        if (ProcessBlock(pfrom, &block))
-            mapAlreadyAskedFor.erase(inv);
-    }
-    
-    
-    else if (strCommand == "getaddr") {
-        // Nodes rebroadcast an addr every 24 hours
-        pfrom->vAddrToSend.clear();
-        set<Endpoint> endpoints = _endpointPool->getRecent(3*60*60, 2500);
-        for (set<Endpoint>::iterator ep = endpoints.begin(); ep != endpoints.end(); ++ep)
-            pfrom->PushAddress(*ep);
-    }
-    
-    else if (strCommand == "ping")
-    {
-    }
-    
-    
-    else if (strCommand == "alert")
-    {
-        Alert alert;
-        vRecv >> alert;
-        
-        if (alert.processAlert())
-        {
-            // Relay
-            pfrom->setKnown.insert(alert.getHash());
-            CRITICAL_BLOCK(cs_vNodes)
-            BOOST_FOREACH(CNode* pnode, vNodes)
-            alert.relayTo(pnode);
-        }
-    }
-    
-    
-    else
-    {
-        // Ignore unknown commands for extensibility
-    }
-    
-    
-    // Update the last seen time for this node's address
-    if (pfrom->fNetworkNode)
-        if (strCommand == "version" || strCommand == "addr" || strCommand == "inv" || strCommand == "getdata" || strCommand == "ping")
-            _endpointPool->currentlyConnected(pfrom->addr);
-    
-    
-    return true;
-}
+// !!! This corresponds to the message parser - it takes some input from a socket and tries to parse it into a message of known syntax. Once a message is ready it sends it to the message handler for handling. The handler has some filters registered.
+MessageHandler* _msgHandler;
+
 
 bool CNode::ProcessMessages()
 {
@@ -756,8 +199,11 @@ bool CNode::ProcessMessages()
         bool fRet = false;
         try
         {
+        // _handler.handle(pfrom, Message(strCommand, vMsg);
+            Message message(pfrom, strCommand, vMsg);
             CRITICAL_BLOCK(cs_main)
-            fRet = pfrom->ProcessMessage(strCommand, vMsg);
+            fRet = _msgHandler->handleMessage(message);
+        //            fRet = pfrom->ProcessMessage(strCommand, vMsg);
             if (fShutdown)
                 return true;
         }
@@ -966,7 +412,7 @@ bool CNode::SendMessages(bool fSendTrickle)
         while (!pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)
         {
             const Inventory& inv = (*pto->mapAskFor.begin()).second;
-            if (!AlreadyHave(inv))
+        // we have already checkked for this (I think???)            if (!AlreadyHave(inv))
             {
                 printf("sending getdata: %s\n", inv.toString().c_str());
                 vGetData.push_back(inv);
@@ -2033,18 +1479,16 @@ void ThreadOpenConnections2(void* parg)
 
     // Initiate network connections
     int64 nStart = GetTime();
-    loop
-    {
+    loop {
         // Limit outbound connections
         vnThreadsRunning[1]--;
         Sleep(500);
-        loop
-        {
+        loop {
             int nOutbound = 0;
             CRITICAL_BLOCK(cs_vNodes)
-                BOOST_FOREACH(CNode* pnode, vNodes)
-                    if (!pnode->fInbound)
-                        nOutbound++;
+            BOOST_FOREACH(CNode* pnode, vNodes)
+            if (!pnode->fInbound)
+                nOutbound++;
             int nMaxOutboundConnections = MAX_OUTBOUND_CONNECTIONS;
             nMaxOutboundConnections = min(nMaxOutboundConnections, (int)GetArg("-maxconnections", 125));
             if (nOutbound < nMaxOutboundConnections)
@@ -2056,15 +1500,12 @@ void ThreadOpenConnections2(void* parg)
         vnThreadsRunning[1]++;
         if (fShutdown)
             return;
-
-        CRITICAL_BLOCK(cs_mapAddresses)
-        {
+        
+        CRITICAL_BLOCK(cs_mapAddresses) {
             // Add seed nodes if IRC isn't working
             bool fTOR = (fUseProxy && addrProxy.getPort() == htons(9050));
-            if ((_endpointPool->getPoolSize() == 0) && (GetTime() - nStart > 60 || fTOR) && !fTestNet)
-            {
-                for (int i = 0; i < ARRAYLEN(pnSeed); i++)
-                {
+            if ((_endpointPool->getPoolSize() == 0) && (GetTime() - nStart > 60 || fTOR) && !fTestNet) {
+                for (int i = 0; i < ARRAYLEN(pnSeed); i++) {
                     // It'll only connect to one or two seed nodes because once it connects,
                     // it'll get a pile of addresses with newer timestamps.
                     // Seed nodes are given a random 'last seen time' of between one and two
@@ -2077,17 +1518,17 @@ void ThreadOpenConnections2(void* parg)
                 }
             }
         }
-
-
-    
-    // Only connect to one address per a.b.?.? range.
-    // Do this here so we don't have to critsect vNodes inside mapAddresses critsect.
-    set<unsigned int> setConnected;
-    CRITICAL_BLOCK(cs_vNodes)
-    BOOST_FOREACH(CNode* pnode, vNodes)
-    setConnected.insert(pnode->addr.getIP() & 0x0000ffff);
-    
-    Endpoint addrConnect = _endpointPool->getCandidate(setConnected, nStart);
+        
+        
+        
+        // Only connect to one address per a.b.?.? range.
+        // Do this here so we don't have to critsect vNodes inside mapAddresses critsect.
+        set<unsigned int> setConnected;
+        CRITICAL_BLOCK(cs_vNodes)
+        BOOST_FOREACH(CNode* pnode, vNodes)
+            setConnected.insert(pnode->addr.getIP() & 0x0000ffff);
+        
+        Endpoint addrConnect = _endpointPool->getCandidate(setConnected, nStart);
         if (addrConnect.isValid())
             OpenNetworkConnection(addrConnect);
     }

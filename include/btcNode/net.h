@@ -26,6 +26,9 @@ class CNode;
 class CBlockIndex;
 extern int nConnectTimeout;
 
+class MessageHandler;
+extern MessageHandler* _msgHandler;
+
 
 
 inline unsigned int ReceiveBufferSize() { return 1000*GetArg("-maxreceivebuffer", 10*1000); }
