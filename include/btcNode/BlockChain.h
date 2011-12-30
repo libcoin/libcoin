@@ -210,6 +210,9 @@ public:
     /// Get the best height
     int getBestHeight() const { return _bestIndex->nHeight; }
     
+    /// Get the locator for the best index
+    CBlockLocator getBestLocator() const;
+    
     bool isInitialBlockDownload();
     
     const uint256& getGenesisHash() const { return _genesisBlock; }

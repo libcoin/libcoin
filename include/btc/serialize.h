@@ -888,6 +888,11 @@ public:
         Init(nTypeIn, nVersionIn);
     }
 
+    CDataStream(const std::string& sIn, int nTypeIn=SER_NETWORK, int nVersionIn=VERSION) : vch((char*)&sIn[0], (char*)&sIn[0] + sIn.size())
+    {
+        Init(nTypeIn, nVersionIn);
+    }
+    
     void Init(int nTypeIn=SER_NETWORK, int nVersionIn=VERSION)
     {
         nReadPos = 0;

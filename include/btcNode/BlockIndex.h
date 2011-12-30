@@ -209,10 +209,10 @@ public:
     {
     }
 
-    explicit CBlockLocator(const CBlockIndex* pindex)
-    {
-        Set(pindex);
-    }
+    //    explicit CBlockLocator(const CBlockIndex* pindex)
+    //    {
+    //        Set(pindex);
+    //    }
 
     IMPLEMENT_SERIALIZE
     (
@@ -231,9 +231,10 @@ public:
         return vHave.empty();
     }
 
-    void Set(const CBlockIndex* pindex);
+    friend bool operator==(const CBlockLocator& a, const CBlockLocator& b);
+    //    void Set(const CBlockIndex* pindex);
     
-    int GetHeight();
+    //    int GetHeight();
 };
 
 #endif // BLOCK_H

@@ -11,7 +11,7 @@
 bool RecvLine(SOCKET hSocket, std::string& strLine);
 void ThreadIRCSeed(void* parg);
 
-extern int nGotIREndpointes;
+//extern int nGotIREndpointes;
 extern bool fGotExternalIP;
 
 #endif

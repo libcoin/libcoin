@@ -22,7 +22,7 @@ class BlockFile : private boost::noncopyable
 public:
     BlockFile() : _currentBlockFile(1) {} /// load the block chain index from file
 
-    bool writeToDisk(const Block& block, unsigned int& nFileRet, unsigned int& nBlockPosRet);
+    bool writeToDisk(const Block& block, unsigned int& nFileRet, unsigned int& nBlockPosRet, bool commit = false);
     bool readFromDisk(Block& block, unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true);
     bool readFromDisk(Block& block, const CBlockIndex* pindex, bool fReadTransactions=true);
     

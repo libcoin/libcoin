@@ -6,60 +6,33 @@
 #include "btcNode/irc.h"
 #include "btcNode/net.h"
 #include "btcNode/EndpointPool.h"
+#include "btcNode/ChatClient.h"
 
 #include "btc/base58.h"
 #include "btc/strlcpy.h"
 #include "btc/util.h"
 
+#include <iostream>
+#include <istream>
+#include <ostream>
+#include <string>
 #include <boost/asio.hpp>
+#include <boost/bind.hpp>
+#include <boost/algorithm/string.hpp>
+
 
 using namespace std;
 using namespace boost;
+using namespace boost::asio;
+using namespace boost::asio::ip;
 
-int nGotIREndpointes = 0;
+//int nGotIREndpointes = 0;
 bool fGotExternalIP = false;
 
 void ThreadIRCSeed2(void* parg);
 
 
-
-
-#pragma pack(push, 1)
-struct ircaddr
-{
-    int ip;
-    short port;
-};
-#pragma pack(pop)
-
-string EncodeAddress(const Endpoint& addr)
-{
-    struct ircaddr tmp;
-    tmp.ip    = addr.getIP();
-    tmp.port  = addr.getPort();
-
-    vector<unsigned char> vch(UBEGIN(tmp), UEND(tmp));
-    return string("u") + EncodeBase58Check(vch);
-}
-
-bool DecodeAddress(string str, Endpoint& addr)
-{
-    vector<unsigned char> vch;
-    if (!DecodeBase58Check(str.substr(1), vch))
-        return false;
-
-    struct ircaddr tmp;
-    if (vch.size() != sizeof(tmp))
-        return false;
-    memcpy(&tmp, &vch[0], sizeof(tmp));
-
-    addr = Endpoint(tmp.ip, ntohs(tmp.port), NODE_NETWORK);
-    return true;
-}
-
-
-
-
+/*
 
 
 static bool Send(SOCKET hSocket, const char* pszSend)
@@ -240,7 +213,7 @@ bool GetIPFromIRC(SOCKET hSocket, string strMyName, unsigned int& ipRet)
     return true;
 }
 
-
+*/
 
 void ThreadIRCSeed(void* parg)
 {
@@ -259,7 +232,7 @@ void ThreadIRCSeed(void* parg)
 
 void ThreadIRCSeed2(void* parg)
 {
-    /* Dont advertise on IRC if we don't allow incoming connections */
+    // Dont advertise on IRC if we don't allow incoming connections
     if (mapArgs.count("-connect") || fNoListen)
         return;
 
@@ -271,6 +244,17 @@ void ThreadIRCSeed2(void* parg)
     bool fNameInUse = false;
     bool fTOR = (fUseProxy && addrProxy.getPort() == htons(9050));
 
+    try {
+        boost::asio::io_service io_service;
+        ChatClient irc(io_service, "92.243.23.21", *_endpointPool);
+        io_service.run();
+    }
+    catch (std::exception& e) {
+        cout << "Exception: " << e.what() << "\n";
+    }
+
+    return;
+/*    
     while (!fShutdown)
     {
         //Endpoint addrConnect("216.155.130.130:6667"); // chat.freenode.net
@@ -427,6 +411,7 @@ void ThreadIRCSeed2(void* parg)
         if (!Wait(nRetryWait += 60))
             return;
     }
+ */
 }
 
 
@@ -454,3 +439,4 @@ int main(int argc, char *argv[])
     return 0;
 }
 #endif
+

@@ -16,24 +16,26 @@ bool Lookup(const char *pszName, Endpoint& ep, int nServices, bool fAllowLookup 
 
 static const unsigned char pchIPv4[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff };
 
+using namespace boost::asio::ip;
+
 Endpoint::Endpoint()
 {
     init();
 }
 
-Endpoint::Endpoint(unsigned int ip, unsigned short port, uint64 services)
+Endpoint::Endpoint(unsigned int ip, unsigned short p, uint64 services)
 {
     init();
-    _ip = ip;
-    _port = htons(port == 0 ? getDefaultPort() : port);
+    address(address_v4(ip));
+    port(htons(p == 0 ? getDefaultPort() : p));
     _services = services;
 }
 
 Endpoint::Endpoint(const struct sockaddr_in& sockaddr, uint64 services)
 {
     init();
-    _ip = sockaddr.sin_addr.s_addr;
-    _port = sockaddr.sin_port;
+    address(address_v4(sockaddr.sin_addr.s_addr));
+    port(sockaddr.sin_port);
     _services = services;
 }
 
@@ -65,8 +67,8 @@ void Endpoint::init()
 {
     _services = NODE_NETWORK;
     memcpy(_ipv6, pchIPv4, sizeof(_ipv6));
-    _ip = INADDR_NONE;
-    _port = htons(getDefaultPort());
+    address(address_v4(INADDR_NONE));
+    port(htons(getDefaultPort()));
     _time = 100000000;
     _lastTry = 0;
 }
@@ -74,8 +76,8 @@ void Endpoint::init()
 bool operator==(const Endpoint& a, const Endpoint& b)
 {
     return (memcmp(a._ipv6, b._ipv6, sizeof(a._ipv6)) == 0 &&
-            a._ip   == b._ip &&
-            a._port == b._port);
+            a.address()   == b.address() &&
+            a.port() == b.port());
 }
 
 bool operator!=(const Endpoint& a, const Endpoint& b)
@@ -90,10 +92,10 @@ bool operator<(const Endpoint& a, const Endpoint& b)
         return true;
     else if (ret == 0)
     {
-        if (ntohl(a._ip) < ntohl(b._ip))
+        if (ntohl(a.address().to_v4().to_ulong()) < ntohl(b.address().to_v4().to_ulong()))
             return true;
-        else if (a._ip == b._ip)
-            return ntohs(a._port) < ntohs(b._port);
+        else if (a.address() == b.address())
+            return ntohs(a.port()) < ntohs(b.port());
     }
     return false;
 }
@@ -102,7 +104,7 @@ std::vector<unsigned char> Endpoint::getKey() const
 {
     CDataStream ss;
     ss.reserve(18);
-    ss << FLATDATA(_ipv6) << _ip << _port;
+    ss << FLATDATA(_ipv6) << address().to_v4().to_ulong() << port();
 
     #if defined(_MSC_VER) && _MSC_VER < 1300
     return std::vector<unsigned char>((unsigned char*)&ss.begin()[0], (unsigned char*)&ss.end()[0]);
@@ -116,8 +118,8 @@ struct sockaddr_in Endpoint::getSockAddr() const
     struct sockaddr_in sockaddr;
     memset(&sockaddr, 0, sizeof(sockaddr));
     sockaddr.sin_family = AF_INET;
-    sockaddr.sin_addr.s_addr = _ip;
-    sockaddr.sin_port = _port;
+    sockaddr.sin_addr.s_addr = address().to_v4().to_ulong();
+    sockaddr.sin_port = port();
     return sockaddr;
 }
 
@@ -162,17 +164,18 @@ bool Endpoint::isValid() const
     if (memcmp(_ipv6, pchIPv4+3, sizeof(pchIPv4)-3) == 0)
         return false;
 
-    return (_ip != 0 && _ip != INADDR_NONE && _port != htons(USHRT_MAX));
+    return (address().to_v4().to_ulong() != 0 && address().to_v4().to_ulong() != INADDR_NONE && port() != htons(USHRT_MAX));
 }
 
 unsigned char Endpoint::getByte(int n) const
 {
-    return ((unsigned char*)&_ip)[3-n];
+    unsigned long ip = address().to_v4().to_ulong();
+    return ((unsigned char*)&ip)[3-n];
 }
 
 std::string Endpoint::toStringIPPort() const
 {
-    return strprintf("%u.%u.%u.%u:%u", getByte(3), getByte(2), getByte(1), getByte(0), ntohs(_port));
+    return strprintf("%u.%u.%u.%u:%u", getByte(3), getByte(2), getByte(1), getByte(0), ntohs(port()));
 }
 
 std::string Endpoint::toStringIP() const
@@ -182,12 +185,12 @@ std::string Endpoint::toStringIP() const
 
 std::string Endpoint::toStringPort() const
 {
-    return strprintf("%u", ntohs(_port));
+    return strprintf("%u", ntohs(port()));
 }
 
 std::string Endpoint::toString() const
 {
-    return strprintf("%u.%u.%u.%u:%u", getByte(3), getByte(2), getByte(1), getByte(0), ntohs(_port));
+    return strprintf("%u.%u.%u.%u:%u", getByte(3), getByte(2), getByte(1), getByte(0), ntohs(port()));
 }
 
 void Endpoint::print() const

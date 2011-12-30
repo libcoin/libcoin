@@ -16,7 +16,7 @@ typedef std::map<std::vector<unsigned char>, Endpoint> EndpointMap;
 class EndpointPool : public CDB
 {
 public:
-    EndpointPool(const char* pszMode="r+") : CDB("addr.dat", pszMode) , _lastPurgeTime(0) { loadEndpoints(); }
+    EndpointPool(const char* pszMode="r+") : CDB("addr.dat", pszMode) , _lastPurgeTime(0), _localhost("0.0.0.0", 0, false, NODE_NETWORK) { loadEndpoints(); }
     
     /// Purge old addresses - meant to be called periodically to awoid to much work
     void purge();
@@ -40,6 +40,12 @@ public:
     /// Get good candidate for a new peer
     Endpoint getCandidate(const std::set<unsigned int>& not_in, int64 start_time);
     
+    /// Return the external endpoint of the local host
+    const Endpoint getLocal() const { return _localhost; }
+    
+    /// Set the external endpoint of the local host (this is done by e.g. the Chat Client
+    void setLocal(Endpoint ep) { _localhost = ep; }
+    
 private:
     EndpointPool(const EndpointPool&);
     void operator=(const EndpointPool&);
@@ -52,6 +58,7 @@ private:
 private:
     EndpointMap _endpoints;
     
+    Endpoint _localhost;
     int64 _lastPurgeTime;
 
 };

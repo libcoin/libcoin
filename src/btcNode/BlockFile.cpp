@@ -12,7 +12,7 @@
 using namespace std;
 using namespace boost;
 
-bool BlockFile::writeToDisk(const Block& block, unsigned int& nFileRet, unsigned int& nBlockPosRet)
+bool BlockFile::writeToDisk(const Block& block, unsigned int& nFileRet, unsigned int& nBlockPosRet, bool commit)
 {
     // Open history file to append
     CAutoFile fileout = appendBlockFile(nFileRet);
@@ -31,7 +31,7 @@ bool BlockFile::writeToDisk(const Block& block, unsigned int& nFileRet, unsigned
     
     // Flush stdio buffers and commit to disk before returning
     fflush(fileout);
-    if (!__blockChain->isInitialBlockDownload() || (__blockChain->getBestHeight()+1) % 500 == 0) {
+    if (commit) {
 #ifdef _WIN32
         _commit(_fileno(fileout));
 #else

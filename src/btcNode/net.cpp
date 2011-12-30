@@ -21,6 +21,7 @@
 #endif
 
 #include <boost/asio.hpp>
+#include <boost/logic/tribool.hpp>
 
 #ifdef USE_UPNP
 #include <miniupnpc/miniwget.h>
@@ -58,6 +59,7 @@
 
 using namespace std;
 using namespace boost;
+using namespace boost::asio;
 
 static const int MAX_OUTBOUND_CONNECTIONS = 8;
 
@@ -79,7 +81,7 @@ bool OpenNetworkConnection(const Endpoint& addrConnect);
 bool fClient = false;
 bool fAllowDNS = false;
 uint64 nLocalServices = (fClient ? 0 : NODE_NETWORK);
-Endpoint __localhost("0.0.0.0", 0, false, nLocalServices);
+//Endpoint __localhost("0.0.0.0", 0, false, nLocalServices);
 uint64 nLocalHostNonce = 0;
 array<int, 10> vnThreadsRunning;
 static SOCKET hListenSocket = INVALID_SOCKET;
@@ -122,17 +124,169 @@ bool CNode::ProcessMessages()
     CDataStream& vRecv = pfrom->vRecv;
     if (vRecv.empty())
         return true;
-    //if (fDebug)
-    //    printf("ProcessMessages(%u bytes)\n", vRecv.size());
+
+    // Now call the parser:
+    bool fRet = false;
+    loop {
+        boost::tuple<boost::tribool, CDataStream::iterator> parser_result = _msgParser.parse(_message, vRecv.begin(), vRecv.end());
+        tribool result = get<0>(parser_result);
+        cout << pfrom->addr.address().to_string() << ": read " <<  get<1>(parser_result) - vRecv.begin() << " bytes out of " << vRecv.end() - vRecv.begin() << endl;
+        vRecv.erase(vRecv.begin(), get<1>(parser_result));
+        if (result) {
+            if (_msgHandler->handleMessage(pfrom, _message) ) fRet = true;
+        }
+        else if (!result)
+            continue;
+        else
+            break;
+    }
+        
+    // if something were processed - handle some of the writes
+    // first we write stuff back - process the "getdata" part of SendMessages
+    // then handle the trickle node - pick a random node and run the addr and tx part of SendMessages
+    // then take a few other nodes in random and send out the smaller fraction of the tx'es, or all and handle only the tx fraction + the block invs
+    // reply, trickle, all
+    CNode* pto = pfrom;
+    if (fRet && pto->nVersion != 0) {
+        // the ping stuff need to be controlled by a timer! - skip for now...
+        //ResendBrokerTransactions();
+        CRITICAL_BLOCK(cs_main) {
+            
+            // ----- R E P L Y -----
+            
+            //      Message: getdata
+            vector<Inventory> vGetData;
+            int64 nNow = GetTime() * 1000000;
+            
+            while (!pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)  {
+                const Inventory& inv = (*pto->mapAskFor.begin()).second;
+                // we have already checkked for this (I think???)            if (!AlreadyHave(inv))
+                printf("sending getdata: %s\n", inv.toString().c_str());
+                vGetData.push_back(inv);
+                if (vGetData.size() >= 1000) {
+                    pto->PushMessage("getdata", vGetData);
+                    vGetData.clear();
+                }
+                mapAlreadyAskedFor[inv] = nNow;
+                pto->mapAskFor.erase(pto->mapAskFor.begin());
+            }
+            if (!vGetData.empty())
+                pto->PushMessage("getdata", vGetData);
+            
+            // ----- T R I C K L E -----
+            // pick a trickle node
+            pto = vNodes[GetRand(vNodes.size())];
+            vector<Endpoint> vAddr;
+            vAddr.reserve(pto->vAddrToSend.size());
+            BOOST_FOREACH(const Endpoint& addr, pto->vAddrToSend)
+            {
+            // returns true if wasn't already contained in the set
+            if (pto->setAddrKnown.insert(addr).second)
+                {
+                vAddr.push_back(addr);
+                // receiver rejects addr messages larger than 1000
+                if (vAddr.size() >= 1000)
+                    {
+                    pto->PushMessage("addr", vAddr);
+                    vAddr.clear();
+                    }
+                }
+            }
+            pto->vAddrToSend.clear();
+            if (!vAddr.empty())
+                pto->PushMessage("addr", vAddr);
+            
+            //      Message: inventory
+            vector<Inventory> vInv;
+            CRITICAL_BLOCK(pto->cs_inventory) {
+                vInv.reserve(pto->vInventoryToSend.size());
+                BOOST_FOREACH(const Inventory& inv, pto->vInventoryToSend) {
+                    if (pto->setInventoryKnown.count(inv))
+                        continue;
+                    
+                    // returns true if wasn't already contained in the set
+                    if (pto->setInventoryKnown.insert(inv).second) {
+                        vInv.push_back(inv);
+                        if (vInv.size() >= 1000) {
+                            pto->PushMessage("inv", vInv);
+                            vInv.clear();
+                        }
+                    }
+                }
+            }
+            if (!vInv.empty())
+                pto->PushMessage("inv", vInv);
+            
+            // ----- A L L ----- 
+            
+            //      Message: inventory
+            CRITICAL_BLOCK(cs_vNodes) {
+                BOOST_FOREACH(CNode* pto, vNodes) {
+                    
+                    vector<Inventory> vInv;
+                    vector<Inventory> vInvWait;
+                    CRITICAL_BLOCK(pto->cs_inventory) {
+                        vInv.reserve(pto->vInventoryToSend.size());
+                        vInvWait.reserve(pto->vInventoryToSend.size());
+                        BOOST_FOREACH(const Inventory& inv, pto->vInventoryToSend) {
+                            if (pto->setInventoryKnown.count(inv))
+                                continue;
+                            
+                            if (inv.getType() == MSG_TX) {
+                                // A specific 1/4 (hash space based) of tx invs blast to all immediately
+                                static uint256 hashSalt;
+                                if (hashSalt == 0)
+                                    RAND_bytes((unsigned char*)&hashSalt, sizeof(hashSalt));
+                                uint256 hashRand = inv.getHash() ^ hashSalt;
+                                hashRand = Hash(BEGIN(hashRand), END(hashRand));
+                                bool fTrickleWait = ((hashRand & 3) != 0);
+                                if (fTrickleWait) {
+                                    vInvWait.push_back(inv);
+                                    continue;
+                                }
+                            }
+                            
+                            // returns true if wasn't already contained in the set
+                            if (pto->setInventoryKnown.insert(inv).second) {
+                                vInv.push_back(inv);
+                                if (vInv.size() >= 1000) {
+                                    pto->PushMessage("inv", vInv);
+                                    vInv.clear();
+                                }
+                            }
+                        }
+                        pto->vInventoryToSend = vInvWait;
+                    }
+                    if (!vInv.empty())
+                        pto->PushMessage("inv", vInv);
+                }
+            }
+            
+            // Address refresh broadcast
+            static int64 nLastRebroadcast;
+            if (GetTime() - nLastRebroadcast > 24 * 60 * 60) {
+                nLastRebroadcast = GetTime();
+                CRITICAL_BLOCK(cs_vNodes) {
+                    BOOST_FOREACH(CNode* pnode, vNodes) {
+                        // Periodically clear setAddrKnown to allow refresh broadcasts
+                        pnode->setAddrKnown.clear();
+                        
+                        // Rebroadcast our address
+                        if (_endpointPool->getLocal().isRoutable() && !fUseProxy) {
+                            Endpoint addr(_endpointPool->getLocal());
+                            addr.setTime(GetAdjustedTime());
+                            pnode->PushAddress(addr);
+                        }
+                    }
+                }
+            }
+            
+            // Clear out old addresses periodically so it's not too much work at once
+            _endpointPool->purge();
+        }
+    }
     
-    //
-    // Message format
-    //  (4) message start
-    //  (12) command
-    //  (4) size
-    //  (4) checksum
-    //  (x) data
-    //
+    return true;
     
     loop
     {
@@ -181,6 +335,7 @@ bool CNode::ProcessMessages()
         if (vRecv.GetVersion() >= 209)
         {
             uint256 hash = Hash(vRecv.begin(), vRecv.begin() + nMessageSize);
+        //        cout << "payload size: " << nMessageSize << endl; 
             unsigned int nChecksum = 0;
             memcpy(&nChecksum, &hash, sizeof(nChecksum));
             if (nChecksum != hdr.nChecksum)
@@ -192,17 +347,22 @@ bool CNode::ProcessMessages()
         }
         
         // Copy message to its own buffer
+        std:: string payload;
+        for(CDataStream::iterator i = vRecv.begin(); i != vRecv.begin() + nMessageSize; ++i)
+            payload.push_back(*i);
+
         CDataStream vMsg(vRecv.begin(), vRecv.begin() + nMessageSize, vRecv.nType, vRecv.nVersion);
         vRecv.ignore(nMessageSize);
         
+    
         // Process message
         bool fRet = false;
         try
         {
         // _handler.handle(pfrom, Message(strCommand, vMsg);
-            Message message(pfrom, strCommand, vMsg);
+            Message message(strCommand, payload);
             CRITICAL_BLOCK(cs_main)
-            fRet = _msgHandler->handleMessage(message);
+            fRet = _msgHandler->handleMessage(pfrom, message);
         //            fRet = pfrom->ProcessMessage(strCommand, vMsg);
             if (fShutdown)
                 return true;
@@ -305,9 +465,9 @@ bool CNode::SendMessages(bool fSendTrickle)
                     pnode->setAddrKnown.clear();
                     
                     // Rebroadcast our address
-                    if (__localhost.isRoutable() && !fUseProxy)
+                    if (_endpointPool->getLocal().isRoutable() && !fUseProxy)
                     {
-                        Endpoint addr(__localhost);
+                        Endpoint addr(_endpointPool->getLocal());
                         addr.setTime(GetAdjustedTime());
                         pnode->PushAddress(addr);
                     }
@@ -434,15 +594,15 @@ bool CNode::SendMessages(bool fSendTrickle)
 
 
 
-void CNode::PushGetBlocks(const CBlockIndex* pindexBegin, uint256 hashEnd)
+void CNode::PushGetBlocks(const CBlockLocator locatorBegin, uint256 hashEnd)
 {
     // Filter out duplicate requests
-    if (pindexBegin == pindexLastGetBlocksBegin && hashEnd == hashLastGetBlocksEnd)
+    if (locatorBegin == locatorLastGetBlocksBegin && hashEnd == hashLastGetBlocksEnd)
         return;
-    pindexLastGetBlocksBegin = pindexBegin;
+    locatorLastGetBlocksBegin = locatorBegin;
     hashLastGetBlocksEnd = hashEnd;
 
-    PushMessage("getblocks", CBlockLocator(pindexBegin), hashEnd);
+    PushMessage("getblocks", locatorBegin, hashEnd);
 }
 
 
@@ -564,13 +724,13 @@ bool ConnectSocket(const Endpoint& addrConnect, SOCKET& hSocketRet, int nTimeout
         if (ret != nSize)
         {
             closesocket(hSocket);
-            return error("Error sending to proxy");
+            return ::error("Error sending to proxy");
         }
         char pchRet[8];
         if (recv(hSocket, pchRet, 8, 0) != 8)
         {
             closesocket(hSocket);
-            return error("Error reading proxy response");
+            return ::error("Error reading proxy response");
         }
         if (pchRet[1] != 0x5a)
         {
@@ -657,11 +817,63 @@ bool Lookup(const char *pszName, Endpoint& addr, int nServices, bool fAllowLooku
     return fRet;
 }
 
+bool RecvLine(SOCKET hSocket, string& strLine)
+{
+    strLine = "";
+    loop
+    {
+    char c;
+    int nBytes = recv(hSocket, &c, 1, 0);
+    if (nBytes > 0)
+        {
+        if (c == '\n')
+            continue;
+        if (c == '\r')
+            return true;
+        strLine += c;
+        if (strLine.size() >= 9000)
+            return true;
+        }
+    else if (nBytes <= 0)
+        {
+        if (fShutdown)
+            return false;
+        if (nBytes < 0)
+            {
+            int nErr = WSAGetLastError();
+            if (nErr == WSAEMSGSIZE)
+                continue;
+            if (nErr == WSAEWOULDBLOCK || nErr == WSAEINTR || nErr == WSAEINPROGRESS)
+                {
+                Sleep(10);
+                continue;
+                }
+            }
+        if (!strLine.empty())
+            return true;
+        if (nBytes == 0)
+            {
+            // socket closed
+            printf("IRC socket closed\n");
+            return false;
+            }
+        else
+            {
+            // socket error
+            int nErr = WSAGetLastError();
+            printf("IRC recv failed: %d\n", nErr);
+            return false;
+            }
+        }
+    }
+}
+
+
 bool GetMyExternalIP2(const Endpoint& addrConnect, const char* pszGet, const char* pszKeyword, unsigned int& ipRet)
 {
     SOCKET hSocket;
     if (!ConnectSocket(addrConnect, hSocket))
-        return error("GetMyExternalIP() : connection to %s failed", addrConnect.toString().c_str());
+        return ::error("GetMyExternalIP() : connection to %s failed", addrConnect.toString().c_str());
 
     send(hSocket, pszGet, strlen(pszGet), MSG_NOSIGNAL);
 
@@ -700,7 +912,7 @@ bool GetMyExternalIP2(const Endpoint& addrConnect, const char* pszGet, const cha
         }
     }
     closesocket(hSocket);
-    return error("GetMyExternalIP() : connection closed");
+    return ::error("GetMyExternalIP() : connection closed");
 }
 
 // We now get our external IP from the IRC server first and only use this as a backup
@@ -782,13 +994,14 @@ void ThreadGetMyExternalIP(void* parg)
     // Fallback in case IRC fails to get it
     unsigned int ip;
     if (GetMyExternalIP(ip)) {
-        __localhost.setIP(ip);
-        printf("GetMyExternalIP() returned %s\n", __localhost.toStringIP().c_str());
-        if (__localhost.isRoutable())
+        Endpoint ep(ip);
+        _endpointPool->setLocal(ep);
+        printf("GetMyExternalIP() returned %s\n", _endpointPool->getLocal().toStringIP().c_str());
+        if (_endpointPool->getLocal().isRoutable())
         {
             // If we already connected to a few before we had our IP, go back and addr them.
             // setAddrKnown automatically filters any duplicate sends.
-            Endpoint addr(__localhost);
+            Endpoint addr(_endpointPool->getLocal());
             addr.setTime(GetAdjustedTime());
             CRITICAL_BLOCK(cs_vNodes)
                 BOOST_FOREACH(CNode* pnode, vNodes)
@@ -821,7 +1034,7 @@ CNode* FindNode(Endpoint addr)
 
 CNode* ConnectNode(Endpoint addrConnect, int64 nTimeout)
 {
-    if (addrConnect.getIP() == __localhost.getIP())
+    if (addrConnect.getIP() == _endpointPool->getLocal().getIP())
         return NULL;
 
     // Look for an existing connection
@@ -1541,7 +1754,7 @@ bool OpenNetworkConnection(const Endpoint& addrConnect)
     //
     if (fShutdown)
         return false;
-    if (addrConnect.getIP() == __localhost.getIP() || !addrConnect.isIPv4() || FindNode(addrConnect.getIP()))
+    if (addrConnect.getIP() == _endpointPool->getLocal().getIP() || !addrConnect.isIPv4() || FindNode(addrConnect.getIP()))
         return false;
 
     vnThreadsRunning[1]--;
@@ -1597,22 +1810,22 @@ void ThreadMessageHandler2(void* parg)
         }
 
         // Poll the connected nodes for messages
-        CNode* pnodeTrickle = NULL;
-        if (!vNodesCopy.empty())
-            pnodeTrickle = vNodesCopy[GetRand(vNodesCopy.size())];
+        //        CNode* pnodeTrickle = NULL;
+    //        if (!vNodesCopy.empty())
+    //            pnodeTrickle = vNodesCopy[GetRand(vNodesCopy.size())];
         BOOST_FOREACH(CNode* pnode, vNodesCopy)
         {
             // Receive messages
             TRY_CRITICAL_BLOCK(pnode->cs_vRecv)
-                pnode->ProcessMessages();
-            if (fShutdown)
+                pnode->ProcessMessages(); 
+                if (fShutdown)
                 return;
 
             // Send messages
-            TRY_CRITICAL_BLOCK(pnode->cs_vSend)
-                pnode->SendMessages(pnode == pnodeTrickle);
-            if (fShutdown)
-                return;
+            //            TRY_CRITICAL_BLOCK(pnode->cs_vSend)
+            //                pnode->SendMessages(pnode == pnodeTrickle);
+            //            if (fShutdown)
+            //                return;
         }
 
         CRITICAL_BLOCK(cs_vNodes)
@@ -1643,8 +1856,11 @@ bool BindListenPort(string& strError)
 {
     strError = "";
     int nOne = 1;
-    __localhost.setPort(htons(GetListenPort()));
-
+/*
+    Endpoint ep("0.0.0.0");// = _endpointPool->getLocal();
+    ep.setPort(htons(GetListenPort()));
+    _endpointPool->setLocal(ep);
+*/
 #ifdef _WIN32
     // Initialize Windows Sockets
     WSADATA wsadata;
@@ -1731,7 +1947,7 @@ void StartNode(void* parg)
             BOOST_FOREACH (const Endpoint &addr, vaddr)
                 if (addr.GetByte(3) != 127)
                 {
-                    __localhost = addr;
+                    _endpointPool->setLocal(Endpoint(addr));
                     break;
                 }
     }
@@ -1757,7 +1973,7 @@ void StartNode(void* parg)
                 Endpoint addr(*(unsigned int*)&s4->sin_addr, GetListenPort(), nLocalServices);
                 if (addr.isValid() && addr.getByte(3) != 127)
                 {
-                    __localhost = addr;
+                    _endpointPool->setLocal(addr);
                     break;
                 }
             }
@@ -1771,13 +1987,13 @@ void StartNode(void* parg)
         freeifaddrs(myaddrs);
     }
 #endif
-    printf("addrLocalHost = %s\n", __localhost.toString().c_str());
+    printf("addrLocalHost = %s\n", _endpointPool->getLocal().toString().c_str());
 
-    if (fUseProxy || mapArgs.count("-connect") || fNoListen)
-    {
+    if (fUseProxy || mapArgs.count("-connect") || fNoListen) {
         // Proxies can't take incoming connections
-        __localhost.setIP(Endpoint("0.0.0.0").getIP());
-        printf("addrLocalHost = %s\n", __localhost.toString().c_str());
+        _endpointPool->setLocal(Endpoint("0.0.0.0"));
+        //        __localhost.setIP(Endpoint("0.0.0.0").getIP());
+        printf("addrLocalHost = %s\n", _endpointPool->getLocal().toString().c_str());
     }
     else
     {

@@ -11,7 +11,7 @@ class VersionFilter : public Filter
 public:
     VersionFilter() {}
     
-    virtual bool operator()(Message& msg);
+    virtual bool operator()(CNode* origin, Message& msg);
 
     virtual std::vector<std::string> commands() {
         std::vector<std::string> c; 

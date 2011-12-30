@@ -17,19 +17,19 @@ void MessageHandler::installFilter(filter_ptr filter) {
     }
 }
 
-bool MessageHandler::handleMessage(Message& msg) {
+bool MessageHandler::handleMessage(CNode* origin, Message& msg) {
 
     try {
-        if(_filters.count(msg.command)) { // do something
+        if(_filters.count(msg.command())) { // do something
             bool ret = false;
-            pair<Filters::iterator, Filters::iterator> cmds = _filters.equal_range(msg.command);
+            pair<Filters::iterator, Filters::iterator> cmds = _filters.equal_range(msg.command());
             multimap<string, int>::iterator it; //Iterator to be used along with ii
             for(Filters::iterator cmd = cmds.first; cmd != cmds.second; ++cmd) {
-                // copy the datastream
-                CDataStream payload(msg.payload);
-                Message message(msg.origin, msg.command, payload);
+                // copy the string
+                string payload(msg.payload());
+                Message message(msg.command(), payload);
                 // We need only one successfull command to return true
-                if ( (*cmd->second)(message) ) ret = true;
+                if ( (*cmd->second)(origin, message) ) ret = true;
             }
             return ret;
         }

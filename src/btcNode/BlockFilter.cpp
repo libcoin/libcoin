@@ -9,27 +9,30 @@ using namespace std;
 using namespace boost;
 
 
-bool BlockFilter::operator()(Message& msg) {
-    if (msg.origin->nVersion == 0) {
+bool BlockFilter::operator()(CNode* origin, Message& msg) {
+    if (origin->nVersion == 0) {
         throw OriginNotReady();
     }
-    if (msg.command == "block") {
+    if (msg.command() == "block") {
         Block block;
-        msg.payload >> block;
+        CDataStream data(msg.payload());
+        data >> block;
         
         printf("received block %s\n", block.getHash().toString().substr(0,20).c_str());
         // block.print();
         
         Inventory inv(MSG_BLOCK, block.getHash());
-        msg.origin->AddInventoryKnown(inv);
+        origin->AddInventoryKnown(inv);
         
-        if (processBlock(msg.origin, block))
-            mapAlreadyAskedFor.erase(inv);
+        if (processBlock(origin, block))
+            _alreadyAskedFor.erase(inv);
     }
-    else if (msg.command == "getblocks") {
+    else if (msg.command() == "getblocks") {
         CBlockLocator locator;
         uint256 hashStop;
-        msg.payload >> locator >> hashStop;
+        CDataStream data(msg.payload());
+
+        data >> locator >> hashStop;
         
         // Find the last block the caller has in the main chain
         CBlockIndex* pindex = _blockChain.getBlockIndex(locator);
@@ -45,7 +48,7 @@ bool BlockFilter::operator()(Message& msg) {
                 printf("  getblocks stopping at %d %s (%u bytes)\n", pindex->nHeight, pindex->GetBlockHash().toString().substr(0,20).c_str(), nBytes);
                 break;
             }
-            msg.origin->PushInventory(Inventory(MSG_BLOCK, pindex->GetBlockHash()));
+            origin->PushInventory(Inventory(MSG_BLOCK, pindex->GetBlockHash()));
             Block block;
             _blockChain.getBlock(pindex->GetBlockHash(), block);
             nBytes += block.GetSerializeSize(SER_NETWORK);
@@ -53,15 +56,16 @@ bool BlockFilter::operator()(Message& msg) {
                 // When this block is requested, we'll send an inv that'll make them
                 // getblocks the next batch of inventory.
                 printf("  getblocks stopping at limit %d %s (%u bytes)\n", pindex->nHeight, pindex->GetBlockHash().toString().substr(0,20).c_str(), nBytes);
-                msg.origin->hashContinue = pindex->GetBlockHash();
+                origin->hashContinue = pindex->GetBlockHash();
                 break;
             }
         }
     }
-    else if (msg.command == "getheaders") {
+    else if (msg.command() == "getheaders") {
         CBlockLocator locator;
         uint256 hashStop;
-        msg.payload >> locator >> hashStop;
+        CDataStream data(msg.payload());
+        data >> locator >> hashStop;
         
         CBlockIndex* pindex = NULL;
         if (locator.IsNull()) {
@@ -84,11 +88,12 @@ bool BlockFilter::operator()(Message& msg) {
             if (--nLimit <= 0 || pindex->GetBlockHash() == hashStop)
                 break;
         }
-        msg.origin->PushMessage("headers", vHeaders);
+        origin->PushMessage("headers", vHeaders);
     }
-    else if (msg.command == "getdata") { // server, or whatever instance that holds the inv map...
+    else if (msg.command() == "getdata") { // server, or whatever instance that holds the inv map...
         vector<Inventory> vInv;
-        msg.payload >> vInv;
+        CDataStream data(msg.payload());
+        data >> vInv;
         if (vInv.size() > 50000)
             return error("message getdata size() = %d", vInv.size());
         
@@ -102,17 +107,17 @@ bool BlockFilter::operator()(Message& msg) {
                 Block block;
                 _blockChain.getBlock(inv.getHash(), block);
                 if (!block.isNull()) {
-                    msg.origin->PushMessage("block", block);
+                    origin->PushMessage("block", block);
                     
                     // Trigger them to send a getblocks request for the next batch of inventory
-                    if (inv.getHash() == msg.origin->hashContinue) {
+                    if (inv.getHash() == origin->hashContinue) {
                         // Bypass PushInventory, this must send even if redundant,
                         // and we want it right after the last block so they don't
                         // wait for other stuff first.
                         vector<Inventory> vInv;
                         vInv.push_back(Inventory(MSG_BLOCK, _blockChain.getBestChain()));
-                        msg.origin->PushMessage("inv", vInv);
-                        msg.origin->hashContinue = 0;
+                        origin->PushMessage("inv", vInv);
+                        origin->hashContinue = 0;
                     }
                 }
             }
@@ -120,9 +125,10 @@ bool BlockFilter::operator()(Message& msg) {
             //            Inventory(inv.hash);
         }
     }
-    else if (msg.command == "inv") {
+    else if (msg.command() == "inv") {
         vector<Inventory> inventories;
-        msg.payload >> inventories;
+        CDataStream data(msg.payload());
+        data >> inventories;
         if (inventories.size() > 50000)
             return error("message inv size() = %d", inventories.size());
         
@@ -131,15 +137,15 @@ bool BlockFilter::operator()(Message& msg) {
                 return true;
             
             if (inv.getType() == MSG_BLOCK) {                
-                msg.origin->AddInventoryKnown(inv);
+                origin->AddInventoryKnown(inv);
                 
                 bool fAlreadyHave = alreadyHave(inv);
                 printf("  got inventory: %s  %s\n", inv.toString().c_str(), fAlreadyHave ? "have" : "new");
                 
                 if (!fAlreadyHave)
-                    msg.origin->AskFor(inv);
+                    origin->AskFor(inv);
                 else if (_orphanBlocks.count(inv.getHash()))
-                    msg.origin->PushGetBlocks(_blockChain.getBestIndex(), getOrphanRoot(_orphanBlocks[inv.getHash()]));
+                    origin->PushGetBlocks(_blockChain.getBestLocator(), getOrphanRoot(_orphanBlocks[inv.getHash()]));
             }
     
         }
@@ -180,7 +186,7 @@ bool BlockFilter::processBlock(CNode* origin, Block& block) {
         
         // Ask this guy to fill in what we're missing
         if (origin)
-            origin->PushGetBlocks(_blockChain.getBestIndex(), getOrphanRoot(block_copy));
+            origin->PushGetBlocks(_blockChain.getBestLocator(), getOrphanRoot(block_copy));            
         return true;
     }
     

@@ -18,7 +18,7 @@ class BlockFilter : public Filter
 public:
     BlockFilter(BlockChain& bc) : _blockChain(bc) {}
     
-    virtual bool operator()(Message& msg);
+    virtual bool operator()(CNode* origin, Message& msg);
     
     virtual std::vector<std::string> commands() {
         std::vector<std::string> c; 
@@ -41,6 +41,8 @@ private:
     
     std::map<uint256, Block*> _orphanBlocks;
     std::multimap<uint256, Block*> _orphanBlocksByPrev;
+    
+    std::map<Inventory, int64> _alreadyAskedFor;
 };
 
 #endif // BLOCKFILTER_H

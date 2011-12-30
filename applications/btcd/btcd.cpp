@@ -132,12 +132,22 @@ void HandleSIGTERM(int)
 bool AppInit(int argc, char* argv[]);
 bool AppInit2(int argc, char* argv[]);
 
+#define REDIRECT_STDOUT_TO_FILE 1
 #ifndef GUI
 int main(int argc, char* argv[])
 {
+#if REDIRECT_STDOUT_TO_FILE //## redirect stdout to "log-out.txt"
+    freopen("/Users/gronager/log-out.txt", "w", stdout);
+#endif  //  REDIRECT_STDOUT_TO_FILE
+
     bool fRet = false;
     fRet = AppInit(argc, argv);
 
+#if REDIRECT_STDOUT_TO_FILE //## redirect stdout to "log-out.txt"
+    fflush(stdout);
+    fclose(stdout);
+#endif  //  REDIRECT_STDOUT_TO_FILE
+    
     if (fRet && fDaemon)
         return 0;
 

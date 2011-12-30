@@ -13,7 +13,7 @@ class EndpointFilter : public Filter
 public:
     EndpointFilter(EndpointPool& epp) : _endpointPool(epp) {}
     
-    virtual bool operator()(Message& msg);
+    virtual bool operator()(CNode* origin, Message& msg);
     
     virtual std::vector<std::string> commands() {
         std::vector<std::string> c; 

@@ -7,17 +7,18 @@
 using namespace std;
 using namespace boost;
 
-bool AlertFilter::operator() (Message& msg) {
-    if (msg.origin->nVersion == 0) {
+bool AlertFilter::operator() (CNode* origin, Message& msg) {
+    if (origin->nVersion == 0) {
         throw OriginNotReady();
     }
-    if (msg.command == "alert") { // alert might need to be created with something; all peers/Node, like node->broadcast(alert)
+    if (msg.command() == "alert") { // alert might need to be created with something; all peers/Node, like node->broadcast(alert)
         Alert alert;
-        msg.payload >> alert;
+        CDataStream data(msg.payload());
+        data >> alert;
         
         if (alert.processAlert()) {
             // Relay
-            msg.origin->setKnown.insert(alert.getHash());
+            origin->setKnown.insert(alert.getHash());
             CRITICAL_BLOCK(cs_vNodes)
                 BOOST_FOREACH(CNode* pnode, vNodes)
                     alert.relayTo(pnode);

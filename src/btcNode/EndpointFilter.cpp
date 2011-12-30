@@ -9,18 +9,19 @@
 using namespace std;
 using namespace boost;
 
-bool EndpointFilter::operator()(Message& msg) {
-    if (msg.origin->nVersion == 0) {
+bool EndpointFilter::operator()(CNode* origin, Message& msg) {
+    if (origin->nVersion == 0) {
         throw OriginNotReady();
     }
-    if (msg.command == "addr") {
+    if (msg.command() == "addr") {
         vector<Endpoint> endpoints;
-        msg.payload >> endpoints;
+        CDataStream data(msg.payload());
+        data >> endpoints;
         
         // Don't want addr from older versions unless seeding
-        if (msg.origin->nVersion < 209)
+        if (origin->nVersion < 209)
             return true;
-        if (msg.origin->nVersion < 31402 && _endpointPool.getPoolSize() > 1000)
+        if (origin->nVersion < 31402 && _endpointPool.getPoolSize() > 1000)
             return true;
         if (endpoints.size() > 1000)
             return error("message addr size() = %d", endpoints.size());
@@ -39,11 +40,11 @@ bool EndpointFilter::operator()(Message& msg) {
             if (ep.getTime() <= 100000000 || ep.getTime() > now + 10 * 60)
                 ep.setTime(now - 5 * 24 * 60 * 60);
             _endpointPool.addEndpoint(ep, 2 * 60 * 60);
-            msg.origin->AddAddressKnown(ep);
+            origin->AddAddressKnown(ep);
             
             // TODO: Rewrite this to instead query the Node for the proper set of peers, and send the addresses to them using peer->sendMessage("command", payload);
             
-            if (ep.getTime() > since && !msg.origin->fGetAddr && endpoints.size() <= 10 && ep.isRoutable()) {
+            if (ep.getTime() > since && !origin->fGetAddr && endpoints.size() <= 10 && ep.isRoutable()) {
                 // Relay to a limited number of other nodes
                 CRITICAL_BLOCK(cs_vNodes) {
                     // Use deterministic randomness to send to the same nodes for 24 hours
@@ -71,20 +72,20 @@ bool EndpointFilter::operator()(Message& msg) {
         }
         //        addrDB.TxnCommit();  // Save addresses (it's ok if this fails)
         if (endpoints.size() < 1000)
-            msg.origin->fGetAddr = false;        
+            origin->fGetAddr = false;        
     }
-    else if (msg.command == "getaddr") {
+    else if (msg.command() == "getaddr") {
         // Nodes rebroadcast an addr every 24 hours
-        msg.origin->vAddrToSend.clear();
+        origin->vAddrToSend.clear();
         set<Endpoint> endpoints = _endpointPool.getRecent(3*60*60, 2500);
         for (set<Endpoint>::iterator ep = endpoints.begin(); ep != endpoints.end(); ++ep)
-            msg.origin->PushAddress(*ep);
+            origin->PushAddress(*ep);
     }
     
     // Update the last seen time for this node's address
-    if (msg.origin->fNetworkNode)
-        if (msg.command == "version" || msg.command == "addr" || msg.command == "inv" || msg.command == "getdata" || msg.command == "ping")
-            _endpointPool.currentlyConnected(msg.origin->addr);
+    if (origin->fNetworkNode)
+        if (msg.command() == "version" || msg.command() == "addr" || msg.command() == "inv" || msg.command() == "getdata" || msg.command() == "ping")
+            _endpointPool.currentlyConnected(origin->addr);
     
     return true;
 }

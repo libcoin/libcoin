@@ -60,7 +60,7 @@ bool EndpointPool::addEndpoint(Endpoint endpoint, int64 penalty)
 {
     if (!endpoint.isRoutable())
         return false;
-    if (endpoint.getIP() == __localhost.getIP())
+    if (endpoint.getIP() == _localhost.getIP())
         return false;
     endpoint.setTime(max((int64)0, (int64)endpoint.getTime() - penalty));
     bool updated = false;
@@ -162,7 +162,7 @@ Endpoint EndpointPool::getCandidate(const set<unsigned int>& not_in, int64 start
         
         // If we have IRC, we'll be notified when they first come online,
         // and again every 24 hours by the refresh broadcast.
-        if (nGotIREndpointes > 0 && vNodes.size() >= 2 && sinceLastSeen > 24 * 60 * 60)
+        if (vNodes.size() >= 2 && sinceLastSeen > 24 * 60 * 60)
             continue;
         
         // Only try the old stuff if we don't have enough connections

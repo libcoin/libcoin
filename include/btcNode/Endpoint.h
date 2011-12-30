@@ -3,6 +3,7 @@
 #define ENDPOINT_H
 
 #include <string>
+#include <boost/asio.hpp>
 
 #include "btc/uint256.h"
 #include "btc/serialize.h"
@@ -18,7 +19,11 @@ enum
     NODE_NETWORK = (1 << 0),
 };
 
-class Endpoint
+/// Endpoint is a boost endpoint with a time of last use attached to it
+/// The _services member is not used in any logic but seem to have indicated different node networks ? could be used for a esparate hashing scheme.
+/// The _ipv6 has been left as is for reader/writer compatability, but is actually a part of the boost endpoint class.
+
+class Endpoint : public boost::asio::ip::tcp::endpoint
 {
     public:
     typedef std::vector<unsigned char> Key;
@@ -42,8 +47,23 @@ class Endpoint
              READWRITE(_time);
              READWRITE(_services);
              READWRITE(FLATDATA(_ipv6)); // for IPv6
-             READWRITE(_ip);
-             READWRITE(_port);
+             if (fWrite) {
+                 
+                 unsigned int ip = address().to_v4().to_ulong();
+                 unsigned short p = port();
+                 READWRITE(ip);
+                 READWRITE(p);
+             }
+             else if (fRead) {
+                 unsigned int ip;
+                 unsigned short p;
+                 READWRITE(ip);
+                 READWRITE(p);
+                 const_cast<Endpoint*>(this)->address(boost::asio::ip::address(boost::asio::ip::address_v4(ip)));
+                 const_cast<Endpoint*>(this)->port(p);
+             }
+             //             READWRITE(_ip);
+             //             READWRITE(_port);
             )
 
         friend bool operator==(const Endpoint& a, const Endpoint& b);
@@ -65,11 +85,11 @@ class Endpoint
         std::string toString() const;
         void print() const;
     
-    const unsigned int getIP() const { return _ip; }
-    void setIP(unsigned int ip) { _ip = ip; }
+    const unsigned int getIP() const { return address().to_v4().to_ulong(); }
+    void setIP(unsigned int ip) { address(boost::asio::ip::address(boost::asio::ip::address_v4(ip))); }
 
-    const unsigned short getPort() const { return _port; }
-    void setPort(unsigned short port) { _port = port; }
+    const unsigned short getPort() const { return port(); }
+    void setPort(unsigned short p) { port(p); }
     
     const unsigned int getTime() const  { return _time; }
     void setTime(unsigned int time) { _time = time; }
@@ -83,8 +103,8 @@ class Endpoint
     private:
         uint64 _services;
         unsigned char _ipv6[12];
-        unsigned int _ip;
-        unsigned short _port;
+    //        unsigned int _ip;
+    //        unsigned short _port;
 
         // disk and network only
         unsigned int _time;

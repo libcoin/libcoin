@@ -20,7 +20,7 @@ class TransactionFilter : public Filter
 public:
     TransactionFilter(BlockChain& bc) : _blockChain(bc) {}
     
-    virtual bool operator()(Message& msg);
+    virtual bool operator()(CNode* origin, Message& msg);
     
     virtual std::vector<std::string> commands() {
         std::vector<std::string> c; 
@@ -39,6 +39,8 @@ private:
     void eraseOrphanTx(uint256 hash);
     
     bool alreadyHave(const Inventory& inv);
+    
+    std::map<Inventory, int64> _alreadyAskedFor;
     
     /// The Relay system is only used for Transactions - hence we put it here.
     

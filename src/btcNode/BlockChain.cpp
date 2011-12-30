@@ -137,7 +137,7 @@ bool BlockChain::load(bool allowNew)
         // Start new block file
         unsigned int nFile;
         unsigned int nBlockPos;
-        if (!_blockFile.writeToDisk(block, nFile, nBlockPos))
+        if (!_blockFile.writeToDisk(block, nFile, nBlockPos, true))
             return error("LoadBlockIndex() : writing genesis block to disk failed");
         if (!addToBlockIndex(block, nFile, nBlockPos))
             return error("LoadBlockIndex() : genesis block not accepted");
@@ -216,6 +216,24 @@ void BlockChain::print()
         for (int i = 0; i < vNext.size(); i++)
             vStack.push_back(make_pair(nCol+i, vNext[i]));
         }
+}
+
+CBlockLocator BlockChain::getBestLocator() const {
+    CBlockLocator l;
+    const CBlockIndex* pindex = getBestIndex();
+    l.vHave.clear();
+    int nStep = 1;
+    while (pindex) {
+        l.vHave.push_back(pindex->GetBlockHash());
+        
+        // Exponentially larger steps back
+        for (int i = 0; pindex && i < nStep; i++)
+            pindex = pindex->pprev;
+        if (l.vHave.size() > 10)
+            nStep *= 2;
+        }
+    l.vHave.push_back(getGenesisHash());
+    return l;
 }
 
 bool BlockChain::isInitialBlockDownload()
@@ -1293,7 +1311,8 @@ bool BlockChain::acceptBlock(Block& block)
         return error("AcceptBlock() : out of disk space");
     unsigned int nFile = -1;
     unsigned int nBlockPos = 0;
-    if (!_blockFile.writeToDisk(block, nFile, nBlockPos))
+    bool commit = (!isInitialBlockDownload() || (getBestHeight()+1) % 500 == 0);
+    if (!_blockFile.writeToDisk(block, nFile, nBlockPos, commit))
         return error("AcceptBlock() : WriteToDisk failed");
     if (!addToBlockIndex(block, nFile, nBlockPos))
         return error("AcceptBlock() : AddToBlockIndex failed");

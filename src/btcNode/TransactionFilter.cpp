@@ -6,23 +6,24 @@
 using namespace std;
 using namespace boost;
 
-bool TransactionFilter::operator()(Message& msg) {
-    if (msg.origin->nVersion == 0) {
+bool TransactionFilter::operator()(CNode* origin, Message& msg) {
+    if (origin->nVersion == 0) {
         throw OriginNotReady();
     }
-    if (msg.command == "tx") {        
+    if (msg.command() == "tx") {        
         vector<uint256> workQueue;
-        CDataStream payload(msg.payload);
+        CDataStream data(msg.payload());
+        CDataStream payload(msg.payload());
         Transaction tx;
-        msg.payload >> tx;
+        data >> tx;
         
         Inventory inv(MSG_TX, tx.GetHash());
-        msg.origin->AddInventoryKnown(inv);
+        origin->AddInventoryKnown(inv);
         
         bool fMissingInputs = false;
         if (_blockChain.acceptTransaction(tx, fMissingInputs)) {
             relayMessage(inv, payload);
-            mapAlreadyAskedFor.erase(inv);
+            _alreadyAskedFor.erase(inv);
             workQueue.push_back(inv.getHash());
             
             // Recursively process any orphan transactions that depended on this one
@@ -40,7 +41,7 @@ bool TransactionFilter::operator()(Message& msg) {
                         printf("   accepted orphan tx %s\n", inv.getHash().toString().substr(0,10).c_str());
                         //                        SyncWithWallets(tx, NULL, true);
                         relayMessage(inv, payload);
-                        mapAlreadyAskedFor.erase(inv);
+                        _alreadyAskedFor.erase(inv);
                         workQueue.push_back(inv.getHash());
                     }
                 }
@@ -54,9 +55,10 @@ bool TransactionFilter::operator()(Message& msg) {
             addOrphanTx(payload);
         }
     }
-    else if (msg.command == "getdata") {
+    else if (msg.command() == "getdata") {
         vector<Inventory> vInv;
-        msg.payload >> vInv;
+        CDataStream data(msg.payload());
+        data >> vInv;
         if (vInv.size() > 50000)
             return error("message getdata size() = %d", vInv.size());
         
@@ -70,7 +72,7 @@ bool TransactionFilter::operator()(Message& msg) {
                 CRITICAL_BLOCK(cs_mapRelay) {
                     map<Inventory, CDataStream>::iterator mi = _relay.find(inv);
                     if (mi != _relay.end())
-                        msg.origin->PushMessage(inv.getCommand(), (*mi).second);
+                        origin->PushMessage(inv.getCommand(), (*mi).second);
                 }
             }
             
@@ -78,9 +80,10 @@ bool TransactionFilter::operator()(Message& msg) {
             //            Inventory(inv.hash);
         }
     }
-    else if (msg.command == "inv") {
+    else if (msg.command() == "inv") {
         vector<Inventory> vInv;
-        msg.payload >> vInv;
+        CDataStream data(msg.payload());
+        data >> vInv;
         if (vInv.size() > 50000)
             return error("message inv size() = %d", vInv.size());
         
@@ -89,18 +92,16 @@ bool TransactionFilter::operator()(Message& msg) {
             if (fShutdown)
                 return true;
             if (inv.getType() == MSG_TX) {
-                msg.origin->AddInventoryKnown(inv);
+                origin->AddInventoryKnown(inv);
                 
                 bool fAlreadyHave = alreadyHave(inv);
                 printf("  got inventory: %s  %s\n", inv.toString().c_str(), fAlreadyHave ? "have" : "new");
                 
                 if (!fAlreadyHave)
-                    msg.origin->AskFor(inv);
+                    origin->AskFor(inv);
             }            
         }
     }
-    
-
 
     return true;
 }

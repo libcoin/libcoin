@@ -19,11 +19,14 @@
 #include "btcNode/Endpoint.h"
 #include "btcNode/EndpointPool.h"
 #include "btcNode/main.h"
+#include "btcNode/Filter.h"
+#include "btcNode/MessageParser.h"
 
 class CAddrDB;
 class CRequestTracker;
 class CNode;
 class CBlockIndex;
+
 extern int nConnectTimeout;
 
 class MessageHandler;
@@ -81,7 +84,7 @@ public:
 extern bool fClient;
 extern bool fAllowDNS;
 extern uint64 nLocalServices;
-extern Endpoint __localhost;
+//extern Endpoint __localhost;
 extern uint64 nLocalHostNonce;
 extern boost::array<int, 10> vnThreadsRunning;
 
@@ -138,7 +141,7 @@ public:
     std::map<uint256, CRequestTracker> mapRequests;
     CCriticalSection cs_mapRequests;
     uint256 hashContinue;
-    const CBlockIndex* pindexLastGetBlocksBegin;
+    CBlockLocator locatorLastGetBlocksBegin;
     uint256 hashLastGetBlocksEnd;
     int nStartingHeight;
 
@@ -158,7 +161,7 @@ public:
     std::vector<char> vfSubscribe;
 
 
-    CNode(SOCKET hSocketIn, Endpoint addrIn, bool fInboundIn=false)
+    CNode(SOCKET hSocketIn, Endpoint addrIn, bool fInboundIn=false) : _message()
     {
         nServices = 0;
         hSocket = hSocketIn;
@@ -189,7 +192,7 @@ public:
         nRefCount = 0;
         nReleaseTime = 0;
         hashContinue = 0;
-        pindexLastGetBlocksBegin = 0;
+        locatorLastGetBlocksBegin.SetNull();
         hashLastGetBlocksEnd = 0;
         nStartingHeight = -1;
         fGetAddr = false;
@@ -359,7 +362,7 @@ public:
         /// when NTP implemented, change to just nTime = GetAdjustedTime()
         int64 nTime = (fInbound ? GetAdjustedTime() : GetTime());
         Endpoint addrYou = (fUseProxy ? Endpoint("0.0.0.0") : addr);
-        Endpoint addrMe = (fUseProxy ? Endpoint("0.0.0.0") : __localhost);
+        Endpoint addrMe = (fUseProxy ? Endpoint("0.0.0.0") : _endpointPool->getLocal());
         RAND_bytes((unsigned char*)&nLocalHostNonce, sizeof(nLocalHostNonce));
         PushMessage("version", VERSION, nLocalServices, nTime, addrYou, addrMe,
                     nLocalHostNonce, std::string(pszSubVer), __blockChain->getBestHeight());
@@ -570,9 +573,12 @@ public:
     bool SendMessages(bool fSendTrickle);    
 
 
-    void PushGetBlocks(const CBlockIndex* pindexBegin, uint256 hashEnd);
+    void PushGetBlocks(const CBlockLocator locatorBegin, uint256 hashEnd);
 
     void CloseSocketDisconnect();
+private:
+    Message _message;
+    MessageParser _msgParser;
 };
 
 

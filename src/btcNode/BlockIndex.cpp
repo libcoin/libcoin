@@ -49,29 +49,7 @@ uint256 CDiskBlockIndex::GetBlockHash() const
     return block.getHash();
 }
 
-
-
-void CBlockLocator::Set(const CBlockIndex* pindex)
-{
-    vHave.clear();
-    int nStep = 1;
-    while (pindex)
-        {
-        vHave.push_back(pindex->GetBlockHash());
-        
-        // Exponentially larger steps back
-        for (int i = 0; pindex && i < nStep; i++)
-            pindex = pindex->pprev;
-        if (vHave.size() > 10)
-            nStep *= 2;
-        }
-    vHave.push_back(__blockChain->getGenesisHash());
+bool operator==(const CBlockLocator& a, const CBlockLocator& b) {
+    return a.vHave == b.vHave;
 }
 
-int CBlockLocator::GetHeight()
-{
-    CBlockIndex* pindex = __blockChain->getBlockIndex(*this);
-    if (!pindex)
-        return 0;
-    return pindex->nHeight;
-}
