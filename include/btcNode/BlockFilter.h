@@ -18,7 +18,7 @@ class BlockFilter : public Filter
 public:
     BlockFilter(BlockChain& bc) : _blockChain(bc) {}
     
-    virtual bool operator()(CNode* origin, Message& msg);
+    virtual bool operator()(Peer* origin, Message& msg);
     
     virtual std::vector<std::string> commands() {
         std::vector<std::string> c; 
@@ -32,7 +32,7 @@ public:
 
 private:
     uint256 getOrphanRoot(const Block* pblock);
-    bool processBlock(CNode* origin, Block& block);
+    bool processBlock(Peer* origin, Block& block);
     
     bool alreadyHave(const Inventory& inv);
 

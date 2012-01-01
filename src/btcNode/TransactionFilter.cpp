@@ -6,7 +6,7 @@
 using namespace std;
 using namespace boost;
 
-bool TransactionFilter::operator()(CNode* origin, Message& msg) {
+bool TransactionFilter::operator()(Peer* origin, Message& msg) {
     if (origin->nVersion == 0) {
         throw OriginNotReady();
     }
@@ -151,7 +151,7 @@ bool TransactionFilter::alreadyHave(const Inventory& inv) {
 inline void TransactionFilter::relayInventory(const Inventory& inv) {
     // Put on lists to offer to the other nodes
     CRITICAL_BLOCK(cs_vNodes)
-    BOOST_FOREACH(CNode* pnode, vNodes)
+    BOOST_FOREACH(Peer* pnode, vNodes)
         pnode->PushInventory(inv);
 }
 

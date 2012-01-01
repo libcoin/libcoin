@@ -8,7 +8,7 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 
-class CNode;
+class Peer;
 
 class Message
 {
@@ -52,7 +52,7 @@ class Filter
 {
 public:
     /// The actual filter call - you need to overload this to implement a filter
-    virtual bool operator()(CNode* origin, Message& msg) = 0;
+    virtual bool operator()(Peer* origin, Message& msg) = 0;
     
     /// Returns a list of commands that are processed by this filter
     virtual Commands commands() { std::vector<std::string> c; return c; }

@@ -17,7 +17,7 @@ void MessageHandler::installFilter(filter_ptr filter) {
     }
 }
 
-bool MessageHandler::handleMessage(CNode* origin, Message& msg) {
+bool MessageHandler::handleMessage(Peer* origin, Message& msg) {
 
     try {
         if(_filters.count(msg.command())) { // do something

@@ -9,7 +9,7 @@ using namespace std;
 using namespace boost;
 
 
-bool BlockFilter::operator()(CNode* origin, Message& msg) {
+bool BlockFilter::operator()(Peer* origin, Message& msg) {
     if (origin->nVersion == 0) {
         throw OriginNotReady();
     }
@@ -165,7 +165,7 @@ uint256 BlockFilter::getOrphanRoot(const Block* pblock) {
 }
 
 /// Need access to mapOrphanBlocks/ByPrev and a call to GetOrphanRoot
-bool BlockFilter::processBlock(CNode* origin, Block& block) {
+bool BlockFilter::processBlock(Peer* origin, Block& block) {
     // Check for duplicate
     uint256 hash = block.getHash();
     if (_blockChain.haveBlock(hash))
@@ -189,6 +189,10 @@ bool BlockFilter::processBlock(CNode* origin, Block& block) {
             origin->PushGetBlocks(_blockChain.getBestLocator(), getOrphanRoot(block_copy));            
         return true;
     }
+
+    /////////////////  ----- Make this a thread ----- //////////////////
+    
+    //    pushBlock(block);
     
     // Store to disk
     if (!_blockChain.acceptBlock(block))
@@ -215,6 +219,15 @@ bool BlockFilter::processBlock(CNode* origin, Block& block) {
     return true;
 }
 
+/*
+void BlockFilter::pushBlock(Block& block)
+{
+    _block_queue.push_back(block);
+    _blockProcessor
+    
+}
+*/
+ 
 bool BlockFilter::alreadyHave(const Inventory& inv) {
     if (inv.getType() == MSG_BLOCK)
         return _orphanBlocks.count(inv.getHash()) || _blockChain.haveBlock(inv.getHash());

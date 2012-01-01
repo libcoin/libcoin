@@ -8,7 +8,7 @@
 using namespace std;
 using namespace boost;
 
-bool VersionFilter::operator() (CNode* origin, Message& msg) {
+bool VersionFilter::operator() (Peer* origin, Message& msg) {
     if (msg.command() == "version") {
         // Each connection can only send one version message
         if (origin->nVersion != 0)

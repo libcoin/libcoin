@@ -23,7 +23,7 @@ public:
     void installFilter(filter_ptr filter);
     
     /// Handle the message using the installed filters
-    bool handleMessage(CNode* origin, Message& msg);
+    bool handleMessage(Peer* origin, Message& msg);
     
 private:
     Filters _filters;

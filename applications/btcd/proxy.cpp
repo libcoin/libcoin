@@ -513,7 +513,7 @@ Value posttx(const Array& params, bool fHelp)
     
     // now we have read the transaction - we need verify and possibly post it to the p2p network
     // We create a fake node and pretend we got this from the network - this ensures that this is handled by the right thread...
-    CNode* pnode = new CNode(INVALID_SOCKET, Endpoint("localhost"));
+    Peer* pnode = new Peer(INVALID_SOCKET, Endpoint("localhost"));
     
     CDataStream ss;
     ss << tx;

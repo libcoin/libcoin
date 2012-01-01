@@ -4,6 +4,8 @@
 #include "btcNode/net.h"
 #include "btcNode/Block.h"
 #include "btcNode/BlockIndex.h"
+#include "btcNode/Peer.h"
+
 #include "btc/key.h"
 
 #include "boost/foreach.hpp"
@@ -102,16 +104,16 @@ string getWarnings(string strFor)
     return "error";
 }
 */
-bool Alert::relayTo(CNode* pnode) const
+bool Alert::relayTo(Peer* peer) const
 {
     if (!isInEffect())
         return false;
     // returns true if wasn't already contained in the set
-    if (pnode->setKnown.insert(getHash()).second) {
-        if (appliesTo(pnode->nVersion, pnode->strSubVer) ||
+    if (peer->setKnown.insert(getHash()).second) {
+        if (appliesTo(peer->nVersion, peer->strSubVer) ||
             appliesToMe() ||
             GetAdjustedTime() < _relay_until) {
-            pnode->PushMessage("alert", *this);
+            peer->PushMessage("alert", *this);
             return true;
             }
         }

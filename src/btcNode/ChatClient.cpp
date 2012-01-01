@@ -79,7 +79,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
             else
                 rx.push_back(c);
         } while (rx.size() < bytes_transferred);
-        cout << rx << endl;
+        //        cout << rx << endl;
         //        _recv.consume(bytes_transferred);
         switch (_mode) {
             case wait_for_notice: {
@@ -182,7 +182,6 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                     tx[1] = 'O'; // change line to PONG
                     tx += '\r';
                     txstream << tx;
-                    cout << ">>>> " << tx << endl;
                     async_write(_socket, _send, boost::bind(&ChatClient::handle_write_request, this, placeholders::error));
                     break;
                 }

@@ -26,7 +26,7 @@ public:
     /// Inhierit from AlertHandler and add it to receive alert notifications.
     void addHandler(alerthandler_ptr h) { _alertHandlers.insert(h); }
     
-    virtual bool operator()(CNode* origin, Message& msg);
+    virtual bool operator()(Peer* origin, Message& msg);
     
     virtual std::vector<std::string> commands() {
         std::vector<std::string> c; 

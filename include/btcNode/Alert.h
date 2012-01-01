@@ -90,7 +90,7 @@ class CCriticalSection;
 extern std::map<uint256, Alert> mapAlerts;
 extern CCriticalSection cs_mapAlerts;
 
-class CNode;
+class Peer;
 
 class Alert : public UnsignedAlert
 {
@@ -147,7 +147,7 @@ public:
         return appliesTo(VERSION, ::pszSubVer);
     }
 
-    bool relayTo(CNode* pnode) const;
+    bool relayTo(Peer* peer) const;
 
     bool checkSignature();
 

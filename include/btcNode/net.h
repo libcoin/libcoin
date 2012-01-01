@@ -24,7 +24,7 @@
 
 class CAddrDB;
 class CRequestTracker;
-class CNode;
+class Peer;
 class CBlockIndex;
 
 extern int nConnectTimeout;
@@ -44,8 +44,8 @@ bool Lookup(const char *pszName, Endpoint& addr, int nServices, bool fAllowLooku
 bool GetMyExternalIP(unsigned int& ipRet);
 //bool AddAddress(Endpoint addr, int64 nTimePenalty=0, CAddrDB *pAddrDB=NULL);
 //void AddressCurrentlyConnected(const Endpoint& addr);
-CNode* FindNode(unsigned int ip);
-CNode* ConnectNode(Endpoint addrConnect, int64 nTimeout=0);
+Peer* FindNode(unsigned int ip);
+Peer* ConnectNode(Endpoint addrConnect, int64 nTimeout=0);
 bool AnySubscribed(unsigned int nChannel);
 void MapPort(bool fMapPort);
 void DNSAddressSeed();
@@ -88,7 +88,7 @@ extern uint64 nLocalServices;
 extern uint64 nLocalHostNonce;
 extern boost::array<int, 10> vnThreadsRunning;
 
-extern std::vector<CNode*> vNodes;
+extern std::vector<Peer*> vNodes;
 extern CCriticalSection cs_vNodes;
 //extern std::map<std::vector<unsigned char>, Endpoint> mapAddresses;
 //extern CCriticalSection cs_mapAddresses;
@@ -108,9 +108,9 @@ extern Endpoint addrProxy;
 
 
 
+#ifndef _LIBBTC_ASIO_
 
-
-class CNode
+class Peer
 {
 public:
     // socket
@@ -160,8 +160,7 @@ public:
     // publish and subscription
     std::vector<char> vfSubscribe;
 
-
-    CNode(SOCKET hSocketIn, Endpoint addrIn, bool fInboundIn=false) : _message()
+    Peer(SOCKET hSocketIn, Endpoint addrIn, bool fInboundIn=false) : _message()
     {
         nServices = 0;
         hSocket = hSocketIn;
@@ -203,7 +202,7 @@ public:
             PushVersion();
     }
 
-    ~CNode()
+    ~Peer()
     {
         if (hSocket != INVALID_SOCKET)
         {
@@ -213,8 +212,8 @@ public:
     }
 
 private:
-    CNode(const CNode&);
-    void operator=(const CNode&);
+    Peer(const Peer&);
+    void operator=(const Peer&);
 public:
 
 
@@ -223,7 +222,7 @@ public:
         return std::max(nRefCount, 0) + (GetTime() < nReleaseTime ? 1 : 0);
     }
 
-    CNode* AddRef(int64 nTimeout=0)
+    Peer* AddRef(int64 nTimeout=0)
     {
         if (nTimeout != 0)
             nReleaseTime = std::max(nReleaseTime, GetTime() + nTimeout);
@@ -583,6 +582,7 @@ private:
 
 
 
+#endif // _LIBBTC_ASIO_
 
 
 
@@ -594,7 +594,7 @@ inline void RelayInventory(const Inventory& inv)
 {
     // Put on lists to offer to the other nodes
     CRITICAL_BLOCK(cs_vNodes)
-        BOOST_FOREACH(CNode* pnode, vNodes)
+        BOOST_FOREACH(Peer* pnode, vNodes)
             pnode->PushInventory(inv);
 }
 

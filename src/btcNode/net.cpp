@@ -86,7 +86,7 @@ uint64 nLocalHostNonce = 0;
 array<int, 10> vnThreadsRunning;
 static SOCKET hListenSocket = INVALID_SOCKET;
 
-vector<CNode*> vNodes;
+vector<Peer*> vNodes;
 CCriticalSection cs_vNodes;
 EndpointPool* _endpointPool;
 CCriticalSection cs_mapAddresses;
@@ -100,8 +100,7 @@ int fUseProxy = false;
 int nConnectTimeout = 5000;
 Endpoint addrProxy("127.0.0.1",9050);
 
-
-
+#ifndef _LIBBTC_ASIO_
 
 unsigned short GetListenPort()
 {
@@ -118,9 +117,9 @@ unsigned char pchMessageStart[4] = { 0xf9, 0xbe, 0xb4, 0xd9 };
 MessageHandler* _msgHandler;
 
 
-bool CNode::ProcessMessages()
+bool Peer::ProcessMessages()
 {
-    CNode* pfrom = this;
+    Peer* pfrom = this;
     CDataStream& vRecv = pfrom->vRecv;
     if (vRecv.empty())
         return true;
@@ -130,7 +129,6 @@ bool CNode::ProcessMessages()
     loop {
         boost::tuple<boost::tribool, CDataStream::iterator> parser_result = _msgParser.parse(_message, vRecv.begin(), vRecv.end());
         tribool result = get<0>(parser_result);
-        cout << pfrom->addr.address().to_string() << ": read " <<  get<1>(parser_result) - vRecv.begin() << " bytes out of " << vRecv.end() - vRecv.begin() << endl;
         vRecv.erase(vRecv.begin(), get<1>(parser_result));
         if (result) {
             if (_msgHandler->handleMessage(pfrom, _message) ) fRet = true;
@@ -146,7 +144,7 @@ bool CNode::ProcessMessages()
     // then handle the trickle node - pick a random node and run the addr and tx part of SendMessages
     // then take a few other nodes in random and send out the smaller fraction of the tx'es, or all and handle only the tx fraction + the block invs
     // reply, trickle, all
-    CNode* pto = pfrom;
+    Peer* pto = pfrom;
     if (fRet && pto->nVersion != 0) {
         // the ping stuff need to be controlled by a timer! - skip for now...
         //ResendBrokerTransactions();
@@ -221,7 +219,7 @@ bool CNode::ProcessMessages()
             
             //      Message: inventory
             CRITICAL_BLOCK(cs_vNodes) {
-                BOOST_FOREACH(CNode* pto, vNodes) {
+                BOOST_FOREACH(Peer* pto, vNodes) {
                     
                     vector<Inventory> vInv;
                     vector<Inventory> vInvWait;
@@ -267,7 +265,7 @@ bool CNode::ProcessMessages()
             if (GetTime() - nLastRebroadcast > 24 * 60 * 60) {
                 nLastRebroadcast = GetTime();
                 CRITICAL_BLOCK(cs_vNodes) {
-                    BOOST_FOREACH(CNode* pnode, vNodes) {
+                    BOOST_FOREACH(Peer* pnode, vNodes) {
                         // Periodically clear setAddrKnown to allow refresh broadcasts
                         pnode->setAddrKnown.clear();
                         
@@ -435,9 +433,9 @@ void ResendBrokerTransactions()
     }
 }
 
-bool CNode::SendMessages(bool fSendTrickle)
+bool Peer::SendMessages(bool fSendTrickle)
 {
-    CNode* pto = this;
+    Peer* pto = this;
     CRITICAL_BLOCK(cs_main)
     {
         // Don't send anything until we get their version message
@@ -459,7 +457,7 @@ bool CNode::SendMessages(bool fSendTrickle)
             nLastRebroadcast = GetTime();
             CRITICAL_BLOCK(cs_vNodes)
             {
-                BOOST_FOREACH(CNode* pnode, vNodes)
+                BOOST_FOREACH(Peer* pnode, vNodes)
                 {
                     // Periodically clear setAddrKnown to allow refresh broadcasts
                     pnode->setAddrKnown.clear();
@@ -529,16 +527,16 @@ bool CNode::SendMessages(bool fSendTrickle)
                     uint256 hashRand = inv.getHash() ^ hashSalt;
                     hashRand = Hash(BEGIN(hashRand), END(hashRand));
                     bool fTrickleWait = ((hashRand & 3) != 0);
-                    /*
+                    
                      // always trickle our own transactions
-                     if (!fTrickleWait)
-                     {
-                     CWalletTx wtx;
-                     if (GetTransaction(inv.hash, wtx))
-                     if (wtx.fFromMe)
-                     fTrickleWait = true;
-                     }
-                     */
+ //if (!fTrickleWait)
+ //                    {
+ //                    CWalletTx wtx;
+ //                    if (GetTransaction(inv.hash, wtx))
+ //                    if (wtx.fFromMe)
+ //                    fTrickleWait = true;
+ //                    }
+
                     if (fTrickleWait)
                     {
                         vInvWait.push_back(inv);
@@ -594,7 +592,7 @@ bool CNode::SendMessages(bool fSendTrickle)
 
 
 
-void CNode::PushGetBlocks(const CBlockLocator locatorBegin, uint256 hashEnd)
+void Peer::PushGetBlocks(const CBlockLocator locatorBegin, uint256 hashEnd)
 {
     // Filter out duplicate requests
     if (locatorBegin == locatorLastGetBlocksBegin && hashEnd == hashLastGetBlocksEnd)
@@ -604,8 +602,6 @@ void CNode::PushGetBlocks(const CBlockLocator locatorBegin, uint256 hashEnd)
 
     PushMessage("getblocks", locatorBegin, hashEnd);
 }
-
-
 
 
 
@@ -694,7 +690,7 @@ bool ConnectSocket(const Endpoint& addrConnect, SOCKET& hSocketRet, int nTimeout
 
     /*
     this isn't even strictly necessary
-    CNode::ConnectNode immediately turns the socket back to non-blocking
+    Peer::ConnectNode immediately turns the socket back to non-blocking
     but we'll turn it back to blocking just in case
     */
 #ifdef _WIN32
@@ -1004,41 +1000,41 @@ void ThreadGetMyExternalIP(void* parg)
             Endpoint addr(_endpointPool->getLocal());
             addr.setTime(GetAdjustedTime());
             CRITICAL_BLOCK(cs_vNodes)
-                BOOST_FOREACH(CNode* pnode, vNodes)
+                BOOST_FOREACH(Peer* pnode, vNodes)
                     pnode->PushAddress(addr);
         }
     }
 }
 
-CNode* FindNode(unsigned int ip)
+Peer* FindNode(unsigned int ip)
 {
     CRITICAL_BLOCK(cs_vNodes)
     {
-        BOOST_FOREACH(CNode* pnode, vNodes)
+        BOOST_FOREACH(Peer* pnode, vNodes)
             if (pnode->addr.getIP() == ip)
                 return (pnode);
     }
     return NULL;
 }
 
-CNode* FindNode(Endpoint addr)
+Peer* FindNode(Endpoint addr)
 {
     CRITICAL_BLOCK(cs_vNodes)
     {
-        BOOST_FOREACH(CNode* pnode, vNodes)
+        BOOST_FOREACH(Peer* pnode, vNodes)
             if (pnode->addr == addr)
                 return (pnode);
     }
     return NULL;
 }
 
-CNode* ConnectNode(Endpoint addrConnect, int64 nTimeout)
+Peer* ConnectNode(Endpoint addrConnect, int64 nTimeout)
 {
     if (addrConnect.getIP() == _endpointPool->getLocal().getIP())
         return NULL;
 
     // Look for an existing connection
-    CNode* pnode = FindNode(addrConnect.getIP());
+    Peer* pnode = FindNode(addrConnect.getIP());
     if (pnode)
     {
         if (nTimeout != 0)
@@ -1074,7 +1070,7 @@ CNode* ConnectNode(Endpoint addrConnect, int64 nTimeout)
 #endif
 
         // Add node
-        CNode* pnode = new CNode(hSocket, addrConnect, false);
+        Peer* pnode = new Peer(hSocket, addrConnect, false);
         if (nTimeout != 0)
             pnode->AddRef(nTimeout);
         else
@@ -1091,7 +1087,7 @@ CNode* ConnectNode(Endpoint addrConnect, int64 nTimeout)
     }
 }
 
-void CNode::CloseSocketDisconnect()
+void Peer::CloseSocketDisconnect()
 {
     fDisconnect = true;
     if (hSocket != INVALID_SOCKET)
@@ -1126,7 +1122,7 @@ void ThreadSocketHandler(void* parg)
 void ThreadSocketHandler2(void* parg)
 {
     printf("ThreadSocketHandler started\n");
-    list<CNode*> vNodesDisconnected;
+    list<Peer*> vNodesDisconnected;
     int nPrevNodeCount = 0;
 
     loop
@@ -1137,8 +1133,8 @@ void ThreadSocketHandler2(void* parg)
         CRITICAL_BLOCK(cs_vNodes)
         {
             // Disconnect unused nodes
-            vector<CNode*> vNodesCopy = vNodes;
-            BOOST_FOREACH(CNode* pnode, vNodesCopy)
+            vector<Peer*> vNodesCopy = vNodes;
+            BOOST_FOREACH(Peer* pnode, vNodesCopy)
             {
                 if (pnode->fDisconnect ||
                     (pnode->GetRefCount() <= 0 && pnode->vRecv.empty() && pnode->vSend.empty()))
@@ -1159,8 +1155,8 @@ void ThreadSocketHandler2(void* parg)
             }
 
             // Delete disconnected nodes
-            list<CNode*> vNodesDisconnectedCopy = vNodesDisconnected;
-            BOOST_FOREACH(CNode* pnode, vNodesDisconnectedCopy)
+            list<Peer*> vNodesDisconnectedCopy = vNodesDisconnected;
+            BOOST_FOREACH(Peer* pnode, vNodesDisconnectedCopy)
             {
                 // wait until threads are done using it
                 if (pnode->GetRefCount() <= 0)
@@ -1206,7 +1202,7 @@ void ThreadSocketHandler2(void* parg)
         hSocketMax = max(hSocketMax, hListenSocket);
         CRITICAL_BLOCK(cs_vNodes)
         {
-            BOOST_FOREACH(CNode* pnode, vNodes)
+            BOOST_FOREACH(Peer* pnode, vNodes)
             {
                 if (pnode->hSocket == INVALID_SOCKET)
                     continue;
@@ -1251,7 +1247,7 @@ void ThreadSocketHandler2(void* parg)
             int nInbound = 0;
 
             CRITICAL_BLOCK(cs_vNodes)
-                BOOST_FOREACH(CNode* pnode, vNodes)
+                BOOST_FOREACH(Peer* pnode, vNodes)
                 if (pnode->fInbound)
                     nInbound++;
             if (hSocket == INVALID_SOCKET)
@@ -1266,7 +1262,7 @@ void ThreadSocketHandler2(void* parg)
             else
             {
                 printf("accepted connection %s\n", addr.toString().c_str());
-                CNode* pnode = new CNode(hSocket, addr, true);
+                Peer* pnode = new Peer(hSocket, addr, true);
                 pnode->AddRef();
                 CRITICAL_BLOCK(cs_vNodes)
                     vNodes.push_back(pnode);
@@ -1277,14 +1273,14 @@ void ThreadSocketHandler2(void* parg)
         //
         // Service each socket
         //
-        vector<CNode*> vNodesCopy;
+        vector<Peer*> vNodesCopy;
         CRITICAL_BLOCK(cs_vNodes)
         {
             vNodesCopy = vNodes;
-            BOOST_FOREACH(CNode* pnode, vNodesCopy)
+            BOOST_FOREACH(Peer* pnode, vNodesCopy)
                 pnode->AddRef();
         }
-        BOOST_FOREACH(CNode* pnode, vNodesCopy)
+        BOOST_FOREACH(Peer* pnode, vNodesCopy)
         {
             if (fShutdown)
                 return;
@@ -1401,7 +1397,7 @@ void ThreadSocketHandler2(void* parg)
         }
         CRITICAL_BLOCK(cs_vNodes)
         {
-            BOOST_FOREACH(CNode* pnode, vNodesCopy)
+            BOOST_FOREACH(Peer* pnode, vNodesCopy)
                 pnode->Release();
         }
 
@@ -1699,7 +1695,7 @@ void ThreadOpenConnections2(void* parg)
         loop {
             int nOutbound = 0;
             CRITICAL_BLOCK(cs_vNodes)
-            BOOST_FOREACH(CNode* pnode, vNodes)
+            BOOST_FOREACH(Peer* pnode, vNodes)
             if (!pnode->fInbound)
                 nOutbound++;
             int nMaxOutboundConnections = MAX_OUTBOUND_CONNECTIONS;
@@ -1738,7 +1734,7 @@ void ThreadOpenConnections2(void* parg)
         // Do this here so we don't have to critsect vNodes inside mapAddresses critsect.
         set<unsigned int> setConnected;
         CRITICAL_BLOCK(cs_vNodes)
-        BOOST_FOREACH(CNode* pnode, vNodes)
+        BOOST_FOREACH(Peer* pnode, vNodes)
             setConnected.insert(pnode->addr.getIP() & 0x0000ffff);
         
         Endpoint addrConnect = _endpointPool->getCandidate(setConnected, nStart);
@@ -1758,7 +1754,7 @@ bool OpenNetworkConnection(const Endpoint& addrConnect)
         return false;
 
     vnThreadsRunning[1]--;
-    CNode* pnode = ConnectNode(addrConnect);
+    Peer* pnode = ConnectNode(addrConnect);
     vnThreadsRunning[1]++;
     if (fShutdown)
         return false;
@@ -1801,19 +1797,19 @@ void ThreadMessageHandler2(void* parg)
     SetThreadPriority(THREAD_PRIORITY_BELOW_NORMAL);
     while (!fShutdown)
     {
-        vector<CNode*> vNodesCopy;
+        vector<Peer*> vNodesCopy;
         CRITICAL_BLOCK(cs_vNodes)
         {
             vNodesCopy = vNodes;
-            BOOST_FOREACH(CNode* pnode, vNodesCopy)
+            BOOST_FOREACH(Peer* pnode, vNodesCopy)
                 pnode->AddRef();
         }
 
         // Poll the connected nodes for messages
-        //        CNode* pnodeTrickle = NULL;
+        //        Peer* pnodeTrickle = NULL;
     //        if (!vNodesCopy.empty())
     //            pnodeTrickle = vNodesCopy[GetRand(vNodesCopy.size())];
-        BOOST_FOREACH(CNode* pnode, vNodesCopy)
+        BOOST_FOREACH(Peer* pnode, vNodesCopy)
         {
             // Receive messages
             TRY_CRITICAL_BLOCK(pnode->cs_vRecv)
@@ -1830,7 +1826,7 @@ void ThreadMessageHandler2(void* parg)
 
         CRITICAL_BLOCK(cs_vNodes)
         {
-            BOOST_FOREACH(CNode* pnode, vNodesCopy)
+            BOOST_FOREACH(Peer* pnode, vNodesCopy)
                 pnode->Release();
         }
 
@@ -2055,3 +2051,5 @@ bool StopNode()
 
     return true;
 }
+
+#endif // _LIBBTC_ASIO_

@@ -1320,7 +1320,7 @@ bool BlockChain::acceptBlock(Block& block)
     // Relay inventory, but don't relay old inventory during initial block download
     if (_bestChain == hash)
         CRITICAL_BLOCK(cs_vNodes)
-        BOOST_FOREACH(CNode* pnode, vNodes)
+        BOOST_FOREACH(Peer* pnode, vNodes)
         if (getBestHeight() > (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : 140700))
             pnode->PushInventory(Inventory(MSG_BLOCK, hash));
     

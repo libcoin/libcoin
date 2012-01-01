@@ -119,6 +119,51 @@ class CShutdown : public CHandler
     
 };
 
+#ifdef _LIBBTC_ASIO_
+
+#define REDIRECT_STDOUT_TO_FILE 1
+#ifndef GUI
+
+int main(int argc, char* argv[])
+{
+#if REDIRECT_STDOUT_TO_FILE //## redirect stdout to "log-out.txt"
+    freopen("/Users/gronager/log-out.txt", "w", stdout);
+#endif  //  REDIRECT_STDOUT_TO_FILE
+
+    Node node("0.0.0.0", 8333); // it is also here we specify the use of a proxy!
+    // node.onBestHeightChange(/*call gui to do an update */);
+    // node.onTxStatusChange(blockChain.update); //
+    
+    thread nodeThread(node.run()); // run this as a background thread
+    
+    // on connect, we start the suicide timer and set _commit_suicide = true, this will be changed if we have activity on he socket
+        
+    btcHTTP::Server server("0.0.0.0", 8332);
+    server.addMethod(new GetDebit(node.blockChain()));
+    server.addMethod(new GetCredit(node.blockChain()));
+    server.addMethod(new GetTransaction(node.blockChain()));
+    server.addMethod(new GetBalance(node.blockChain()));
+    server.addMethod(new GetInfo(node.blockChain()));
+    server.run();
+
+    fShutdown = true;
+    // getting here means that we have exited
+    nodeThread.join();
+    
+    //    bool fRet = false;
+    // fRet = AppInit(argc, argv);
+    
+#if REDIRECT_STDOUT_TO_FILE //## redirect stdout to "log-out.txt"
+    fflush(stdout);
+    fclose(stdout);
+#endif  //  REDIRECT_STDOUT_TO_FILE
+    
+        return 0;    
+}
+#endif
+
+#else
+
 void HandleSIGTERM(int)
 {
     fRequestShutdown = true;
@@ -614,3 +659,5 @@ bool AppInit2(int argc, char* argv[])
     
     return true;
 }
+
+#endif // _LIBBTC_ASIO_

@@ -9,7 +9,7 @@
 using namespace std;
 using namespace boost;
 
-bool EndpointFilter::operator()(CNode* origin, Message& msg) {
+bool EndpointFilter::operator()(Peer* origin, Message& msg) {
     if (origin->nVersion == 0) {
         throw OriginNotReady();
     }
@@ -54,8 +54,8 @@ bool EndpointFilter::operator()(CNode* origin, Message& msg) {
                         RAND_bytes((unsigned char*)&hashSalt, sizeof(hashSalt));
                     uint256 hashRand = hashSalt ^ (((int64)ep.getIP())<<32) ^ ((GetTime() + ep.getIP())/(24*60*60));
                     hashRand = Hash(BEGIN(hashRand), END(hashRand));
-                    multimap<uint256, CNode*> mapMix;
-                    BOOST_FOREACH(CNode* pnode, vNodes) { // vNodes is a list kept in the peerManager - the peerManager is referenced by the Node and the Peer - but we could query it - e.g. from the Node ??
+                    multimap<uint256, Peer*> mapMix;
+                    BOOST_FOREACH(Peer* pnode, vNodes) { // vNodes is a list kept in the peerManager - the peerManager is referenced by the Node and the Peer - but we could query it - e.g. from the Node ??
                         if (pnode->nVersion < 31402)
                             continue;
                         unsigned int nPointer;
@@ -65,7 +65,7 @@ bool EndpointFilter::operator()(CNode* origin, Message& msg) {
                         mapMix.insert(make_pair(hashKey, pnode));
                     }
                     int nRelayNodes = 2;
-                    for (multimap<uint256, CNode*>::iterator mi = mapMix.begin(); mi != mapMix.end() && nRelayNodes-- > 0; ++mi)
+                    for (multimap<uint256, Peer*>::iterator mi = mapMix.begin(); mi != mapMix.end() && nRelayNodes-- > 0; ++mi)
                         ((*mi).second)->PushAddress(ep);
                 }
             }

@@ -16,7 +16,7 @@ class CKeyItem;
 class Endpoint;
 class Inventory;
 class CRequestTracker;
-class CNode;
+class Peer;
 class CBlockIndex;
 
 class CTxDB;
