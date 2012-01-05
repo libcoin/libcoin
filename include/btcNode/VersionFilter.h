@@ -13,10 +13,10 @@ public:
     
     virtual bool operator()(Peer* origin, Message& msg);
 
-    virtual std::vector<std::string> commands() {
-        std::vector<std::string> c; 
-        c.push_back("version");
-        c.push_back("verack");
+    virtual std::set<std::string> commands() {
+        std::set<std::string> c; 
+        c.insert("version");
+        c.insert("verack");
         return c;
     }
 };

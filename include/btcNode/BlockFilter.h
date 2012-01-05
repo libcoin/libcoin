@@ -20,13 +20,14 @@ public:
     
     virtual bool operator()(Peer* origin, Message& msg);
     
-    virtual std::vector<std::string> commands() {
-        std::vector<std::string> c; 
-        c.push_back("block");
-        c.push_back("getblocks");
-        c.push_back("getheaders");
-        c.push_back("inv");
-        c.push_back("getdata");
+    virtual std::set<std::string> commands() {
+        std::set<std::string> c; 
+        c.insert("block");
+        c.insert("getblocks");
+        c.insert("getheaders");
+        c.insert("inv");
+        c.insert("getdata");
+        c.insert("version");
         return c;
     }
 

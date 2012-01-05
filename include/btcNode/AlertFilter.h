@@ -28,11 +28,13 @@ public:
     
     virtual bool operator()(Peer* origin, Message& msg);
     
-    virtual std::vector<std::string> commands() {
-        std::vector<std::string> c; 
-        c.push_back("alert");
+    virtual std::set<std::string> commands() {
+        std::set<std::string> c; 
+        c.insert("alert");
+        c.insert("version");
         return c;
     }
+    
 private:
     std::set<alerthandler_ptr> _alertHandlers;
 };

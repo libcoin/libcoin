@@ -1,3 +1,6 @@
+#ifndef CHATCLIENT_H
+#define CHATCLIENT_H
+
 
 #include <string>
 #include <boost/asio.hpp>
@@ -10,7 +13,7 @@ class EndpointPool;
 class ChatClient
 {
 public:
-    ChatClient(boost::asio::io_service& io_service, const std::string& server, EndpointPool& endpointPool);
+    ChatClient(boost::asio::io_service& io_service, const std::string& server, EndpointPool& endpointPool, const bool proxy = false);
     
 private:
     void handle_resolve(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
@@ -45,4 +48,7 @@ private:
     bool _name_in_use;
     const std::string _server;
     EndpointPool& _endpointPool;
+    bool _proxy;
 };
+
+#endif // CHATCLIENT_H

@@ -143,7 +143,7 @@ private: // noncopyable
     void operator=(const BlockChain&);
 
 public:
-    BlockChain(const char* pszMode="cr+") : CDB("blkindex.dat", pszMode), _genesisBlock("0x000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"), _genesisBlockIndex(NULL), _bestChainWork(0), _bestInvalidWork(0), _bestChain(0), _bestIndex(NULL), _bestReceivedTime(0), _transactionsUpdated(0) { }
+    BlockChain(const char* pszMode="cr+");
     
     /// A S S E T S
     
@@ -294,8 +294,6 @@ private:
     std::map<COutPoint, CInPoint> _transactionConnections;
     unsigned int _transactionsUpdated;
 
-    CCriticalSection cs_mapTransactions;    // will be removed once we switch to boost asio 
-    
     static const int _totalBlocksEstimate = 150000;
 };
 

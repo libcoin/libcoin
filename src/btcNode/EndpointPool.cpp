@@ -1,8 +1,8 @@
 
 #include "btcNode/EndpointPool.h"
 #include "btcNode/db.h"
-#include "btcNode/irc.h"
-#include "btcNode/net.h"
+//#include "btcNode/irc.h"
+//#include "btcNode/Peer.h"
 
 #include "btc/util.h"
 
@@ -17,7 +17,7 @@ void EndpointPool::purge()
     if (_lastPurgeTime == 0)
         _lastPurgeTime = GetTime();
     
-    if (GetTime() - _lastPurgeTime > 10 * 60 && vNodes.size() >= 3) {
+    if (GetTime() - _lastPurgeTime > 10 * 60) {
         _lastPurgeTime = GetTime();
         
         int64 since = GetAdjustedTime() - 14 * 24 * 60 * 60;
@@ -92,12 +92,6 @@ bool EndpointPool::addEndpoint(Endpoint endpoint, int64 penalty)
         }
     }
     
-    // There is a nasty deadlock bug if this is done inside the cs_mapAddresses
-    // CRITICAL_BLOCK:
-    // Thread 1:  begin db transaction (locks inside-db-mutex)
-    //            then AddAddress (locks cs_mapAddresses)
-    // Thread 2:  AddAddress (locks cs_mapAddresses)
-    //             ... then db operation hangs waiting for inside-db-mutex
     if (updated)
         writeEndpoint(found);
 
@@ -162,11 +156,14 @@ Endpoint EndpointPool::getCandidate(const set<unsigned int>& not_in, int64 start
         
         // If we have IRC, we'll be notified when they first come online,
         // and again every 24 hours by the refresh broadcast.
-        if (vNodes.size() >= 2 && sinceLastSeen > 24 * 60 * 60)
-            continue;
+        //        if (vNodes.size() >= 2 && sinceLastSeen > 24 * 60 * 60)
+        //  continue;
         
         // Only try the old stuff if we don't have enough connections
-        if (vNodes.size() >= 8 && sinceLastSeen > 24 * 60 * 60)
+        //if (vNodes.size() >= 8 && sinceLastSeen > 24 * 60 * 60)
+        //    continue;
+        
+        if (start_time > 0 && sinceLastSeen > 24 * 60 * 60)
             continue;
         
         // If multiple addresses are ready, prioritize by time since

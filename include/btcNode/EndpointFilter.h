@@ -15,15 +15,15 @@ public:
     
     virtual bool operator()(Peer* origin, Message& msg);
     
-    virtual std::vector<std::string> commands() {
-        std::vector<std::string> c; 
-        c.push_back("addr");
-        c.push_back("getaddr");
+    virtual std::set<std::string> commands() {
+        std::set<std::string> c; 
+        c.insert("addr");
+        c.insert("getaddr");
+        c.insert("version");
         // these are only handled to update their last activity...
-        c.push_back("version");
-        c.push_back("inv");
-        c.push_back("getdata");
-        c.push_back("ping");
+        c.insert("inv");
+        c.insert("getdata");
+        c.insert("ping");
         return c;
     }
     

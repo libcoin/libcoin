@@ -25,7 +25,7 @@ int Block::GetSigOpCount() const
     return n;
 }
 
-uint256 Block::buildMerkleTree() const
+uint256 Block::buildMerkleTree(bool genesisBlock)
 {
     _merkleTree.clear();
     BOOST_FOREACH(const Transaction& tx, _transactions)
@@ -39,10 +39,12 @@ uint256 Block::buildMerkleTree() const
         }
         j += size;
     }
-    return (_merkleTree.empty() ? 0 : _merkleTree.back());
+    uint256 merkleRoot = (_merkleTree.empty() ? 0 : _merkleTree.back());
+    if (genesisBlock) _merkleRoot = merkleRoot;
+    return merkleRoot;
 }
 
-std::vector<uint256> Block::getMerkleBranch(int index) const
+std::vector<uint256> Block::getMerkleBranch(int index)
 {
     if (_merkleTree.empty())
         buildMerkleTree();
@@ -92,7 +94,7 @@ void Block::print() const
     printf("\n");
 }
 
-bool Block::checkBlock() const
+bool Block::checkBlock()
 {
     // These are checks that are independent of context
     // that can be verified before saving an orphan block.

@@ -16,18 +16,99 @@ bool Lookup(const char *pszName, Endpoint& ep, int nServices, bool fAllowLookup 
 
 static const unsigned char pchIPv4[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff };
 
+using namespace std;
 using namespace boost::asio::ip;
+
+// portDefault is in host order
+bool Lookup(const char *pszName, vector<Endpoint>& vaddr, int nServices, int nMaxSolutions, bool fAllowLookup, int portDefault, bool fAllowPort)
+{
+    vaddr.clear();
+    if (pszName[0] == 0)
+        return false;
+    int port = portDefault;
+    char psz[256];
+    char *pszHost = psz;
+    strlcpy(psz, pszName, sizeof(psz));
+    if (fAllowPort)
+        {
+        char* pszColon = strrchr(psz+1,':');
+        char *pszPortEnd = NULL;
+        int portParsed = pszColon ? strtoul(pszColon+1, &pszPortEnd, 10) : 0;
+        if (pszColon && pszPortEnd && pszPortEnd[0] == 0)
+            {
+            if (psz[0] == '[' && pszColon[-1] == ']')
+                {
+                // Future: enable IPv6 colon-notation inside []
+                pszHost = psz+1;
+                pszColon[-1] = 0;
+                }
+            else
+                pszColon[0] = 0;
+            port = portParsed;
+            if (port < 0 || port > USHRT_MAX)
+                port = USHRT_MAX;
+            }
+        }
+    
+    unsigned int addrIP = inet_addr(pszHost);
+    if (addrIP != INADDR_NONE)
+        {
+        // valid IP address passed
+        vaddr.push_back(Endpoint(addrIP, port, nServices));
+        return true;
+        }
+    
+    if (!fAllowLookup)
+        return false;
+    
+    struct hostent* phostent = gethostbyname(pszHost);
+    if (!phostent)
+        return false;
+    
+    if (phostent->h_addrtype != AF_INET)
+        return false;
+    
+    char** ppAddr = phostent->h_addr_list;
+    while (*ppAddr != NULL && vaddr.size() != nMaxSolutions)
+        {
+        Endpoint addr(((struct in_addr*)ppAddr[0])->s_addr, port, nServices);
+        if (addr.isValid())
+            vaddr.push_back(addr);
+        ppAddr++;
+        }
+    
+    return (vaddr.size() > 0);
+}
+
+// portDefault is in host order
+bool Lookup(const char *pszName, Endpoint& addr, int nServices, bool fAllowLookup, int portDefault, bool fAllowPort)
+{
+    vector<Endpoint> vaddr;
+    bool fRet = Lookup(pszName, vaddr, nServices, 1, fAllowLookup, portDefault, fAllowPort);
+    if (fRet)
+        addr = vaddr[0];
+    return fRet;
+}
 
 Endpoint::Endpoint()
 {
     init();
 }
 
+Endpoint::Endpoint(tcp::endpoint ep) : tcp::endpoint(ep) {
+    _services = NODE_NETWORK;
+    memcpy(_ipv6, pchIPv4, sizeof(_ipv6));
+    _time = 100000000;
+    _lastTry = 0;    
+}
+
 Endpoint::Endpoint(unsigned int ip, unsigned short p, uint64 services)
 {
     init();
-    address(address_v4(ip));
-    port(htons(p == 0 ? getDefaultPort() : p));
+    //    address(address_v4(ip));
+    //    port(htons(p == 0 ? getDefaultPort() : p));
+    address(address_v4(ntohl(ip)));
+    port(p == 0 ? getDefaultPort() : p);
     _services = services;
 }
 
@@ -67,8 +148,10 @@ void Endpoint::init()
 {
     _services = NODE_NETWORK;
     memcpy(_ipv6, pchIPv4, sizeof(_ipv6));
+    //    address(address_v4(INADDR_NONE));
+    //    port(htons(getDefaultPort()));
     address(address_v4(INADDR_NONE));
-    port(htons(getDefaultPort()));
+    port(getDefaultPort());
     _time = 100000000;
     _lastTry = 0;
 }
@@ -170,12 +253,12 @@ bool Endpoint::isValid() const
 unsigned char Endpoint::getByte(int n) const
 {
     unsigned long ip = address().to_v4().to_ulong();
-    return ((unsigned char*)&ip)[3-n];
+    return ((unsigned char*)&ip)[n];
 }
 
 std::string Endpoint::toStringIPPort() const
 {
-    return strprintf("%u.%u.%u.%u:%u", getByte(3), getByte(2), getByte(1), getByte(0), ntohs(port()));
+    return strprintf("%u.%u.%u.%u:%u", getByte(3), getByte(2), getByte(1), getByte(0), port());
 }
 
 std::string Endpoint::toStringIP() const
@@ -185,12 +268,12 @@ std::string Endpoint::toStringIP() const
 
 std::string Endpoint::toStringPort() const
 {
-    return strprintf("%u", ntohs(port()));
+    return strprintf("%u", port());
 }
 
 std::string Endpoint::toString() const
 {
-    return strprintf("%u.%u.%u.%u:%u", getByte(3), getByte(2), getByte(1), getByte(0), ntohs(port()));
+    return strprintf("%u.%u.%u.%u:%u", getByte(3), getByte(2), getByte(1), getByte(0), port());
 }
 
 void Endpoint::print() const

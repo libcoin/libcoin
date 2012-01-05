@@ -3,7 +3,7 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 #include "btcNode/BlockChain.h"
-#include "btcNode/net.h"
+#include "btcNode/Peer.h"
 #include "btcNode/main.h"
 
 #include "btc/asset.h"
@@ -17,7 +17,7 @@ using namespace boost;
 using namespace json_spirit;
 
 #define BTCBROKER "19bvWMvxddxbDrrN6kXZxqhZsApfVFDxB6"
-
+/*
 double reliability(uint256 hash) {
     unsigned int confirmations, known_in_nodes, n_nodes;
     
@@ -92,7 +92,7 @@ Value gettxmaturity(const Array& params, bool fHelp)
     
     return entry;
 }
-
+*/
 Object tx2json(Transaction &tx, int64 timestamp = 0, int64 blockheight = 0)
 {
     Object entry;
@@ -158,7 +158,7 @@ Value GetTxDetails::operator()(const Array& params, bool fHelp) {
     int64 blockheight = 0;
     
     Transaction tx;
-    __blockChain->getTransaction(hash, tx, blockheight, timestamp);
+    _blockChain.getTransaction(hash, tx, blockheight, timestamp);
     if(tx.IsNull())
         throw RPC::error(RPC::invalid_params, "Invalid transaction id");        
     
@@ -166,7 +166,7 @@ Value GetTxDetails::operator()(const Array& params, bool fHelp) {
     
     return entry;    
 }
-
+/*
 Value getvalue(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
@@ -265,7 +265,7 @@ Value checkvalue(const Array& params, bool fHelp)
             return reliable;
     }
 }
-
+*/
 Value GetDebit::operator()(const Array& params, bool fHelp) {
 
     if (fHelp || params.size() != 1)
@@ -281,7 +281,7 @@ Value GetDebit::operator()(const Array& params, bool fHelp) {
     
     set<Coin> debit;
     
-    __blockChain->getDebit(hash160, debit);
+    _blockChain.getDebit(hash160, debit);
     
     Array list;
     
@@ -312,7 +312,7 @@ Value GetCredit::operator()(const Array& params, bool fHelp) {
     
     set<Coin> credit;
     
-    __blockChain->getCredit(hash160, credit);
+    _blockChain.getCredit(hash160, credit);
     
     Array list;
     
@@ -327,7 +327,7 @@ Value GetCredit::operator()(const Array& params, bool fHelp) {
     
     return list;
 }
-
+/*
 Value getcoins(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
@@ -340,7 +340,7 @@ Value getcoins(const Array& params, bool fHelp)
     CAsset asset;
     asset.addAddress(hash160);
 
-    CDBAssetSyncronizer sync(*__blockChain);
+    CDBAssetSyncronizer sync(_blockChain);
     asset.syncronize(sync, true);
     set<Coin> coins = asset.getCoins();
     
@@ -357,7 +357,7 @@ Value getcoins(const Array& params, bool fHelp)
     
     return list;
 }
-
+*/
 Transaction json2tx(Object entry)
 {
     Transaction tx;
@@ -430,6 +430,7 @@ Transaction json2tx(Object entry)
     return tx;
 }
 
+/*
 int64 CalculateFee(Transaction& tx)
 {
     // calculate the inputs:
@@ -437,7 +438,7 @@ int64 CalculateFee(Transaction& tx)
     for(int i = 0; i < tx.vin.size(); i++)
     {
         Transaction txin;
-        __blockChain->getTransaction(tx.vin[i].prevout.hash, txin); // OBS - you need to check also the MemoryPool...
+        _blockChain.getTransaction(tx.vin[i].prevout.hash, txin); // OBS - you need to check also the MemoryPool...
         if (txin.IsNull()) throw runtime_error("Referred transaction not known : " + tx.vin[i].prevout.hash.toString());
         if (tx.vin[i].prevout.n < txin.vout.size())
             value_in += txin.vout[tx.vin[i].prevout.n].nValue;
@@ -536,3 +537,4 @@ Value posttx(const Array& params, bool fHelp)
     
     return Value::null;
 }
+*/

@@ -1,6 +1,6 @@
 
 #ifndef MESSAGE_PARSER_H
-#define MESSAGE_REQUEST_PARSER_H
+#define MESSAGE_PARSER_H
 
 #include <string>
 #include <boost/logic/tribool.hpp>

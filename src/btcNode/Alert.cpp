@@ -1,7 +1,7 @@
 
 #include "btcNode/Alert.h"
 
-#include "btcNode/net.h"
+//#include "btcNode/net.h"
 #include "btcNode/Block.h"
 #include "btcNode/BlockIndex.h"
 #include "btcNode/Peer.h"
@@ -58,7 +58,6 @@ string UnsignedAlert::toString() const
 
 
 map<uint256, Alert> mapAlerts;
-CCriticalSection cs_mapAlerts;
 /*
 string getWarnings(string strFor)
 {
@@ -141,42 +140,38 @@ bool Alert::processAlert()
     if (!isInEffect())
         return false;
 
-    CRITICAL_BLOCK(cs_mapAlerts)
+    // Cancel previous alerts
+    for (map<uint256, Alert>::iterator mi = mapAlerts.begin(); mi != mapAlerts.end();)
+        {
+        const Alert& alert = (*mi).second;
+        if (cancels(alert))
+            {
+            printf("cancelling alert %d\n", alert._id);
+            mapAlerts.erase(mi++);
+            }
+        else if (!alert.isInEffect())
+            {
+            printf("expiring alert %d\n", alert._id);
+            mapAlerts.erase(mi++);
+            }
+        else
+            mi++;
+        }
+    
+    // Check if this alert has been cancelled
+    BOOST_FOREACH(PAIRTYPE(const uint256, Alert)& item, mapAlerts)
     {
-        // Cancel previous alerts
-        for (map<uint256, Alert>::iterator mi = mapAlerts.begin(); mi != mapAlerts.end();)
+    const Alert& alert = item.second;
+    if (alert.cancels(*this))
         {
-            const Alert& alert = (*mi).second;
-            if (cancels(alert))
-            {
-                printf("cancelling alert %d\n", alert._id);
-                mapAlerts.erase(mi++);
-            }
-            else if (!alert.isInEffect())
-            {
-                printf("expiring alert %d\n", alert._id);
-                mapAlerts.erase(mi++);
-            }
-            else
-                mi++;
+        printf("alert already cancelled by %d\n", alert._id);
+        return false;
         }
-
-        // Check if this alert has been cancelled
-        BOOST_FOREACH(PAIRTYPE(const uint256, Alert)& item, mapAlerts)
-        {
-            const Alert& alert = item.second;
-            if (alert.cancels(*this))
-            {
-                printf("alert already cancelled by %d\n", alert._id);
-                return false;
-            }
-        }
-
-        // Add to mapAlerts
-        mapAlerts.insert(make_pair(getHash(), *this));
     }
+    
+    // Add to mapAlerts
+    mapAlerts.insert(make_pair(getHash(), *this));
 
     printf("accepted alert %d, AppliesToMe()=%d\n", _id, appliesToMe());
-    //    MainFrameRepaint();
     return true;
 }

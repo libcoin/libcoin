@@ -6,7 +6,7 @@
 
 #include <vector>
 
-#include "main.h"
+#include "btc/tx.h"
 
 class Block;
 class CBlockIndex;
@@ -101,15 +101,15 @@ public:
     const TransactionList getTransactions() const { return _transactions; }
     Transaction& getTransaction(size_t i) { return _transactions[i]; }
     
-    uint256 buildMerkleTree() const;
+    uint256 buildMerkleTree(bool genesisBlock = false);
 
-    MerkleBranch getMerkleBranch(int index) const;
+    MerkleBranch getMerkleBranch(int index);
 
     static uint256 checkMerkleBranch(uint256 hash, const std::vector<uint256>& merkleBranch, int index);
 
     void print() const;
 
-    bool checkBlock() const;
+    bool checkBlock();
     
     const int getVersion() const { return _version; }
     

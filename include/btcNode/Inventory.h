@@ -6,6 +6,12 @@
 #include "btc/uint256.h"
 #include "btc/serialize.h"
 
+enum
+{
+    MSG_TX = 1,
+    MSG_BLOCK,
+};
+
 class Inventory
 {
 public:

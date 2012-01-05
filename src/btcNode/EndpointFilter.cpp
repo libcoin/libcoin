@@ -1,8 +1,7 @@
 
 #include "btcNode/EndpointFilter.h"
 #include "btcNode/EndpointPool.h"
-
-#include "btcNode/net.h"
+#include "btcNode/Peer.h"
 
 #include <string>
 
@@ -46,28 +45,27 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
             
             if (ep.getTime() > since && !origin->fGetAddr && endpoints.size() <= 10 && ep.isRoutable()) {
                 // Relay to a limited number of other nodes
-                CRITICAL_BLOCK(cs_vNodes) {
-                    // Use deterministic randomness to send to the same nodes for 24 hours
-                    // at a time so the setAddrKnowns of the chosen nodes prevent repeats
-                    static uint256 hashSalt; // belongs to the Handler/Node...
-                    if (hashSalt == 0)
-                        RAND_bytes((unsigned char*)&hashSalt, sizeof(hashSalt));
-                    uint256 hashRand = hashSalt ^ (((int64)ep.getIP())<<32) ^ ((GetTime() + ep.getIP())/(24*60*60));
-                    hashRand = Hash(BEGIN(hashRand), END(hashRand));
-                    multimap<uint256, Peer*> mapMix;
-                    BOOST_FOREACH(Peer* pnode, vNodes) { // vNodes is a list kept in the peerManager - the peerManager is referenced by the Node and the Peer - but we could query it - e.g. from the Node ??
-                        if (pnode->nVersion < 31402)
-                            continue;
-                        unsigned int nPointer;
-                        memcpy(&nPointer, &pnode, sizeof(nPointer));
-                        uint256 hashKey = hashRand ^ nPointer;
-                        hashKey = Hash(BEGIN(hashKey), END(hashKey));
-                        mapMix.insert(make_pair(hashKey, pnode));
-                    }
-                    int nRelayNodes = 2;
-                    for (multimap<uint256, Peer*>::iterator mi = mapMix.begin(); mi != mapMix.end() && nRelayNodes-- > 0; ++mi)
-                        ((*mi).second)->PushAddress(ep);
+                // Use deterministic randomness to send to the same nodes for 24 hours
+                // at a time so the setAddrKnowns of the chosen nodes prevent repeats
+                static uint256 hashSalt; // belongs to the Handler/Node...
+                if (hashSalt == 0)
+                    RAND_bytes((unsigned char*)&hashSalt, sizeof(hashSalt));
+                uint256 hashRand = hashSalt ^ (((int64)ep.getIP())<<32) ^ ((GetTime() + ep.getIP())/(24*60*60));
+                hashRand = Hash(BEGIN(hashRand), END(hashRand));
+                multimap<uint256, Peer*> mapMix;
+                Peers peers = origin->getAllPeers();
+                for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer) { // vNodes is a list kept in the peerManager - the peerManager is referenced by the Node and the Peer - but we could query it - e.g. from the Node ??
+                    if ((*peer)->nVersion < 31402)
+                        continue;
+                    unsigned int nPointer;
+                    memcpy(&nPointer, &(*peer), sizeof(nPointer));
+                    uint256 hashKey = hashRand ^ nPointer;
+                    hashKey = Hash(BEGIN(hashKey), END(hashKey));
+                    mapMix.insert(make_pair(hashKey, peer->get()));
                 }
+                int nRelayNodes = 2;
+                for (multimap<uint256, Peer*>::iterator mi = mapMix.begin(); mi != mapMix.end() && nRelayNodes-- > 0; ++mi)
+                    ((*mi).second)->PushAddress(ep);
             }
         }
         //        addrDB.TxnCommit();  // Save addresses (it's ok if this fails)
@@ -81,12 +79,47 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
         for (set<Endpoint>::iterator ep = endpoints.begin(); ep != endpoints.end(); ++ep)
             origin->PushAddress(*ep);
     }
+    else if (msg.command() == "version") {
+        if (!origin->fInbound) {
+            // Advertise our address
+            if (_endpointPool.getLocal().isRoutable() && !origin->getProxy()) {
+                Endpoint addr(_endpointPool.getLocal());
+                addr.setTime(GetAdjustedTime());
+                origin->PushAddress(addr);
+            }
+            
+            // Get recent addresses
+            if (origin->nVersion >= 31402 || _endpointPool.getPoolSize() < 1000) {
+                origin->PushMessage("getaddr");
+                origin->fGetAddr = true;
+            }
+        }
+    }
     
     // Update the last seen time for this node's address
     if (origin->fNetworkNode)
         if (msg.command() == "version" || msg.command() == "addr" || msg.command() == "inv" || msg.command() == "getdata" || msg.command() == "ping")
             _endpointPool.currentlyConnected(origin->addr);
     
+    // Address refresh broadcast - has been moved into the EndpointFilter... - this means that it is only induced by some of the commands registered to this filter, but it is a 24hours recheck, so it should not matter.
+    static int64 nLastRebroadcast;
+    if (GetTime() - nLastRebroadcast > 24 * 60 * 60) {
+        nLastRebroadcast = GetTime();
+        // Periodically clear setAddrKnown to allow refresh broadcasts
+        origin->setAddrKnown.clear();
+        
+        // Rebroadcast our address
+        if (_endpointPool.getLocal().isRoutable() && origin->getProxy()) {
+            Endpoint addr(_endpointPool.getLocal());
+            addr.setTime(GetAdjustedTime());
+            origin->PushAddress(addr);
+        }
+    }
+        
+    // Clear out old addresses periodically so it's not too much work at once.
+    if (origin->getAllPeers().size() >= 3)
+        _endpointPool.purge();
+
     return true;
 }
 

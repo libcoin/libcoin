@@ -1,13 +1,15 @@
-#ifdef _LIBBTC_ASIO_
 
 #ifndef PEER_MANAGER_H
 #define PEER_MANAGER_H
 
+//#include "btcNode/Node.h"
+
 #include <set>
 #include <boost/noncopyable.hpp>
-#include "btcHTTP/Connection.h"
+#include <boost/shared_ptr.hpp>
 
 class Peer;
+class Node;
 
 typedef boost::shared_ptr<Peer> peer_ptr;
 typedef std::set<peer_ptr> Peers;
@@ -17,6 +19,9 @@ typedef std::set<peer_ptr> Peers;
 class PeerManager : private boost::noncopyable
 {
 public:
+    /// Constructor - we register the Node as a delegate to enable spawning of new Peers when the old ones die
+    PeerManager(Node& node) : _node(node) {}
+    
     /// Add the specified connection to the manager and start it.
     void start(peer_ptr p);
     
@@ -27,7 +32,10 @@ public:
     void stop_all();
     
     /// Returns a list of platform specific unsigned ints that contains the ipv4 addresses of connected peers
-    const std::set<unsigned int>& getPeerIPList() const;
+    const std::set<unsigned int> getPeerIPList() const;
+    
+    /// Returns the list of peers
+    Peers getPeerList() { return _peers; }
     
     /// Returns the number of outbound connections from this node
     const unsigned int getNumOutbound() const;
@@ -41,7 +49,9 @@ public:
 private:
     /// The managed connections.
     Peers _peers;
+    
+    /// The delegate
+    Node& _node; 
 };
 
 #endif // PEER_MANAGER_H
-#endif // _LIBBTC_ASIO_

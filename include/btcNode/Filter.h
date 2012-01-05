@@ -46,7 +46,7 @@ class OriginNotReady: public std::exception
     }
 };
 
-typedef std::vector<std::string> Commands;
+typedef std::set<std::string> Commands;
 
 class Filter
 {
@@ -55,7 +55,7 @@ public:
     virtual bool operator()(Peer* origin, Message& msg) = 0;
     
     /// Returns a list of commands that are processed by this filter
-    virtual Commands commands() { std::vector<std::string> c; return c; }
+    virtual Commands commands() { std::set<std::string> c; return c; }
 };
 
 typedef boost::shared_ptr<Filter> filter_ptr;

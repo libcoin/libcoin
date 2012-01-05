@@ -96,6 +96,8 @@ enum
         const bool fGetSize = true;             \
         const bool fWrite = false;              \
         const bool fRead = false;               \
+        bool remove_warnings = fGetSize;        \
+        remove_warnings = fWrite|fRead;         \
         unsigned int nSerSize = 0;              \
         ser_streamplaceholder s;                \
         s.nType = nType;                        \
@@ -110,6 +112,8 @@ enum
         const bool fGetSize = false;            \
         const bool fWrite = true;               \
         const bool fRead = false;               \
+        bool remove_warnings = fGetSize;        \
+        remove_warnings = fWrite|fRead;         \
         unsigned int nSerSize = 0;              \
         {statements}                            \
     }                                           \
@@ -120,6 +124,8 @@ enum
         const bool fGetSize = false;            \
         const bool fWrite = false;              \
         const bool fRead = true;                \
+        bool remove_warnings = fGetSize;        \
+        remove_warnings = fWrite|fRead;         \
         unsigned int nSerSize = 0;              \
         {statements}                            \
     }
@@ -826,14 +832,72 @@ struct secure_allocator : public std::allocator<T>
         std::allocator<T>::deallocate(p, n);
     }
 };
+/*
+class CDataStream : public std::stringstream
+{
+public:
+    int nType;
+    int nVersion;    
 
+    typedef std::string::iterator         iterator;
+    typedef std::string::const_iterator   const_iterator;
+    
+    explicit CDataStream(int nTypeIn=SER_NETWORK, int nVersionIn=VERSION) : std::stringstream(), nType(nTypeIn), nVersion(nVersionIn) { }
+    
+    explicit CDataStream(const std::string& sIn, int nTypeIn=SER_NETWORK, int nVersionIn=VERSION) : std::stringstream(sIn), nType(nTypeIn), nVersion(nVersionIn) { }
 
+    explicit CDataStream(const std::vector<unsigned char>& vchIn, int nTypeIn=SER_NETWORK, int nVersionIn=VERSION) : std::stringstream(std::string(vchIn.begin(), vchIn.end())), nType(nTypeIn), nVersion(nVersionIn) { }
+
+    template<class InputIterator> CDataStream(InputIterator begin, InputIterator end, int nTypeIn=SER_NETWORK, int nVersionIn=VERSION) : std::stringstream(std::string(begin, end)), nType(nTypeIn), nVersion(nVersionIn) { }
+    
+    void SetType(int nTypeIn) { nType = nTypeIn; }
+    void SetVersion(int nVersionIn) { nVersion = nVersionIn; }
+    int GetVersion() { return nVersion; }
+    
+    void reserve(size_t n) {} // don't do anything - allocate on the fly
+    const_iterator begin() const { return rdbuf()->str().begin(); }
+    iterator begin() { return rdbuf()->str().begin(); }
+    const_iterator end() const { return rdbuf()->str().end(); }
+    iterator end() { return rdbuf()->str().end(); }
+
+    const char& operator[] ( size_t pos ) const { return rdbuf()->str()[pos]; }
+    char& operator[] ( size_t pos ) { return rdbuf()->str()[pos]; }
+    
+    const size_t size() const { return rdbuf()->str().size(); }
+    
+    bool empty() { return rdbuf()->str().empty(); }
+    
+    iterator erase ( iterator position ) { return rdbuf()->str().erase(position); }
+    iterator erase ( iterator first, iterator last ) { return rdbuf()->str().erase(first, last); }
+
+    template<typename T>
+    unsigned int GetSerializeSize(const T& obj) {
+        // Tells the size of the object if serialized to this stream
+        return ::GetSerializeSize(obj, nType, nVersion);
+    }
+    
+    template<typename T>
+    CDataStream& operator<<(const T& obj) {
+        // Serialize to this stream
+        ::Serialize(*this, obj, nType, nVersion);
+        return (*this);
+    }
+    
+    template<typename T>
+    CDataStream& operator>>(T& obj) {
+    // Unserialize from this stream
+        ::Unserialize(*this, obj, nType, nVersion);
+        return (*this);
+    }
+};
+ */
 
 //
 // Double ended buffer combining vector and stream-like interfaces.
 // >> and << read and write unformatted data using the above serialization templates.
 // Fills with data in linear time; some stringstream implementations take N^2 time.
 //
+
 class CDataStream
 {
 protected:

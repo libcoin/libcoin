@@ -1,7 +1,10 @@
 
 #include "btcNode/TransactionFilter.h"
+#include "btcNode/BlockChain.h"
+#include "btcNode/Peer.h"
+#include "btcNode/Inventory.h"
 
-#include "btcNode/net.h"
+#include "btc/tx.h"
 
 using namespace std;
 using namespace boost;
@@ -22,7 +25,7 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
         
         bool fMissingInputs = false;
         if (_blockChain.acceptTransaction(tx, fMissingInputs)) {
-            relayMessage(inv, payload);
+            relayMessage(origin->getAllPeers(), inv, payload);
             _alreadyAskedFor.erase(inv);
             workQueue.push_back(inv.getHash());
             
@@ -40,7 +43,7 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
                     if (_blockChain.acceptTransaction(tx)){
                         printf("   accepted orphan tx %s\n", inv.getHash().toString().substr(0,10).c_str());
                         //                        SyncWithWallets(tx, NULL, true);
-                        relayMessage(inv, payload);
+                        relayMessage(origin->getAllPeers(), inv, payload);
                         _alreadyAskedFor.erase(inv);
                         workQueue.push_back(inv.getHash());
                     }
@@ -69,11 +72,9 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
             
             if (inv.getType() == MSG_TX) {
                 // Send stream from relay memory
-                CRITICAL_BLOCK(cs_mapRelay) {
-                    map<Inventory, CDataStream>::iterator mi = _relay.find(inv);
-                    if (mi != _relay.end())
-                        origin->PushMessage(inv.getCommand(), (*mi).second);
-                }
+                map<Inventory, CDataStream>::iterator mi = _relay.find(inv);
+                if (mi != _relay.end())
+                    origin->PushMessage(inv.getCommand(), (*mi).second);
             }
             
             // Track requests for our stuff
@@ -148,32 +149,29 @@ bool TransactionFilter::alreadyHave(const Inventory& inv) {
 
 // The Relay system is only used for Transactions - hence we put it here.
 
-inline void TransactionFilter::relayInventory(const Inventory& inv) {
+inline void TransactionFilter::relayInventory(const Peers& peers, const Inventory& inv) {
     // Put on lists to offer to the other nodes
-    CRITICAL_BLOCK(cs_vNodes)
-    BOOST_FOREACH(Peer* pnode, vNodes)
-        pnode->PushInventory(inv);
+    for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
+        (*peer)->PushInventory(inv);
 }
 
-template<typename T> void TransactionFilter::relayMessage(const Inventory& inv, const T& a) {
+template<typename T> void TransactionFilter::relayMessage(const Peers& peers, const Inventory& inv, const T& a) {
     CDataStream ss(SER_NETWORK);
     ss.reserve(10000);
     ss << a;
-    relayMessage(inv, ss);
+    relayMessage(peers, inv, ss);
 }
 
-template<> inline void TransactionFilter::relayMessage<>(const Inventory& inv, const CDataStream& ss) {
-    CRITICAL_BLOCK(cs_mapRelay) {
-        // Expire old relay messages
-        while (!_relayExpiration.empty() && _relayExpiration.front().first < GetTime()) {
-            _relay.erase(_relayExpiration.front().second);
-            _relayExpiration.pop_front();
-        }
-        
-        // Save original serialized message so newer versions are preserved
-        _relay[inv] = ss;
-        _relayExpiration.push_back(std::make_pair(GetTime() + 15 * 60, inv));
+template<> inline void TransactionFilter::relayMessage<>(const Peers& peers, const Inventory& inv, const CDataStream& ss) {
+    // Expire old relay messages
+    while (!_relayExpiration.empty() && _relayExpiration.front().first < GetTime()) {
+        _relay.erase(_relayExpiration.front().second);
+        _relayExpiration.pop_front();
     }
     
-    relayInventory(inv);
+    // Save original serialized message so newer versions are preserved
+    _relay[inv] = ss;
+    _relayExpiration.push_back(std::make_pair(GetTime() + 15 * 60, inv));
+    
+    relayInventory(peers, inv);
 }

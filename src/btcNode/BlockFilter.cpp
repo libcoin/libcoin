@@ -2,12 +2,14 @@
 #include "btcNode/BlockFilter.h"
 #include "btcNode/BlockChain.h"
 #include "btcNode/Block.h"
-
-#include "btcNode/net.h"
+#include "btcNode/Peer.h"
+#include "btcNode/Inventory.h"
 
 using namespace std;
 using namespace boost;
 
+
+size_t SendBufferSize() { return 10*1000; }
 
 bool BlockFilter::operator()(Peer* origin, Message& msg) {
     if (origin->nVersion == 0) {
@@ -149,7 +151,14 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
             }
     
         }
-        
+    }
+    else if (msg.command() == "version") {
+        // Ask the first connected node for block updates
+        static int nAskedForBlocks;
+        if (!origin->fClient && (origin->nVersion < 32000 || origin->nVersion >= 32400) && (nAskedForBlocks < 1 || origin->getAllPeers().size() <= 1)) {
+            nAskedForBlocks++;
+            origin->PushGetBlocks(_blockChain.getBestLocator(), uint256(0));
+        }
     }
 
     return true;
@@ -197,6 +206,17 @@ bool BlockFilter::processBlock(Peer* origin, Block& block) {
     // Store to disk
     if (!_blockChain.acceptBlock(block))
         return error("ProcessBlock() : AcceptBlock FAILED");
+    else {
+        // Relay inventory, but don't relay old inventory during initial block download
+        uint256 bestChain = _blockChain.getBestChain();
+        uint256 blockHash = block.getHash();
+        if (bestChain == blockHash) {
+            Peers peers = origin->getAllPeers();
+            for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
+                if (bestChain > ((*peer)->nStartingHeight != -1 ? (*peer)->nStartingHeight - 2000 : 140700))
+                    (*peer)->PushInventory(Inventory(MSG_BLOCK, blockHash));
+        }
+    }
     
     // Recursively process any orphan blocks that depended on this one
     vector<uint256> workQueue;
@@ -207,8 +227,18 @@ bool BlockFilter::processBlock(Peer* origin, Block& block) {
              mi != _orphanBlocksByPrev.upper_bound(hashPrev);
              ++mi) {
             Block* orphan = (*mi).second;
-            if (_blockChain.acceptBlock(*orphan))
+            if (_blockChain.acceptBlock(*orphan)) {
                 workQueue.push_back(orphan->getHash());
+                // Relay inventory, but don't relay old inventory during initial block download
+                uint256 bestChain = _blockChain.getBestChain();
+                uint256 blockHash = block.getHash();
+                if (bestChain == blockHash) {
+                    Peers peers = origin->getAllPeers();
+                    for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
+                        if (bestChain > ((*peer)->nStartingHeight != -1 ? (*peer)->nStartingHeight - 2000 : 140700))
+                            (*peer)->PushInventory(Inventory(MSG_BLOCK, blockHash));
+                }
+            }
             _orphanBlocks.erase(orphan->getHash());
             delete orphan;
         }

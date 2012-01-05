@@ -2,7 +2,7 @@
 #ifndef HTTP_REQUEST_HANDLER_H
 #define HTTP_REQUEST_HANDLER_H
 
-#include "Method.h"
+#include "btcHTTP/Method.h"
 
 #include <string>
 

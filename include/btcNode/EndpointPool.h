@@ -2,7 +2,7 @@
 #ifndef ENDPOINTPOOL_H
 #define ENDPOINTPOOL_H
 
-#include "db.h"
+#include "btcNode/db.h"
 
 #include "btcNode/Endpoint.h"
 
@@ -13,10 +13,10 @@
 
 typedef std::map<std::vector<unsigned char>, Endpoint> EndpointMap;
  
-class EndpointPool : public CDB
+class EndpointPool : protected CDB
 {
 public:
-    EndpointPool(const char* pszMode="r+") : CDB("addr.dat", pszMode) , _lastPurgeTime(0), _localhost("0.0.0.0", 0, false, NODE_NETWORK) { loadEndpoints(); }
+    EndpointPool(const char* pszMode="cr+") : CDB("addr.dat", pszMode) , _localhost("0.0.0.0", 0, false, NODE_NETWORK), _lastPurgeTime(0) { loadEndpoints(); }
     
     /// Purge old addresses - meant to be called periodically to awoid to much work
     void purge();

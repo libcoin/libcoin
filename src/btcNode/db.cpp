@@ -5,7 +5,7 @@
 
 //#include "headers.h"
 #include "btcNode/db.h"
-#include "btcNode/net.h"
+//#include "btcNode/net.h"
 #include "btcNode/BlockChain.h"
 #include "btcNode/main.h"
 
@@ -144,7 +144,8 @@ void CDB::Close()
         nMinutes = 1;
     if (strFile == "addr.dat")
         nMinutes = 2;
-    if (strFile == "blkindex.dat" && __blockChain->isInitialBlockDownload() && __blockChain->getBestHeight() % 500 != 0)
+    //    if (strFile == "blkindex.dat" && __blockChain->isInitialBlockDownload() && __blockChain->getBestHeight() % 500 != 0)
+    if (strFile == "blkindex.dat")
         nMinutes = 1;
     dbenv.txn_checkpoint(0, nMinutes, 0);
 

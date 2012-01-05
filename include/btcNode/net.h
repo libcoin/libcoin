@@ -53,31 +53,6 @@ bool BindListenPort(std::string& strError=REF(std::string()));
 void StartNode(void* parg);
 bool StopNode();
 
-enum
-{
-    MSG_TX = 1,
-    MSG_BLOCK,
-};
-
-class CRequestTracker
-{
-public:
-    void (*fn)(void*, CDataStream&);
-    void* param1;
-
-    explicit CRequestTracker(void (*fnIn)(void*, CDataStream&)=NULL, void* param1In=NULL)
-    {
-        fn = fnIn;
-        param1 = param1In;
-    }
-
-    bool IsNull()
-    {
-        return fn == NULL;
-    }
-};
-
-
 
 
 
@@ -93,7 +68,7 @@ extern CCriticalSection cs_vNodes;
 //extern std::map<std::vector<unsigned char>, Endpoint> mapAddresses;
 //extern CCriticalSection cs_mapAddresses;
 
-extern EndpointPool* _endpointPool;
+extern EndpointPool* __endpointPool;
 
 
 extern std::map<Inventory, CDataStream> mapRelay;
@@ -109,6 +84,24 @@ extern Endpoint addrProxy;
 
 
 #ifndef _LIBBTC_ASIO_
+
+class CRequestTracker
+{
+public:
+    void (*fn)(void*, CDataStream&);
+    void* param1;
+    
+    explicit CRequestTracker(void (*fnIn)(void*, CDataStream&)=NULL, void* param1In=NULL)
+    {
+    fn = fnIn;
+    param1 = param1In;
+    }
+    
+    bool IsNull()
+    {
+    return fn == NULL;
+    }
+};
 
 class Peer
 {
@@ -581,15 +574,6 @@ private:
 };
 
 
-
-#endif // _LIBBTC_ASIO_
-
-
-
-
-
-
-
 inline void RelayInventory(const Inventory& inv)
 {
     // Put on lists to offer to the other nodes
@@ -626,4 +610,8 @@ inline void RelayMessage<>(const Inventory& inv, const CDataStream& ss)
 
     RelayInventory(inv);
 }
+#endif // _LIBBTC_ASIO_
+
+
+
 #endif

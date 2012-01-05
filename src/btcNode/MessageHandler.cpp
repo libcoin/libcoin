@@ -11,30 +11,23 @@ MessageHandler::MessageHandler() {
 }
 
 void MessageHandler::installFilter(filter_ptr filter) {
-    Commands commands = filter->commands();
-    for (Commands::iterator cmd = commands.begin(); cmd != commands.end(); ++cmd) {
-        _filters.insert(make_pair(*cmd,filter));
-    }
+        _filters.push_back(filter);
 }
 
 bool MessageHandler::handleMessage(Peer* origin, Message& msg) {
 
     try {
-        if(_filters.count(msg.command())) { // do something
-            bool ret = false;
-            pair<Filters::iterator, Filters::iterator> cmds = _filters.equal_range(msg.command());
-            multimap<string, int>::iterator it; //Iterator to be used along with ii
-            for(Filters::iterator cmd = cmds.first; cmd != cmds.second; ++cmd) {
+        bool ret = false;
+        for(Filters::iterator filter = _filters.begin(); filter != _filters.end(); ++filter) {
+            if ((*filter)->commands().count(msg.command())) {
                 // copy the string
                 string payload(msg.payload());
                 Message message(msg.command(), payload);
                 // We need only one successfull command to return true
-                if ( (*cmd->second)(origin, message) ) ret = true;
+                if ( (**filter)(origin, message) ) ret = true;
             }
-            return ret;
         }
-        else
-            return false;
+        return ret;
     } catch (OriginNotReady e) { // Must have a version message before anything else
         return false;        
     }

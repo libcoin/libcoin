@@ -12,29 +12,28 @@ SET(HEADER_PATH ${PROJECT_SOURCE_DIR}/include/${LIB_NAME})
 SET(TARGET_H
     ${HEADER_PATH}/main.h
     ${HEADER_PATH}/db.h
-    ${HEADER_PATH}/irc.h
-    ${HEADER_PATH}/net.h
     ${HEADER_PATH}/Alert.h
+    ${HEADER_PATH}/AlertFilter.h
     ${HEADER_PATH}/Block.h
     ${HEADER_PATH}/BlockIndex.h
     ${HEADER_PATH}/BlockFile.h
     ${HEADER_PATH}/BlockChain.h
+    ${HEADER_PATH}/BlockFilter.h
     ${HEADER_PATH}/ChatClient.h
-    ${HEADER_PATH}/Inventory.h    
     ${HEADER_PATH}/Endpoint.h
     ${HEADER_PATH}/EndpointPool.h
-    ${HEADER_PATH}/Filter.h
-    ${HEADER_PATH}/TransactionFilter.h
-    ${HEADER_PATH}/BlockFilter.h
     ${HEADER_PATH}/EndpointFilter.h
-    ${HEADER_PATH}/VersionFilter.h
-    ${HEADER_PATH}/AlertFilter.h
+    ${HEADER_PATH}/Filter.h
+    ${HEADER_PATH}/Inventory.h    
     ${HEADER_PATH}/MessageHeader.h
     ${HEADER_PATH}/MessageHandler.h
     ${HEADER_PATH}/MessageParser.h
     ${HEADER_PATH}/Node.h
     ${HEADER_PATH}/Peer.h
     ${HEADER_PATH}/PeerManager.h
+    ${HEADER_PATH}/TransactionFilter.h
+    ${HEADER_PATH}/VersionFilter.h
+    ${HEADER_PATH}/WebClient.h
     ${BITCOIN_CONFIG_HEADER}
 )
 
@@ -44,28 +43,27 @@ SET(TARGET_H
 SET(TARGET_SRC
     main.cpp
     db.cpp
-    irc.cpp
-    net.cpp
     Alert.cpp
+    AlertFilter.cpp
     Block.cpp
+    BlockFilter.cpp
     BlockIndex.cpp
     BlockFile.cpp
     BlockChain.cpp
     ChatClient.cpp
-    Inventory.cpp
     Endpoint.cpp
     EndpointPool.cpp
-    TransactionFilter.cpp
-    BlockFilter.cpp
     EndpointFilter.cpp
-    VersionFilter.cpp
-    AlertFilter.cpp
+    Inventory.cpp
     MessageHeader.cpp
     MessageHandler.cpp
     MessageParser.cpp
     Node.cpp
     Peer.cpp
     PeerManager.cpp
+    TransactionFilter.cpp
+    VersionFilter.cpp
+    WebClient.cpp
 
     ${BITCOIN_VERSIONINFO_RC}
 )

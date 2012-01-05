@@ -1,9 +1,13 @@
-#ifdef _LIBBTC_ASIO_
 
 #ifndef PEER_H
 #define PEER_H
 
 #include "btcNode/PeerManager.h"
+#include "btcNode/MessageHandler.h"
+#include "btcNode/Endpoint.h"
+#include "btcNode/MessageParser.h"
+#include "btcNode/BlockIndex.h"
+#include "btcNode/Inventory.h"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -11,12 +15,31 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
+#include <openssl/rand.h>
+
+class CRequestTracker
+{
+public:
+    void (*fn)(void*, CDataStream&);
+    void* param1;
+    
+    explicit CRequestTracker(void (*fnIn)(void*, CDataStream&)=NULL, void* param1In=NULL)
+    {
+    fn = fnIn;
+    param1 = param1In;
+    }
+    
+    bool IsNull()
+    {
+    return fn == NULL;
+    }
+};
 
 class Peer : public boost::enable_shared_from_this<Peer>, private boost::noncopyable
 {
 public:
     /// Construct a peer connection with the given io_service.
-    explicit Peer(boost::asio::io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound);
+    explicit Peer(boost::asio::io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, int betsHeight);
     
     /// Get the socket associated with the peer connection.
     boost::asio::ip::tcp::socket& socket();
@@ -28,10 +51,28 @@ public:
     void stop();
     
     /// Get a list of all Peers from the PeerManager.
-    Peers getAllPeers() { _peerManager.getAllPeers(); }
+    Peers getAllPeers() { return _peerManager.getAllPeers(); }
 
-    void Peer::flush();
+    /// Flush the various message buffers to the socket.
+    void flush();
+    
+    /// Is this connected through a proxy.
+    const bool getProxy() const { return _proxy; }
+    
+    /// Get the local nonce
+    const uint64 getNonce() const { return _nonce; }
 
+private:
+    void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
+    void handle_write(const boost::system::error_code& e, std::size_t bytes_transferred);
+    
+    /// Handle the 3 stages of a reply
+    void reply();
+    void trickle();
+    void broadcast();
+
+    void Peer::check_activity();
+    
 public:
     // socket
     uint64 nServices;
@@ -56,7 +97,6 @@ public:
 public:
     int64 nReleaseTime;
     std::map<uint256, CRequestTracker> mapRequests;
-    CCriticalSection cs_mapRequests;
     uint256 hashContinue;
     CBlockLocator locatorLastGetBlocksBegin;
     uint256 hashLastGetBlocksEnd;
@@ -72,7 +112,6 @@ public:
     std::set<Inventory> setInventoryKnown;
     std::vector<Inventory> vInventoryToSend;
 
-    CCriticalSection cs_inventory;
     std::multimap<int64, Inventory> mapAskFor;
     
 public:
@@ -138,8 +177,7 @@ public:
         uint256 hashReply;
         RAND_bytes((unsigned char*)&hashReply, sizeof(hashReply));
         
-        CRITICAL_BLOCK(cs_mapRequests)
-            mapRequests[hashReply] = CRequestTracker(fn, param1);
+        mapRequests[hashReply] = CRequestTracker(fn, param1);
         
         PushMessage(pszCommand, hashReply);
     }
@@ -149,8 +187,7 @@ public:
         uint256 hashReply;
         RAND_bytes((unsigned char*)&hashReply, sizeof(hashReply));
         
-        CRITICAL_BLOCK(cs_mapRequests)
-            mapRequests[hashReply] = CRequestTracker(fn, param1);
+        mapRequests[hashReply] = CRequestTracker(fn, param1);
         
         PushMessage(pszCommand, hashReply, a1);
     }
@@ -160,8 +197,7 @@ public:
         uint256 hashReply;
         RAND_bytes((unsigned char*)&hashReply, sizeof(hashReply));
         
-        CRITICAL_BLOCK(cs_mapRequests)
-            mapRequests[hashReply] = CRequestTracker(fn, param1);
+        mapRequests[hashReply] = CRequestTracker(fn, param1);
         
         PushMessage(pszCommand, hashReply, a1, a2);
     }
@@ -191,6 +227,9 @@ private:
     /// The manager for this connection.
     PeerManager& _peerManager;
     
+    /// The handler delegated from Node.
+    MessageHandler& _messageHandler;
+    
     /// Buffer for incoming data.
     //    boost::array<char, 8192> _buffer;
     
@@ -199,7 +238,25 @@ private:
     
     /// The message parser.
     MessageParser _msgParser;
+    
+    /// Activity monitoring - if no activity we commit suicide
+    bool _activity;
+    
+    /// Suicide timer
+    boost::asio::deadline_timer _suicide;
+    
+    /// Use proxy or not - this is just the flag - we need to carry around the address too
+    bool _proxy;
+    
+    /// the local nonce - used to detect connections to self
+    uint64 _nonce;
+
+    /// Streambufs for reading and writing
+    boost::asio::streambuf _send;
+    boost::asio::streambuf _recv;
+    
+    /// Buffer for incoming data. Should be changed to streams in the future.
+    boost::array<char, 8192> _buffer;
 };
 
-#endif // HTTP_CONNECTION_H
-#endif
+#endif // PEER_H

@@ -5,7 +5,7 @@
 #include "btcNode/MessageHeader.h"
 
 #include "btcNode/main.h"
-#include "btcNode/net.h"
+#include "btcNode/Peer.h"
 
 #include "btc/script.h"
 
@@ -72,6 +72,11 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast)
 // BlockChain
 //
 
+BlockChain::BlockChain(const char* pszMode) : CDB("blkindex.dat", pszMode), _genesisBlock("0x000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"), _genesisBlockIndex(NULL), _bestChainWork(0), _bestInvalidWork(0), _bestChain(0), _bestIndex(NULL), _bestReceivedTime(0), _transactionsUpdated(0) {
+    load();
+}
+
+
 bool BlockChain::load(bool allowNew)
 {
     if (fTestNet) {
@@ -116,14 +121,14 @@ bool BlockChain::load(bool allowNew)
         else
             block = Block(1, 0, 0, 1231006505, 0x1d00ffff, 2083236893);
         block.addTransaction(txNew);
-        block.buildMerkleTree();
+        //        block.nVersion = 1;
+        //        block.nTime    = 1231006505;
+        //        block.nBits    = 0x1d00ffff;
+        //        block.nNonce   = 2083236893;
+        //        block.hashPrevBlock = 0;
+        block.buildMerkleTree(true); // genesisBlock
         //block.vtx.push_back(txNew);
-        //block.hashPrevBlock = 0;
         //block.hashMerkleRoot = block.BuildMerkleTree();
-        //block.nVersion = 1;
-        //block.nTime    = 1231006505;
-        //block.nBits    = 0x1d00ffff;
-        //block.nNonce   = 2083236893;
         
         
         //// debug print
@@ -365,11 +370,9 @@ bool BlockChain::connectInputs(Transaction& tx, map<uint256, TxIndex>& mapTestPo
             Transaction txPrev;
             if (!fFound || txindex.getPos() == DiskTxPos(1,1,1)) {
                 // Get prev tx from single transactions in memory
-                CRITICAL_BLOCK(cs_mapTransactions) {
-                    if (!_transactionIndex.count(prevout.hash))
-                        return error("ConnectInputs() : %s mapTransactions prev not found %s", tx.GetHash().toString().substr(0,10).c_str(),  prevout.hash.toString().substr(0,10).c_str());
-                    txPrev = _transactionIndex[prevout.hash];
-                }
+                if (!_transactionIndex.count(prevout.hash))
+                    return error("ConnectInputs() : %s mapTransactions prev not found %s", tx.GetHash().toString().substr(0,10).c_str(),  prevout.hash.toString().substr(0,10).c_str());
+                txPrev = _transactionIndex[prevout.hash];
                 if (!fFound)
                     txindex.resizeSpents(txPrev.vout.size());
             }
@@ -523,7 +526,7 @@ bool BlockChain::UpdateTxIndex(uint256 hash, const TxIndex& txindex)
 {
     
     //    cout << "update tx: " << hash.toString() << endl;    
-    
+    /*
     Transaction tx;
     _blockFile.readFromDisk(tx, txindex.getPos());
     
@@ -603,6 +606,7 @@ bool BlockChain::UpdateTxIndex(uint256 hash, const TxIndex& txindex)
         Write(make_pair(string("cr"), CBitcoinAddress(hashpair->first).toString()), txhashes); // overwrite!
         }
     //    cout << "and write tx" << std::endl;
+     */
     return Write(make_pair(string("tx"), hash), txindex);
 }
 
@@ -620,7 +624,7 @@ bool BlockChain::AddTxIndex(const Transaction& tx, const DiskTxPos& pos, int nHe
 bool BlockChain::EraseTxIndex(const Transaction& tx)
 {
     uint256 hash = tx.GetHash();
-    
+/*    
     // gronager: hook to enable public key / hash160 lookups by a separate database
     // first find the keys and hash160s that are referenced in this transaction
     typedef pair<uint160, unsigned int> AssetPair;
@@ -694,7 +698,7 @@ bool BlockChain::EraseTxIndex(const Transaction& tx)
         txhashes.erase(Coin(hash, hashpair->second));
         Write(make_pair(string("cr"), CBitcoinAddress(hashpair->first).toString()), txhashes); // overwrite!
         }
-    
+*/    
     return Erase(make_pair(string("tx"), hash));
 }
 
@@ -1153,7 +1157,6 @@ void BlockChain::InvalidChainFound(CBlockIndex* pindexNew)
     if (pindexNew->bnChainWork > _bestInvalidWork) {
         _bestInvalidWork = pindexNew->bnChainWork;
         WriteBestInvalidWork();
-        MainFrameRepaint();
     }
     printf("InvalidChainFound: invalid block=%s  height=%d  work=%s\n", pindexNew->GetBlockHash().toString().substr(0,20).c_str(), pindexNew->nHeight, pindexNew->bnChainWork.toString().c_str());
     printf("InvalidChainFound:  current best=%s  height=%d  work=%s\n", _bestChain.toString().substr(0,20).c_str(), getBestHeight(), _bestChainWork.toString().c_str());
@@ -1262,7 +1265,6 @@ bool BlockChain::addToBlockIndex(Block& block, unsigned int nFile, unsigned int 
         hashPrevBestCoinBase = block.getTransaction(0).GetHash();
     }
     
-    MainFrameRepaint();
     return true;
 }
 
@@ -1317,13 +1319,6 @@ bool BlockChain::acceptBlock(Block& block)
     if (!addToBlockIndex(block, nFile, nBlockPos))
         return error("AcceptBlock() : AddToBlockIndex failed");
     
-    // Relay inventory, but don't relay old inventory during initial block download
-    if (_bestChain == hash)
-        CRITICAL_BLOCK(cs_vNodes)
-        BOOST_FOREACH(Peer* pnode, vNodes)
-        if (getBestHeight() > (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : 140700))
-            pnode->PushInventory(Inventory(MSG_BLOCK, hash));
-    
     return true;
 }
 
@@ -1360,9 +1355,8 @@ bool BlockChain::AcceptToMemoryPool(Transaction& tx, bool fCheckInputs, bool* pf
     
     // Do we already have it?
     uint256 hash = tx.GetHash();
-    CRITICAL_BLOCK(cs_mapTransactions)
-        if (_transactionIndex.count(hash))
-            return false;
+    if (_transactionIndex.count(hash))
+        return false;
     if (fCheckInputs)
         if (haveTx(hash, true))
             return false;
@@ -1431,13 +1425,11 @@ bool BlockChain::AcceptToMemoryPool(Transaction& tx, bool fCheckInputs, bool* pf
     }
     
     // Store transaction in memory
-    CRITICAL_BLOCK(cs_mapTransactions) {
-        if (ptxOld) {
-            printf("AcceptToMemoryPool() : replacing tx %s with new version\n", ptxOld->GetHash().toString().c_str());
-            RemoveFromMemoryPool(*ptxOld);
-        }
-        AddToMemoryPoolUnchecked(tx);
+    if (ptxOld) {
+        printf("AcceptToMemoryPool() : replacing tx %s with new version\n", ptxOld->GetHash().toString().c_str());
+        RemoveFromMemoryPool(*ptxOld);
     }
+    AddToMemoryPoolUnchecked(tx);
     
     ///// are we sure this is ok when loading transactions or restoring block txes
     // If updated, erase old tx from wallet
@@ -1475,18 +1467,16 @@ bool BlockChain::AddToMemoryPoolUnchecked(Transaction& tx)
         }
     }
     
-    CRITICAL_BLOCK(cs_mapTransactions) {
-        for(vector<AssetPair>::iterator assetpair = debits.begin(); assetpair != debits.end(); ++assetpair)
-            _debitIndex[assetpair->first].insert(pair<uint256, unsigned int>(hash, assetpair->second));
+    for(vector<AssetPair>::iterator assetpair = debits.begin(); assetpair != debits.end(); ++assetpair)
+        _debitIndex[assetpair->first].insert(pair<uint256, unsigned int>(hash, assetpair->second));
     
-        for(vector<AssetPair>::iterator assetpair = credits.begin(); assetpair != credits.end(); ++assetpair)
-            _creditIndex[assetpair->first].insert(pair<uint256, unsigned int>(hash, assetpair->second));
+    for(vector<AssetPair>::iterator assetpair = credits.begin(); assetpair != credits.end(); ++assetpair)
+        _creditIndex[assetpair->first].insert(pair<uint256, unsigned int>(hash, assetpair->second));
     
-        _transactionIndex[hash] = tx;
-        for (int i = 0; i < tx.vin.size(); i++)
-            _transactionConnections[tx.vin[i].prevout] = CInPoint(&_transactionIndex[hash], i);
-        _transactionsUpdated++;
-    }
+    _transactionIndex[hash] = tx;
+    for (int i = 0; i < tx.vin.size(); i++)
+        _transactionConnections[tx.vin[i].prevout] = CInPoint(&_transactionIndex[hash], i);
+    _transactionsUpdated++;
     
     return true;
 }
@@ -1518,51 +1508,46 @@ bool BlockChain::RemoveFromMemoryPool(Transaction& tx)
         }
     }
     
-    CRITICAL_BLOCK(cs_mapTransactions) {
-        for(vector<AssetPair>::iterator assetpair = debits.begin(); assetpair != debits.end(); ++assetpair) {
-            _debitIndex[assetpair->first].erase(Coin(hash, assetpair->second));
-            if(_debitIndex[assetpair->first].size() == 0)
-                _debitIndex.erase(assetpair->first); 
-        }
-    
-        for(vector<AssetPair>::iterator assetpair = credits.begin(); assetpair != credits.end(); ++assetpair) {
-            _creditIndex[assetpair->first].erase(Coin(hash, assetpair->second));
-            if(_creditIndex[assetpair->first].size() == 0)
-                _creditIndex.erase(assetpair->first); 
-        }
-    
-        BOOST_FOREACH(const CTxIn& txin, tx.vin)
-            _transactionConnections.erase(txin.prevout);
-        _transactionIndex.erase(tx.GetHash());
-        _transactionsUpdated++;
+    for(vector<AssetPair>::iterator assetpair = debits.begin(); assetpair != debits.end(); ++assetpair) {
+        _debitIndex[assetpair->first].erase(Coin(hash, assetpair->second));
+        if(_debitIndex[assetpair->first].size() == 0)
+            _debitIndex.erase(assetpair->first); 
     }
+    
+    for(vector<AssetPair>::iterator assetpair = credits.begin(); assetpair != credits.end(); ++assetpair) {
+        _creditIndex[assetpair->first].erase(Coin(hash, assetpair->second));
+        if(_creditIndex[assetpair->first].size() == 0)
+            _creditIndex.erase(assetpair->first); 
+    }
+    
+    BOOST_FOREACH(const CTxIn& txin, tx.vin)
+    _transactionConnections.erase(txin.prevout);
+    _transactionIndex.erase(tx.GetHash());
+    _transactionsUpdated++;
+    
     return true;
 }
 
 void BlockChain::getCredit(const uint160& btc, Coins& coins)
 {
     readCrIndex(btc, coins);
-    CRITICAL_BLOCK(cs_mapTransactions)
-        if(_creditIndex.count(btc))
-            coins.insert(_creditIndex[btc].begin(), _creditIndex[btc].end());
+    if(_creditIndex.count(btc))
+        coins.insert(_creditIndex[btc].begin(), _creditIndex[btc].end());
 }
 
 void BlockChain::getDebit(const uint160& btc, Coins& coins)
 {
     readDrIndex(btc, coins);
-    CRITICAL_BLOCK(cs_mapTransactions)
-        if(_debitIndex.count(btc))
-            coins.insert(_debitIndex[btc].begin(), _debitIndex[btc].end());
+    if(_debitIndex.count(btc))
+        coins.insert(_debitIndex[btc].begin(), _debitIndex[btc].end());
 }
 
 void BlockChain::getTransaction(const uint256& hash, Transaction& tx)
 {
     tx.SetNull();
     if(!readDiskTx(hash, tx)) {
-        CRITICAL_BLOCK(cs_mapTransactions) {
-            if(_transactionIndex.count(hash))
-                tx = _transactionIndex[hash];
-        }
+        if(_transactionIndex.count(hash))
+            tx = _transactionIndex[hash];
     }
 }
 
@@ -1572,10 +1557,8 @@ void BlockChain::getTransaction(const uint256& hash, Transaction& tx, int64& hei
     height = -1;
     time = -1;
     if(!readDiskTx(hash, tx, height, time)) {
-        CRITICAL_BLOCK(cs_mapTransactions) {
-            if(_transactionIndex.count(hash))
-                tx = _transactionIndex[hash];
-        }
+        if(_transactionIndex.count(hash))
+            tx = _transactionIndex[hash];
     }
 }
 

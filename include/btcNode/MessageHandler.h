@@ -10,7 +10,7 @@
 #include <exception>
 #include <map>
 
-typedef std::multimap<std::string, filter_ptr> Filters;
+typedef std::vector<filter_ptr> Filters;
 
 /// The common handler for all incoming messages.
 class MessageHandler : private boost::noncopyable

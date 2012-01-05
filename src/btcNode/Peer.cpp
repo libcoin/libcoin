@@ -1,15 +1,17 @@
-#ifdef _LIBBTC_ASIO_
 
-#include "btcHTTP/Connection.h"
+#include "btcNode/Peer.h"
 #include <vector>
 #include <boost/bind.hpp>
 #include "btcHTTP/ConnectionManager.h"
 #include "btcHTTP/RequestHandler.h"
 
+using namespace std;
 using namespace boost;
 using namespace asio;
 
-Peer::Peer(io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound) : _socket(io_service), _peerManager(manager), _msgHandler(handler), _msgParser() {
+static map<Inventory, int64> mapAlreadyAskedFor;
+
+Peer::Peer(io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, int bestHeight) : _socket(io_service), _peerManager(manager), _messageHandler(handler), _msgParser(), _suicide(io_service) {
     nServices = 0;
 
     vSend.SetType(SER_NETWORK);
@@ -27,7 +29,7 @@ Peer::Peer(io_service& io_service, PeerManager& manager, MessageHandler& handler
     nTimeConnected = GetTime();
     nHeaderStart = -1;
     nMessageStart = -1;
-    addr = addrIn;
+    //    addr = addrIn;
     nVersion = 0;
     strSubVer = "";
     fClient = false; // set by version message
@@ -35,13 +37,16 @@ Peer::Peer(io_service& io_service, PeerManager& manager, MessageHandler& handler
     fNetworkNode = false;
     fSuccessfullyConnected = false;
     fDisconnect = false;
-    nRefCount = 0;
+    //    nRefCount = 0;
     nReleaseTime = 0;
     hashContinue = 0;
     locatorLastGetBlocksBegin.SetNull();
     hashLastGetBlocksEnd = 0;
-    nStartingHeight = -1;
+    nStartingHeight = bestHeight;
     fGetAddr = false;    
+    _proxy = proxy;
+    _nonce = 0;
+    _activity = false;
 }
 
 ip::tcp::socket& Peer::socket() {
@@ -49,25 +54,49 @@ ip::tcp::socket& Peer::socket() {
 }
 
 void Peer::start() {
+    printf("Starting Peer: %s\n", addr.toString().c_str());
     // Be shy and don't send version until we hear
     if (!fInbound) {
         PushVersion();
         // write stuff... - to this peer
-        async_write(_socket, vSend.rdbuf(), bind(&Peer::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+        for(CDataStream::iterator c = vSend.begin(); c != vSend.end(); ++c)
+            _send.sputc(*c);
+        vSend.clear();
+        async_write(_socket, _send, bind(&Peer::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
     }
 
-    async_read(_socket, vRecv.rdbuf(), bind(&Peer::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
-    //    _socket.async_read_some(buffer(_buffer), bind(&Peer::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+    //    async_read(_socket, _recv, bind(&Peer::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+    _suicide.expires_from_now(posix_time::seconds(60)); // no activity the first 60 seconds means disconnect
+    _socket.async_read_some(buffer(_buffer), bind(&Peer::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+    
+    // and start the deadline timer
+    _suicide.async_wait(bind(&Peer::check_activity, this));
+}
+
+void Peer::check_activity() {
+    return;
+    if(!_activity)
+        _peerManager.stop(shared_from_this());
+    else {
+        _activity = false;
+        _suicide.expires_from_now(posix_time::seconds(90*60)); // 90 minutes of activity once we have started up
+        _suicide.async_wait(bind(&Peer::check_activity, this)); 
+    }
 }
 
 void Peer::stop() {
+    _suicide.cancel(); // no need to commit suicide when being killed
     _socket.close();
 }
 
 void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferred) {
     if (!e) {
-        if (vRecv.empty())
-            return true;
+        _activity = true;
+        string rx;
+        for(int i = 0; i < bytes_transferred; i++)
+            rx.push_back(_buffer[i]);
+        
+        vRecv += rx;
         
         // Now call the parser:
         bool fRet = false;
@@ -76,7 +105,7 @@ void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferre
             tribool result = get<0>(parser_result);
             vRecv.erase(vRecv.begin(), get<1>(parser_result));
             if (result) {
-                if (_msgHandler->handleMessage(this, _message) ) fRet = true;
+                if (_messageHandler.handleMessage(this, _message) ) fRet = true;
             }
             else if (!result)
                 continue;
@@ -91,29 +120,35 @@ void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferre
             reply();
             
             // then trickle
-            _peerManager.getRandPeer()->trickle();
+            Peers peers = _peerManager.getAllPeers();
+            size_t rand = GetRand(peers.size());
+            for (Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
+                if(rand-- == 0) {
+                    (*peer)->trickle();
+                    break;
+                }
             
             // then broadcast
-            Peers peers = _peerManager.getPeers();
             for (Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
-                peer->broadcast();
+                (*peer)->broadcast();
             
             // now write to the peers with non-empty vSend buffers
             for (Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer) {
-                peer->flush();
+                (*peer)->flush();
             }
         }
         
         // then wait for more data
-        async_read(_socket, vRecv.rdbuf(), bind(&Peer::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+        _socket.async_read_some(buffer(_buffer), bind(&Peer::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+        //        async_read(_socket, _recv, bind(&Peer::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
     }
     else if (e != error::operation_aborted) {
+        printf("Read error %s, disconnecting... (read %d bytes though) \n", e.message().c_str(), bytes_transferred);
         _peerManager.stop(shared_from_this());
     }
 }
 
 void Peer::reply() {
-    CRITICAL_BLOCK(cs_main) {        
         //      Message: getdata
         vector<Inventory> vGetData;
         int64 nNow = GetTime() * 1000000;
@@ -132,14 +167,12 @@ void Peer::reply() {
         }
         if (!vGetData.empty())
             PushMessage("getdata", vGetData);
-    }
 }
 
 void Peer::trickle() {
-    CRITICAL_BLOCK(cs_main) {        
-        vector<Endpoint> vAddr;
-        vAddr.reserve(vAddrToSend.size());
-        BOOST_FOREACH(const Endpoint& addr, vAddrToSend) {
+    vector<Endpoint> vAddr;
+    vAddr.reserve(vAddrToSend.size());
+    BOOST_FOREACH(const Endpoint& addr, vAddrToSend) {
         // returns true if wasn't already contained in the set
         if (setAddrKnown.insert(addr).second) {
             vAddr.push_back(addr);
@@ -147,110 +180,96 @@ void Peer::trickle() {
             if (vAddr.size() >= 1000) {
                 PushMessage("addr", vAddr);
                 vAddr.clear();
-                }
             }
         }
-        vAddrToSend.clear();
-        if (!vAddr.empty())
-            PushMessage("addr", vAddr);
-        
-        //      Message: inventory
-        vector<Inventory> vInv;
-        CRITICAL_BLOCK(pto->cs_inventory) {
-            vInv.reserve(pto->vInventoryToSend.size());
-            BOOST_FOREACH(const Inventory& inv, pto->vInventoryToSend) {
-                if (setInventoryKnown.count(inv))
-                    continue;
-                
-                // returns true if wasn't already contained in the set
-                if (setInventoryKnown.insert(inv).second) {
-                    vInv.push_back(inv);
-                    if (vInv.size() >= 1000) {
-                        PushMessage("inv", vInv);
-                        vInv.clear();
-                    }
-                }
-            }
-        }
-        if (!vInv.empty())
-            PushMessage("inv", vInv);
     }
+    vAddrToSend.clear();
+    if (!vAddr.empty())
+        PushMessage("addr", vAddr);
+    
+    //      Message: inventory
+    vector<Inventory> vInv;
+    vInv.reserve(vInventoryToSend.size());
+    BOOST_FOREACH(const Inventory& inv, vInventoryToSend) {
+        if (setInventoryKnown.count(inv))
+            continue;
+        
+        // returns true if wasn't already contained in the set
+        if (setInventoryKnown.insert(inv).second) {
+            vInv.push_back(inv);
+            if (vInv.size() >= 1000) {
+                PushMessage("inv", vInv);
+                vInv.clear();
+            }
+        }
+    }
+    if (!vInv.empty())
+        PushMessage("inv", vInv);
 }
 
 void Peer::broadcast() {
-    CRITICAL_BLOCK(cs_main) {        
-        vector<Inventory> vInv;
-        vector<Inventory> vInvWait;
-        CRITICAL_BLOCK(cs_inventory) {
-            vInv.reserve(vInventoryToSend.size());
-            vInvWait.reserve(vInventoryToSend.size());
-            BOOST_FOREACH(const Inventory& inv, vInventoryToSend) {
-                if (setInventoryKnown.count(inv))
-                    continue;
-                
-                if (inv.getType() == MSG_TX) {
-                    // A specific 1/4 (hash space based) of tx invs blast to all immediately
-                    static uint256 hashSalt;
-                    if (hashSalt == 0)
-                        RAND_bytes((unsigned char*)&hashSalt, sizeof(hashSalt));
-                    uint256 hashRand = inv.getHash() ^ hashSalt;
-                    hashRand = Hash(BEGIN(hashRand), END(hashRand));
-                    bool fTrickleWait = ((hashRand & 3) != 0);
-                    if (fTrickleWait) {
-                        vInvWait.push_back(inv);
-                        continue;
-                    }
-                }
-                
-                // returns true if wasn't already contained in the set
-                if (setInventoryKnown.insert(inv).second) {
-                    vInv.push_back(inv);
-                    if (vInv.size() >= 1000) {
-                        PushMessage("inv", vInv);
-                        vInv.clear();
-                    }
-                }
+    vector<Inventory> vInv;
+    vector<Inventory> vInvWait;
+    vInv.reserve(vInventoryToSend.size());
+    vInvWait.reserve(vInventoryToSend.size());
+    BOOST_FOREACH(const Inventory& inv, vInventoryToSend) {
+        if (setInventoryKnown.count(inv))
+            continue;
+        
+        if (inv.getType() == MSG_TX) {
+            // A specific 1/4 (hash space based) of tx invs blast to all immediately
+            static uint256 hashSalt;
+            if (hashSalt == 0)
+                RAND_bytes((unsigned char*)&hashSalt, sizeof(hashSalt));
+            uint256 hashRand = inv.getHash() ^ hashSalt;
+            hashRand = Hash(BEGIN(hashRand), END(hashRand));
+            bool fTrickleWait = ((hashRand & 3) != 0);
+            if (fTrickleWait) {
+                vInvWait.push_back(inv);
+                continue;
             }
-            vInventoryToSend = vInvWait;
         }
-        if (!vInv.empty())
-            PushMessage("inv", vInv);
-    }
         
-    // Address refresh broadcast - should be put into the EndpointFilter...
-    static int64 nLastRebroadcast;
-    if (GetTime() - nLastRebroadcast > 24 * 60 * 60) {
-        nLastRebroadcast = GetTime();
-        // Periodically clear setAddrKnown to allow refresh broadcasts
-        setAddrKnown.clear();
-        
-        // Rebroadcast our address
-        if (_endpointPool->getLocal().isRoutable() && !fUseProxy) {
-            Endpoint addr(_endpointPool->getLocal());
-            addr.setTime(GetAdjustedTime());
-            PushAddress(addr);
+        // returns true if wasn't already contained in the set
+        if (setInventoryKnown.insert(inv).second) {
+            vInv.push_back(inv);
+            if (vInv.size() >= 1000) {
+                PushMessage("inv", vInv);
+                vInv.clear();
+            }
         }
     }
+    vInventoryToSend = vInvWait;
     
-    // Clear out old addresses periodically so it's not too much work at once
-    _endpointPool->purge();
+    if (!vInv.empty())
+        PushMessage("inv", vInv);
 }
 
 void Peer::flush() {
     if (vSend.size()) {
-        async_write(_socket, vSend.rdbuf(), bind(&Peer::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+        for(CDataStream::iterator c = vSend.begin(); c != vSend.end(); ++c)
+            _send.sputc(*c);
+        vSend.clear();
+        async_write(_socket, _send, bind(&Peer::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
     }
 }
 
-void Peer::handle_write(const system::error_code& e) {
+void Peer::handle_write(const system::error_code& e, size_t bytes_transferred) {
+    /*
     if (!e) {
         // Initiate graceful connection closure.
         system::error_code ignored_ec;
         _socket.shutdown(ip::tcp::socket::shutdown_both, ignored_ec);
     }
-    
-    if (e != error::operation_aborted) {
-        _connectionManager.stop(shared_from_this());
+    */
+    if (!e) {
+        // you need show you activity to avoid disconnection
+        //        _activity = true;
+        printf("Wrote %d bytes\n", bytes_transferred);        
+    }
+    else if (e != error::operation_aborted) {
+        printf("Write error %s, disconnecting...\n", e.message().c_str());
+        _peerManager.stop(shared_from_this());
     }
 }
 
@@ -267,12 +286,10 @@ void Peer::PushAddress(const Endpoint& addr) {
 }
 
 void Peer::AddInventoryKnown(const Inventory& inv) {
-    CRITICAL_BLOCK(cs_inventory)
     setInventoryKnown.insert(inv);
 }
 
 void Peer::PushInventory(const Inventory& inv) {
-    CRITICAL_BLOCK(cs_inventory)
     if (!setInventoryKnown.count(inv))
         vInventoryToSend.push_back(inv);
 }
@@ -294,7 +311,6 @@ void Peer::AskFor(const Inventory& inv) {
 }
 
 void Peer::BeginMessage(const char* pszCommand) {
-    cs_vSend.Enter("cs_vSend", __FILE__, __LINE__);
     if (nHeaderStart != -1)
         AbortMessage();
     nHeaderStart = vSend.size();
@@ -311,7 +327,6 @@ void Peer::AbortMessage() {
     vSend.resize(nHeaderStart);
     nHeaderStart = -1;
     nMessageStart = -1;
-    cs_vSend.Leave();
     printf("(aborted)\n");
 }
 
@@ -343,7 +358,6 @@ void Peer::EndMessage() {
     
     nHeaderStart = -1;
     nMessageStart = -1;
-    cs_vSend.Leave();
 }
 
 void Peer::EndMessageAbortIfEmpty() {
@@ -359,11 +373,14 @@ void Peer::EndMessageAbortIfEmpty() {
 void Peer::PushVersion() {
     /// when NTP implemented, change to just nTime = GetAdjustedTime()
     int64 nTime = (fInbound ? GetAdjustedTime() : GetTime());
-    Endpoint addrYou = (fUseProxy ? Endpoint("0.0.0.0") : addr);
-    Endpoint addrMe = (fUseProxy ? Endpoint("0.0.0.0") : _endpointPool->getLocal());
-    RAND_bytes((unsigned char*)&nLocalHostNonce, sizeof(nLocalHostNonce));
+    //    Endpoint remote = _socket.remote_endpoint();
+    Endpoint local = _socket.local_endpoint();
+    Endpoint addrYou = (_proxy ? Endpoint("0.0.0.0") : addr);
+    Endpoint addrMe = (_proxy ? Endpoint("0.0.0.0") : local);
+    RAND_bytes((unsigned char*)&_nonce, sizeof(_nonce));
+    uint64 nLocalServices = NODE_NETWORK;
     PushMessage("version", VERSION, nLocalServices, nTime, addrYou, addrMe,
-                nLocalHostNonce, std::string(pszSubVer), __blockChain->getBestHeight());
+                _nonce, std::string(pszSubVer), nStartingHeight);
 }
 
 void Peer::PushGetBlocks(const CBlockLocator locatorBegin, uint256 hashEnd)
@@ -376,178 +393,5 @@ void Peer::PushGetBlocks(const CBlockLocator locatorBegin, uint256 hashEnd)
     
     PushMessage("getblocks", locatorBegin, hashEnd);
 }
-
-bool Peer::ProcessMessages()
-{
-    Peer* pfrom = this;
-    CDataStream& vRecv = pfrom->vRecv;
-    if (vRecv.empty())
-        return true;
-    
-    // Now call the parser:
-    bool fRet = false;
-    loop {
-        boost::tuple<boost::tribool, CDataStream::iterator> parser_result = _msgParser.parse(_message, vRecv.begin(), vRecv.end());
-        tribool result = get<0>(parser_result);
-        vRecv.erase(vRecv.begin(), get<1>(parser_result));
-        if (result) {
-            if (_msgHandler->handleMessage(pfrom, _message) ) fRet = true;
-        }
-        else if (!result)
-            continue;
-        else
-            break;
-    }
-    
-    // if something were processed - handle some of the writes
-    // first we write stuff back - process the "getdata" part of SendMessages
-    // then handle the trickle node - pick a random node and run the addr and tx part of SendMessages
-    // then take a few other nodes in random and send out the smaller fraction of the tx'es, or all and handle only the tx fraction + the block invs
-    // reply, trickle, all
-    Peer* pto = pfrom;
-    if (fRet && pto->nVersion != 0) {
-        // the ping stuff need to be controlled by a timer! - skip for now...
-        //ResendBrokerTransactions();
-        CRITICAL_BLOCK(cs_main) {
-            
-            // ----- R E P L Y -----
-            
-            //      Message: getdata
-            vector<Inventory> vGetData;
-            int64 nNow = GetTime() * 1000000;
-            
-            while (!pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)  {
-                const Inventory& inv = (*pto->mapAskFor.begin()).second;
-                // we have already checkked for this (I think???)            if (!AlreadyHave(inv))
-                printf("sending getdata: %s\n", inv.toString().c_str());
-                vGetData.push_back(inv);
-                if (vGetData.size() >= 1000) {
-                    pto->PushMessage("getdata", vGetData);
-                    vGetData.clear();
-                }
-                mapAlreadyAskedFor[inv] = nNow;
-                pto->mapAskFor.erase(pto->mapAskFor.begin());
-            }
-            if (!vGetData.empty())
-                pto->PushMessage("getdata", vGetData);
-            
-            // ----- T R I C K L E -----
-            // pick a trickle node
-            pto = vNodes[GetRand(vNodes.size())];
-            vector<Endpoint> vAddr;
-            vAddr.reserve(pto->vAddrToSend.size());
-            BOOST_FOREACH(const Endpoint& addr, pto->vAddrToSend)
-            {
-            // returns true if wasn't already contained in the set
-            if (pto->setAddrKnown.insert(addr).second)
-                {
-                vAddr.push_back(addr);
-                // receiver rejects addr messages larger than 1000
-                if (vAddr.size() >= 1000)
-                    {
-                    pto->PushMessage("addr", vAddr);
-                    vAddr.clear();
-                    }
-                }
-            }
-            pto->vAddrToSend.clear();
-            if (!vAddr.empty())
-                pto->PushMessage("addr", vAddr);
-            
-            //      Message: inventory
-            vector<Inventory> vInv;
-            CRITICAL_BLOCK(pto->cs_inventory) {
-                vInv.reserve(pto->vInventoryToSend.size());
-                BOOST_FOREACH(const Inventory& inv, pto->vInventoryToSend) {
-                    if (pto->setInventoryKnown.count(inv))
-                        continue;
-                    
-                    // returns true if wasn't already contained in the set
-                    if (pto->setInventoryKnown.insert(inv).second) {
-                        vInv.push_back(inv);
-                        if (vInv.size() >= 1000) {
-                            pto->PushMessage("inv", vInv);
-                            vInv.clear();
-                        }
-                    }
-                }
-            }
-            if (!vInv.empty())
-                pto->PushMessage("inv", vInv);
-            
-            // ----- A L L ----- 
-            
-            //      Message: inventory
-            CRITICAL_BLOCK(cs_vNodes) {
-                BOOST_FOREACH(Peer* pto, vNodes) {
-                    
-                    vector<Inventory> vInv;
-                    vector<Inventory> vInvWait;
-                    CRITICAL_BLOCK(pto->cs_inventory) {
-                        vInv.reserve(pto->vInventoryToSend.size());
-                        vInvWait.reserve(pto->vInventoryToSend.size());
-                        BOOST_FOREACH(const Inventory& inv, pto->vInventoryToSend) {
-                            if (pto->setInventoryKnown.count(inv))
-                                continue;
-                            
-                            if (inv.getType() == MSG_TX) {
-                                // A specific 1/4 (hash space based) of tx invs blast to all immediately
-                                static uint256 hashSalt;
-                                if (hashSalt == 0)
-                                    RAND_bytes((unsigned char*)&hashSalt, sizeof(hashSalt));
-                                uint256 hashRand = inv.getHash() ^ hashSalt;
-                                hashRand = Hash(BEGIN(hashRand), END(hashRand));
-                                bool fTrickleWait = ((hashRand & 3) != 0);
-                                if (fTrickleWait) {
-                                    vInvWait.push_back(inv);
-                                    continue;
-                                }
-                            }
-                            
-                            // returns true if wasn't already contained in the set
-                            if (pto->setInventoryKnown.insert(inv).second) {
-                                vInv.push_back(inv);
-                                if (vInv.size() >= 1000) {
-                                    pto->PushMessage("inv", vInv);
-                                    vInv.clear();
-                                }
-                            }
-                        }
-                        pto->vInventoryToSend = vInvWait;
-                    }
-                    if (!vInv.empty())
-                        pto->PushMessage("inv", vInv);
-                }
-            }
-            
-            // Address refresh broadcast
-            static int64 nLastRebroadcast;
-            if (GetTime() - nLastRebroadcast > 24 * 60 * 60) {
-                nLastRebroadcast = GetTime();
-                CRITICAL_BLOCK(cs_vNodes) {
-                    BOOST_FOREACH(Peer* pnode, vNodes) {
-                        // Periodically clear setAddrKnown to allow refresh broadcasts
-                        pnode->setAddrKnown.clear();
-                        
-                        // Rebroadcast our address
-                        if (_endpointPool->getLocal().isRoutable() && !fUseProxy) {
-                            Endpoint addr(_endpointPool->getLocal());
-                            addr.setTime(GetAdjustedTime());
-                            pnode->PushAddress(addr);
-                        }
-                    }
-                }
-            }
-            
-            // Clear out old addresses periodically so it's not too much work at once
-            _endpointPool->purge();
-        }
-    }
-    
-    return true;
-    
-}
-
-#endif _LIBBTC_ASIO_
 
 

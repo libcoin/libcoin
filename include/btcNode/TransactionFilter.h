@@ -2,6 +2,7 @@
 #ifndef TRANSACTIONFILTER_H
 #define TRANSACTIONFILTER_H
 
+#include "btcNode/PeerManager.h"
 #include "btcNode/Filter.h"
 
 #include "btc/serialize.h" // for CDataStream
@@ -22,11 +23,11 @@ public:
     
     virtual bool operator()(Peer* origin, Message& msg);
     
-    virtual std::vector<std::string> commands() {
-        std::vector<std::string> c; 
-        c.push_back("tx");
-        c.push_back("inv");
-        c.push_back("getdata");
+    virtual std::set<std::string> commands() {
+        std::set<std::string> c; 
+        c.insert("tx");
+        c.insert("inv");
+        c.insert("getdata");
         return c;
     }
     
@@ -46,17 +47,15 @@ private:
     
     std::map<Inventory, CDataStream> _relay;
     std::deque<std::pair<int64, Inventory> > _relayExpiration;
-    CCriticalSection cs_mapRelay;
     
-    inline void relayInventory(const Inventory& inv);
+    inline void relayInventory(const Peers& peers, const Inventory& inv);
 
-    template<typename T> void relayMessage(const Inventory& inv, const T& a);
-    
+    template<typename T> void relayMessage(const Peers& peers, const Inventory& inv, const T& a);
     
     BlockChain& _blockChain;
 };
 
-template<> inline void TransactionFilter::relayMessage<>(const Inventory& inv, const CDataStream& ss);
+template<> inline void TransactionFilter::relayMessage<>(const Peers& peers, const Inventory& inv, const CDataStream& ss);
 
 
 #endif // TRANSACTIONFILTER_H

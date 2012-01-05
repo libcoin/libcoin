@@ -8,9 +8,6 @@
 #include "btc/key.h"
 #include "btc/tx.h"
 #include "btc/asset.h"
-//#include "btcNode/main.h"
-//#include "btcNode/Block.h"
-//#include "btcNode/BlockIndex.h"
 
 #include <map>
 #include <string>

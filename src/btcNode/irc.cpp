@@ -4,7 +4,7 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 #include "btcNode/irc.h"
-#include "btcNode/net.h"
+//#include "btcNode/net.h"
 #include "btcNode/EndpointPool.h"
 #include "btcNode/ChatClient.h"
 

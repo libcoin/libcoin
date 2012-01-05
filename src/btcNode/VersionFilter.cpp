@@ -3,7 +3,7 @@
 #include "btcNode/Alert.h"
 
 #include "btc/util.h"
-#include "btcNode/net.h"
+#include "btcNode/Peer.h"
 
 using namespace std;
 using namespace boost;
@@ -40,7 +40,7 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
             return false;
         
         // Disconnect if we connected to ourself
-        if (nNonce == nLocalHostNonce && nNonce > 1) {
+        if (nNonce == origin->getNonce() && nNonce > 1) {
             printf("connected to self at %s, disconnecting\n", origin->addr.toString().c_str());
             origin->fDisconnect = true;
             return true;
@@ -60,36 +60,7 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
         origin->vSend.SetVersion(min(origin->nVersion, VERSION));
         if (origin->nVersion < 209)
             origin->vRecv.SetVersion(min(origin->nVersion, VERSION));
-        
-        if (!origin->fInbound) {
-            // Advertise our address
-            if (_endpointPool->getLocal().isRoutable() && !fUseProxy) {
-                Endpoint addr(_endpointPool->getLocal());
-                addr.setTime(GetAdjustedTime());
-                origin->PushAddress(addr);
-            }
-            
-            // Get recent addresses
-            if (origin->nVersion >= 31402 || _endpointPool->getPoolSize() < 1000) {
-                origin->PushMessage("getaddr");
-                origin->fGetAddr = true;
-            }
-        }
-        
-        // Ask the first connected node for block updates
-        static int nAskedForBlocks;
-        if (!origin->fClient &&
-            (origin->nVersion < 32000 || origin->nVersion >= 32400) &&
-            (nAskedForBlocks < 1 || vNodes.size() <= 1)) {
-            nAskedForBlocks++;
-            origin->PushGetBlocks(__blockChain->getBestLocator(), uint256(0));
-        }
-        
-        // Relay alerts
-        CRITICAL_BLOCK(cs_mapAlerts)
-            BOOST_FOREACH(PAIRTYPE(const uint256, Alert)& item, mapAlerts)
-                item.second.relayTo(origin);
-        
+                
         origin->fSuccessfullyConnected = true;
         
         printf("version message: version %d, blocks=%d\n", origin->nVersion, origin->nStartingHeight);

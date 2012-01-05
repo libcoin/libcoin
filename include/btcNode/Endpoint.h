@@ -28,6 +28,7 @@ class Endpoint : public boost::asio::ip::tcp::endpoint
     public:
     typedef std::vector<unsigned char> Key;
         Endpoint();
+        Endpoint(boost::asio::ip::tcp::endpoint ep);
         Endpoint(unsigned int ipIn, unsigned short portIn=0, uint64 nServicesIn=NODE_NETWORK);
         explicit Endpoint(const struct sockaddr_in& sockaddr, uint64 nServicesIn=NODE_NETWORK);
         explicit Endpoint(const char* pszIn, int portIn, bool fNameLookup = false, uint64 nServicesIn=NODE_NETWORK);
@@ -49,8 +50,8 @@ class Endpoint : public boost::asio::ip::tcp::endpoint
              READWRITE(FLATDATA(_ipv6)); // for IPv6
              if (fWrite) {
                  
-                 unsigned int ip = address().to_v4().to_ulong();
-                 unsigned short p = port();
+                 unsigned int ip = ntohl(address().to_v4().to_ulong());
+                 unsigned short p = ntohs(port());
                  READWRITE(ip);
                  READWRITE(p);
              }
@@ -59,8 +60,8 @@ class Endpoint : public boost::asio::ip::tcp::endpoint
                  unsigned short p;
                  READWRITE(ip);
                  READWRITE(p);
-                 const_cast<Endpoint*>(this)->address(boost::asio::ip::address(boost::asio::ip::address_v4(ip)));
-                 const_cast<Endpoint*>(this)->port(p);
+                 const_cast<Endpoint*>(this)->address(boost::asio::ip::address(boost::asio::ip::address_v4(htonl(ip))));
+                 const_cast<Endpoint*>(this)->port(htons(p));
              }
              //             READWRITE(_ip);
              //             READWRITE(_port);

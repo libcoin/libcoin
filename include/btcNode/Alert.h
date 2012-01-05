@@ -56,6 +56,8 @@ public:
 
     const int getPriority() const { return _priority; }
     
+    const int64 until() const { return _relay_until; }
+    
     std::string toString() const;
 
     void print() const
@@ -85,10 +87,7 @@ protected:
 
 class Alert;
 
-class CCriticalSection;
-
 extern std::map<uint256, Alert> mapAlerts;
-extern CCriticalSection cs_mapAlerts;
 
 class Peer;
 
