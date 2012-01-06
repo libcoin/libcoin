@@ -15,9 +15,14 @@ void PeerManager::start(peer_ptr p) {
     p->start();
 }
 
+void PeerManager::post_stop(peer_ptr p) {
+    _node.post_stop(p);
+}
+
 void PeerManager::stop(peer_ptr p) {
-    _peers.erase(p);
     p->stop();
+    _peers.erase(p);
+    // we have stopped a node - we need to check if we need to connect to another node now.
     _node.post_accept_or_connect();
 }
 

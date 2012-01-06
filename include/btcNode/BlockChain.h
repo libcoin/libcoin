@@ -173,6 +173,9 @@ public:
         missing_inputs = mi;
         return ret;
     }
+
+    /// A simple way to register a callback for notification of accepted transactions.
+    boost::function<void (Transaction& t, Block& b)> onAcceptTransaction;
     
     /// B L O C K S
     
@@ -188,6 +191,9 @@ public:
     /// Accept a block (Note: this could lead to a reorganization of the block that is often quite time consuming).
     bool acceptBlock(Block& block);
     
+    /// A simple way to register a callback for notification of accepted blocks.
+    boost::function<void (Block& b)> onAcceptBlock;
+
     /// Locate blocks in the block chain
     //CBlockLocator blockLocator(uint256 hashBlock);
     

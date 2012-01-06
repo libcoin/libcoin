@@ -835,7 +835,7 @@ int main(int argc, char* argv[])
 // open wallet and assign it to pwalletmain.
     bool fFirstRun;
     string strPrint, strErrors;
-    pwalletMain = new CWallet("wallet.dat");
+    pwalletMain = new Wallet("wallet.dat");
     int nLoadWalletRet = pwalletMain->LoadWallet(fFirstRun);
     if (nLoadWalletRet != DB_LOAD_OK)
     {

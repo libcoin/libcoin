@@ -10,7 +10,6 @@ SET(LIB_NAME btcNode)
 
 SET(HEADER_PATH ${PROJECT_SOURCE_DIR}/include/${LIB_NAME})
 SET(TARGET_H
-    ${HEADER_PATH}/main.h
     ${HEADER_PATH}/db.h
     ${HEADER_PATH}/Alert.h
     ${HEADER_PATH}/AlertFilter.h
@@ -41,7 +40,6 @@ SET(TARGET_H
 #    ${BITCOIN_USER_DEFINED_DYNAMIC_OR_STATIC}
 #    ${LIB_PUBLIC_HEADERS}
 SET(TARGET_SRC
-    main.cpp
     db.cpp
     Alert.cpp
     AlertFilter.cpp

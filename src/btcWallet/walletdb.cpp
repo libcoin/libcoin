@@ -105,7 +105,7 @@ void CWalletDB::ListAccountCreditDebit(const string& strAccount, list<CAccountin
 }
 
 
-int CWalletDB::LoadWallet(CWallet* pwallet)
+int CWalletDB::LoadWallet(Wallet* pwallet)
 {
     pwallet->vchDefaultKey.clear();
     int nFileVersion = 0;
@@ -369,7 +369,7 @@ void ThreadFlushWalletDB(void* parg)
     }
 }
 
-bool BackupWallet(const CWallet& wallet, const string& strDest)
+bool BackupWallet(const Wallet& wallet, const string& strDest)
 {
     if (!wallet.fFileBacked)
         return false;

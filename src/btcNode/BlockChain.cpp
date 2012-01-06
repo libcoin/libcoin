@@ -4,7 +4,6 @@
 #include "btcNode/BlockIndex.h"
 #include "btcNode/MessageHeader.h"
 
-#include "btcNode/main.h"
 #include "btcNode/Peer.h"
 
 #include "btc/script.h"

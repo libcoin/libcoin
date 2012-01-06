@@ -7,8 +7,8 @@
 
 #include "btcRPC/rpc.h"
 
-class CWallet;
-extern CWallet* pwalletMain;
+class Wallet;
+extern Wallet* pwalletMain;
 
 json_spirit::Value syncwallet(const json_spirit::Array& params, bool fHelp);
 json_spirit::Value getnewaddress(const json_spirit::Array& params, bool fHelp);

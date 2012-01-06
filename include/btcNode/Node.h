@@ -37,6 +37,8 @@ public:
     /// Accept or connect depending on the number and type of the connected peers.
     void post_accept_or_connect();
     
+    void post_stop(peer_ptr p);
+    
     /// Register a filter
     void installFilter(filter_ptr filter) {
         _messageHandler.installFilter(filter);
@@ -56,8 +58,8 @@ private:
     void accept_or_connect();
     
     /// Check the deadline timer and give up
-    void check_deadline();
-    
+    void check_deadline(const boost::system::error_code& e);
+
     /// Handle completion of an asynchronous accept operation.
     void handle_accept(const boost::system::error_code& e);
     
@@ -80,10 +82,11 @@ private:
     PeerManager _peerManager;
     
     /// The next connection to be connected to or accepted.
-    peer_ptr _new_peer;
+    peer_ptr _new_server; // connection from another peer
+    peer_ptr _new_client; // connection to another peer
     
     /// Deadline timer for the connect operation
-    boost::asio::deadline_timer _deadline;
+    boost::asio::deadline_timer _connection_deadline;
     
     /// The handler for all incoming messages.
     MessageHandler _messageHandler;
@@ -101,6 +104,7 @@ private:
 
     static const unsigned int _max_outbound = 8;
     static const unsigned int _max_inbound = 125-_max_outbound;
+    static const unsigned int _connection_timeout = 5; // seconds
 };
 
 #endif // NODE_H

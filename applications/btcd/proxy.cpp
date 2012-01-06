@@ -4,7 +4,6 @@
 
 #include "btcNode/BlockChain.h"
 #include "btcNode/Peer.h"
-#include "btcNode/main.h"
 
 #include "btc/asset.h"
 

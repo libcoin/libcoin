@@ -10,7 +10,7 @@ using namespace boost;
 using namespace json_spirit;
 
 // global wallet - we define it here as opposed to in init.cpp as the rpc interface is really accessing the global/main wallet
-CWallet* pwalletMain;
+Wallet* pwalletMain;
 
 static int64 nWalletUnlockTime;
 static CCriticalSection cs_nWalletUnlockTime;

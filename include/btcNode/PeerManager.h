@@ -27,6 +27,7 @@ public:
     
     /// Stop the specified connection.
     void stop(peer_ptr p);
+    void post_stop(peer_ptr p);
     
     /// Stop all connections.
     void stop_all();

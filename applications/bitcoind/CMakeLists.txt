@@ -1,4 +1,4 @@
-SET(TARGET_SRC init.h init.cpp )
+SET(TARGET_SRC bitcoind.cpp)
 
 SET(TARGET_ADDED_LIBRARIES btcWallet)
 

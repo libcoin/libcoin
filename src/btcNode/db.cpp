@@ -3,11 +3,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-//#include "headers.h"
 #include "btcNode/db.h"
-//#include "btcNode/net.h"
 #include "btcNode/BlockChain.h"
-#include "btcNode/main.h"
 
 #include "btc/util.h"
 

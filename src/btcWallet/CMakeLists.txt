@@ -13,6 +13,8 @@ SET(TARGET_H
     ${HEADER_PATH}/wallet.h
     ${HEADER_PATH}/walletdb.h
     ${HEADER_PATH}/walletrpc.h
+    ${HEADER_PATH}/MerkleTx.h
+    ${HEADER_PATH}/WalletTx.h
     ${BITCOIN_CONFIG_HEADER}
 )
 
@@ -23,6 +25,8 @@ SET(TARGET_SRC
     wallet.cpp
     walletdb.cpp
     walletrpc.cpp
+    MerkleTx.cpp
+    WalletTx.cpp
     ${BITCOIN_VERSIONINFO_RC}
 )
 SET(TARGET_LIBRARIES btc btcNode btcRPC)

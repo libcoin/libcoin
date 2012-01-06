@@ -1,6 +1,5 @@
 
 #include "btcNode/Node.h"
-#include "btcNode/main.h"
 
 #include "btcHTTP/Server.h"
 

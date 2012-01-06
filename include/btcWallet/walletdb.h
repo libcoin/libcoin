@@ -13,7 +13,7 @@ extern unsigned int nWalletDBUpdated;
 class CWalletTx;
 class CAccount;
 class CAccountingEntry;
-class CWallet;
+class Wallet;
 
 class CKeyPool
 {
@@ -169,10 +169,10 @@ public:
     int64 GetAccountCreditDebit(const std::string& strAccount);
     void ListAccountCreditDebit(const std::string& strAccount, std::list<CAccountingEntry>& acentries);
 
-    int LoadWallet(CWallet* pwallet);
+    int LoadWallet(Wallet* pwallet);
 };
 
 void ThreadFlushWalletDB(void* parg);
-bool BackupWallet(const CWallet& wallet, const std::string& strDest);
+bool BackupWallet(const Wallet& wallet, const std::string& strDest);
 
 #endif

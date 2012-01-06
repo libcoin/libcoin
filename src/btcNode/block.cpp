@@ -1,9 +1,6 @@
 
 #include "btcNode/Block.h"
-#include "btcNode/BlockIndex.h"
-#include "btcNode/BlockChain.h"
 
-#include "btcNode/main.h"
 #include "btcNode/db.h"
 
 #include <boost/filesystem.hpp>

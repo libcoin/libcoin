@@ -71,7 +71,7 @@ private:
     void trickle();
     void broadcast();
 
-    void Peer::check_activity();
+    void check_activity(const boost::system::error_code& e);
     
 public:
     // socket
@@ -257,6 +257,9 @@ private:
     
     /// Buffer for incoming data. Should be changed to streams in the future.
     boost::array<char, 8192> _buffer;
+    
+    static const unsigned int _initial_timeout = 60; // seconds. Initial timeout if no read activity
+    static const unsigned int _heartbeat_timeout = 90*60; // seconds. Heartbeat timeout if no read activity
 };
 
 #endif // PEER_H

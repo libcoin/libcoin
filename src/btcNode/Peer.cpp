@@ -66,22 +66,28 @@ void Peer::start() {
     }
 
     //    async_read(_socket, _recv, bind(&Peer::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
-    _suicide.expires_from_now(posix_time::seconds(60)); // no activity the first 60 seconds means disconnect
+    _suicide.expires_from_now(posix_time::seconds(_initial_timeout)); // no activity the first 60 seconds means disconnect
     _socket.async_read_some(buffer(_buffer), bind(&Peer::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
     
     // and start the deadline timer
-    _suicide.async_wait(bind(&Peer::check_activity, this));
+    _suicide.async_wait(bind(&Peer::check_activity, this, placeholders::error));
 }
 
-void Peer::check_activity() {
-    return;
-    if(!_activity)
-        _peerManager.stop(shared_from_this());
-    else {
-        _activity = false;
-        _suicide.expires_from_now(posix_time::seconds(90*60)); // 90 minutes of activity once we have started up
-        _suicide.async_wait(bind(&Peer::check_activity, this)); 
+void Peer::check_activity(const system::error_code& e) {
+    if (!e) {
+        if(!_activity)
+            _peerManager.post_stop(shared_from_this());
+        else {
+            _activity = false;
+            _suicide.expires_from_now(posix_time::seconds(_heartbeat_timeout)); // 90 minutes of activity once we have started up
+            _suicide.async_wait(bind(&Peer::check_activity, this, placeholders::error)); 
+        }
     }
+    else if (e != error::operation_aborted) {
+        printf("Boost deadline timer error in Peer: %s\n", e.message().c_str());
+    }
+
+    // we ignore abort errors - they are generated due to timer cancels 
 }
 
 void Peer::stop() {
@@ -144,7 +150,7 @@ void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferre
     }
     else if (e != error::operation_aborted) {
         printf("Read error %s, disconnecting... (read %d bytes though) \n", e.message().c_str(), bytes_transferred);
-        _peerManager.stop(shared_from_this());
+        _peerManager.post_stop(shared_from_this());
     }
 }
 
@@ -269,7 +275,7 @@ void Peer::handle_write(const system::error_code& e, size_t bytes_transferred) {
     }
     else if (e != error::operation_aborted) {
         printf("Write error %s, disconnecting...\n", e.message().c_str());
-        _peerManager.stop(shared_from_this());
+        _peerManager.post_stop(shared_from_this());
     }
 }
 
