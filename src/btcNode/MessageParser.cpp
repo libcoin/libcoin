@@ -16,43 +16,43 @@ void MessageParser::reset() {
     _state = start_1;
 }
 
-tribool MessageParser::consume(Message& msg, char input)
+tribool MessageParser::consume(const Chain& chain, Message& msg, char input)
 {
     switch (_state) {
         case start_1:
-            if (input != Message::start(0)) {
+            if (input != chain.messageStart()[0]) {
                 printf("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND, got: %d\n\n", input);
                 return false;
             }
             else {
                 _state = start_2;
-                msg.header().pchMessageStart[0] = input;
+                msg.header()._messageStart[0] = input;
                 return indeterminate;
             }
         case start_2:
-            if (input != Message::start(1)) {
+            if (input != chain.messageStart()[1]) {
                 printf("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND\n\n");
                 reset();
                 return false;
             }
             else {
                 _state = start_3;
-                msg.header().pchMessageStart[1] = input;
+                msg.header()._messageStart[1] = input;
                 return indeterminate;
             }
         case start_3:
-            if (input != Message::start(2)) {
+            if (input != chain.messageStart()[2]) {
                 printf("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND\n\n");
                 reset();
                 return false;
             }
             else {
                 _state = start_4;
-                msg.header().pchMessageStart[2] = input;
+                msg.header()._messageStart[2] = input;
                 return indeterminate;
             }
         case start_4:
-            if (input != Message::start(3)) {
+            if (input != chain.messageStart()[3]) {
                 printf("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND, got: %d\n\n", input);
                 reset();
                 return false;
@@ -60,7 +60,7 @@ tribool MessageParser::consume(Message& msg, char input)
             else {
                 _state = command;
                 _counter = 0;
-                msg.header().pchMessageStart[3] = input;
+                msg.header()._messageStart[3] = input;
                 return indeterminate;
             }
         case command:
@@ -81,7 +81,7 @@ tribool MessageParser::consume(Message& msg, char input)
                 if(_checksum)
                     _state = checksum;
                 else {
-                    if (!msg.header().IsValid()) {
+                    if (!msg.header().IsValid(chain)) {
                         printf("\n\nPROCESSMESSAGE: ERRORS IN HEADER %s\n\n\n", msg.command().c_str());
                         return false;
                     }
@@ -102,7 +102,7 @@ tribool MessageParser::consume(Message& msg, char input)
             if(_counter < 4)
                 return indeterminate;
             else {
-                if (!msg.header().IsValid()) {
+                if (!msg.header().IsValid(chain)) {
                     printf("\n\nPROCESSMESSAGE: ERRORS IN HEADER %s\n\n\n", msg.command().c_str());
                     return false;
                 }

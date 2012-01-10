@@ -12,6 +12,7 @@
 
 /// BlockFile encapsulates the Block file on the disk. It supports different queries to the block file.
 
+class Chain;
 class Block;
 class CBlockIndex;
 class Transaction;
@@ -20,9 +21,9 @@ class DiskTxPos;
 class BlockFile : private boost::noncopyable
 {
 public:
-    BlockFile() : _currentBlockFile(1) {} /// load the block chain index from file
+    BlockFile(const std::string dataDir) : _dataDir(dataDir), _currentBlockFile(1) {} /// load the block chain index from file
 
-    bool writeToDisk(const Block& block, unsigned int& nFileRet, unsigned int& nBlockPosRet, bool commit = false);
+    bool writeToDisk(const Chain& chain, const Block& block, unsigned int& nFileRet, unsigned int& nBlockPosRet, bool commit = false);
     bool readFromDisk(Block& block, unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true);
     bool readFromDisk(Block& block, const CBlockIndex* pindex, bool fReadTransactions=true);
     
@@ -30,7 +31,7 @@ public:
     
     bool eraseBlockFromDisk(CBlockIndex bindex);
 
-    static bool checkDiskSpace(uint64 nAdditionalBytes=0);
+    bool checkDiskSpace(uint64 nAdditionalBytes=0);
 
 protected:
     FILE* openBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode="rb");
@@ -38,6 +39,7 @@ protected:
     //    bool loadBlockIndex(bool fAllowNew=true);
     
 private:
+    std::string _dataDir;
     FILE* _blockFile;    
     unsigned int _currentBlockFile;
 };

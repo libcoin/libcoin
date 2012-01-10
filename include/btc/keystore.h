@@ -15,9 +15,13 @@ protected:
 public:
     virtual bool AddKey(const CKey& key) =0;
     virtual bool HaveKey(const CBitcoinAddress &address) const =0;
+    virtual bool HaveKey(const uint160 &asset) const =0;
     virtual bool GetKey(const CBitcoinAddress &address, CKey& keyOut) const =0;
+    virtual bool GetKey(const uint160 &asset, CKey& keyOut) const =0;
     virtual bool GetPubKey(const CBitcoinAddress &address, std::vector<unsigned char>& vchPubKeyOut) const;
+    virtual bool GetPubKey(const uint160 &asset, std::vector<unsigned char>& vchPubKeyOut) const;
     virtual std::vector<unsigned char> GenerateNewKey();
+    virtual unsigned char getId() const = 0;
 };
 
 typedef std::map<CBitcoinAddress, CSecret> KeyMap;
@@ -26,8 +30,12 @@ class CBasicKeyStore : public CKeyStore
 {
 protected:
     KeyMap mapKeys;
-
+    unsigned char _id;
 public:
+    CBasicKeyStore(unsigned char networkId) : _id(networkId) {}
+    
+    virtual unsigned char getId() const { return _id; }
+    
     bool AddKey(const CKey& key);
     bool HaveKey(const CBitcoinAddress &address) const
     {
@@ -49,6 +57,9 @@ public:
         }
         return false;
     }
+    virtual bool HaveKey(const uint160 &asset) const { return HaveKey(CBitcoinAddress(_id, asset)); }
+    virtual bool GetKey(const uint160 &asset, CKey& keyOut) const { return GetKey(CBitcoinAddress(_id, asset), keyOut); }
+
 };
 
 typedef std::map<CBitcoinAddress, std::pair<std::vector<unsigned char>, std::vector<unsigned char> > > CryptedKeyMap;
@@ -73,7 +84,7 @@ protected:
     bool Unlock(const CKeyingMaterial& vMasterKeyIn);
 
 public:
-    CCryptoKeyStore() : fUseCrypto(false)
+    CCryptoKeyStore(unsigned char networkId) : CBasicKeyStore(networkId), fUseCrypto(false)
     {
     }
 
@@ -117,6 +128,7 @@ public:
     }
     bool GetKey(const CBitcoinAddress &address, CKey& keyOut) const;
     bool GetPubKey(const CBitcoinAddress &address, std::vector<unsigned char>& vchPubKeyOut) const;
+    virtual bool GetPubKey(const uint160 &asset, std::vector<unsigned char>& vchPubKeyOut) const { return GetPubKey(CBitcoinAddress(_id, asset), vchPubKeyOut); }
 };
 
 #endif

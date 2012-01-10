@@ -12,7 +12,7 @@
 using namespace std;
 using namespace boost;
 
-bool BlockFile::writeToDisk(const Block& block, unsigned int& nFileRet, unsigned int& nBlockPosRet, bool commit)
+bool BlockFile::writeToDisk(const Chain& chain, const Block& block, unsigned int& nFileRet, unsigned int& nBlockPosRet, bool commit)
 {
     // Open history file to append
     CAutoFile fileout = appendBlockFile(nFileRet);
@@ -21,7 +21,7 @@ bool BlockFile::writeToDisk(const Block& block, unsigned int& nFileRet, unsigned
     
     // Write index header
     unsigned int nSize = fileout.GetSerializeSize(block);
-    fileout << FLATDATA(pchMessageStart) << nSize;
+    fileout << FLATDATA(chain.messageStart().elems) << nSize;
     
     // Write block
     nBlockPosRet = ftell(fileout);
@@ -56,8 +56,8 @@ bool BlockFile::readFromDisk(Block& block, unsigned int nFile, unsigned int nBlo
     // Read block
     filein >> block;
     
-    // Check the header
-    if (!Block::CheckProofOfWork(block.getHash(), block.getBits()))
+    // Check the header (this is only a light check to ensure the header is sane - no limit check as it is chain specific)
+    if (!block.checkProofOfWork())
         return error("Block::ReadFromDisk() : errors in block header");
     
     return true;
@@ -114,7 +114,7 @@ bool BlockFile::eraseBlockFromDisk(CBlockIndex bindex)
 
 bool BlockFile::checkDiskSpace(uint64 nAdditionalBytes)
 {
-    uint64 nFreeBytesAvailable = filesystem::space(GetDataDir()).available;
+    uint64 nFreeBytesAvailable = filesystem::space(_dataDir).available;
 
     // Check for 15MB because database could create another 10MB log file at any time
     if (nFreeBytesAvailable < (uint64)15000000 + nAdditionalBytes) {
@@ -133,7 +133,7 @@ FILE* BlockFile::openBlockFile(unsigned int nFile, unsigned int nBlockPos, const
 {
     if (nFile == -1)
         return NULL;
-    FILE* file = fopen(strprintf("%s/blk%04d.dat", GetDataDir().c_str(), nFile).c_str(), pszMode);
+    FILE* file = fopen(strprintf("%s/blk%04d.dat", _dataDir.c_str(), nFile).c_str(), pszMode);
     if (!file)
         return NULL;
     if (nBlockPos != 0 && !strchr(pszMode, 'a') && !strchr(pszMode, 'w')) {

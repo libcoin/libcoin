@@ -168,9 +168,7 @@ enum opcodetype
     OP_INVALIDOPCODE = 0xff,
 };
 
-
-
-
+typedef std::vector<unsigned char> valtype;
 
 
 
@@ -625,7 +623,7 @@ public:
     }
 
 
-    CBitcoinAddress GetBitcoinAddress() const
+    CBitcoinAddress GetBitcoinAddress(unsigned int networkId) const
     {
         opcodetype opcode;
         std::vector<unsigned char> vch;
@@ -637,7 +635,7 @@ public:
         if (!GetOp(pc, opcode, vch) || opcode != OP_EQUALVERIFY) return 0;
         if (!GetOp(pc, opcode, vch) || opcode != OP_CHECKSIG) return 0;
         if (pc != end()) return 0;
-        return CBitcoinAddress(hash160);
+        return CBitcoinAddress(networkId, hash160);
     }
 
     void SetBitcoinAddress(const CBitcoinAddress& address)
@@ -646,9 +644,9 @@ public:
         *this << OP_DUP << OP_HASH160 << address.GetHash160() << OP_EQUALVERIFY << OP_CHECKSIG;
     }
 
-    void SetBitcoinAddress(const std::vector<unsigned char>& vchPubKey)
+    void SetBitcoinAddress(unsigned int networkId, const std::vector<unsigned char>& vchPubKey)
     {
-        SetBitcoinAddress(CBitcoinAddress(vchPubKey));
+        SetBitcoinAddress(CBitcoinAddress(networkId, vchPubKey));
     }
 
 

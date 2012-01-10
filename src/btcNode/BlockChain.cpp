@@ -10,7 +10,7 @@
 
 using namespace std;
 using namespace boost;
-
+/*
 int64 static GetBlockValue(int nHeight, int64 nFees)
 {
     int64 nSubsidy = 50 * COIN;
@@ -66,26 +66,18 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast)
     
     return bnNew.GetCompact();
 }
-
+*/
 //
 // BlockChain
 //
 
-BlockChain::BlockChain(const char* pszMode) : CDB("blkindex.dat", pszMode), _genesisBlock("0x000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"), _genesisBlockIndex(NULL), _bestChainWork(0), _bestInvalidWork(0), _bestChain(0), _bestIndex(NULL), _bestReceivedTime(0), _transactionsUpdated(0) {
+BlockChain::BlockChain(const Chain& chain, const string dataDir, const char* pszMode) : CDB(dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir, "blkindex.dat", pszMode), _chain(chain), _blockFile(dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir), _genesisBlockIndex(NULL), _bestChainWork(0), _bestInvalidWork(0), _bestChain(0), _bestIndex(NULL), _bestReceivedTime(0), _transactionsUpdated(0) {
     load();
 }
 
 
 bool BlockChain::load(bool allowNew)
-{
-    if (fTestNet) {
-        _genesisBlock = uint256("0x00000007199508e34a9ff81e6ec0c477a4cccff2a4767a8eee39c11db367b008");
-        pchMessageStart[0] = 0xfa;
-        pchMessageStart[1] = 0xbf;
-        pchMessageStart[2] = 0xb5;
-        pchMessageStart[3] = 0xda;
-    }
-    
+{    
     //
     // Load block index
     //
@@ -99,49 +91,12 @@ bool BlockChain::load(bool allowNew)
         if (!allowNew)
             return false;
         
-        // Genesis Block:
-        // Block(hash=000000000019d6, ver=1, hashPrevBlock=00000000000000, hashMerkleRoot=4a5e1e, nTime=1231006505, nBits=1d00ffff, nNonce=2083236893, vtx=1)
-        //   Transaction(hash=4a5e1e, ver=1, vin.size=1, vout.size=1, nLockTime=0)
-        //     CTxIn(COutPoint(000000, -1), coinbase 04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73)
-        //     CTxOut(nValue=50.00000000, scriptPubKey=0x5F1DF16B2B704C8A578D0B)
-        //   vMerkleTree: 4a5e1e
-        
-        // Genesis block
-        const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
-        Transaction txNew;
-        txNew.vin.resize(1);
-        txNew.vout.resize(1);
-        txNew.vin[0].scriptSig = CScript() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-        txNew.vout[0].nValue = 50 * COIN;
-        txNew.vout[0].scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
-        Block block;
-        if (fTestNet)
-            block = Block(1, 0, 0, 1296688602, 0x1d07fff8, 384568319);
-        else
-            block = Block(1, 0, 0, 1231006505, 0x1d00ffff, 2083236893);
-        block.addTransaction(txNew);
-        //        block.nVersion = 1;
-        //        block.nTime    = 1231006505;
-        //        block.nBits    = 0x1d00ffff;
-        //        block.nNonce   = 2083236893;
-        //        block.hashPrevBlock = 0;
-        block.buildMerkleTree(true); // genesisBlock
-        //block.vtx.push_back(txNew);
-        //block.hashMerkleRoot = block.BuildMerkleTree();
-        
-        
-        //// debug print
-        printf("%s\n", block.getHash().toString().c_str());
-        printf("%s\n", _genesisBlock.toString().c_str());
-        printf("%s\n", block.getMerkleRoot().toString().c_str());
-        assert(block.getMerkleRoot() == uint256("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
-        block.print();
-        assert(block.getHash() == _genesisBlock);
-        
         // Start new block file
+        
         unsigned int nFile;
         unsigned int nBlockPos;
-        if (!_blockFile.writeToDisk(block, nFile, nBlockPos, true))
+        Block block(_chain.genesisBlock());
+        if (!_blockFile.writeToDisk(_chain, block, nFile, nBlockPos, true))
             return error("LoadBlockIndex() : writing genesis block to disk failed");
         if (!addToBlockIndex(block, nFile, nBlockPos))
             return error("LoadBlockIndex() : genesis block not accepted");
@@ -295,6 +250,11 @@ void BlockChain::getBlock(const uint256 hash, Block& block)
     }
 }
 
+void BlockChain::getBlock(const CBlockIndex* index, Block& block) {
+    _blockFile.readFromDisk(block, index);
+}
+
+
 
 CBlockIndex* BlockChain::getBlockIndex(const CBlockLocator& locator)
 {
@@ -331,7 +291,7 @@ uint256 BlockChain::getBlockHash(const CBlockLocator& locator)
             return hash;
         }
     }
-    return _genesisBlock;
+    return getGenesisHash();
 }
 
 CBlockIndex* BlockChain::getHashStopIndex(uint256 hashStop)
@@ -510,13 +470,13 @@ typedef pair<uint256, unsigned int> Coin;
 bool BlockChain::readDrIndex(uint160 hash160, set<Coin>& debit)
 {
     //    txindex.SetNull();
-    return Read(make_pair(string("dr"), CBitcoinAddress(hash160).toString()), debit);
+    return Read(make_pair(string("dr"), CBitcoinAddress(_chain.networkId(), hash160).toString()), debit);
 }
 
 bool BlockChain::readCrIndex(uint160 hash160, set<Coin>& credit)
 {
     //    txindex.SetNull();
-    return Read(make_pair(string("cr"), CBitcoinAddress(hash160).toString()), credit);
+    return Read(make_pair(string("cr"), CBitcoinAddress(_chain.networkId(), hash160).toString()), credit);
 }
 
 bool Solver(const CScript& scriptPubKey, vector<pair<opcodetype, vector<unsigned char> > >& vSolutionRet);
@@ -928,11 +888,13 @@ bool BlockChain::LoadBlockIndex()
             pindexNew->nNonce         = diskindex.nNonce;
             
             // Watch for genesis block
-            if (_genesisBlockIndex == NULL && diskindex.GetBlockHash() == _genesisBlock)
+            if (_genesisBlockIndex == NULL && diskindex.GetBlockHash() == getGenesisHash())
                 _genesisBlockIndex = pindexNew;
             
-            if (!pindexNew->CheckIndex())
+            if (!pindexNew->checkIndex(_chain.proofOfWorkLimit()))
                 return error("LoadBlockIndex() : CheckIndex failed at %d", pindexNew->nHeight);
+            //            if (!pindexNew->CheckIndex())
+            //                return error("LoadBlockIndex() : CheckIndex failed at %d", pindexNew->nHeight);
         }
         else {
             break;
@@ -979,7 +941,7 @@ bool BlockChain::LoadBlockIndex()
         Block block;
         if (!_blockFile.readFromDisk(block, pindex))
             return error("LoadBlockIndex() : block.ReadFromDisk failed");
-        if (!block.checkBlock())
+        if (!block.checkBlock(_chain.proofOfWorkLimit()))
             {
             printf("LoadBlockIndex() : *** found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().toString().c_str());
             pindexFork = pindex->pprev;
@@ -1019,7 +981,7 @@ bool BlockChain::disconnectBlock(Block& block, CBlockIndex* pindex)
 bool BlockChain::connectBlock(Block& block, CBlockIndex* pindex)
 {
     // Check it again in case a previous version let a bad block in
-    if (!block.checkBlock())
+    if (!block.checkBlock(_chain.proofOfWorkLimit()))
         return false;
     
     //// issue here: it doesn't know the version
@@ -1041,7 +1003,7 @@ bool BlockChain::connectBlock(Block& block, CBlockIndex* pindex)
             return error("ConnectBlock() : UpdateTxIndex failed");
     }
     
-    if (block.getTransaction(0).GetValueOut() > GetBlockValue(pindex->nHeight, fees))
+    if (block.getTransaction(0).GetValueOut() > _chain.subsidy(pindex->nHeight) + fees)
         return false;
     
     // Update block index on disk without changing it in memory.
@@ -1169,7 +1131,7 @@ bool BlockChain::setBestChain(Block& block, CBlockIndex* pindexNew)
     
     uint256 oldBestChain = _bestChain;
     TxnBegin();
-    if (_genesisBlockIndex == NULL && hash == _genesisBlock) {
+    if (_genesisBlockIndex == NULL && hash == getGenesisHash()) {
         _bestChain = hash;
         WriteHashBestChain();
         _bestChain = oldBestChain;
@@ -1282,8 +1244,10 @@ bool BlockChain::acceptBlock(Block& block)
     int height = pindexPrev->nHeight+1;
     
     // Check proof of work
-    if (block.getBits() != GetNextWorkRequired(pindexPrev))
+    if (block.getBits() != _chain.nextWorkRequired(pindexPrev))
         return error("AcceptBlock() : incorrect proof of work");
+    //   if (block.getBits() != GetNextWorkRequired(pindexPrev))
+    //        return error("AcceptBlock() : incorrect proof of work");
     
     // Check timestamp against prev
     if (block.getBlockTime() <= pindexPrev->GetMedianTimePast())
@@ -1295,25 +1259,16 @@ bool BlockChain::acceptBlock(Block& block)
         return error("AcceptBlock() : contains a non-final transaction");
     
     // Check that the block chain matches the known block chain up to a checkpoint
-    if (!fTestNet)
-        if ((height ==  11111 && hash != uint256("0x0000000069e244f73d78e8fd29ba2fd2ed618bd6fa2ee92559f542fdb26e7c1d")) ||
-            (height ==  33333 && hash != uint256("0x000000002dd5588a74784eaa7ab0507a18ad16a236e7b1ce69f00d7ddfb5d0a6")) ||
-            (height ==  68555 && hash != uint256("0x00000000001e1b4903550a0b96e9a9405c8a95f387162e4944e8d9fbe501cd6a")) ||
-            (height ==  70567 && hash != uint256("0x00000000006a49b14bcf27462068f1264c961f11fa2e0eddd2be0791e1d4124a")) ||
-            (height ==  74000 && hash != uint256("0x0000000000573993a3c9e41ce34471c079dcf5f52a0e824a81e7f953b8661a20")) ||
-            (height == 105000 && hash != uint256("0x00000000000291ce28027faea320c8d2b054b2e0fe44a773f3eefb151d6bdc97")) ||
-            (height == 118000 && hash != uint256("0x000000000000774a7f8a7a12dc906ddb9e17e75d684f15e00f8767f9e8f36553")) ||
-            (height == 134444 && hash != uint256("0x00000000000005b12ffd4cd315cd34ffd4a594f430ac814c91184a0d42d2b0fe")) ||
-            (height == 140700 && hash != uint256("0x000000000000033b512028abb90e1626d8b346fd0ed598ac0a3c371138dce2bd")))
-            return error("AcceptBlock() : rejected by checkpoint lockin at %d", height);
-    
+    if(!_chain.checkPoints(height, hash))
+        return error("AcceptBlock() : rejected by checkpoint lockin at %d", height);
+
     // Write block to history file
-    if (!BlockFile::checkDiskSpace(::GetSerializeSize(block, SER_DISK)))
+    if (!_blockFile.checkDiskSpace(::GetSerializeSize(block, SER_DISK)))
         return error("AcceptBlock() : out of disk space");
     unsigned int nFile = -1;
     unsigned int nBlockPos = 0;
     bool commit = (!isInitialBlockDownload() || (getBestHeight()+1) % 500 == 0);
-    if (!_blockFile.writeToDisk(block, nFile, nBlockPos, commit))
+    if (!_blockFile.writeToDisk(_chain, block, nFile, nBlockPos, commit))
         return error("AcceptBlock() : WriteToDisk failed");
     if (!addToBlockIndex(block, nFile, nBlockPos))
         return error("AcceptBlock() : AddToBlockIndex failed");
@@ -1349,7 +1304,7 @@ bool BlockChain::AcceptToMemoryPool(Transaction& tx, bool fCheckInputs, bool* pf
         return error("AcceptToMemoryPool() : nonstandard transaction");
     
     // Rather not work on nonstandard transactions (unless -testnet)
-    if (!fTestNet && !tx.IsStandard())
+    if (!_chain.isStandard(tx))
         return error("AcceptToMemoryPool() : nonstandard transaction type");
     
     // Do we already have it?

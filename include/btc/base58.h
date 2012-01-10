@@ -242,17 +242,16 @@ public:
 class CBitcoinAddress : public CBase58Data
 {
 public:
-    bool SetHash160(const uint160& hash160)
-    {
-        SetData(fTestNet ? 111 : 0, &hash160, 20);
+    bool SetHash160(unsigned char networkId, const uint160& hash160) {
+        SetData(networkId, &hash160, 20);
+    //        SetData(fTestNet ? 111 : 0, &hash160, 20);
         return true;
     }
 
-    bool SetPubKey(const std::vector<unsigned char>& vchPubKey)
-    {
-        return SetHash160(Hash160(vchPubKey));
+    bool SetPubKey(unsigned char networkId, const std::vector<unsigned char>& vchPubKey) {
+        return SetHash160(networkId, Hash160(vchPubKey));
     }
-
+/*
     bool IsValid() const
     {
         int nExpectedSize = 20;
@@ -271,19 +270,29 @@ public:
         }
         return fExpectTestNet == fTestNet && vchData.size() == nExpectedSize;
     }
+*/
+    
+    bool IsValid(unsigned char networkId) const {
+        int nExpectedSize = 20;
+        return networkId == nVersion && vchData.size() == nExpectedSize;
+    }
+    
+    unsigned char networkId() const {
+        return nVersion;
+    }
 
     CBitcoinAddress()
     {
     }
 
-    CBitcoinAddress(uint160 hash160In)
+    CBitcoinAddress(unsigned char networkId, uint160 hash160In)
     {
-        SetHash160(hash160In);
+        SetHash160(networkId, hash160In);
     }
 
-    CBitcoinAddress(const std::vector<unsigned char>& vchPubKey)
+    CBitcoinAddress(unsigned char networkId, const std::vector<unsigned char>& vchPubKey)
     {
-        SetPubKey(vchPubKey);
+        SetPubKey(networkId, vchPubKey);
     }
 
     CBitcoinAddress(const std::string& strAddress)

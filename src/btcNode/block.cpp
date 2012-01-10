@@ -91,7 +91,7 @@ void Block::print() const
     printf("\n");
 }
 
-bool Block::checkBlock()
+bool Block::checkBlock(const CBigNum& proofOfWorkLimit)
 {
     // These are checks that are independent of context
     // that can be verified before saving an orphan block.
@@ -101,7 +101,7 @@ bool Block::checkBlock()
         return error("CheckBlock() : size limits failed");
     
     // Check proof of work matches claimed amount
-    if (!CheckProofOfWork(getHash(), _bits))
+    if (!checkProofOfWork(proofOfWorkLimit))
         return error("CheckBlock() : proof of work failed");
     
     // Check timestamp

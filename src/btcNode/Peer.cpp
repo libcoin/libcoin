@@ -11,7 +11,7 @@ using namespace asio;
 
 static map<Inventory, int64> mapAlreadyAskedFor;
 
-Peer::Peer(io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, int bestHeight) : _socket(io_service), _peerManager(manager), _messageHandler(handler), _msgParser(), _suicide(io_service) {
+Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, int bestHeight) : _chain(chain),_socket(io_service), _peerManager(manager), _messageHandler(handler), _msgParser(), _suicide(io_service) {
     nServices = 0;
 
     vSend.SetType(SER_NETWORK);
@@ -107,7 +107,7 @@ void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferre
         // Now call the parser:
         bool fRet = false;
         loop {
-            boost::tuple<boost::tribool, CDataStream::iterator> parser_result = _msgParser.parse(_message, vRecv.begin(), vRecv.end());
+            boost::tuple<boost::tribool, CDataStream::iterator> parser_result = _msgParser.parse(_chain, _message, vRecv.begin(), vRecv.end());
             tribool result = get<0>(parser_result);
             vRecv.erase(vRecv.begin(), get<1>(parser_result));
             if (result) {
@@ -271,7 +271,6 @@ void Peer::handle_write(const system::error_code& e, size_t bytes_transferred) {
     if (!e) {
         // you need show you activity to avoid disconnection
         //        _activity = true;
-        printf("Wrote %d bytes\n", bytes_transferred);        
     }
     else if (e != error::operation_aborted) {
         printf("Write error %s, disconnecting...\n", e.message().c_str());
@@ -320,7 +319,7 @@ void Peer::BeginMessage(const char* pszCommand) {
     if (nHeaderStart != -1)
         AbortMessage();
     nHeaderStart = vSend.size();
-    vSend << MessageHeader(pszCommand, 0);
+    vSend << MessageHeader(_chain, pszCommand, 0);
     nMessageStart = vSend.size();
     if (fDebug)
         printf("%s ", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());

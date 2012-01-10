@@ -29,9 +29,11 @@ protected:
     std::vector<DbTxn*> vTxn;
     bool fReadOnly;
 
-    explicit CDB(const char* pszFile, const char* pszMode="r+");
+    explicit CDB(const std::string dataDir, const char* pszFile, const char* pszMode="r+");
     ~CDB() { Close(); }
 public:
+    static std::string dataDir(std::string suffix);
+    
     void Close();
 private:
     CDB(const CDB&);

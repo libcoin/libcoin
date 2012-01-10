@@ -2,11 +2,7 @@
 // Copyright (c) 2011 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
-//#include "headers.h"
-//#include "db.h"
-//#include "net.h"
-//#include "init.h"
-//#include "cryptopp/sha.h"
+
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 

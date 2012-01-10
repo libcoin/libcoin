@@ -5,6 +5,7 @@
 
 #include "btcWallet/wallet.h"
 #include "btcWallet/walletdb.h"
+#include "btcWallet/WalletTx.h"
 //#include "btcNode/db.h"
 #include "btc/crypter.h"
 
@@ -239,15 +240,15 @@ bool Wallet::AddToWallet(const CWalletTx& wtxIn)
         if (!fInsertedNew)
         {
             // Merge
-            if (wtxIn.hashBlock != 0 && wtxIn.hashBlock != wtx.hashBlock)
+            if (wtxIn._blockHash != 0 && wtxIn._blockHash != wtx._blockHash)
             {
-                wtx.hashBlock = wtxIn.hashBlock;
+                wtx._blockHash = wtxIn._blockHash;
                 fUpdated = true;
             }
-            if (wtxIn.nIndex != -1 && (wtxIn.vMerkleBranch != wtx.vMerkleBranch || wtxIn.nIndex != wtx.nIndex))
+            if (wtxIn._index != -1 && (wtxIn._merkleBranch != wtx._merkleBranch || wtxIn._index != wtx._index))
             {
-                wtx.vMerkleBranch = wtxIn.vMerkleBranch;
-                wtx.nIndex = wtxIn.nIndex;
+                wtx._merkleBranch = wtxIn._merkleBranch;
+                wtx._index = wtxIn._index;
                 fUpdated = true;
             }
             if (wtxIn.fFromMe && wtxIn.fFromMe != wtx.fFromMe)
@@ -290,7 +291,7 @@ bool Wallet::AddToWallet(const CWalletTx& wtxIn)
     }
 
     // Refresh UI
-    MainFrameRepaint();
+    //    MainFrameRepaint();
     return true;
 }
 
@@ -306,7 +307,7 @@ bool Wallet::AddToWalletIfInvolvingMe(const Transaction& tx, const Block* pblock
             CWalletTx wtx(this,tx);
             // Get merkle branch if transaction was found in a block
             if (pblock)
-                wtx.SetMerkleBranch(pblock);
+                wtx.setMerkleBranch(*pblock);
             return AddToWallet(wtx);
         }
         else
@@ -359,7 +360,7 @@ int64 Wallet::GetDebit(const CTxIn &txin) const
     }
     return 0;
 }
-
+/*
 void Wallet::Sync() // sync from the start!
 {
     CTxDB txdb;
@@ -388,7 +389,7 @@ void Wallet::Sync() // sync from the start!
         }
     }    
 }
-
+*/
 
 
 int Wallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
@@ -396,15 +397,14 @@ int Wallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
     int ret = 0;
 
     CBlockIndex* pindex = pindexStart;
-    CRITICAL_BLOCK(cs_wallet)
-    {
-        while (pindex)
-        {
+    CRITICAL_BLOCK(cs_wallet) {
+        while (pindex) {
             Block block;
-            block.ReadFromDisk(pindex, true);
-            BOOST_FOREACH(Transaction& tx, block.vtx)
-            {
-                if (AddToWalletIfInvolvingMe(tx, &block, fUpdate))
+            _blockChain.getBlock(pindex, block);
+        
+            TransactionList txes = block.getTransactions();
+            for(TransactionList::const_iterator tx = txes.begin(); tx != txes.end(); ++tx) {
+                if (AddToWalletIfInvolvingMe(*tx, &block, fUpdate))
                     ret++;
             }
             pindex = pindex->pnext;
@@ -416,7 +416,7 @@ int Wallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
 
 void Wallet::ReacceptWalletTransactions()
 {
-    CTxDB txdb("r");
+    //    CTxDB txdb("r");
     bool fRepeat = true;
     while (fRepeat) CRITICAL_BLOCK(cs_wallet)
     {
@@ -492,7 +492,7 @@ void Wallet::ResendWalletTransactions()
 
     // Rebroadcast any of our txes that aren't in a block yet
     printf("ResendWalletTransactions()\n");
-    CTxDB txdb("r");
+    //    CTxDB txdb("r");
     CRITICAL_BLOCK(cs_wallet)
     {
         // Sort them in chronological order

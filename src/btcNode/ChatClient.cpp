@@ -19,7 +19,7 @@ using namespace boost;
 using namespace boost::asio;
 using namespace boost::asio::ip;
 
-ChatClient::ChatClient(boost::asio::io_service& io_service, const std::string& server, EndpointPool& endpointPool, const bool proxy) : _resolver(io_service), _socket(io_service), _name_in_use(false), _server(server), _endpointPool(endpointPool), _proxy(proxy) {
+ChatClient::ChatClient(boost::asio::io_service& io_service, const std::string& server, EndpointPool& endpointPool, string channel, unsigned int channels, const bool proxy) : _resolver(io_service), _socket(io_service), _name_in_use(false), _server(server), _endpointPool(endpointPool), _channel(channel), _channels(channels), _proxy(proxy) {
     
     // Start an asynchronous resolve to translate the server and service names
     // into a list of endpoints.
@@ -152,15 +152,16 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                     }
                 }
                 // now join the chat room 
-                if (fTestNet) {
-                    txstream << "JOIN #bitcoinTEST\r";
-                    txstream <<  "WHO #bitcoinTEST\r";
-                } else {
-                    // randomly join #bitcoin00-#bitcoin99
-                    int channel_number = GetRandInt(100);
+                if (_channels > 1) {
+                    // randomly join e.g. #bitcoin00-#bitcoin99
+                    int channel_number = GetRandInt(_channels);
                     txstream << setfill('0') << setw(2);
-                    txstream << "JOIN #bitcoin" << channel_number << "\r";
-                    txstream << "WHO #bitcoin" << channel_number << "\r";
+                    txstream << "JOIN #" << _channel << channel_number << "\r";
+                    txstream <<  "WHO #" << _channel << channel_number <<  "\r";
+                }
+                else {
+                    txstream << "JOIN #" << _channel << "\r";
+                    txstream <<  "WHO #" << _channel << "\r";
                 }                
                 async_write(_socket, _send, boost::bind(&ChatClient::handle_write_request, this, placeholders::error));
                 break;

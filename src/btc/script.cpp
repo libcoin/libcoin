@@ -17,7 +17,6 @@ bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CSc
 
 
 
-typedef vector<unsigned char> valtype;
 static const valtype vchFalse(0);
 static const valtype vchZero(0);
 static const valtype vchTrue(1, 1);
@@ -1144,9 +1143,9 @@ bool static ExtractAddressInner(const CScript& scriptPubKey, const CKeyStore* ke
     BOOST_FOREACH(PAIRTYPE(opcodetype, valtype)& item, vSolution)
     {
         if (item.first == OP_PUBKEY)
-            addressRet.SetPubKey(item.second);
+            addressRet.SetPubKey(keystore->getId(), item.second);
         else if (item.first == OP_PUBKEYHASH)
-            addressRet.SetHash160((uint160)item.second);
+            addressRet.SetHash160(keystore->getId(), (uint160)item.second);
         if (keystore == NULL || keystore->HaveKey(addressRet))
             return true;
     }

@@ -42,8 +42,38 @@ public:
 }
 instance_of_cdbinit;
 
+string CDB::dataDir(string suffix) {
+    // Windows: C:\Documents and Settings\username\Application Data\Bitcoin
+    // Mac: ~/Library/Application Support/Bitcoin
+    // Unix: ~/.bitcoin
+#if (defined _WIN32 || defined _NOMAC___MACH__) // convert first letter to upper case
+    transform(suffix.begin(), suffix.begin()+1, suffix.begin(), ::toupper);
+#else // prepend a "."
+    suffix = "." + suffix;
+#endif
+    
+#ifdef _WIN32
+    // Windows
+    return MyGetSpecialFolderPath(CSIDL_APPDATA, true) + "\\" + suffix;
+#else
+    char* pszHome = getenv("HOME");
+    if (pszHome == NULL || strlen(pszHome) == 0)
+        pszHome = (char*)"/";
+    string strHome = pszHome;
+    if (strHome[strHome.size()-1] != '/')
+        strHome += '/';
+#ifdef _NOMAC___MACH__
+    // Mac
+    strHome += "Library/Application Support/";
+    filesystem::create_directory(strHome.c_str());
+#endif
+    
+    // Unix
+    return strHome + suffix;
+#endif
+}
 
-CDB::CDB(const char* pszFile, const char* pszMode) : pdb(NULL)
+CDB::CDB(const std::string dataDir, const char* pszFile, const char* pszMode) : pdb(NULL)
 {
     int ret;
     if (pszFile == NULL)
@@ -61,7 +91,7 @@ CDB::CDB(const char* pszFile, const char* pszMode) : pdb(NULL)
         {
             if (fShutdown)
                 return;
-            string strDataDir = GetDataDir();
+            string strDataDir = dataDir;
             string strLogDir = strDataDir + "/database";
             filesystem::create_directory(strLogDir.c_str());
             string strErrorFile = strDataDir + "/db.log";

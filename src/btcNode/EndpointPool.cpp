@@ -131,7 +131,7 @@ Endpoint EndpointPool::getCandidate(const set<unsigned int>& not_in, int64 start
         
         // Randomize the order in a deterministic way, putting the standard port first
         int64 randomizer = (uint64)(start_time * 4951 + ep.getLastTry() * 9567851 + ep.getIP() * 7789) % (2 * 60 * 60);
-        if (ep.getPort() != htons(getDefaultPort()))
+        if (ep.getPort() != htons(_defaultPort))
             randomizer += 2 * 60 * 60;
         
         // Last seen  Base retry frequency
@@ -187,10 +187,10 @@ bool EndpointPool::eraseEndpoint(const Endpoint& endpoint)
     return Erase(make_pair(string("addr"), endpoint.getKey()));
 }
 
-bool EndpointPool::loadEndpoints()
+bool EndpointPool::loadEndpoints(const string dataDir)
 {
     // Load user provided addresses
-    CAutoFile filein = fopen((GetDataDir() + "/addr.txt").c_str(), "rt");
+    CAutoFile filein = fopen((dataDir + "/addr.txt").c_str(), "rt");
     if (filein) {
         try {
             char psz[1000];

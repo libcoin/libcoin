@@ -39,7 +39,7 @@ class Peer : public boost::enable_shared_from_this<Peer>, private boost::noncopy
 {
 public:
     /// Construct a peer connection with the given io_service.
-    explicit Peer(boost::asio::io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, int betsHeight);
+    explicit Peer(const Chain& chain, boost::asio::io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, int betsHeight);
     
     /// Get the socket associated with the peer connection.
     boost::asio::ip::tcp::socket& socket();
@@ -221,6 +221,9 @@ public:
 
 private:
 
+    /// The chain we are serving - the Peer need to know this as well!
+    const Chain& _chain; 
+    
     /// Socket for the connection to the peer.
     boost::asio::ip::tcp::socket _socket;
     
@@ -250,7 +253,7 @@ private:
     
     /// the local nonce - used to detect connections to self
     uint64 _nonce;
-
+    
     /// Streambufs for reading and writing
     boost::asio::streambuf _send;
     boost::asio::streambuf _recv;

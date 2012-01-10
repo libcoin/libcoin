@@ -272,7 +272,7 @@ Value GetDebit::operator()(const Array& params, bool fHelp) {
                             "getdebit <btcaddr>\n"
                             "Get debit coins of <btcaddr>");
     CBitcoinAddress addr = CBitcoinAddress(params[0].get_str());
-    if(!addr.IsValid())
+    if(!addr.IsValid(_blockChain.chain().networkId()))
         throw runtime_error("getdebit <btcaddr>\n"
                             "btcaddr invalid!");
     
@@ -303,7 +303,7 @@ Value GetCredit::operator()(const Array& params, bool fHelp) {
                             "Get credit coins of <btcaddr>");
     
     CBitcoinAddress addr = CBitcoinAddress(params[0].get_str());
-    if(!addr.IsValid())
+    if(!addr.IsValid(_blockChain.chain().networkId()))
         throw runtime_error("getcredit <btcaddr>\n"
                             "btcaddr invalid!");
     uint160 hash160 = addr.GetHash160();

@@ -10,6 +10,11 @@
 #include <sstream>
 #include <string>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
+
+#include <openssl/buffer.h>
+#include <openssl/bio.h>
+#include <openssl/evp.h>
 
 using namespace std;
 using namespace boost;
@@ -30,16 +35,73 @@ private:
     RequestHandler& _delegate;
 };
 
+string Auth::username() {
+    string user_pass = decode64(_base64auth);
+    vector<string> userpass;
+    algorithm::split(userpass, user_pass, is_any_of(":"));
+    if(userpass.size() > 0)
+        return userpass[0];
+    else
+        return "";
+}
+
+string Auth::password() {
+    string user_pass = decode64(_base64auth);
+    vector<string> userpass;
+    algorithm::split(userpass, user_pass, is_any_of(":"));
+    if(userpass.size() > 1)
+        return userpass[1];
+    else
+        return "";
+}
+
+string Auth::encode64(string s) {
+    BIO *b64, *bmem;
+    BUF_MEM *bptr;
+    
+    b64 = BIO_new(BIO_f_base64());
+    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+    bmem = BIO_new(BIO_s_mem());
+    b64 = BIO_push(b64, bmem);
+    BIO_write(b64, s.c_str(), s.size());
+    BIO_flush(b64);
+    BIO_get_mem_ptr(b64, &bptr);
+    
+    string result(bptr->data, bptr->length);
+    BIO_free_all(b64);
+    
+    return result;
+}
+
+string Auth::decode64(string s) {
+    BIO *b64, *bmem;
+    
+    char* buffer = static_cast<char*>(calloc(s.size(), sizeof(char)));
+    
+    b64 = BIO_new(BIO_f_base64());
+    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+    bmem = BIO_new_mem_buf(const_cast<char*>(s.c_str()), s.size());
+    bmem = BIO_push(b64, bmem);
+    BIO_read(bmem, buffer, s.size());
+    BIO_free_all(bmem);
+    
+    string result(buffer);
+    free(buffer);
+    return result;
+}
+
 RequestHandler::RequestHandler(const string& doc_root) : _doc_root(doc_root) {
     registerMethod(method_ptr(new DirtyDocCache(*this)));
 }
 
-void RequestHandler::registerMethod(method_ptr method) {
+void RequestHandler::registerMethod(method_ptr method, Auth auth) {
     _methods[method->name()] = method;
+    if(!auth.isNone()) _auths[method->name()] = auth;
 }
 
 void RequestHandler::unregisterMethod(const string name) {
     _methods.erase(name);
+    _auths.erase(name);
 }
 
 void RequestHandler::handleGET(const Request& req, Reply& rep) {
@@ -135,6 +197,18 @@ void RequestHandler::handlePOST(const Request& req, Reply& rep) {
             try {
                 rpc.parse(req.payload);
 
+                // Check if the method requires authorization
+                if(_auths.count(rpc.method())) {
+                    if(req.headers.count("Authorization") == 0)
+                        throw 401;
+                    string basic_auth = req.headers.find("Authorization")->second;
+                    if (basic_auth.length() > 9 && basic_auth.substr(0,6) != "Basic ")
+                        throw 401;
+                    if(!_auths[rpc.method()].valid(basic_auth.substr(6)))
+                       throw 401; // and text
+                    
+                }
+                    
                 // Find method
                 Methods::iterator m = _methods.find(rpc.method());
                 if (m == _methods.end())

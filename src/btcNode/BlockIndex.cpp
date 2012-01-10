@@ -25,8 +25,9 @@ CBlockIndex::CBlockIndex(unsigned int nFileIn, unsigned int nBlockPosIn, Block& 
     nNonce         = block.getNonce();
 }
 
-bool CBlockIndex::CheckIndex() const {
-    return Block::CheckProofOfWork(GetBlockHash(), nBits);
+bool CBlockIndex::checkIndex(const CBigNum& proofOfWorkLimit) const {
+    Block block(nVersion, pprev ? pprev->GetBlockHash() : 0, hashMerkleRoot, nTime, nBits, nNonce);
+    return block.checkProofOfWork(proofOfWorkLimit);
 }
 
 Block CBlockIndex::GetBlockHeader() const

@@ -17,20 +17,36 @@ static const char* ppszTypeName[] =
     "tx",
     "block",
 };
-unsigned char pchMessageStart[4] = { 0xf9, 0xbe, 0xb4, 0xd9 };
+//unsigned char pchMessageStart[4] = { 0xf9, 0xbe, 0xb4, 0xd9 };
 
 MessageHeader::MessageHeader()
 {
-    memcpy(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart));
+    memset(_messageStart.elems, 0, sizeof(_messageStart.elems));
+    memset(pchCommand, 0, sizeof(pchCommand));
+    pchCommand[1] = 1;
+    nMessageSize = -1;
+    nChecksum = 0;
+}
+/*
+MessageHeader::MessageHeader(const Chain& chain) : _messageStart(chain.messageStart())
+{
+    //    memcpy(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart));
     memset(pchCommand, 0, sizeof(pchCommand));
     pchCommand[1] = 1;
     nMessageSize = -1;
     nChecksum = 0;
 }
 
-MessageHeader::MessageHeader(const char* pszCommand, unsigned int nMessageSizeIn)
+MessageHeader::MessageHeader(const char* pszCommand, unsigned int nMessageSizeIn) {
+    memset(_messageStart.elems, 0, sizeof(_messageStart.elems));
+    strncpy(pchCommand, pszCommand, COMMAND_SIZE);
+    nMessageSize = nMessageSizeIn;
+    nChecksum = 0;
+}
+*/
+MessageHeader::MessageHeader(const Chain& chain, const char* pszCommand, unsigned int nMessageSizeIn) : _messageStart(chain.messageStart())
 {
-    memcpy(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart));
+    //    memcpy(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart));
     strncpy(pchCommand, pszCommand, COMMAND_SIZE);
     nMessageSize = nMessageSizeIn;
     nChecksum = 0;
@@ -44,10 +60,10 @@ std::string MessageHeader::GetCommand() const
         return std::string(pchCommand, pchCommand + COMMAND_SIZE);
 }
 
-bool MessageHeader::IsValid() const
+bool MessageHeader::IsValid(const Chain& chain) const
 {
     // Check start string
-    if (memcmp(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart)) != 0)
+    if (memcmp(_messageStart.elems, chain.messageStart().elems, sizeof(_messageStart.elems)) != 0)
         return false;
 
     // Check the command string for errors

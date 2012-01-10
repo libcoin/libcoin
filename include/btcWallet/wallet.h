@@ -12,17 +12,14 @@
 #include "btcNode/Block.h"
 #include "btcNode/BlockChain.h"
 
-#include "btcWallet/walletdb.h"
+#include "btcWallet/WalletTx.h"
 
 #include <boost/bind.hpp>
 
-class Wallet;
+class CWalletDB;
 
-class CWalletTx;
 class CReserveKey;
 class CKeyPool;
-
-class CWalletDB;
 
 class Wallet : public CCryptoKeyStore
 {

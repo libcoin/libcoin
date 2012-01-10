@@ -8,12 +8,6 @@
 #include "btc/uint256.h"
 #include "btc/serialize.h"
 
-extern bool fTestNet;
-static inline unsigned short getDefaultPort(const bool testnet = fTestNet)
-{
-    return testnet ? 18333 : 8333;
-}
-
 enum
 {
     NODE_NETWORK = (1 << 0),

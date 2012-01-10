@@ -18,7 +18,8 @@ using namespace boost;
 
 int main(int argc, char* argv[])
 {
-    Node node("0.0.0.0", "8333"); // it is also here we specify the use of a proxy!
+    logfile = CDB::dataDir(bitcoin.dataDirSuffix()) + "/debug.log";
+    Node node; // it is also here we specify the use of a proxy!
     
     // Wallet wallet(node.blockChain()); // this will register callbacks into the blockchain like:
     //  _blockChain.registerAcceptBlockNotifier(bind(&Wallet::syncWithWallet, this, placeholder::block));

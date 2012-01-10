@@ -26,6 +26,7 @@ map<string, vector<string> > mapMultiArgs;
 bool fDebug = false;
 bool fPrintToConsole = false;
 bool fPrintToDebugger = false;
+string logfile("");
 char pszSetDataDir[MAX_PATH] = "";
 bool fRequestShutdown = false;
 bool fShutdown = false;
@@ -33,7 +34,7 @@ bool fDaemon = false;
 bool fServer = false;
 bool fCommandLine = false;
 string strMiscWarning;
-bool fTestNet = false;
+//bool fTestNet = false;
 bool fNoListen = false;
 bool fLogTimestamps = false;
 
@@ -164,7 +165,7 @@ int GetRandInt(int nMax)
 inline int OutputDebugStringF(const char* pszFormat, ...)
 {
     int ret = 0;
-    if (fPrintToConsole)
+    if (logfile.size() == 0)
     {
         // print to console
         va_list arg_ptr;
@@ -179,10 +180,10 @@ inline int OutputDebugStringF(const char* pszFormat, ...)
 
         if (!fileout)
         {
-            char pszFile[MAX_PATH+100];
-            GetDataDir(pszFile);
-            strlcat(pszFile, "/debug.log", sizeof(pszFile));
-            fileout = fopen(pszFile, "a");
+        //            char pszFile[MAX_PATH+100];
+        //            GetDataDir(pszFile);
+        //            strlcat(pszFile, "/debug.log", sizeof(pszFile));
+            fileout = fopen(logfile.c_str(), "a");
             if (fileout) setbuf(fileout, NULL); // unbuffered
         }
         if (fileout)
@@ -655,6 +656,7 @@ string MyGetSpecialFolderPath(int nFolder, bool fCreate)
 }
 #endif
 
+/*
 string GetDefaultDataDir()
 {
     // Windows: C:\Documents and Settings\username\Application Data\Bitcoin
@@ -681,7 +683,7 @@ string GetDefaultDataDir()
 #endif
 #endif
 }
-
+ 
 void GetDataDir(char* pszDir)
 {
     // pszDir must be at least MAX_PATH length.
@@ -807,7 +809,7 @@ void ShrinkDebugFile()
     }
 }
 
-
+*/
 
 
 

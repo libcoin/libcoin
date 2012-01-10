@@ -109,7 +109,7 @@ public:
 
     void print() const;
 
-    bool checkBlock();
+    bool checkBlock(const CBigNum& proofOfWorkLimit);
     
     const int getVersion() const { return _version; }
     
@@ -122,19 +122,16 @@ public:
     const int getBits() const { return _bits; }
     
     const int getNonce() const { return _nonce; }
-    
-    static const CBigNum proofOfWorkLimit() {
-        const CBigNum pwl(~uint256(0) >> 32);
-        const CBigNum pwl_test(~uint256(0) >> 28);
-        return fTestNet ? pwl_test : pwl;
-    }
-    
-    static const bool CheckProofOfWork(uint256 hash, unsigned int nBits) {
+
+    /// This function has changed as it served two purposes: sanity check for headers and real proof of work check. We only need the proofOfWorkLimit for the latter
+    const bool checkProofOfWork(const CBigNum& proofOfWorkLimit = 0) {
+        uint256 hash = getHash();
+        unsigned int nBits = _bits;
         CBigNum bnTarget;
         bnTarget.SetCompact(nBits);
         
         // Check range
-        if (bnTarget <= 0 || bnTarget > proofOfWorkLimit())
+        if (proofOfWorkLimit != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit))
             return error("CheckProofOfWork() : nBits below minimum work");
         
         // Check proof of work matches claimed amount
@@ -143,7 +140,7 @@ public:
         
         return true;
     }
-    
+
 private:
     // header
     int _version;

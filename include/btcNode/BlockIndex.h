@@ -80,7 +80,7 @@ public:
         return (CBigNum(1)<<256) / (bnTarget+1);
     }
 
-    bool CheckIndex() const;
+    bool checkIndex(const CBigNum& proofOfWorkLimit) const;
     
     enum { nMedianTimeSpan=11 };
 

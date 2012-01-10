@@ -23,7 +23,11 @@ public:
 
     /// Register an application handler, e.g. for RPC og CGI
     void registerMethod(method_ptr method) {
-        _requestHandler.registerMethod(method);
+        Auth auth;
+        _requestHandler.registerMethod(method, auth);
+    }
+    void registerMethod(method_ptr method, Auth auth) {
+        _requestHandler.registerMethod(method, auth);
     }
 
     /// Remove an application handler, e.g. for RPC og CGI

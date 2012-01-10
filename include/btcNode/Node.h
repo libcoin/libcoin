@@ -11,6 +11,7 @@
 #include "btcNode/BlockChain.h"
 #include "btcNode/EndpointPool.h"
 #include "btcNode/ChatClient.h"
+#include "btcNode/Chain.h"
 
 /// The top-level class of the btc Node.
 /// Node keeps a list of Peers and accepts and initiates connectes using a list of endpoints
@@ -26,7 +27,7 @@ class Node : private boost::noncopyable
 {
 public:
     /// Construct the server to listen on the specified TCP address and port. Further, connect to IRC (irc.lfnet.org)
-    explicit Node(const std::string& address, const std::string& port, bool proxy = false, const std::string& irc = "92.243.23.21");
+    explicit Node(const Chain& chain = bitcoin, std::string dataDir = "", const std::string& address = "0.0.0.0", const std::string& port = "0", bool proxy = false, const std::string& irc = "92.243.23.21");
     
     /// Run the server's io_service loop.
     void run();
@@ -77,6 +78,9 @@ private:
     
     /// Acceptor used to listen for incoming connections.
     boost::asio::ip::tcp::acceptor _acceptor;
+
+    /// The data directory holding the block file, the address file, the database and logfiles
+    std::string _dataDir;
     
     /// The connection manager which owns all live connections.
     PeerManager _peerManager;

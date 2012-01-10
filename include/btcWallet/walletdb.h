@@ -8,12 +8,15 @@
 #include "btcWallet/wallet.h"
 #include "btcNode/db.h"
 
+#include "btcWallet/WalletTx.h"
+
 extern unsigned int nWalletDBUpdated;
 
-class CWalletTx;
 class CAccount;
 class CAccountingEntry;
 class Wallet;
+
+class CWalletTx;
 
 class CKeyPool
 {

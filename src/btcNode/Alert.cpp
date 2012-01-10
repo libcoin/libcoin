@@ -1,7 +1,6 @@
 
 #include "btcNode/Alert.h"
 
-//#include "btcNode/net.h"
 #include "btcNode/Block.h"
 #include "btcNode/BlockIndex.h"
 #include "btcNode/Peer.h"

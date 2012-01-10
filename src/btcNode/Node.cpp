@@ -7,13 +7,15 @@
 #include "btcNode/TransactionFilter.h"
 #include "btcNode/AlertFilter.h"
 #include <boost/bind.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/filesystem.hpp>
 #include <signal.h>
 
 using namespace std;
 using namespace boost;
 using namespace asio;
 
-Node::Node(const string& address, const string& port, bool proxy, const string& irc) : _io_service(), _signals(_io_service), _acceptor(_io_service), _peerManager(*this), _connection_deadline(_io_service), _messageHandler(), _endpointPool(), _blockChain(), _chatClient(_io_service, irc, _endpointPool, proxy), _proxy(proxy) {
+Node::Node(const Chain& chain, std::string dataDir, const string& address, const string& port, bool proxy, const string& irc) : _io_service(), _signals(_io_service), _acceptor(_io_service), _dataDir(dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir), _peerManager(*this), _connection_deadline(_io_service), _messageHandler(), _endpointPool(chain.defaultPort(), _dataDir), _blockChain(chain, _dataDir), _chatClient(_io_service, irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy), _proxy(proxy) {
     // Register to handle the signals that indicate when the node should exit.
     // It is safe to register for the same signal multiple times in a program,
     // provided all registration for the specified signal is made through Asio.
@@ -26,7 +28,7 @@ Node::Node(const string& address, const string& port, bool proxy, const string& 
     
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
     ip::tcp::resolver resolver(_io_service);
-    ip::tcp::resolver::query query(address, port);
+    ip::tcp::resolver::query query(address, port == "0" ? lexical_cast<string>(chain.defaultPort()) : port);
     ip::tcp::endpoint endpoint = *resolver.resolve(query);
     _acceptor.open(endpoint.protocol());
     _acceptor.set_option(ip::tcp::acceptor::reuse_address(true));
@@ -60,7 +62,7 @@ void Node::start_connect() {
     stringstream ss;
     ss << ep;
     printf("Trying connect to: %s\n", ss.str().c_str());
-    _new_server.reset(new Peer(_io_service, _peerManager, _messageHandler, false, _proxy, _blockChain.getBestHeight())); // false means outbound
+    _new_server.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, false, _proxy, _blockChain.getBestHeight())); // false means outbound
     _new_server->addr = ep;
     // Set a deadline for the connect operation.
     _connection_deadline.expires_from_now(posix_time::seconds(_connection_timeout));
@@ -76,8 +78,10 @@ void Node::check_deadline(const boost::system::error_code& e) {
         if (_connection_deadline.expires_at() <= deadline_timer::traits_type::now()) {
             // The deadline has passed. The socket is closed so that any outstanding
             // asynchronous operations are cancelled.
-            printf("Closing socket of: %s\n", _new_server->addr.toString().c_str());
-            _new_server->socket().close();
+            if(_new_server) {
+                printf("Closing socket of: %s\n", _new_server->addr.toString().c_str());
+                _new_server->socket().close();
+            }
             
             // There is no longer an active deadline. The expiry is set to positive
             // infinity so that the actor takes no action until a new deadline is set.
@@ -106,7 +110,7 @@ void Node::handle_connect(const system::error_code& e) {
 }
 
 void Node::start_accept() {
-    _new_client.reset(new Peer(_io_service, _peerManager, _messageHandler, true, _proxy, _blockChain.getBestHeight())); // true means inbound
+    _new_client.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, true, _proxy, _blockChain.getBestHeight())); // true means inbound
     _acceptor.async_accept(_new_client->socket(), bind(&Node::handle_accept, this, placeholders::error));
 }
 

@@ -108,7 +108,8 @@ Endpoint::Endpoint(unsigned int ip, unsigned short p, uint64 services)
     //    address(address_v4(ip));
     //    port(htons(p == 0 ? getDefaultPort() : p));
     address(address_v4(ntohl(ip)));
-    port(p == 0 ? getDefaultPort() : p);
+    //    port(p == 0 ? getDefaultPort() : p);
+    port(p);
     _services = services;
 }
 
@@ -151,7 +152,8 @@ void Endpoint::init()
     //    address(address_v4(INADDR_NONE));
     //    port(htons(getDefaultPort()));
     address(address_v4(INADDR_NONE));
-    port(getDefaultPort());
+    //    port(getDefaultPort());
+    port(0);
     _time = 100000000;
     _lastTry = 0;
 }

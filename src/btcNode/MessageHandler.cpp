@@ -22,7 +22,8 @@ bool MessageHandler::handleMessage(Peer* origin, Message& msg) {
             if ((*filter)->commands().count(msg.command())) {
                 // copy the string
                 string payload(msg.payload());
-                Message message(msg.command(), payload);
+                //                Message message(msg.command(), payload);
+                Message message(msg);
                 // We need only one successfull command to return true
                 if ( (**filter)(origin, message) ) ret = true;
             }

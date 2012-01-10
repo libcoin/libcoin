@@ -165,6 +165,7 @@ extern std::map<std::string, std::vector<std::string> > mapMultiArgs;
 extern bool fDebug;
 extern bool fPrintToConsole;
 extern bool fPrintToDebugger;
+extern std::string logfile;
 extern char pszSetDataDir[MAX_PATH];
 extern bool fRequestShutdown;
 extern bool fShutdown;
@@ -172,7 +173,7 @@ extern bool fDaemon;
 extern bool fServer;
 extern bool fCommandLine;
 extern std::string strMiscWarning;
-extern bool fTestNet;
+//extern bool fTestNet;
 extern bool fNoListen;
 extern bool fLogTimestamps;
 

@@ -183,7 +183,7 @@ bool BlockFilter::processBlock(Peer* origin, Block& block) {
         return error("ProcessBlock() : already have block (orphan) %s", hash.toString().substr(0,20).c_str());
     
     // Preliminary checks
-    if (!block.checkBlock())
+    if (!block.checkBlock(_blockChain.chain().proofOfWorkLimit()))
         return error("ProcessBlock() : CheckBlock FAILED");
     
     // If don't already have its previous block, shunt it off to holding area until we get it

@@ -35,7 +35,7 @@ bool CKeyStore::GetPubKey(const CBitcoinAddress &address, std::vector<unsigned c
 bool CBasicKeyStore::AddKey(const CKey& key)
 {
     CRITICAL_BLOCK(cs_KeyStore)
-        mapKeys[key.GetAddress()] = key.GetSecret();
+        mapKeys[key.GetAddress(_id)] = key.GetSecret();
     return true;
 }
 
@@ -117,7 +117,7 @@ bool CCryptoKeyStore::AddCryptedKey(const std::vector<unsigned char> &vchPubKey,
         if (!SetCrypted())
             return false;
 
-        mapCryptedKeys[CBitcoinAddress(vchPubKey)] = make_pair(vchPubKey, vchCryptedSecret);
+        mapCryptedKeys[CBitcoinAddress(_id, vchPubKey)] = make_pair(vchPubKey, vchCryptedSecret);
     }
     return true;
 }

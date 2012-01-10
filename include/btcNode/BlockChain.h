@@ -11,6 +11,7 @@
 
 #include "btcNode/BlockIndex.h"
 #include "btcNode/BlockFile.h"
+#include "btcNode/Chain.h"
 
 #include <boost/noncopyable.hpp>
 #include <list>
@@ -66,7 +67,6 @@ private:
     unsigned int _blockPos;
     unsigned int _txPos;
 };
-
 
 /// A txdb record that contains the disk location of a transaction and the
 /// locations of transactions that spend its outputs.  vSpent is really only
@@ -143,7 +143,7 @@ private: // noncopyable
     void operator=(const BlockChain&);
 
 public:
-    BlockChain(const char* pszMode="cr+");
+    BlockChain(const Chain& chain = bitcoin, const std::string dataDir = "", const char* pszMode="cr+");
     
     /// A S S E T S
     
@@ -167,6 +167,7 @@ public:
     bool acceptTransaction(Transaction& tx) { 
         return AcceptToMemoryPool(tx);
     }
+    
     bool acceptTransaction(Transaction& tx, bool& missing_inputs) { 
         bool mi = false;
         bool ret = AcceptToMemoryPool(tx, true, &mi);
@@ -204,6 +205,8 @@ public:
     CBlockIndex* getBlockIndex(const uint256 hash);
 
     void getBlock(const uint256 hash, Block& block);
+    
+    void getBlock(const CBlockIndex* index, Block& block);
 
     CBlockIndex* getHashStopIndex(uint256 hashStop);
 
@@ -221,12 +224,14 @@ public:
     
     bool isInitialBlockDownload();
     
-    const uint256& getGenesisHash() const { return _genesisBlock; }
+    const uint256& getGenesisHash() const { return _chain.genesisHash(); }
     const CBlockIndex* getBestIndex() const { return _bestIndex; }
     const uint256& getBestChain() const { return _bestChain; }
     const int64& getBestReceivedTime() const { return _bestReceivedTime; }
 
     const size_t getBlockChainIndexSize() const { return _blockChainIndex.size(); }
+    
+    const Chain& chain() const { return _chain; }
     
 protected:
     /// Read a Transaction from Disk.
@@ -274,17 +279,18 @@ protected:
     
     bool reorganize(Block& block, CBlockIndex* pindexNew);
     
-    int getTotalBlocksEstimate() const { if(fTestNet) return 0; else return _totalBlocksEstimate; }
+    int getTotalBlocksEstimate() const { return _chain.totalBlocksEstimate(); }
     
     bool AcceptToMemoryPool(Transaction& tx, bool fCheckInputs=true, bool* pfMissingInputs=NULL);
     bool AddToMemoryPoolUnchecked(Transaction& tx);
     bool RemoveFromMemoryPool(Transaction& tx);
 
 private:
-    uint256 _genesisBlock;
+    const Chain& _chain;
+    BlockFile _blockFile; // this is ONLY interface to the block file!
+
     CBlockIndex* _genesisBlockIndex;
     
-    BlockFile _blockFile; // this is ONLY interface to the block file!
     BlockChainIndex _blockChainIndex;
     
     CBigNum _bestChainWork;
@@ -299,8 +305,6 @@ private:
     AssetIndex _debitIndex;
     std::map<COutPoint, CInPoint> _transactionConnections;
     unsigned int _transactionsUpdated;
-
-    static const int _totalBlocksEstimate = 150000;
 };
 
 

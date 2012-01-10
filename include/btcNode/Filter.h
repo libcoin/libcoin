@@ -14,8 +14,9 @@ class Message
 {
 public:
     Message() : _header() {}
-    Message(std::string& p) : _header(), _payload(p) {}
-    Message(std::string c, std::string& p) : _header(c.c_str(), p.size()), _payload(p) { }
+    //    Message(std::string& p) : _header(), _payload(p) {}
+    Message(const Message& message) : _header(message._header), _payload(message._payload) { }
+    //    Message(std::string c, std::string& p) : _header(c.c_str(), p.size()), _payload(p) { }
     
     const std::string command() const { return _header.GetCommand(); }
     
@@ -31,7 +32,7 @@ public:
 
     unsigned char* header_ptr() {return (unsigned char*)&_header; }
     
-    static const char start(int i) { return pchMessageStart[i]; }
+    //    static const char start(int i) { return pchMessageStart[i]; }
     
 private:
     MessageHeader _header;

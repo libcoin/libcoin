@@ -23,9 +23,9 @@ public:
     /// data is required. The InputIterator return value indicates how much of the
     /// input has been consumed.
     template <typename InputIterator>
-    boost::tuple<boost::tribool, InputIterator> parse(Message& msg, InputIterator begin, InputIterator end) {
+    boost::tuple<boost::tribool, InputIterator> parse(const Chain& chain, Message& msg, InputIterator begin, InputIterator end) {
         while (begin != end) {
-            boost::tribool result = consume(msg, *begin++);
+            boost::tribool result = consume(chain, msg, *begin++);
             if (result || !result)
                 return boost::make_tuple(result, begin);
         }
@@ -35,7 +35,7 @@ public:
     
 private:
     /// Handle the next character of input.
-    boost::tribool consume(Message& msg, char input);
+    boost::tribool consume(const Chain& chain, Message& msg, char input);
         
     /// The current state of the parser.
     enum state {
