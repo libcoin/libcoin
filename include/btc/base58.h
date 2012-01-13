@@ -244,34 +244,13 @@ class CBitcoinAddress : public CBase58Data
 public:
     bool SetHash160(unsigned char networkId, const uint160& hash160) {
         SetData(networkId, &hash160, 20);
-    //        SetData(fTestNet ? 111 : 0, &hash160, 20);
         return true;
     }
 
     bool SetPubKey(unsigned char networkId, const std::vector<unsigned char>& vchPubKey) {
         return SetHash160(networkId, Hash160(vchPubKey));
     }
-/*
-    bool IsValid() const
-    {
-        int nExpectedSize = 20;
-        bool fExpectTestNet = false;
-        switch(nVersion)
-        {
-            case 0:
-                break;
 
-            case 111:
-                fExpectTestNet = true;
-                break;
-
-            default:
-                return false;
-        }
-        return fExpectTestNet == fTestNet && vchData.size() == nExpectedSize;
-    }
-*/
-    
     bool IsValid(unsigned char networkId) const {
         int nExpectedSize = 20;
         return networkId == nVersion && vchData.size() == nExpectedSize;

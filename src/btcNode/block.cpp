@@ -22,7 +22,7 @@ int Block::GetSigOpCount() const
     return n;
 }
 
-uint256 Block::buildMerkleTree(bool genesisBlock)
+uint256 Block::buildMerkleTree() const
 {
     _merkleTree.clear();
     BOOST_FOREACH(const Transaction& tx, _transactions)
@@ -37,11 +37,10 @@ uint256 Block::buildMerkleTree(bool genesisBlock)
         j += size;
     }
     uint256 merkleRoot = (_merkleTree.empty() ? 0 : _merkleTree.back());
-    if (genesisBlock) _merkleRoot = merkleRoot;
     return merkleRoot;
 }
 
-std::vector<uint256> Block::getMerkleBranch(int index)
+std::vector<uint256> Block::getMerkleBranch(int index) const
 {
     if (_merkleTree.empty())
         buildMerkleTree();

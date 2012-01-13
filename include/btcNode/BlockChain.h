@@ -128,8 +128,11 @@ private:
     std::vector<DiskTxPos> _spents;
 };
 
-/// BlockChain encapsulates the BlockChain and provides an interface for adding new blocks, storing in memory transactions and querying for transactions.
-/// BlockChain inhierits from CDB and is in fact an extension of the former CTxDB. Further, most of the globals from main.cpp is now in this class.
+/// BlockChain encapsulates the BlockChain and provides a const interface for querying properties for blocks and transactions. 
+/// BlockChain also provides an interface for adding new blocks and transactions. (non-const)
+/// BlockChain automatically handles adding new transactions to a memorypool and erasing them again when a block containing the transaction is added.
+
+/// BlockChain inhierits from CDB, has a Chain definition reference and has a BlockFile. In fact BlockChain is the only class to access the block index db and the block file. BlockChain is hence thread safe for all const querying and for adding blocks and transactions, the user is responsible for not calling these methods at the same time from multiple threads.
 
 typedef std::map<uint256, CBlockIndex*> BlockChainIndex;
 typedef std::map<uint256, Transaction> TransactionIndex;
@@ -143,40 +146,49 @@ private: // noncopyable
     void operator=(const BlockChain&);
 
 public:
+    /// The constructor - reference to a Chain definition i obligatory, if no dataDir is provided, the location for the db and the file is chosen from the Chain definition and the CDB::defaultDir method 
     BlockChain(const Chain& chain = bitcoin, const std::string dataDir = "", const char* pszMode="cr+");
     
     /// A S S E T S
     
     /// Get asset pointers from db or memory.
-    void getCredit(const uint160& btc, Coins& coins);
-    void getDebit(const uint160& btc, Coins& coins);
+    void getCredit(const uint160& btc, Coins& coins) const;
+    void getDebit(const uint160& btc, Coins& coins) const;
 
     /// T R A N S A C T I O N S    
     
     /// Get transactions from db or memory.
-    void getTransaction(const uint256& hash, Transaction& tx);
-    void getTransaction(const uint256& hash, Transaction& tx, int64& height, int64& time);
+    void getTransaction(const uint256& hash, Transaction& tx) const;
+    void getTransaction(const uint256& hash, Transaction& tx, int64& height, int64& time) const;
     
     /// Query for existence of a Transaction.
-    bool haveTx(uint256 hash, bool must_be_confirmed = false);
+    bool haveTx(uint256 hash, bool must_be_confirmed = false) const;
     
     /// A Transaction is final if the critreias set by it locktime are met.
-    bool isFinal(Transaction& tx, int nBlockHeight=0, int64 nBlockTime=0) const;
+    bool isFinal(const Transaction& tx, int nBlockHeight=0, int64 nBlockTime=0) const;
+    
+    /// Dry run version of the acceptTransaction method. Hence it is const. For probing transaction before they are scheduled for submission to the chain network.
+    bool checkTransaction(const Transaction& tx) const {
+        return CheckForMemoryPool(tx);
+    }
     
     /// Accept transaction (it will go into memory first)
-    bool acceptTransaction(Transaction& tx) { 
+    bool acceptTransaction(const Transaction& tx) { 
         return AcceptToMemoryPool(tx);
     }
     
-    bool acceptTransaction(Transaction& tx, bool& missing_inputs) { 
+    bool acceptTransaction(const Transaction& tx, bool& missing_inputs) { 
         bool mi = false;
         bool ret = AcceptToMemoryPool(tx, true, &mi);
         missing_inputs = mi;
         return ret;
     }
 
-    /// A simple way to register a callback for notification of accepted transactions.
-    boost::function<void (Transaction& t, Block& b)> onAcceptTransaction;
+    /// C O I N S
+    
+    bool isSpent(Coin coin) const;
+    int getNumSpent(uint256 hash) const ;
+    uint256 spentIn(Coin coin) const;
     
     /// B L O C K S
     
@@ -187,34 +199,42 @@ public:
     void print();
     
     /// Query for existence of Block.
-    bool haveBlock(uint256 hash);
+    bool haveBlock(uint256 hash) const;
     
     /// Accept a block (Note: this could lead to a reorganization of the block that is often quite time consuming).
     bool acceptBlock(Block& block);
     
-    /// A simple way to register a callback for notification of accepted blocks.
-    boost::function<void (Block& b)> onAcceptBlock;
-
     /// Locate blocks in the block chain
     //CBlockLocator blockLocator(uint256 hashBlock);
     
-    int getDistanceBack(const CBlockLocator& locator);
+    int getDistanceBack(const CBlockLocator& locator) const;
 
-    CBlockIndex* getBlockIndex(const CBlockLocator& locator);
+    const CBlockIndex* getBlockIndex(const CBlockLocator& locator) const;
 
-    CBlockIndex* getBlockIndex(const uint256 hash);
+    const CBlockIndex* getBlockIndex(const uint256 hash) const;
 
-    void getBlock(const uint256 hash, Block& block);
+    /// getBlock will first try to locate the block by its hash through the block index, if this fails it will assume that the hash for a tx and check the database to get the disk pos and then return the block as read from the block file
+    void getBlock(const uint256 hash, Block& block) const;
     
-    void getBlock(const CBlockIndex* index, Block& block);
+    void getBlock(const CBlockIndex* index, Block& block) const;
 
     CBlockIndex* getHashStopIndex(uint256 hashStop);
 
     /// Get height of block of transaction by its hash
-    int getHeight(const uint256 hash);
+    int getHeight(const uint256 hash) const;
     
     /// Get the maturity / depth of a block or a tx by its hash
-    int getDepthInMainChain(const uint256 hash) { int height = getHeight(hash); return height < 0 ? 0 : getBestHeight() - height + 1; }
+    int getDepthInMainChain(const uint256 hash) const { int height = getHeight(hash); return height < 0 ? 0 : getBestHeight() - height + 1; }
+    
+    /// Get number of blocks to maturity - only relevant for Coin base transactions.
+    int getBlocksToMaturity(const Transaction& tx) const {
+        if (!tx.IsCoinBase())
+            return 0;
+        return std::max(0, (COINBASE_MATURITY+20) - getDepthInMainChain(tx.GetHash()));
+    }
+    
+    /// Check if the hash of a block belongs to a block in the main chain:
+    bool isInMainChain(const uint256 hash) const;
     
     /// Get the best height
     int getBestHeight() const { return _bestIndex->nHeight; }
@@ -235,10 +255,10 @@ public:
     
 protected:
     /// Read a Transaction from Disk.
-    bool readDrIndex(uint160 hash160, std::set<std::pair<uint256, unsigned int> >& debit);
-    bool readCrIndex(uint160 hash160, std::set<std::pair<uint256, unsigned int> >& credit);
-    bool readDiskTx(uint256 hash, Transaction& tx);
-    bool readDiskTx(uint256 hash, Transaction& tx, int64& height, int64& time);
+    bool readDrIndex(uint160 hash160, std::set<std::pair<uint256, unsigned int> >& debit) const;
+    bool readCrIndex(uint160 hash160, std::set<std::pair<uint256, unsigned int> >& credit) const;
+    bool readDiskTx(uint256 hash, Transaction& tx) const;
+    bool readDiskTx(uint256 hash, Transaction& tx, int64& height, int64& time) const;
     
     uint256 getBlockHash(const CBlockLocator& locator);
     
@@ -246,7 +266,7 @@ protected:
         return (bi->pnext || bi == _bestIndex);
     }    
     
-    bool connectInputs(Transaction& tx, std::map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx, const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee = 0);
+    bool connectInputs(const Transaction& tx, std::map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx, const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee = 0) const;
     
     bool disconnectInputs(Transaction& tx);    
     
@@ -256,15 +276,15 @@ protected:
     bool setBestChain(Block& block, CBlockIndex* pindexNew);
     bool addToBlockIndex(Block& block, unsigned int nFile, unsigned int nBlockPos);
 
-    bool ReadTxIndex(uint256 hash, TxIndex& txindex);
+    bool ReadTxIndex(uint256 hash, TxIndex& txindex) const;
     bool UpdateTxIndex(uint256 hash, const TxIndex& txindex);
     bool AddTxIndex(const Transaction& tx, const DiskTxPos& pos, int nHeight);
     bool EraseTxIndex(const Transaction& tx);
 
     bool ReadOwnerTxes(uint160 hash160, int nHeight, std::vector<Transaction>& vtx);
-    bool ReadDiskTx(uint256 hash, Transaction& tx, TxIndex& txindex);
-    bool ReadDiskTx(COutPoint outpoint, Transaction& tx, TxIndex& txindex);
-    bool ReadDiskTx(COutPoint outpoint, Transaction& tx);
+    bool ReadDiskTx(uint256 hash, Transaction& tx, TxIndex& txindex) const;
+    bool ReadDiskTx(COutPoint outpoint, Transaction& tx, TxIndex& txindex) const;
+    bool ReadDiskTx(COutPoint outpoint, Transaction& tx) const;
     bool WriteBlockIndex(const CDiskBlockIndex& blockindex);
     bool EraseBlockIndex(uint256 hash);
     bool ReadHashBestChain();
@@ -281,8 +301,11 @@ protected:
     
     int getTotalBlocksEstimate() const { return _chain.totalBlocksEstimate(); }
     
-    bool AcceptToMemoryPool(Transaction& tx, bool fCheckInputs=true, bool* pfMissingInputs=NULL);
-    bool AddToMemoryPoolUnchecked(Transaction& tx);
+    bool CheckForMemoryPool(const Transaction& tx) const { Transaction* ptxOld = NULL; return CheckForMemoryPool(tx, ptxOld); }
+    bool CheckForMemoryPool(const Transaction& tx, Transaction*& ptxOld, bool fCheckInputs=true, bool* pfMissingInputs=NULL) const;
+
+    bool AcceptToMemoryPool(const Transaction& tx, bool fCheckInputs=true, bool* pfMissingInputs=NULL);
+    bool AddToMemoryPoolUnchecked(const Transaction& tx);
     bool RemoveFromMemoryPool(Transaction& tx);
 
 private:
@@ -303,7 +326,8 @@ private:
     TransactionIndex _transactionIndex;
     AssetIndex _creditIndex;
     AssetIndex _debitIndex;
-    std::map<COutPoint, CInPoint> _transactionConnections;
+    typedef std::map<COutPoint, CInPoint> TransactionConnections;
+    TransactionConnections _transactionConnections;
     unsigned int _transactionsUpdated;
 };
 

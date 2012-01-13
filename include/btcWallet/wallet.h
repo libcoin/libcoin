@@ -10,7 +10,7 @@
 #include "btc/script.h"
 
 #include "btcNode/Block.h"
-#include "btcNode/BlockChain.h"
+#include "btcNode/Node.h"
 
 #include "btcWallet/WalletTx.h"
 
@@ -20,6 +20,30 @@ class CWalletDB;
 
 class CReserveKey;
 class CKeyPool;
+
+class TransactionListener : public TransactionFilter::Listener {
+public:
+    TransactionListener(Wallet& wallet) : _wallet(wallet) {}
+    virtual void operator()(const Transaction& tx);
+private:
+    Wallet& _wallet;
+};
+
+class BlockListener : public BlockFilter::Listener {
+public:
+    BlockListener(Wallet& wallet) : _wallet(wallet) {}
+    virtual void operator()(const Block& blk);
+private:
+    Wallet& _wallet;
+};
+
+class TransactionReminder : public TransactionFilter::Reminder {
+public:
+    TransactionReminder(Wallet& wallet) : _wallet(wallet) {}
+    virtual void operator()(std::set<uint256>& hashes);
+private:
+    Wallet& _wallet;
+};
 
 class Wallet : public CCryptoKeyStore
 {
@@ -31,43 +55,82 @@ private:
 
 public:
     mutable CCriticalSection cs_wallet;
+    const int64 nTransactionFee;
 
     bool fFileBacked;
     std::string strWalletFile;
-
+    std::string _dataDir;
+    
     std::set<int64> setKeyPool;
 
     typedef std::map<unsigned int, CMasterKey> MasterKeyMap;
     MasterKeyMap mapMasterKeys;
     unsigned int nMasterKeyMaxID;
 
-    Wallet(BlockChain& blockChain) : _blockChain(blockChain) {
-        fFileBacked = false;
+    class TransactionEmitter : private boost::noncopyable {
+    public:
+        TransactionEmitter(Node& node) : _node(node) {}
+        void operator()(const Transaction& tx) {
+            _node.post(tx);
+        }
+    private:
+        Node& _node; 
+    };
+
+    Wallet(Node& node, std::string walletFile = "", std::string dataDir = "") : CCryptoKeyStore(node.blockChain().chain().networkId()), _blockChain(node.blockChain()), _emit(node), nTransactionFee(0) {
+        if(walletFile == "NOTFILEBACKED")
+            fFileBacked = false;
+        else {
+            _dataDir = (dataDir == "") ? CDB::dataDir(_blockChain.chain().dataDirSuffix()) : dataDir;
+            strWalletFile = (walletFile == "") ? strWalletFile = "wallet.dat" : walletFile;
+            fFileBacked = true;
+        }
         nMasterKeyMaxID = 0;
         pwalletdbEncryption = NULL;
         
-        _blockChain.onAcceptBlock = blockAccepted;
-        _blockChain.onAcceptTransaction = transactionAccepted;
-    }
-    
-    Wallet(BlockChain& blockChain, std::string walletFile) : _blockChain(blockChain) {
-        strWalletFile = walletFile;
-        fFileBacked = true;
-        nMasterKeyMaxID = 0;
-        pwalletdbEncryption = NULL;
+        // install callbacks to get notified about new tx'es and blocks
+        node.subscribe(TransactionFilter::listener_ptr(new TransactionListener(*this)));
+        node.subscribe(BlockFilter::listener_ptr(new BlockListener(*this)));
         
-        _blockChain.onAcceptBlock = blockAccepted;
-        _blockChain.onAcceptTransaction = transactionAccepted;
+        // install a callback to pull for possible reposts of transactions
+        node.subscribe(TransactionFilter::reminder_ptr(new TransactionReminder(*this)));
+        
+        bool firstRun = false;
+        LoadWallet(firstRun);
+        if(firstRun) printf("Created a new wallet!");
+        ScanForWalletTransactions();
+        printf("Scanned for wallet transactions");
     }
 
-    void transactionAccepted(Transaction& t, Block& b) {
-        AddToWalletIfInvolvingMe(t, &b, true);
+    const Chain& chain() { return _blockChain.chain(); }
+    
+    /// acceptTransaction is a thread safe way to post transaction to the chain network. It first checks the transaction, if it can be send and then it emits it through the TransactionEmitter that connects to the Node to run a acceptTransaction in the proper thread.
+    bool acceptTransaction(const Transaction& tx) {
+        if(_blockChain.checkTransaction(tx)) {
+            _emit(tx);
+            return true;
+        }
+        else
+            return false;
     }
-    void blockAccepted(Block& b) {
+    
+    void transactionAccepted(const Transaction& tx) {
+        AddToWalletIfInvolvingMe(tx, NULL, true);
+    }
+    void blockAccepted(const Block& b) {
         TransactionList txes = b.getTransactions();
         for(TransactionList::const_iterator tx = txes.begin(); tx != txes.end(); ++tx)
-            AddToWalletIfInvolvingMe(*tx, NULL, true);
+            AddToWalletIfInvolvingMe(*tx, &b, true);
     }
+    /*
+    void commit(const Transaction tx) {
+        _node.post(this, Commit, tx); // call this on Node thread...
+    }
+    */
+    
+    bool isFinal(const Transaction& tx) const { return _blockChain.isFinal(tx); }
+    
+    bool WriteToDisk(const CWalletTx& wtx);
     
     std::map<uint256, CWalletTx> mapWallet;
     std::vector<uint256> vWalletUpdated;
@@ -92,9 +155,9 @@ public:
     bool AddToWalletIfInvolvingMe(const Transaction& tx, const Block* pblock, bool fUpdate = false);
     bool EraseFromWallet(uint256 hash);
     void WalletUpdateSpent(const Transaction& prevout);
-    int ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate = false);
+    int ScanForWalletTransactions(const CBlockIndex* pindexStart = NULL, bool fUpdate = false);
     void ReacceptWalletTransactions();
-    void ResendWalletTransactions();
+    void ResendWalletTransactions(std::set<uint256>& hashes);
     int64 GetBalance() const;
     bool CreateTransaction(const std::vector<std::pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
     bool CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
@@ -148,6 +211,9 @@ public:
     {
         return (GetDebit(tx) > 0);
     }
+    
+    bool IsConfirmed(const CWalletTx& tx) const;
+    
     int64 GetDebit(const Transaction& tx) const
     {
         int64 nDebit = 0;
@@ -183,6 +249,12 @@ public:
     }
     void SetBestChain(const CBlockLocator& loc);
 
+    int GetBlocksToMaturity(const Transaction& tx) const {
+        return _blockChain.getBlocksToMaturity(tx);
+    }
+    
+    int getDepthInMainChain(const uint256 hash) const { return _blockChain.getDepthInMainChain(hash); }
+
     int LoadWallet(bool& fFirstRunRet);
 //    bool BackupWallet(const std::string& strDest);
 
@@ -217,11 +289,11 @@ public:
 
     bool SetDefaultKey(const std::vector<unsigned char> &vchPubKey);
     
-    void Sync();
+    //    void Sync();
 private:
-    BlockChain& _blockChain;
+    const BlockChain& _blockChain;
+    TransactionEmitter _emit;
 };
-
 
 class CReserveKey
 {

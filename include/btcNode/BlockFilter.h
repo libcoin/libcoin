@@ -15,8 +15,17 @@ class Inventory;
 
 class BlockFilter : public Filter
 {
-public:
+public:    
     BlockFilter(BlockChain& bc) : _blockChain(bc) {}
+    
+    class Listener : private boost::noncopyable {
+    public:
+        virtual void operator()(const Block&) = 0;
+    };
+    typedef boost::shared_ptr<Listener> listener_ptr;
+    typedef std::set<listener_ptr> Listeners;
+    
+    void subscribe(listener_ptr listener) { _listeners.insert(listener); }
     
     virtual bool operator()(Peer* origin, Message& msg);
     
@@ -39,6 +48,7 @@ private:
 
 private:
     BlockChain& _blockChain;
+    Listeners _listeners;
     
     std::map<uint256, Block*> _orphanBlocks;
     std::multimap<uint256, Block*> _orphanBlocksByPrev;

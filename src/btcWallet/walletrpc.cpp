@@ -1,21 +1,234 @@
-// Copyright (c) 2011 Michael Gronager
+// Copyright (c) 2012 Michael Gronager
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
+#include "btcWallet/walletrpc.h"
 #include "btcWallet/wallet.h"
-#include "btcRPC/rpc.h"
+#include "btcWallet/walletdb.h"
 
 using namespace std;
 using namespace boost;
 using namespace json_spirit;
 
-// global wallet - we define it here as opposed to in init.cpp as the rpc interface is really accessing the global/main wallet
-Wallet* pwalletMain;
+Value ValueFromAmount(int64 amount) {
+    return (double)amount / (double)COIN;
+}
 
-static int64 nWalletUnlockTime;
-static CCriticalSection cs_nWalletUnlockTime;
+int64 AmountFromValue(const Value& value)
+{
+    double dAmount = value.get_real();
+    if (dAmount <= 0.0 || dAmount > 21000000.0)
+        throw RPC::error(RPC::invalid_request, "Invalid amount");
+    int64 nAmount = roundint64(dAmount * COIN);
+    if (!MoneyRange(nAmount))
+        throw RPC::error(RPC::invalid_request, "Invalid amount");
+    return nAmount;
+}
+
+string AccountFromValue(const Value& value)
+{
+    string strAccount = value.get_str();
+    if (strAccount == "*")
+        throw RPC::error(RPC::invalid_params, "Invalid account name");
+    return strAccount;
+}
+
+int64 GetBalance::GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinDepth)
+{
+    int64 nBalance = 0;
+    
+    // Tally wallet transactions
+    for (map<uint256, CWalletTx>::const_iterator it = _wallet.mapWallet.begin(); it != _wallet.mapWallet.end(); ++it)
+        {
+        const CWalletTx& wtx = (*it).second;
+        if (!_wallet.isFinal(wtx))
+            continue;
+        
+        int64 nGenerated, nReceived, nSent, nFee;
+        wtx.GetAccountAmounts(strAccount, nGenerated, nReceived, nSent, nFee);
+        
+        if (nReceived != 0 && _wallet.getDepthInMainChain(wtx.GetHash()) >= nMinDepth)
+            nBalance += nReceived;
+        nBalance += nGenerated - nSent - nFee;
+        }
+    
+    // Tally internal accounting entries
+    nBalance += walletdb.GetAccountCreditDebit(strAccount);
+    
+    return nBalance;
+}
+
+int64 GetBalance::GetAccountBalance(const string& strAccount, int nMinDepth)
+{
+    CWalletDB walletdb(_wallet._dataDir, _wallet.strWalletFile);
+    return GetAccountBalance(walletdb, strAccount, nMinDepth);
+}
+
+Value GetBalance::operator()(const Array& params, bool fHelp) {
+    if (fHelp || params.size() > 2)
+        throw RPC::error(RPC::invalid_params, "getbalance [account] [minconf=1]\n"
+                            "If [account] is not specified, returns the server's total available balance.\n"
+                            "If [account] is specified, returns the balance in the account.");
+    
+    if (params.size() == 0)
+        return  ValueFromAmount(_wallet.GetBalance());
+    
+    int nMinDepth = 1;
+    if (params.size() > 1)
+        nMinDepth = params[1].get_int();
+    
+    if (params[0].get_str() == "*") {
+        // Calculate total balance a different way from GetBalance()
+        // (GetBalance() sums up all unspent TxOuts)
+        // getbalance and getbalance '*' should always return the same number.
+        int64 nBalance = 0;
+        for (map<uint256, CWalletTx>::const_iterator it = _wallet.mapWallet.begin(); it != _wallet.mapWallet.end(); ++it) {
+            const CWalletTx& wtx = (*it).second;
+            if (!_wallet.isFinal(wtx))
+                continue;
+            
+            int64 allGeneratedImmature, allGeneratedMature, allFee;
+            allGeneratedImmature = allGeneratedMature = allFee = 0;
+            string strSentAccount;
+            list<pair<CBitcoinAddress, int64> > listReceived;
+            list<pair<CBitcoinAddress, int64> > listSent;
+            wtx.GetAmounts(allGeneratedImmature, allGeneratedMature, listReceived, listSent, allFee, strSentAccount);
+            if (_wallet.getDepthInMainChain(wtx.GetHash()) >= nMinDepth)
+                BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress,int64)& r, listReceived)
+                nBalance += r.second;
+            BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress,int64)& r, listSent)
+            nBalance -= r.second;
+            nBalance -= allFee;
+            nBalance += allGeneratedMature;
+            }
+        return  ValueFromAmount(nBalance);
+    }
+    
+    string strAccount = AccountFromValue(params[0]);
+    
+    int64 nBalance = GetAccountBalance(strAccount, nMinDepth);
+    
+    return ValueFromAmount(nBalance);
+
+}
+    
+Value GetNewAddress::operator()(const Array& params, bool fHelp) {
+    if (fHelp || params.size() > 1)
+        throw RPC::error(RPC::invalid_params, "getnewaddress [account]\n"
+                            "Returns a new bitcoin address for receiving payments.  "
+                            "If [account] is specified (recommended), it is added to the address book "
+                            "so payments received with the address will be credited to [account].");
+    
+    // Parse the account first so we don't generate a key if there's an error
+    string strAccount;
+    if (params.size() > 0)
+        strAccount = AccountFromValue(params[0]);
+    
+    if (!_wallet.IsLocked())
+        _wallet.TopUpKeyPool();
+    
+    // Generate a new key that is added to wallet
+    std::vector<unsigned char> newKey;
+    if (!_wallet.GetKeyFromPool(newKey, false))
+        throw RPC::error(RPC::internal_error, "Error: Keypool ran out, please call keypoolrefill first");
+    CBitcoinAddress address(_wallet.chain().networkId(), newKey);
+    
+    _wallet.SetAddressBookName(address, strAccount);
+    
+    return address.toString();
+}
+
+Value SendToAddress::operator()(const Array& params, bool fHelp) {
+    if (_wallet.IsCrypted() && (fHelp || params.size() < 2 || params.size() > 4))
+        throw RPC::error(RPC::invalid_request, "sendtoaddress <bitcoinaddress> <amount> [comment] [comment-to]\n"
+                            "<amount> is a real and is rounded to the nearest 0.00000001\n"
+                            "requires wallet passphrase to be set with walletpassphrase first");
+    
+    if (!_wallet.IsCrypted() && (fHelp || params.size() < 2 || params.size() > 4))
+        throw RPC::error(RPC::invalid_params, "sendtoaddress <bitcoinaddress> <amount> [comment] [comment-to]\n"
+                            "<amount> is a real and is rounded to the nearest 0.00000001");
+    
+    CBitcoinAddress address(params[0].get_str());
+    if (!address.IsValid(_wallet.chain().networkId()))
+        throw RPC::error(RPC::invalid_params, "Invalid bitcoin address");
+    
+    // Amount
+    int64 nAmount = AmountFromValue(params[1]);
+    
+    // Wallet comments
+    CWalletTx wtx;
+    if (params.size() > 2 && params[2].type() != null_type && !params[2].get_str().empty())
+        wtx.mapValue["comment"] = params[2].get_str();
+    if (params.size() > 3 && params[3].type() != null_type && !params[3].get_str().empty())
+        wtx.mapValue["to"]      = params[3].get_str();
+    
+    if (_wallet.IsLocked())
+        throw RPC::error(RPC::invalid_request, "Error: Please enter the wallet passphrase with walletpassphrase first.");
+    
+    string strError = _wallet.SendMoneyToBitcoinAddress(address, nAmount, wtx);
+    if (strError != "")
+        throw RPC::error(RPC::invalid_request, strError);
+    
+    return wtx.GetHash().GetHex();
+}
+
+CBitcoinAddress GetAccountAddress::getAccountAddress(string strAccount, bool bForceNew)
+{
+    CWalletDB walletdb(_wallet._dataDir, _wallet.strWalletFile);
+    
+    CAccount account;
+    walletdb.ReadAccount(strAccount, account);
+    
+    bool bKeyUsed = false;
+    
+    // Check if the current key has been used
+    if (!account.vchPubKey.empty())
+        {
+        CScript scriptPubKey;
+        scriptPubKey.SetBitcoinAddress(_wallet.chain().networkId(), account.vchPubKey);
+        for (map<uint256, CWalletTx>::iterator it = _wallet.mapWallet.begin();
+             it != _wallet.mapWallet.end() && !account.vchPubKey.empty();
+             ++it)
+            {
+            const CWalletTx& wtx = (*it).second;
+            BOOST_FOREACH(const CTxOut& txout, wtx.vout)
+            if (txout.scriptPubKey == scriptPubKey)
+                bKeyUsed = true;
+            }
+        }
+    
+    // Generate a new key
+    if (account.vchPubKey.empty() || bForceNew || bKeyUsed)
+        {
+        if (!_wallet.GetKeyFromPool(account.vchPubKey, false))
+            throw RPC::error(RPC::internal_error, "Error: Keypool ran out, please call keypoolrefill first");
+        
+        _wallet.SetAddressBookName(CBitcoinAddress(_wallet.chain().networkId(), account.vchPubKey), strAccount);
+        walletdb.WriteAccount(strAccount, account);
+        }
+    
+    return CBitcoinAddress(_wallet.chain().networkId(), account.vchPubKey);
+}
+
+Value GetAccountAddress::operator()(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw RPC::error(RPC::invalid_params, "getaccountaddress <account>\n"
+                            "Returns the current bitcoin address for receiving payments to this account.");
+    
+    // Parse the account first so we don't generate a key if there's an error
+    string strAccount = AccountFromValue(params[0]);
+    
+    Value ret;
+    
+    ret = getAccountAddress(strAccount).toString();
+    
+    return ret;
+}
 
 
+
+/*
 void WalletTxToJSON(const CWalletTx& wtx, Object& entry)
 {
     entry.push_back(Pair("confirmations", wtx.GetDepthInMainChain()));
@@ -1196,3 +1409,4 @@ Value validateaddress(const Array& params, bool fHelp)
     }
     return ret;
 }
+*/

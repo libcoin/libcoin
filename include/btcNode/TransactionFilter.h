@@ -19,8 +19,27 @@ class CDataStream;
 class TransactionFilter : public Filter
 {
 public:
+
     TransactionFilter(BlockChain& bc) : _blockChain(bc) {}
     
+    class Listener : private boost::noncopyable {
+    public:
+        virtual void operator()(const Transaction&) = 0;
+    };
+    typedef boost::shared_ptr<Listener> listener_ptr;
+    typedef std::set<listener_ptr> Listeners;
+    
+    void subscribe(listener_ptr listener) { _listeners.insert(listener); }
+
+    class Reminder : private boost::noncopyable {
+    public:
+        virtual void operator()(std::set<uint256>&) = 0;
+    };
+    typedef boost::shared_ptr<Reminder> reminder_ptr;
+    typedef std::set<reminder_ptr> Reminders;
+
+    void subscribe(reminder_ptr reminder) { _reminders.insert(reminder); }
+        
     virtual bool operator()(Peer* origin, Message& msg);
     
     virtual std::set<std::string> commands() {
@@ -32,6 +51,10 @@ public:
     }
     
 private:
+    BlockChain& _blockChain;
+    Listeners _listeners;
+    Reminders _reminders;
+
     std::map<uint256, CDataStream*> _orphanTransactions;
     std::multimap<uint256, CDataStream*> _orphanTransactionsByPrev;
     
@@ -50,9 +73,7 @@ private:
     
     inline void relayInventory(const Peers& peers, const Inventory& inv);
 
-    template<typename T> void relayMessage(const Peers& peers, const Inventory& inv, const T& a);
-    
-    BlockChain& _blockChain;
+    template<typename T> void relayMessage(const Peers& peers, const Inventory& inv, const T& a);    
 };
 
 template<> inline void TransactionFilter::relayMessage<>(const Peers& peers, const Inventory& inv, const CDataStream& ss);

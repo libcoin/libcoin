@@ -12,6 +12,8 @@
 #include "btcNode/EndpointPool.h"
 #include "btcNode/ChatClient.h"
 #include "btcNode/Chain.h"
+#include "btcNode/TransactionFilter.h"
+#include "btcNode/BlockFilter.h"
 
 /// The top-level class of the btc Node.
 /// Node keeps a list of Peers and accepts and initiates connectes using a list of endpoints
@@ -45,8 +47,23 @@ public:
         _messageHandler.installFilter(filter);
     }
 
-    /// get a handle to the Block Chain
-    BlockChain& blockChain() { return _blockChain; }
+    /// get a const handle to the Block Chain
+    const BlockChain& blockChain() const { return _blockChain; }
+
+    /// Post a Transaction to the Node. (Note that we use dispatch - no need to post if we are already in the same thread)
+    void post(const Transaction& tx) { _io_service.dispatch(boost::bind(&BlockChain::acceptTransaction, &_blockChain, tx)); }
+    
+    /// Post a Block to the Node.
+    //    void post(const Block& blk) { _io_service.post(); }
+    
+    /// Subscribe to Transaction accept notifications
+    void subscribe(TransactionFilter::listener_ptr listener) { static_cast<TransactionFilter*>(_transactionFilter.get())->subscribe(listener); }
+    
+    /// Subscribe to supply reminders of inventory (could e.g. be for transactions in a wallet)
+    void subscribe(TransactionFilter::reminder_ptr reminder) { static_cast<TransactionFilter*>(_transactionFilter.get())->subscribe(reminder); }
+    
+    /// Subscribe to Block accept notifications
+    void subscribe(BlockFilter::listener_ptr listener) { static_cast<BlockFilter*>(_blockFilter.get())->subscribe(listener); }
     
 private:
     /// Initiate an asynchronous accept operation.
@@ -105,6 +122,9 @@ private:
     ChatClient _chatClient;
     
     bool _proxy;
+    
+    filter_ptr _transactionFilter;
+    filter_ptr _blockFilter;
 
     static const unsigned int _max_outbound = 8;
     static const unsigned int _max_inbound = 125-_max_outbound;

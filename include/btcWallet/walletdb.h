@@ -48,7 +48,7 @@ public:
 class CWalletDB : public CDB
 {
 public:
-    CWalletDB(std::string strFilename, const char* pszMode="r+") : CDB(strFilename.c_str(), pszMode)
+    CWalletDB(const std::string dataDir, std::string strFilename, const char* pszMode="r+") : CDB(dataDir, strFilename.c_str(), pszMode)
     {
     }
 private:
@@ -175,7 +175,7 @@ public:
     int LoadWallet(Wallet* pwallet);
 };
 
-void ThreadFlushWalletDB(void* parg);
+//void ThreadFlushWalletDB(void* parg);
 bool BackupWallet(const Wallet& wallet, const std::string& strDest);
 
 #endif

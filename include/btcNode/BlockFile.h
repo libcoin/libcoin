@@ -24,17 +24,19 @@ public:
     BlockFile(const std::string dataDir) : _dataDir(dataDir), _currentBlockFile(1) {} /// load the block chain index from file
 
     bool writeToDisk(const Chain& chain, const Block& block, unsigned int& nFileRet, unsigned int& nBlockPosRet, bool commit = false);
-    bool readFromDisk(Block& block, unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true);
-    bool readFromDisk(Block& block, const CBlockIndex* pindex, bool fReadTransactions=true);
+    bool readFromDisk(Transaction& tx, DiskTxPos pos, FILE** pfileRet);
     
-    bool readFromDisk(Transaction& tx, DiskTxPos pos, FILE** pfileRet=NULL);    
+    bool readFromDisk(Transaction& tx, DiskTxPos pos) const;    
+    bool readFromDisk(Block& block, const CBlockIndex* pindex, bool fReadTransactions=true) const;
+    bool readFromDisk(Block& block, unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true) const;
     
     bool eraseBlockFromDisk(CBlockIndex bindex);
 
     bool checkDiskSpace(uint64 nAdditionalBytes=0);
 
 protected:
-    FILE* openBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode="rb");
+    FILE* openBlockFile(unsigned int nFile, unsigned int nBlockPos) const;
+    FILE* openBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode);
     FILE* appendBlockFile(unsigned int& nFileRet);
     //    bool loadBlockIndex(bool fAllowNew=true);
     

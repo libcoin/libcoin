@@ -33,7 +33,7 @@ SET(TARGET_H
     ${HEADER_PATH}/PeerManager.h
     ${HEADER_PATH}/TransactionFilter.h
     ${HEADER_PATH}/VersionFilter.h
-    ${HEADER_PATH}/WebClient.h
+#    ${HEADER_PATH}/WebClient.h
     ${BITCOIN_CONFIG_HEADER}
 )
 
@@ -63,7 +63,7 @@ SET(TARGET_SRC
     PeerManager.cpp
     TransactionFilter.cpp
     VersionFilter.cpp
-    WebClient.cpp
+#    WebClient.cpp
 
     ${BITCOIN_VERSIONINFO_RC}
 )

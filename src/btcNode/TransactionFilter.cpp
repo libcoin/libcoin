@@ -12,7 +12,7 @@ using namespace boost;
 bool TransactionFilter::operator()(Peer* origin, Message& msg) {
     if (origin->nVersion == 0) {
         throw OriginNotReady();
-    }
+    }    
     if (msg.command() == "tx") {        
         vector<uint256> workQueue;
         CDataStream data(msg.payload());
@@ -25,6 +25,8 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
         
         bool fMissingInputs = false;
         if (_blockChain.acceptTransaction(tx, fMissingInputs)) {
+            for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
+                (*listener->get())(tx);
             relayMessage(origin->getAllPeers(), inv, payload);
             _alreadyAskedFor.erase(inv);
             workQueue.push_back(inv.getHash());
@@ -41,6 +43,8 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
                     Inventory inv(MSG_TX, tx.GetHash());
                     
                     if (_blockChain.acceptTransaction(tx)){
+                        for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
+                            (*listener->get())(tx);
                         printf("   accepted orphan tx %s\n", inv.getHash().toString().substr(0,10).c_str());
                         //                        SyncWithWallets(tx, NULL, true);
                         relayMessage(origin->getAllPeers(), inv, payload);
@@ -103,6 +107,8 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
             }            
         }
     }
+    
+    // We could call the wallet reminders here - it is not the ideal spot ???    
 
     return true;
 }

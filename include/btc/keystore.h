@@ -19,7 +19,7 @@ public:
     virtual bool GetKey(const CBitcoinAddress &address, CKey& keyOut) const =0;
     virtual bool GetKey(const uint160 &asset, CKey& keyOut) const =0;
     virtual bool GetPubKey(const CBitcoinAddress &address, std::vector<unsigned char>& vchPubKeyOut) const;
-    virtual bool GetPubKey(const uint160 &asset, std::vector<unsigned char>& vchPubKeyOut) const;
+    virtual bool GetPubKey(const uint160 &asset, std::vector<unsigned char>& vchPubKeyOut) const = 0;
     virtual std::vector<unsigned char> GenerateNewKey();
     virtual unsigned char getId() const = 0;
 };
@@ -59,7 +59,7 @@ public:
     }
     virtual bool HaveKey(const uint160 &asset) const { return HaveKey(CBitcoinAddress(_id, asset)); }
     virtual bool GetKey(const uint160 &asset, CKey& keyOut) const { return GetKey(CBitcoinAddress(_id, asset), keyOut); }
-
+    virtual bool GetPubKey(const uint160 &asset, std::vector<unsigned char>& vchPubKeyOut) const { return CKeyStore::GetPubKey(CBitcoinAddress(_id, asset), vchPubKeyOut); }
 };
 
 typedef std::map<CBitcoinAddress, std::pair<std::vector<unsigned char>, std::vector<unsigned char> > > CryptedKeyMap;
@@ -127,8 +127,7 @@ public:
         }
     }
     bool GetKey(const CBitcoinAddress &address, CKey& keyOut) const;
-    bool GetPubKey(const CBitcoinAddress &address, std::vector<unsigned char>& vchPubKeyOut) const;
-    virtual bool GetPubKey(const uint160 &asset, std::vector<unsigned char>& vchPubKeyOut) const { return GetPubKey(CBitcoinAddress(_id, asset), vchPubKeyOut); }
+    virtual bool GetPubKey(const CBitcoinAddress &address, std::vector<unsigned char>& vchPubKeyOut) const;
 };
 
 #endif

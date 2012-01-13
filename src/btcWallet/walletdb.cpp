@@ -111,13 +111,6 @@ int CWalletDB::LoadWallet(Wallet* pwallet)
     int nFileVersion = 0;
     vector<uint256> vWalletUpgrade;
 
-    // Modify defaults
-#ifndef _WIN32
-    // Tray icon sometimes disappears on 9.10 karmic koala 64-bit, leaving no way to access the program
-    fMinimizeToTray = false;
-    fMinimizeOnClose = false;
-#endif
-
     //// todo: shouldn't we catch exceptions and try to recover and continue?
     CRITICAL_BLOCK(pwallet->cs_wallet)
     {
@@ -258,17 +251,7 @@ int CWalletDB::LoadWallet(Wallet* pwallet)
                 ssKey >> strKey;
 
                 // Options
-#ifndef GUI
-                if (strKey == "fGenerateBitcoins")  ssValue >> fGenerateBitcoins;
-#endif
-                if (strKey == "nTransactionFee")    ssValue >> nTransactionFee;
-                if (strKey == "fLimitProcessors")   ssValue >> fLimitProcessors;
-                if (strKey == "nLimitProcessors")   ssValue >> nLimitProcessors;
-                if (strKey == "fMinimizeToTray")    ssValue >> fMinimizeToTray;
-                if (strKey == "fMinimizeOnClose")   ssValue >> fMinimizeOnClose;
-                if (strKey == "fUseProxy")          ssValue >> fUseProxy;
-                if (strKey == "addrProxy")          ssValue >> addrProxy;
-                if (fHaveUPnP && strKey == "fUseUPnP")           ssValue >> fUseUPnP;
+            //                if (strKey == "fGenerateBitcoins")  ssValue >> fGenerateBitcoins;
             }
             else if (strType == "minversion")
             {
@@ -285,15 +268,6 @@ int CWalletDB::LoadWallet(Wallet* pwallet)
         WriteTx(hash, pwallet->mapWallet[hash]);
 
     printf("nFileVersion = %d\n", nFileVersion);
-    printf("fGenerateBitcoins = %d\n", fGenerateBitcoins);
-    printf("nTransactionFee = %"PRI64d"\n", nTransactionFee);
-    printf("fMinimizeToTray = %d\n", fMinimizeToTray);
-    printf("fMinimizeOnClose = %d\n", fMinimizeOnClose);
-    printf("fUseProxy = %d\n", fUseProxy);
-    printf("addrProxy = %s\n", addrProxy.toString().c_str());
-    if (fHaveUPnP)
-        printf("fUseUPnP = %d\n", fUseUPnP);
-
 
     // Upgrade
     if (nFileVersion < VERSION)
@@ -308,7 +282,7 @@ int CWalletDB::LoadWallet(Wallet* pwallet)
 
     return DB_LOAD_OK;
 }
-
+/*
 void ThreadFlushWalletDB(void* parg)
 {
     const string& strFile = ((const string*)parg)[0];
@@ -368,7 +342,7 @@ void ThreadFlushWalletDB(void* parg)
         }
     }
 }
-
+*/
 bool BackupWallet(const Wallet& wallet, const string& strDest)
 {
     if (!wallet.fFileBacked)
@@ -386,7 +360,7 @@ bool BackupWallet(const Wallet& wallet, const string& strDest)
                 mapFileUseCount.erase(wallet.strWalletFile);
 
                 // Copy wallet.dat
-                filesystem::path pathSrc(GetDataDir() + "/" + wallet.strWalletFile);
+                filesystem::path pathSrc(wallet._dataDir + "/" + wallet.strWalletFile);
                 filesystem::path pathDest(strDest);
                 if (filesystem::is_directory(pathDest))
                     pathDest = pathDest / wallet.strWalletFile;

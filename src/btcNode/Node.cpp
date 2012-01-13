@@ -25,6 +25,9 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     _signals.add(SIGQUIT);
 #endif // defined(SIGQUIT)
     _signals.async_wait(bind(&Node::handle_stop, this));
+
+    _transactionFilter = filter_ptr(new TransactionFilter(_blockChain));
+    _blockFilter = filter_ptr(new BlockFilter(_blockChain));
     
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
     ip::tcp::resolver resolver(_io_service);
@@ -48,8 +51,8 @@ void Node::run() {
     // Install filters for teh messages. First inserted filters are executed first.
     _messageHandler.installFilter(filter_ptr(new VersionFilter));
     _messageHandler.installFilter(filter_ptr(new EndpointFilter(_endpointPool)));
-    _messageHandler.installFilter(filter_ptr(new BlockFilter(_blockChain)));
-    _messageHandler.installFilter(filter_ptr(new TransactionFilter(_blockChain)));
+    _messageHandler.installFilter(_blockFilter);
+    _messageHandler.installFilter(_transactionFilter);
     _messageHandler.installFilter(filter_ptr(new AlertFilter)); // this only output the alert to stdout
     
     _io_service.run();

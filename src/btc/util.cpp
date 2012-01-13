@@ -28,14 +28,10 @@ bool fPrintToConsole = false;
 bool fPrintToDebugger = false;
 string logfile("");
 char pszSetDataDir[MAX_PATH] = "";
-bool fRequestShutdown = false;
 bool fShutdown = false;
 bool fDaemon = false;
-bool fServer = false;
-bool fCommandLine = false;
 string strMiscWarning;
-//bool fTestNet = false;
-bool fNoListen = false;
+
 bool fLogTimestamps = false;
 
 
@@ -657,75 +653,6 @@ string MyGetSpecialFolderPath(int nFolder, bool fCreate)
 #endif
 
 /*
-string GetDefaultDataDir()
-{
-    // Windows: C:\Documents and Settings\username\Application Data\Bitcoin
-    // Mac: ~/Library/Application Support/Bitcoin
-    // Unix: ~/.bitcoin
-#ifdef _WIN32
-    // Windows
-    return MyGetSpecialFolderPath(CSIDL_APPDATA, true) + "\\Bitcoin";
-#else
-    char* pszHome = getenv("HOME");
-    if (pszHome == NULL || strlen(pszHome) == 0)
-        pszHome = (char*)"/";
-    string strHome = pszHome;
-    if (strHome[strHome.size()-1] != '/')
-        strHome += '/';
-#ifdef _NOT_DEFINED__MACH__
-    // Mac
-    strHome += "Library/Application Support/";
-    filesystem::create_directory(strHome.c_str());
-    return strHome + "Bitcoin";
-#else
-    // Unix
-    return strHome + ".bitcoin";
-#endif
-#endif
-}
- 
-void GetDataDir(char* pszDir)
-{
-    // pszDir must be at least MAX_PATH length.
-    int nVariation;
-    if (pszSetDataDir[0] != 0)
-    {
-        strlcpy(pszDir, pszSetDataDir, MAX_PATH);
-        nVariation = 0;
-    }
-    else
-    {
-        // This can be called during exceptions by printf, so we cache the
-        // value so we don't have to do memory allocations after that.
-        static char pszCachedDir[MAX_PATH];
-        if (pszCachedDir[0] == 0)
-            strlcpy(pszCachedDir, GetDefaultDataDir().c_str(), sizeof(pszCachedDir));
-        strlcpy(pszDir, pszCachedDir, MAX_PATH);
-        nVariation = 1;
-    }
-    if (fTestNet)
-    {
-        char* p = pszDir + strlen(pszDir);
-        if (p > pszDir && p[-1] != '/' && p[-1] != '\\')
-            *p++ = '/';
-        strcpy(p, "testnet");
-        nVariation += 2;
-    }
-    static bool pfMkdir[4];
-    if (!pfMkdir[nVariation])
-    {
-        pfMkdir[nVariation] = true;
-        boost::filesystem::create_directory(pszDir);
-    }
-}
-
-string GetDataDir()
-{
-    char pszDir[MAX_PATH];
-    GetDataDir(pszDir);
-    return pszDir;
-}
-
 string GetConfigFile()
 {
     namespace fs = boost::filesystem;

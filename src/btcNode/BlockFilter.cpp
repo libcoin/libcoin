@@ -37,7 +37,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         data >> locator >> hashStop;
         
         // Find the last block the caller has in the main chain
-        CBlockIndex* pindex = _blockChain.getBlockIndex(locator);
+        const CBlockIndex* pindex = _blockChain.getBlockIndex(locator);
         
         // Send the rest of the chain
         if (pindex)
@@ -69,7 +69,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         CDataStream data(msg.payload());
         data >> locator >> hashStop;
         
-        CBlockIndex* pindex = NULL;
+        const CBlockIndex* pindex = NULL;
         if (locator.IsNull()) {
             // If locator is null, return the hashStop block
             pindex = _blockChain.getHashStopIndex(hashStop);
@@ -207,6 +207,10 @@ bool BlockFilter::processBlock(Peer* origin, Block& block) {
     if (!_blockChain.acceptBlock(block))
         return error("ProcessBlock() : AcceptBlock FAILED");
     else {
+        // notify all listeners
+        for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
+            (*listener->get())(block);
+
         // Relay inventory, but don't relay old inventory during initial block download
         uint256 bestChain = _blockChain.getBestChain();
         uint256 blockHash = block.getHash();
@@ -228,6 +232,10 @@ bool BlockFilter::processBlock(Peer* origin, Block& block) {
              ++mi) {
             Block* orphan = (*mi).second;
             if (_blockChain.acceptBlock(*orphan)) {
+                // notify all listeners
+                for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
+                    (*listener->get())(block);
+
                 workQueue.push_back(orphan->getHash());
                 // Relay inventory, but don't relay old inventory during initial block download
                 uint256 bestChain = _blockChain.getBestChain();

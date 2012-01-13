@@ -41,7 +41,7 @@ private:
 
 protected:
     template<typename K, typename T>
-    bool Read(const K& key, T& value)
+    bool Read(const K& key, T& value) const
     {
         if (!pdb)
             return false;
@@ -126,7 +126,7 @@ protected:
     }
 
     template<typename K>
-    bool Exists(const K& key)
+    bool Exists(const K& key) const
     {
         if (!pdb)
             return false;
@@ -195,7 +195,7 @@ protected:
         return 0;
     }
 
-    DbTxn* GetTxn()
+    DbTxn* GetTxn() const
     {
         if (!vTxn.empty())
             return vTxn.back();

@@ -92,6 +92,7 @@ CDB::CDB(const std::string dataDir, const char* pszFile, const char* pszMode) : 
             if (fShutdown)
                 return;
             string strDataDir = dataDir;
+            filesystem::create_directory(strDataDir.c_str());
             string strLogDir = strDataDir + "/database";
             filesystem::create_directory(strLogDir.c_str());
             string strErrorFile = strDataDir + "/db.log";

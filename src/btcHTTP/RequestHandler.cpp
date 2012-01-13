@@ -200,13 +200,12 @@ void RequestHandler::handlePOST(const Request& req, Reply& rep) {
                 // Check if the method requires authorization
                 if(_auths.count(rpc.method())) {
                     if(req.headers.count("Authorization") == 0)
-                        throw 401;
+                        throw Reply::stock_reply(Reply::unauthorized);
                     string basic_auth = req.headers.find("Authorization")->second;
                     if (basic_auth.length() > 9 && basic_auth.substr(0,6) != "Basic ")
-                        throw 401;
+                        throw Reply::stock_reply(Reply::unauthorized);
                     if(!_auths[rpc.method()].valid(basic_auth.substr(6)))
-                       throw 401; // and text
-                    
+                        throw Reply::stock_reply(Reply::unauthorized);                    
                 }
                     
                 // Find method
@@ -227,6 +226,10 @@ void RequestHandler::handlePOST(const Request& req, Reply& rep) {
             }
             catch (std::exception& e) {
                 rpc.setError(RPC::error(RPC::parse_error, e.what()));
+            }
+            catch (Reply err) {
+                rep = err;
+                return;
             }
             // Form reply header and content
             rep.content = rpc.getContent();

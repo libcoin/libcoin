@@ -42,12 +42,12 @@ bool BlockFile::writeToDisk(const Chain& chain, const Block& block, unsigned int
     return true;
 }
 
-bool BlockFile::readFromDisk(Block& block, unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions)
+bool BlockFile::readFromDisk(Block& block, unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions) const
 {
     block.setNull();
     
     // Open history file to read
-    CAutoFile filein = openBlockFile(nFile, nBlockPos, "rb");
+    CAutoFile filein = openBlockFile(nFile, nBlockPos);
     if (!filein)
         return error("Block::ReadFromDisk() : OpenBlockFile failed");
     if (!fReadTransactions)
@@ -63,7 +63,7 @@ bool BlockFile::readFromDisk(Block& block, unsigned int nFile, unsigned int nBlo
     return true;
 }
 
-bool BlockFile::readFromDisk(Block& block, const CBlockIndex* pindex, bool fReadTransactions)
+bool BlockFile::readFromDisk(Block& block, const CBlockIndex* pindex, bool fReadTransactions) const
 {
     if (!fReadTransactions)
         {
@@ -77,9 +77,23 @@ bool BlockFile::readFromDisk(Block& block, const CBlockIndex* pindex, bool fRead
     return true;
 }
 
+bool BlockFile::readFromDisk(Transaction& tx, DiskTxPos pos) const
+{
+    CAutoFile filein = openBlockFile(pos.getFile(), 0);
+    if (!filein)
+        return error("Transaction::ReadFromDisk() : OpenBlockFile failed");
+    
+    // Read transaction
+    if (fseek(filein, pos.getTxPos(), SEEK_SET) != 0)
+        return error("Transaction::ReadFromDisk() : fseek failed");
+    filein >> tx;
+    
+    return true;
+}
+
 bool BlockFile::readFromDisk(Transaction& tx, DiskTxPos pos, FILE** pfileRet)
 {
-    CAutoFile filein = openBlockFile(pos.getFile(), 0, pfileRet ? "rb+" : "rb");
+    CAutoFile filein = openBlockFile(pos.getFile(), 0, "rb+");
     if (!filein)
         return error("Transaction::ReadFromDisk() : OpenBlockFile failed");
     
@@ -127,6 +141,22 @@ bool BlockFile::checkDiskSpace(uint64 nAdditionalBytes)
         return false;
     }
     return true;
+}
+
+FILE* BlockFile::openBlockFile(unsigned int nFile, unsigned int nBlockPos) const {
+    const char* pszMode = "rb";
+    if (nFile == -1)
+        return NULL;
+    FILE* file = fopen(strprintf("%s/blk%04d.dat", _dataDir.c_str(), nFile).c_str(), pszMode);
+    if (!file)
+        return NULL;
+    if (nBlockPos != 0 && !strchr(pszMode, 'a') && !strchr(pszMode, 'w')) {
+        if (fseek(file, nBlockPos, SEEK_SET) != 0) {
+            fclose(file);
+            return NULL;
+        }
+    }
+    return file;
 }
 
 FILE* BlockFile::openBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode)

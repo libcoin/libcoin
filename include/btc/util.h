@@ -167,14 +167,10 @@ extern bool fPrintToConsole;
 extern bool fPrintToDebugger;
 extern std::string logfile;
 extern char pszSetDataDir[MAX_PATH];
-extern bool fRequestShutdown;
 extern bool fShutdown;
 extern bool fDaemon;
-extern bool fServer;
-extern bool fCommandLine;
 extern std::string strMiscWarning;
-//extern bool fTestNet;
-extern bool fNoListen;
+
 extern bool fLogTimestamps;
 
 void RandAddSeed();
@@ -197,7 +193,7 @@ const char* wxGetTranslation(const char* psz);
 bool WildcardMatch(const char* psz, const char* mask);
 bool WildcardMatch(const std::string& str, const std::string& mask);
 int GetFilesize(FILE* file);
-void GetDataDir(char* pszDirRet);
+//void GetDataDir(char* pszDirRet);
 std::string GetConfigFile();
 std::string GetPidFile();
 void CreatePidFile(std::string pidFile, pid_t pid);
@@ -205,8 +201,8 @@ void ReadConfigFile(std::map<std::string, std::string>& mapSettingsRet, std::map
 #ifdef _WIN32
 std::string MyGetSpecialFolderPath(int nFolder, bool fCreate);
 #endif
-std::string GetDefaultDataDir();
-std::string GetDataDir();
+//std::string GetDefaultDataDir();
+//std::string GetDataDir();
 void ShrinkDebugFile();
 int GetRandInt(int nMax);
 uint64 GetRand(uint64 nMax);

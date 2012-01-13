@@ -18,26 +18,26 @@
 
 class GetDebit : public Method {
 public:
-    GetDebit(BlockChain& blockChain) : _blockChain(blockChain) {}
+    GetDebit(const BlockChain& blockChain) : _blockChain(blockChain) {}
     virtual json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
 private:
-    BlockChain& _blockChain;
+    const BlockChain& _blockChain;
 };
 
 class GetCredit : public Method {
 public:
-    GetCredit(BlockChain& blockChain) : _blockChain(blockChain) {}
+    GetCredit(const BlockChain& blockChain) : _blockChain(blockChain) {}
     virtual json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
 private:
-    BlockChain& _blockChain;
+    const BlockChain& _blockChain;
 };
 
 class GetTxDetails : public Method {
 public:
-    GetTxDetails(BlockChain& blockChain) : _blockChain(blockChain) {}
+    GetTxDetails(const BlockChain& blockChain) : _blockChain(blockChain) {}
     virtual json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
 private:
-    BlockChain& _blockChain;
+    const BlockChain& _blockChain;
 };
 
 #endif
