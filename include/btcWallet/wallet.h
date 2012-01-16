@@ -55,7 +55,7 @@ private:
 
 public:
     mutable CCriticalSection cs_wallet;
-    const int64 nTransactionFee;
+    int64 nTransactionFee;
 
     bool fFileBacked;
     std::string strWalletFile;

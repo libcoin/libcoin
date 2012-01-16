@@ -20,14 +20,18 @@ uint64 nAccountingEntryNumber = 0;
 // CWalletDB
 //
 
+boost::mutex CWalletDB::_write;
+
 bool CWalletDB::WriteName(const string& strAddress, const string& strName)
 {
+    boost::mutex::scoped_lock lock(_write);
     nWalletDBUpdated++;
     return Write(make_pair(string("name"), strAddress), strName);
 }
 
 bool CWalletDB::EraseName(const string& strAddress)
 {
+    boost::mutex::scoped_lock lock(_write);
     // This should only be used for sending addresses, never for receiving addresses,
     // receiving addresses must always have an address book entry if they're not change return.
     nWalletDBUpdated++;
@@ -42,11 +46,13 @@ bool CWalletDB::ReadAccount(const string& strAccount, CAccount& account)
 
 bool CWalletDB::WriteAccount(const string& strAccount, const CAccount& account)
 {
+    boost::mutex::scoped_lock lock(_write);
     return Write(make_pair(string("acc"), strAccount), account);
 }
 
 bool CWalletDB::WriteAccountingEntry(const CAccountingEntry& acentry)
 {
+    boost::mutex::scoped_lock lock(_write);
     return Write(boost::make_tuple(string("acentry"), acentry.strAccount, ++nAccountingEntryNumber), acentry);
 }
 

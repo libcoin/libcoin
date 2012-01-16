@@ -637,12 +637,12 @@ string MyGetSpecialFolderPath(int nFolder, bool fCreate)
     // Backup option
     if (pszPath[0] == '\0')
     {
-        if (nFolder == CSIDL_STARTUP)
+        if (nFolder == FOLDERID_Startup)
         {
             strcpy(pszPath, getenv("USERPROFILE"));
             strcat(pszPath, "\\Start Menu\\Programs\\Startup");
         }
-        else if (nFolder == CSIDL_APPDATA)
+        else if (nFolder == FOLDERID_RoamingAppData)
         {
             strcpy(pszPath, getenv("APPDATA"));
         }

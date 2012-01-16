@@ -45,6 +45,7 @@ public:
 };
 
 
+// Changed the WalletDB to be thread safe - keep a static mutex that is locked on write
 class CWalletDB : public CDB
 {
 public:
@@ -54,6 +55,8 @@ public:
 private:
     CWalletDB(const CWalletDB&);
     void operator=(const CWalletDB&);
+private:
+    static boost::mutex _write;
 public:
     bool ReadName(const std::string& strAddress, std::string& strName)
     {
@@ -70,14 +73,15 @@ public:
         return Read(std::make_pair(std::string("tx"), hash), wtx);
     }
 
-    bool WriteTx(uint256 hash, const CWalletTx& wtx)
-    {
+    bool WriteTx(uint256 hash, const CWalletTx& wtx) {
+        boost::mutex::scoped_lock lock(_write);
         nWalletDBUpdated++;
         return Write(std::make_pair(std::string("tx"), hash), wtx);
     }
 
     bool EraseTx(uint256 hash)
     {
+        boost::mutex::scoped_lock lock(_write);
         nWalletDBUpdated++;
         return Erase(std::make_pair(std::string("tx"), hash));
     }
@@ -90,12 +94,14 @@ public:
 
     bool WriteKey(const std::vector<unsigned char>& vchPubKey, const CPrivKey& vchPrivKey)
     {
+        boost::mutex::scoped_lock lock(_write);
         nWalletDBUpdated++;
         return Write(std::make_pair(std::string("key"), vchPubKey), vchPrivKey, false);
     }
 
     bool WriteCryptedKey(const std::vector<unsigned char>& vchPubKey, const std::vector<unsigned char>& vchCryptedSecret, bool fEraseUnencryptedKey = true)
     {
+        boost::mutex::scoped_lock lock(_write);
         nWalletDBUpdated++;
         if (!Write(std::make_pair(std::string("ckey"), vchPubKey), vchCryptedSecret, false))
             return false;
@@ -109,12 +115,14 @@ public:
 
     bool WriteMasterKey(unsigned int nID, const CMasterKey& kMasterKey)
     {
+        boost::mutex::scoped_lock lock(_write);
         nWalletDBUpdated++;
         return Write(std::make_pair(std::string("mkey"), nID), kMasterKey, true);
     }
 
     bool WriteBestBlock(const CBlockLocator& locator)
     {
+        boost::mutex::scoped_lock lock(_write);
         nWalletDBUpdated++;
         return Write(std::string("bestblock"), locator);
     }
@@ -132,6 +140,7 @@ public:
 
     bool WriteDefaultKey(const std::vector<unsigned char>& vchPubKey)
     {
+        boost::mutex::scoped_lock lock(_write);
         nWalletDBUpdated++;
         return Write(std::string("defaultkey"), vchPubKey);
     }
@@ -143,12 +152,14 @@ public:
 
     bool WritePool(int64 nPool, const CKeyPool& keypool)
     {
+        boost::mutex::scoped_lock lock(_write);
         nWalletDBUpdated++;
         return Write(std::make_pair(std::string("pool"), nPool), keypool);
     }
 
     bool ErasePool(int64 nPool)
     {
+        boost::mutex::scoped_lock lock(_write);
         nWalletDBUpdated++;
         return Erase(std::make_pair(std::string("pool"), nPool));
     }
@@ -162,6 +173,7 @@ public:
     template<typename T>
     bool WriteSetting(const std::string& strKey, const T& value)
     {
+        boost::mutex::scoped_lock lock(_write);
         nWalletDBUpdated++;
         return Write(std::make_pair(std::string("setting"), strKey), value);
     }

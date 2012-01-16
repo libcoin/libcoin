@@ -1,4 +1,4 @@
-// Copyright (c) 2011 Michael Gronager
+// Copyright (c) 2012 Michael Gronager
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -24,7 +24,7 @@ class GetBalance : public WalletMethod {
 public:
     GetBalance(Wallet& wallet) : WalletMethod(wallet) {}
     virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
-private:
+protected:
     int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinDepth);
     int64 GetAccountBalance(const string& strAccount, int nMinDepth);
 };
@@ -43,44 +43,176 @@ public:
     virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
 };
 
-
 /// Get address associated with account
 class CBitcoinAddress;
 class GetAccountAddress : public WalletMethod {
 public:
     GetAccountAddress(Wallet& wallet) : WalletMethod(wallet) {}
     virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
-private:
+protected:
     CBitcoinAddress getAccountAddress(std::string strAccount, bool bForceNew=false);
 };
 
+/// Get address associated with account
+class SetAccount : public GetAccountAddress { // inherit to reuse the getAccountAddress method
+public:
+    SetAccount(Wallet& wallet) : GetAccountAddress(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
 
-/*
+/// Get address associated with account
+class GetAccount : public WalletMethod {
+public:
+    GetAccount(Wallet& wallet) : WalletMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
 
-json_spirit::Value getaccountaddress(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value setaccount(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value getaccount(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value getaddressesbyaccount(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value settxfee(const json_spirit::Array& params, bool fHelp);
+/// Get addresses associated with account
+class GetAddressesByAccount : public WalletMethod {
+public:
+    GetAddressesByAccount(Wallet& wallet) : WalletMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
 
-json_spirit::Value getreceivedbyaddress(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value getreceivedbyaccount(const json_spirit::Array& params, bool fHelp);
+/// Set default tx fee.
+class SetTxFee : public WalletMethod {
+public:
+    SetTxFee(Wallet& wallet) : WalletMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
 
-json_spirit::Value movecmd(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value sendfrom(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value sendmany(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value listreceivedbyaddress(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value listreceivedbyaccount(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value listtransactions(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value listaccounts(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value gettransaction(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value backupwallet(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value keypoolrefill(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value walletpassphrase(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value walletpassphrasechange(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value walletlock(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value encryptwallet(const json_spirit::Array& params, bool fHelp);
-json_spirit::Value validateaddress(const json_spirit::Array& params, bool fHelp);
-*/
+/// Get money received by address.
+class GetReceivedByAddress : public WalletMethod {
+public:
+    GetReceivedByAddress(Wallet& wallet) : WalletMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
+
+/// Get money received by account.
+class GetReceivedByAccount : public WalletMethod {
+public:
+    GetReceivedByAccount(Wallet& wallet) : WalletMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
+
+/// Move money from one account to the other.
+class MoveCmd : public WalletMethod {
+public:
+    MoveCmd(Wallet& wallet) : WalletMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
+
+/// Send from a named account.
+class SendFrom : public GetBalance {
+public:
+    SendFrom(Wallet& wallet) : GetBalance(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
+
+/// Send to many bitcoin addresses at once.
+class CWalletTx;
+class CAccountingEntry;
+class SendMany : public GetBalance {
+public:
+    SendMany(Wallet& wallet) : GetBalance(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
+
+/// List account related info base class.
+class ListMethod : public WalletMethod {
+public:
+    ListMethod(Wallet& wallet) : WalletMethod(wallet) {}
+protected:
+    json_spirit::Value listReceived(const json_spirit::Array& params, bool fByAccounts);
+    void listTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDepth, bool fLong, Array& ret);    
+    void acEntryToJSON(const CAccountingEntry& acentry, const string& strAccount, Array& ret);
+    void walletTxToJSON(const CWalletTx& wtx, json_spirit::Object& entry);
+};
+
+/// Get money received by account.
+class ListReceivedByAddress : public ListMethod {
+public:
+    ListReceivedByAddress(Wallet& wallet) : ListMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
+
+/// Get money received by account.
+class ListReceivedByAccount : public ListMethod {
+public:
+    ListReceivedByAccount(Wallet& wallet) : ListMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
+
+/// Get money received by account.
+class ListTransactions : public ListMethod {
+public:
+    ListTransactions(Wallet& wallet) : ListMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
+
+/// Get money received by account.
+class ListAccounts : public ListMethod {
+public:
+    ListAccounts(Wallet& wallet) : ListMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
+
+/// Get wallet transactions.
+class GetTransaction : public ListMethod {
+public:
+    GetTransaction(Wallet& wallet) : ListMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
+
+/// Backup the wallet.
+class BackupWallet : public WalletMethod {
+public:
+    BackupWallet(Wallet& wallet) : WalletMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
+
+/// Refill the key pool.
+class KeypoolRefill : public WalletMethod {
+public:
+    KeypoolRefill(Wallet& wallet) : WalletMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
+
+/// Enter the wallet passphrase and supply a timeout for when the wallet is locked again.
+class WalletPassphrase : public WalletMethod {
+public:
+    WalletPassphrase(Wallet& wallet, boost::asio::io_service& io_service) : WalletMethod(wallet), _io_service(io_service) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+private:
+    boost::asio::io_service& _io_service;
+};
+
+/// Change the wallet passphrase.
+class WalletPassphraseChange : public WalletMethod {
+public:
+    WalletPassphraseChange(Wallet& wallet) : WalletMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
+
+/// Lock the wallet.
+class WalletLock : public WalletMethod {
+public:
+    WalletLock(Wallet& wallet) : WalletMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
+
+/// Encrypt the wallet.
+class EncryptWallet : public WalletMethod {
+public:
+    EncryptWallet(Wallet& wallet) : WalletMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
+
+/// Validate a bitcoin address.
+class ValidateAddress : public WalletMethod {
+public:
+    ValidateAddress(Wallet& wallet) : WalletMethod(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
 
 #endif

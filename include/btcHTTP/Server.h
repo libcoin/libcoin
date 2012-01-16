@@ -35,6 +35,9 @@ public:
         _requestHandler.unregisterMethod(name);
     }
 
+    /// Get a handle to the io_service used by the Server
+    boost::asio::io_service& get_io_service() { return _io_service; }
+    
 private:
     /// Initiate an asynchronous accept operation.
     void start_accept();
