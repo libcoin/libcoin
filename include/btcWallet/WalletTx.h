@@ -9,7 +9,7 @@
 #include "btc/key.h"
 #include "btc/script.h"
 
-#include "btcNode/Block.h"
+#include "btc/Block.h"
 #include "btcNode/BlockChain.h"
 
 #include "btcWallet/MerkleTx.h"

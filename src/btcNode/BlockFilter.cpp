@@ -1,7 +1,7 @@
 
 #include "btcNode/BlockFilter.h"
 #include "btcNode/BlockChain.h"
-#include "btcNode/Block.h"
+#include "btc/Block.h"
 #include "btcNode/Peer.h"
 #include "btcNode/Inventory.h"
 

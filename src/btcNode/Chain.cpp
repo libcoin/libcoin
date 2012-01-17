@@ -1,6 +1,6 @@
 #include "btcNode/Chain.h"
 
-#include "btcNode/Block.h"
+#include "btc/Block.h"
 #include "btcNode/BlockIndex.h"
 #include "btc/tx.h"
 

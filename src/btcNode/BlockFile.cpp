@@ -1,7 +1,7 @@
 
 #include "btcNode/BlockFile.h"
 
-#include "btcNode/Block.h"
+#include "btc/Block.h"
 #include "btcNode/BlockIndex.h"
 #include "btcNode/BlockChain.h"
 #include "btcNode/MessageHeader.h"

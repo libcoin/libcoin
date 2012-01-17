@@ -1,5 +1,5 @@
 
-#include "btcNode/Block.h"
+#include "btc/Block.h"
 
 using namespace std;
 using namespace boost;

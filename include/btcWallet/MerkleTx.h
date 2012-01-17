@@ -10,7 +10,7 @@
 #include "btc/key.h"
 #include "btc/script.h"
 
-#include "btcNode/Block.h"
+#include "btc/Block.h"
 #include "btcNode/BlockChain.h"
 
 /// A transaction with a merkle branch linking it to the block chain.

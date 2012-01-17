@@ -1,5 +1,5 @@
 
-#include "btcNode/Block.h"
+#include "btc/Block.h"
 #include "btcNode/BlockIndex.h"
 
 #include <boost/filesystem.hpp>

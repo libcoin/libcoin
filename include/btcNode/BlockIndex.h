@@ -7,7 +7,7 @@
 #include "btc/script.h"
 #include "btc/tx.h"
 
-//#include "btcNode/Block.h"
+//#include "btc/Block.h"
 
 #include <list>
 
