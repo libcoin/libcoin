@@ -13,7 +13,6 @@ SET(TARGET_H
     ${HEADER_PATH}/db.h
     ${HEADER_PATH}/Alert.h
     ${HEADER_PATH}/AlertFilter.h
-    ${HEADER_PATH}/Block.h
     ${HEADER_PATH}/BlockIndex.h
     ${HEADER_PATH}/BlockFile.h
     ${HEADER_PATH}/BlockChain.h
@@ -44,7 +43,6 @@ SET(TARGET_SRC
     db.cpp
     Alert.cpp
     AlertFilter.cpp
-    Block.cpp
     BlockFilter.cpp
     BlockIndex.cpp
     BlockFile.cpp

@@ -22,6 +22,7 @@ SET(TARGET_H
     ${HEADER_PATH}/asset.h
     ${HEADER_PATH}/base58.h
     ${HEADER_PATH}/bignum.h
+    ${HEADER_PATH}/Block.h
     ${HEADER_PATH}/crypter.h
     ${HEADER_PATH}/key.h
     ${HEADER_PATH}/keystore.h
@@ -39,6 +40,7 @@ SET(TARGET_H
 #    ${LIB_PUBLIC_HEADERS}
 SET(TARGET_SRC
     asset.cpp
+    Block.cpp
     crypter.cpp
     keystore.cpp
     tx.cpp
