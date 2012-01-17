@@ -5,7 +5,6 @@
 //#include "headers.h"
 #include "btc/util.h"
 #include "btc/tx.h"
-#include "btc/strlcpy.h"
 
 #include <boost/program_options/parsers.hpp>
 #include <boost/filesystem.hpp>
@@ -448,7 +447,7 @@ vector<unsigned char> ParseHex(const string& str)
     return ParseHex(str.c_str());
 }
 
-
+/*
 void ParseParameters(int argc, char* argv[])
 {
     mapArgs.clear();
@@ -474,7 +473,7 @@ void ParseParameters(int argc, char* argv[])
         mapMultiArgs[psz].push_back(pszValue);
     }
 }
-
+*/
 
 const char* wxGetTranslation(const char* pszEnglish)
 {

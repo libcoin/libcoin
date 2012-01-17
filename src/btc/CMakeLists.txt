@@ -28,7 +28,6 @@ SET(TARGET_H
     ${HEADER_PATH}/keystore.h
     ${HEADER_PATH}/script.h
     ${HEADER_PATH}/serialize.h
-    ${HEADER_PATH}/strlcpy.h
     ${HEADER_PATH}/tx.h
     ${HEADER_PATH}/uint256.h
     ${HEADER_PATH}/util.h

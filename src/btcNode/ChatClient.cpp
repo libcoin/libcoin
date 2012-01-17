@@ -191,14 +191,12 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                     // index 7 is limited to 16 characters
                     // could get full length name at index 10, but would be different from join messages
                     name = words[7];
-                    //                    strlcpy(pszName, words[7].c_str(), sizeof(pszName));
                     printf("IRC got who\n");
                 }
                 
                 if (words[1] == "JOIN" && words[0].size() > 1) {
                     // :username!username@50000007.F000000B.90000002.IP JOIN :#channelname
                     name = words[0].substr(1);
-                    //                    strlcpy(pszName, vWords[0].c_str() + 1, sizeof(pszName));
                     size_t exclamation_pos = words[0].find("!");
                     if(exclamation_pos != string::npos)
                         name = words[0].substr(1, exclamation_pos-1); // the 1, -1 is due to the colon
