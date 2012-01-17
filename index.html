@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+
+  <title>libbtc/libbtc @ GitHub</title>
+
+  <style type="text/css">
+    body {
+      margin-top: 1.0em;
+      background-color: #000000;
+      font-family: Helvetica, Arial, FreeSans, san-serif;
+      color: #ffffff;
+    }
+    #container {
+      margin: 0 auto;
+      width: 700px;
+    }
+    h1 { font-size: 3.8em; color: #ffffff; margin-bottom: 3px; }
+    h1 .small { font-size: 0.4em; }
+    h1 a { text-decoration: none }
+    h2 { font-size: 1.5em; color: #ffffff; }
+    h3 { text-align: center; color: #ffffff; }
+    a { color: #ffffff; }
+    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
+    .download { float: right; }
+    pre { background: #000; color: #fff; padding: 15px;}
+    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+    .footer { text-align:center; padding-top:30px; font-style: italic; }
+  </style>
+</head>
+
+<body>
+  <a href="https://github.com/libbtc/libbtc"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+
+  <div id="container">
+
+    <div class="download">
+      <a href="https://github.com/libbtc/libbtc/zipball/master">
+        <img border="0" width="90" src="https://github.com/images/modules/download/zip.png"></a>
+      <a href="https://github.com/libbtc/libbtc/tarball/master">
+        <img border="0" width="90" src="https://github.com/images/modules/download/tar.png"></a>
+    </div>
+
+    <h1><a href="https://github.com/libbtc/libbtc">libBTC</a>
+      <span class="small">by <a href="https://github.com/libbtc">libbtc</a></span></h1>
+
+    <div class="description">
+      A crypto currency library based on the Satoshi client (bitcoin/bitcoin on github).
+    </div>
+
+    
+      <p>libBTC is a bitcoin library that is based directly on the bitcoin Satoshi client.
+
+The design goal has been to reuse all the code, and not change any of the functionality. So the aim has been solely on improved modularity and a better code structure. Throughout the restructuring the code stayed runnable to be able to test that it worked in a similar way.</p>
+    
+
+    
+      <h2>Dependencies</h2>
+      <p>Boost (minimum 1.47)
+OpenSSL (use a version incl elliptic curves, many linux versions comes without this)
+BerkeleyDB (only btcNode)
+CMake - for building</p>
+    
+
+    
+      <h2>Install</h2>
+      <p>Windows: 
+Prerequisites:
+* OpenSSL - get it from "http://www.slproweb.com/download/Win64OpenSSL-1_0_0f.exe" (but, don't trust me! find it via the openssl webpage: http://www.openssl.org/related/binaries.html). Choose to put everything in one folder (not dlls in the windows dll folder). 
+* Boost - get it from the boost webpage. Put it where you usually put stuff like this. You don't need to compile it
+* BerkeleyDB - get it from Oracles homepage, choose the installer and do a default installation. This will put BDB into "C:\Program Files\Oracle\Berkeley DB 11gR2 5.3.15" (or what ever version you got). Include files are in the subfolder \include and libraries in \lib.
+* CMake: http://www.cmake.org/ - download and install (choose add cmake to windows path).
+* Visual Studio C++ Express 2010. I used this one as it is free to use. Find it on the microsoft webpage and install it (beware - they try to fool you to buy the professional version, but I know you are too smart for that).
+* git-extensions: http://code.google.com/p/gitextensions/ - install everything (incl diff program).
+
+* setup Visual Studio to include the include paths and lib paths for the above libraries
+
+Linux:
+Prerequisites:
+Most of the packages you can get by apt-get:
+* OpenSSL: sudo apt-get install libssl-devel libcrypto-devel (note, you might need to compile and install OpenSSL from openssl.org directly as ECDSA is not always part of ssl)
+* Boost: sudo apt-get install libboost-dev libboost-doc - beware, check that your os version is using minimum boost-1.47, otherwise install it from boost.org
+* berkeley db: apt-get install libdb-dev 
+* cmake: apt-get install cmake
+
+MacOSX:
+* compile and install OpenSSL
+* compile and install Boost
+* compile and install Berkeley DB
+* download cake
+
+For all of the above to compile:
+./configure (or cmake -G Xcode/"Visual Studio 2008" on MacOSX/Windows respectively)
+make (or buid/run from your IDE)
+make install
+</p>
+    
+
+    
+      <h2>License</h2>
+      <p>Copyright (c) 2009-2010 Satoshi Nakamoto
+Copyright (c) 2011 The Bitcoin developers
+Copyright (c) 2012 Ceptacle, Michael Gronager
+
+Distributed under the MIT/X11 software license, see http://www.opensource.org/licenses/mit-license.php</p>
+    
+
+    
+      <h2>Authors</h2>
+      <p>Michael Gronager (gronager@microbits.com)<br/>And the raw code for the Satoshi client is done by:<br/>Alex Waters (AmpedAl@Gmail.com)<br/>JoelKatz (DavidJoelSchwartz@GMail.com)<br/>Eric Hosmer (EricJ2190@gmail.com)<br/>Abraham Jewowich (abuse@loljews.com)<br/>gjs278 (admin@garyshood.com)<br/>ariel (ariel@ficticio.com)<br/>Johannes Henninger (blaubaer@gmail.com)<br/>Dev Random (c1.github@niftybox.net)<br/>cjdelisle (calebdelisle@lavabit.com)<br/>Han Lin Yap (codler@gmail.com)<br/>Santiago M. Mola (coldwind@coldwind.org)<br/>David FRANCOIS (david.francois@webflows.fr)<br/>Stéphane Gimenez (dev@gim.name)<br/>Daniel Holbert (dholbert@cs.stanford.edu)<br/>Dan Loewenherz (dloewenherz@gmail.com)<br/>Chris Moore (dooglus@gmail.com)<br/>Eric Swanson (eswanson@alloscomp.com)<br/>Fabian H jr. (fabianherediajr@yahoo.com.mx)<br/>Federico Faggiano (federico.sk@katamail.com)<br/>Gavin Andresen (gavinandresen@gmail.com)<br/>Amir Yalon (git@please.nospammail.net)<br/>Carlo Alberto Ferraris (github@cafxx.strayorange.com)<br/>dabaopku (guocong89@gmail.com)<br/>HostFat (hostfat@gmail.com)<br/>Sven Slootweg (info@sven-slootweg.nl)<br/>Joerie de Gram (j.de.gram@gmail.com)<br/>Jakob Kramer (jakob.kramer@gmx.de)<br/>James Burkle (james.burkle@gmail.com)<br/>Jaromil (jaromil@dyne.org)<br/>Jay Weisskopf (jay@jayschwa.net)<br/>Jeroenz0r (jeroen.marshmallow@gmail.com)<br/>Jeff Garzik (jgarzik@exmulti.com)<br/>John Maguire (johnmaguire2013@gmail.com)<br/>Jordan Lewis (jordanthelewis@gmail.com)<br/>Carlos Pizarro (kr105@kr105.com)<br/>ovdeathiam (krystian.maksymowicz@gmail.com)<br/>Wladimir J. van der Laan (laanwj@gmail.com)<br/>Luke Dashjr (luke-jr+git@utopios.org)<br/>Michael Bemmerl (mail@mx-server.de)<br/>Marius Hanne (marius.hanne@sourceagency.org)<br/>Matt Giuca (matt.giuca@gmail.com)<br/>Matt Corallo (matt@bluematt.me)<br/>Venkatesh Srinivas (me@endeavour.zapto.org)<br/>Giel van Schijndel (me@mortis.eu)<br/>Doug Huff (mith@jrbobdobbs.org)<br/>Daniel Folkinshteyn (nanotube@users.sourceforge.net)<br/>Nils Schneider (nils.schneider@gmail.com)<br/>Dylan Noblesmith (nobled@dreamwidth.org)<br/>ojab (ojab@ojab.ru)<br/>Alex B (paraipanakos@gmail.com)<br/>Patrick Varilly (patvarilly@gmail.com)<br/>Pieter Wuille (pieter.wuille@gmail.com)<br/>Ricardo M. Correia (rcorreia@wizy.org)<br/>Satoshi Nakamoto (satoshin@gmx.com)<br/>Shane Wegner (shane-github@csy.ca)<br/>Dawid Spiechowicz (spiechu@gmail.com)<br/>tcatm (tcatm@gawab.com)<br/>Ubuntu (ubuntu@domU-12-31-38-00-A1-B6.compute-1.internal)<br/>Vegard Nossum (vegard.nossum@gmail.com)<br/>Witchspace (witchspace81@gmail.com)<br/>Dan Helfman (witten@torsion.org)<br/>Michal Zima (xhire@mujmalysvet.cz)<br/>Dean Lee (xslidian@gmail.com)<br/>      </p>
+    
+
+    
+      <h2>Contact</h2>
+      <p> (gronager@microbits.com)<br/>      </p>
+    
+
+    <h2>Download</h2>
+    <p>
+      You can download this project in either
+      <a href="https://github.com/libbtc/libbtc/zipball/master">zip</a> or
+      <a href="https://github.com/libbtc/libbtc/tarball/master">tar formats.
+    </p>
+    <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
+      by running:
+      <pre>$ git clone git://github.com/libbtc/libbtc</pre>
+    </p>
+
+    <div class="footer">
+      get the source code on GitHub : <a href="https://github.com/libbtc/libbtc">libbtc/libbtc</a>
+    </div>
+
+  </div>
+
+</body>
+</html>
