@@ -37,6 +37,11 @@ public:
     /// Shutdown the Node.
     void shutdown() { handle_stop(); }
     
+    /// Return the number of connections.
+    unsigned int getConnectionCount() const {
+        return _peerManager.getNumInbound() + _peerManager.getNumOutbound();
+    }
+    
     /// Accept or connect depending on the number and type of the connected peers.
     void post_accept_or_connect();
     
@@ -86,7 +91,7 @@ private:
     
     /// Handle a request to stop the server.
     void handle_stop();
-    
+
     /// The io_service used to perform asynchronous operations.
     boost::asio::io_service _io_service;
     

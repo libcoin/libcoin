@@ -15,6 +15,89 @@
 using namespace std;
 using namespace boost;
 using namespace boost::program_options;
+using namespace json_spirit;
+
+/// Base class for all Node rpc methods - they all need a handle to the node.
+class NodeMethod : public Method {
+public:
+    NodeMethod(Node& node) : _node(node) {}
+protected:
+    Node& _node;
+};
+
+
+class Stop : public NodeMethod {
+public:
+    Stop(Node& node) : NodeMethod(node) {}
+    Value operator()(const Array& params, bool fHelp) {
+        if (fHelp || params.size() != 0)
+            throw RPC::error(RPC::invalid_params, "stop\n"
+                            "Stop bitcoin server.");
+    
+        _node.shutdown();
+        return "Node and Server is stopping";
+    }    
+};
+
+class GetBlockCount : public NodeMethod {
+public:
+    GetBlockCount(Node& node) : NodeMethod(node) {}
+    Value operator()(const Array& params, bool fHelp) {
+        if (fHelp || params.size() != 0)
+            throw RPC::error(RPC::invalid_params, "getblockcount\n"
+                                "Returns the number of blocks in the longest block chain.");
+        
+        return _node.blockChain().getBestHeight();
+    }        
+};
+
+class GetConnectionCount : public NodeMethod {
+public:
+    GetConnectionCount(Node& node) : NodeMethod(node) {}
+    Value operator()(const Array& params, bool fHelp) {
+        if (fHelp || params.size() != 0)
+            throw RPC::error(RPC::invalid_params, "getconnectioncount\n"
+                            "Returns the number of connections to other nodes.");
+    
+        return (int) _node.getConnectionCount();
+    }
+};
+
+class GetDifficulty : public NodeMethod {
+public:
+    GetDifficulty(Node& node) : NodeMethod(node) {}
+    Value operator()(const Array& params, bool fHelp) {
+        if (fHelp || params.size() != 0)
+            throw RPC::error(RPC::invalid_params, "getdifficulty\n"
+                             "Returns the proof-of-work difficulty as a multiple of the minimum difficulty.");
+        
+        return getDifficulty();
+    }
+private:
+    double getDifficulty() {
+        // Floating point number that is a multiple of the minimum difficulty,
+        // minimum difficulty = 1.0.
+        
+        const CBlockIndex* pindexBest = _node.blockChain().getBestIndex();
+        if (pindexBest == NULL)
+            return 1.0;
+        int nShift = (pindexBest->nBits >> 24) & 0xff;
+        
+        double dDiff =
+        (double)0x0000ffff / (double)(pindexBest->nBits & 0x00ffffff);
+        
+        while (nShift < 29) {
+            dDiff *= 256.0;
+            nShift++;
+        }
+        while (nShift > 29) {
+            dDiff /= 256.0;
+            nShift--;
+        }
+        
+        return dDiff;
+    }
+};
 
 int main(int argc, char* argv[])
 {
@@ -63,13 +146,23 @@ int main(int argc, char* argv[])
     thread nodeThread(&Node::run, &node); // run this as a background thread
             
     Server server("0.0.0.0", "9332", filesystem::initial_path().string());
-    //    server.registerMethod(method_ptr(new GetTxDetails(node.blockChain())));
     Auth auth("rpcuser", "coined");
+    
+    // Register Node methods.
+    server.registerMethod(method_ptr(new Stop(node)), auth);
+    server.registerMethod(method_ptr(new GetBlockCount(node)));
+    server.registerMethod(method_ptr(new GetConnectionCount(node)));
+    server.registerMethod(method_ptr(new GetDifficulty(node)));
+    
+    // Register Wallet methods.
     server.registerMethod(method_ptr(new GetBalance(wallet)), auth);
     server.registerMethod(method_ptr(new GetNewAddress(wallet)), auth);
     server.registerMethod(method_ptr(new GetAccountAddress(wallet)), auth);
     server.registerMethod(method_ptr(new SendToAddress(wallet)), auth);
     server.registerMethod(method_ptr(new WalletPassphrase(wallet, server.get_io_service())), auth);
+    
+    // Register Mining methods.
+    //...
     
     server.run();
 
