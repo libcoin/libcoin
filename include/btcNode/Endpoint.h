@@ -25,9 +25,7 @@ class Endpoint : public boost::asio::ip::tcp::endpoint
         Endpoint(boost::asio::ip::tcp::endpoint ep);
         Endpoint(unsigned int ipIn, unsigned short portIn=0, uint64 nServicesIn=NODE_NETWORK);
         explicit Endpoint(const struct sockaddr_in& sockaddr, uint64 nServicesIn=NODE_NETWORK);
-        explicit Endpoint(const char* pszIn, int portIn, bool fNameLookup = false, uint64 nServicesIn=NODE_NETWORK);
-        explicit Endpoint(const char* pszIn, bool fNameLookup = false, uint64 nServicesIn=NODE_NETWORK);
-        explicit Endpoint(std::string strIn, int portIn, bool fNameLookup = false, uint64 nServicesIn=NODE_NETWORK);
+        explicit Endpoint(std::string strIn, unsigned short portIn, bool fNameLookup = false, uint64 nServicesIn=NODE_NETWORK);
         explicit Endpoint(std::string strIn, bool fNameLookup = false, uint64 nServicesIn=NODE_NETWORK);
 
         void init();
@@ -57,8 +55,6 @@ class Endpoint : public boost::asio::ip::tcp::endpoint
                  const_cast<Endpoint*>(this)->address(boost::asio::ip::address(boost::asio::ip::address_v4(htonl(ip))));
                  const_cast<Endpoint*>(this)->port(htons(p));
              }
-             //             READWRITE(_ip);
-             //             READWRITE(_port);
             )
 
         friend bool operator==(const Endpoint& a, const Endpoint& b);

@@ -6,62 +6,49 @@
 #include "btcNode/Endpoint.h"
 #include "btc/util.h"
 
+#include <boost/lexical_cast.hpp>
+
 #ifndef _WIN32
 # include <arpa/inet.h>
 #endif
 
 // Prototypes from net.h, but that header (currently) stinks, can't #include it without breaking things
-bool Lookup(const char *pszName, std::vector<Endpoint>& vaddr, int nServices, int nMaxSolutions, bool fAllowLookup = false, int portDefault = 0, bool fAllowPort = false);
-bool Lookup(const char *pszName, Endpoint& ep, int nServices, bool fAllowLookup = false, int portDefault = 0, bool fAllowPort = false);
+//bool Lookup(const char *pszName, std::vector<Endpoint>& vaddr, int nServices, int nMaxSolutions, bool fAllowLookup = false, int portDefault = 0, bool fAllowPort = false);
+//bool Lookup(const char *pszName, Endpoint& ep, int nServices, bool fAllowLookup = false, int portDefault = 0, bool fAllowPort = false);
 
 static const unsigned char pchIPv4[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff };
 
 using namespace std;
+using namespace boost;
 using namespace boost::asio::ip;
 
 // portDefault is in host order
-bool Lookup(const char *pszName, vector<Endpoint>& vaddr, int nServices, int nMaxSolutions, bool fAllowLookup, int portDefault, bool fAllowPort)
+bool Lookup(const string name, vector<Endpoint>& vaddr, int nServices, int nMaxSolutions, bool fAllowLookup = false, unsigned short portDefault = 0, bool fAllowPort = false)
 {
     vaddr.clear();
-    if (pszName[0] == 0)
+    if (name.size() == 0)
         return false;
-    int port = portDefault;
-    char psz[256];
-    char *pszHost = psz;
-    strlcpy(psz, pszName, sizeof(psz));
-    if (fAllowPort)
-        {
-        char* pszColon = strrchr(psz+1,':');
-        char *pszPortEnd = NULL;
-        int portParsed = pszColon ? strtoul(pszColon+1, &pszPortEnd, 10) : 0;
-        if (pszColon && pszPortEnd && pszPortEnd[0] == 0)
-            {
-            if (psz[0] == '[' && pszColon[-1] == ']')
-                {
-                // Future: enable IPv6 colon-notation inside []
-                pszHost = psz+1;
-                pszColon[-1] = 0;
-                }
-            else
-                pszColon[0] = 0;
-            port = portParsed;
-            if (port < 0 || port > USHRT_MAX)
-                port = USHRT_MAX;
-            }
+    unsigned short port = portDefault;
+    string host = name;
+    if (fAllowPort) { // split the name in host and port - find the ":"
+        size_t colon_pos = name.rfind(':');
+        if (colon_pos != string::npos) {
+            port = lexical_cast<unsigned short>(name.substr(colon_pos+1));
+            host = name.substr(0, colon_pos);
         }
+    }
     
-    unsigned int addrIP = inet_addr(pszHost);
-    if (addrIP != INADDR_NONE)
-        {
+    unsigned int addrIP = inet_addr(host.c_str());
+    if (addrIP != INADDR_NONE) {
         // valid IP address passed
         vaddr.push_back(Endpoint(addrIP, port, nServices));
         return true;
-        }
+    }
     
     if (!fAllowLookup)
         return false;
     
-    struct hostent* phostent = gethostbyname(pszHost);
+    struct hostent* phostent = gethostbyname(host.c_str());
     if (!phostent)
         return false;
     
@@ -69,8 +56,7 @@ bool Lookup(const char *pszName, vector<Endpoint>& vaddr, int nServices, int nMa
         return false;
     
     char** ppAddr = phostent->h_addr_list;
-    while (*ppAddr != NULL && vaddr.size() != nMaxSolutions)
-        {
+    while (*ppAddr != NULL && vaddr.size() != nMaxSolutions) {
         Endpoint addr(((struct in_addr*)ppAddr[0])->s_addr, port, nServices);
         if (addr.isValid())
             vaddr.push_back(addr);
@@ -81,10 +67,10 @@ bool Lookup(const char *pszName, vector<Endpoint>& vaddr, int nServices, int nMa
 }
 
 // portDefault is in host order
-bool Lookup(const char *pszName, Endpoint& addr, int nServices, bool fAllowLookup, int portDefault, bool fAllowPort)
+bool Lookup(const string name, Endpoint& addr, int nServices, bool fAllowLookup = false, unsigned short portDefault = 0, bool fAllowPort = false)
 {
     vector<Endpoint> vaddr;
-    bool fRet = Lookup(pszName, vaddr, nServices, 1, fAllowLookup, portDefault, fAllowPort);
+    bool fRet = Lookup(name, vaddr, nServices, 1, fAllowLookup, portDefault, fAllowPort);
     if (fRet)
         addr = vaddr[0];
     return fRet;
@@ -121,28 +107,16 @@ Endpoint::Endpoint(const struct sockaddr_in& sockaddr, uint64 services)
     _services = services;
 }
 
-Endpoint::Endpoint(const char* pszIn, int portIn, bool fNameLookup, uint64 nServicesIn)
+Endpoint::Endpoint(std::string strIn, unsigned short portIn, bool fNameLookup, uint64 nServicesIn)
 {
     init();
-    Lookup(pszIn, *this, nServicesIn, fNameLookup, portIn);
-}
-
-Endpoint::Endpoint(const char* pszIn, bool fNameLookup, uint64 nServicesIn)
-{
-    init();
-    Lookup(pszIn, *this, nServicesIn, fNameLookup, 0, true);
-}
-
-Endpoint::Endpoint(std::string strIn, int portIn, bool fNameLookup, uint64 nServicesIn)
-{
-    init();
-    Lookup(strIn.c_str(), *this, nServicesIn, fNameLookup, portIn);
+    Lookup(strIn, *this, nServicesIn, fNameLookup, portIn);
 }
 
 Endpoint::Endpoint(std::string strIn, bool fNameLookup, uint64 nServicesIn)
 {
     init();
-    Lookup(strIn.c_str(), *this, nServicesIn, fNameLookup, 0, true);
+    Lookup(strIn, *this, nServicesIn, fNameLookup, 0, true);
 }
 
 void Endpoint::init()
