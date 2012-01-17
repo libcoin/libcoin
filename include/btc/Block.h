@@ -2,26 +2,12 @@
 #ifndef BLOCK_H
 #define BLOCK_H
 
+#include "btc/tx.h"
 #include "btc/uint256.h"
 
 #include <vector>
 
-#include "btc/tx.h"
-
 class Block;
-class CBlockIndex;
-
-class CKeyItem;
-
-class Endpoint;
-class Inventory;
-class CRequestTracker;
-class Peer;
-class CBlockIndex;
-
-class CTxDB;
-class TxIndex;
-
 
 //
 // Nodes collect new transactions into a block, hash them into a hash tree,
@@ -31,9 +17,6 @@ class TxIndex;
 // in the block is a special one that creates a new coin owned by the creator
 // of the block.
 //
-// Blocks are appended to blk0001.dat files on disk.  Their location on disk
-// is indexed by CBlockIndex objects in memory.
-//
 
 typedef std::vector<Transaction> TransactionList;
 typedef std::vector<uint256> MerkleBranch;
@@ -41,13 +24,11 @@ typedef std::vector<uint256> MerkleBranch;
 class Block
 {
 public:
-    Block()
-    {
+    Block() {
         setNull();
     }
 
-    Block(const int version, const uint256 prevBlock, const uint256 merkleRoot, const int time, const int bits, const int nonce) : _version(version), _prevBlock(prevBlock), _merkleRoot(merkleRoot), _time(time), _bits(bits), _nonce(nonce)
-    {
+    Block(const int version, const uint256 prevBlock, const uint256 merkleRoot, const int time, const int bits, const int nonce) : _version(version), _prevBlock(prevBlock), _merkleRoot(merkleRoot), _time(time), _bits(bits), _nonce(nonce) {
         _transactions.clear();
         _merkleTree.clear();
     }
@@ -70,8 +51,7 @@ public:
             const_cast<Block*>(this)->_transactions.clear();
     )
 
-    void setNull()
-    {
+    void setNull() {
         _version = 1;
         _prevBlock = 0;
         _merkleRoot = 0;
@@ -82,15 +62,13 @@ public:
         _merkleTree.clear();
     }
 
-    bool isNull() const
-    {
+    bool isNull() const {
         return (_bits == 0);
     }
 
     uint256 getHash() const;
 
-    int64 getBlockTime() const
-    {
+    int64 getBlockTime() const {
         return (int64)_time;
     }
 

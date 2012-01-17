@@ -1,11 +1,6 @@
 
 #include "btcNode/Block.h"
 
-#include "btcNode/db.h"
-
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
-
 using namespace std;
 using namespace boost;
 
