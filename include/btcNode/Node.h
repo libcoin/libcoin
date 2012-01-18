@@ -35,7 +35,17 @@ public:
     void run();
 
     /// Shutdown the Node.
-    void shutdown() { handle_stop(); }
+    void shutdown() { _io_service.dispatch(boost::bind(&Node::handle_stop, this)); }
+    
+    /// Add an endpoint to the endpoool (endpoint or "host:port" versions)
+    void addPeer(std::string);
+    void addPeer(boost::asio::ip::tcp::endpoint ep);
+    
+    /// Add an endpoint to the connect list - if this is used the endpointpool is disabled! (endpoint or "host:port" versions)
+    void connectPeer(std::string);
+    void connectPeer(boost::asio::ip::tcp::endpoint ep);    
+    
+    typedef std::set<boost::asio::ip::tcp::endpoint> endpoints;
     
     /// Return the number of connections.
     unsigned int getConnectionCount() const {
@@ -91,12 +101,12 @@ private:
     
     /// Handle a request to stop the server.
     void handle_stop();
+    
+    /// Get a candidate to connect to using the internal list of peers.
+    Endpoint getCandidate(const std::set<unsigned int>& not_in);
 
     /// The io_service used to perform asynchronous operations.
     boost::asio::io_service _io_service;
-    
-    /// The signal_set is used to register for process termination notifications.
-    boost::asio::signal_set _signals;
     
     /// Acceptor used to listen for incoming connections.
     boost::asio::ip::tcp::acceptor _acceptor;
@@ -113,6 +123,9 @@ private:
     
     /// Deadline timer for the connect operation
     boost::asio::deadline_timer _connection_deadline;
+    
+    /// list of endpoints that overrules the endpointPool database.
+    endpoints _connection_list;
     
     /// The handler for all incoming messages.
     MessageHandler _messageHandler;

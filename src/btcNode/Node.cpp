@@ -15,28 +15,22 @@ using namespace std;
 using namespace boost;
 using namespace asio;
 
-Node::Node(const Chain& chain, std::string dataDir, const string& address, const string& port, bool proxy, const string& irc) : _io_service(), _signals(_io_service), _acceptor(_io_service), _dataDir(dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir), _peerManager(*this), _connection_deadline(_io_service), _messageHandler(), _endpointPool(chain.defaultPort(), _dataDir), _blockChain(chain, _dataDir), _chatClient(_io_service, irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy), _proxy(proxy) {
-    // Register to handle the signals that indicate when the node should exit.
-    // It is safe to register for the same signal multiple times in a program,
-    // provided all registration for the specified signal is made through Asio.
-    _signals.add(SIGINT);
-    _signals.add(SIGTERM);
-#if defined(SIGQUIT)
-    _signals.add(SIGQUIT);
-#endif // defined(SIGQUIT)
-    _signals.async_wait(bind(&Node::handle_stop, this));
-
+Node::Node(const Chain& chain, std::string dataDir, const string& address, const string& port, bool proxy, const string& irc) : _io_service(), _acceptor(_io_service), _dataDir(dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir), _peerManager(*this), _connection_deadline(_io_service), _messageHandler(), _endpointPool(chain.defaultPort(), _dataDir), _blockChain(chain, _dataDir), _chatClient(_io_service, irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy), _proxy(proxy) {
+    
     _transactionFilter = filter_ptr(new TransactionFilter(_blockChain));
     _blockFilter = filter_ptr(new BlockFilter(_blockChain));
     
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
     ip::tcp::resolver resolver(_io_service);
     ip::tcp::resolver::query query(address, port == "0" ? lexical_cast<string>(chain.defaultPort()) : port);
-    ip::tcp::endpoint endpoint = *resolver.resolve(query);
-    _acceptor.open(endpoint.protocol());
-    _acceptor.set_option(ip::tcp::acceptor::reuse_address(true));
-    _acceptor.bind(endpoint);
-    _acceptor.listen();
+    if(address.size()) {
+        ip::tcp::endpoint endpoint = *resolver.resolve(query);
+        _acceptor.open(endpoint.protocol());
+        _acceptor.set_option(ip::tcp::acceptor::reuse_address(true));
+        _acceptor.bind(endpoint);
+        _acceptor.listen();        
+    }
+    // else nolisten
 }
 
 void Node::run() {
@@ -45,7 +39,7 @@ void Node::run() {
     // asynchronous operation outstanding: the asynchronous accept call waiting
     // for new incoming connections.
     
-    start_accept();
+    if(_acceptor.is_open()) start_accept();
     start_connect();
     
     // Install filters for teh messages. First inserted filters are executed first.
@@ -58,10 +52,56 @@ void Node::run() {
     _io_service.run();
 }
 
+void Node::addPeer(string hostport) {
+    // split by the colon
+    size_t colon = hostport.find(':');
+    string address = hostport.substr(0, colon);
+    string port = (colon == string::npos) ? lexical_cast<string>(_blockChain.chain().defaultPort()) : hostport.substr(colon);
+    ip::tcp::resolver resolver(_io_service);
+    ip::tcp::resolver::query query(address, port);
+    ip::tcp::endpoint ep = *resolver.resolve(query);
+    addPeer(ep);
+}
+
+void Node::addPeer(boost::asio::ip::tcp::endpoint ep) {
+    _endpointPool.addEndpoint(ep);
+}
+
+void Node::connectPeer(std::string hostport) {
+    // split by the colon
+    size_t colon = hostport.find(':');
+    string address = hostport.substr(0, colon);
+    string port = (colon == string::npos) ? lexical_cast<string>(_blockChain.chain().defaultPort()) : hostport.substr(colon);
+    ip::tcp::resolver resolver(_io_service);
+    ip::tcp::resolver::query query(address, port);
+    ip::tcp::endpoint ep = *resolver.resolve(query);
+    connectPeer(ep);
+}
+
+void Node::connectPeer(boost::asio::ip::tcp::endpoint ep) {
+    _connection_list.insert(ep);
+}
+
+Endpoint Node::getCandidate(const set<unsigned int>& not_in) {
+    Endpoint ep;
+    for (endpoints::iterator candidate = _connection_list.begin(); candidate != _connection_list.end(); ++candidate) {
+        if(not_in.count(Endpoint(*candidate).getIP()) == 0) {
+            ep = *candidate;   
+            break;
+        }
+    }
+    return ep;
+}
+
 void Node::start_connect() {
     // we connect to 8 peers, but we take one by one and only connect to new peers if we have less than 8 connections.
     set<unsigned int> not_in = _peerManager.getPeerIPList();
-    Endpoint ep = _endpointPool.getCandidate(not_in, 0);
+    Endpoint ep;
+    if(_connection_list.size())
+        ep = getCandidate(not_in);
+    else
+        ep = _endpointPool.getCandidate(not_in, 0);
+    // TODO: we should check for validity of the candidate - if not valid we could retry later, give up or wait for a new Peer before we try a new connect. 
     stringstream ss;
     ss << ep;
     printf("Trying connect to: %s\n", ss.str().c_str());
@@ -139,7 +179,7 @@ void Node::accept_or_connect() {
         printf("Inbound connections are now: %d\n", _peerManager.getNumInbound()); 
         
         if (_peerManager.getNumInbound() < _max_inbound) // start_accept will not be called again before we get a read/write error on a socket
-            start_accept();         
+            if(_acceptor.is_open()) start_accept();
     }
         
     if (!_new_server) {

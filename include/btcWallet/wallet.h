@@ -77,7 +77,7 @@ public:
         Node& _node; 
     };
 
-    Wallet(Node& node, std::string walletFile = "", std::string dataDir = "") : CCryptoKeyStore(node.blockChain().chain().networkId()), _blockChain(node.blockChain()), _emit(node), nTransactionFee(0) {
+    Wallet(Node& node, std::string walletFile = "", std::string dataDir = "") : CCryptoKeyStore(node.blockChain().chain().networkId()), _blockChain(node.blockChain()), nTransactionFee(0), _emit(node) {
         if(walletFile == "NOTFILEBACKED")
             fFileBacked = false;
         else {
@@ -98,8 +98,6 @@ public:
         bool firstRun = false;
         LoadWallet(firstRun);
         if(firstRun) printf("Created a new wallet!");
-        ScanForWalletTransactions();
-        printf("Scanned for wallet transactions");
     }
 
     const Chain& chain() { return _blockChain.chain(); }

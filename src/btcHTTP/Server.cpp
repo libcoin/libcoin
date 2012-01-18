@@ -7,7 +7,7 @@ using namespace std;
 using namespace boost;
 using namespace asio;
 
-Server::Server(const string& address, const string& port, const string& doc_root) : _io_service(), _signals(_io_service), _acceptor(_io_service), _connectionManager(), _new_connection(), _requestHandler(doc_root) {
+Server::Server(const string address, const string port, const string doc_root) : _io_service(), _signals(_io_service), _acceptor(_io_service), _connectionManager(), _new_connection(), _requestHandler(doc_root) {
     // Register to handle the signals that indicate when the server should exit.
     // It is safe to register for the same signal multiple times in a program,
     // provided all registration for the specified signal is made through Asio.
@@ -36,6 +36,10 @@ void Server::run() {
     // asynchronous operation outstanding: the asynchronous accept call waiting
     // for new incoming connections.
     _io_service.run();
+}
+
+void Server::shutdown(){
+    _io_service.post(bind(&Server::handle_stop, this));
 }
 
 void Server::start_accept() {

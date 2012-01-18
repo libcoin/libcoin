@@ -20,7 +20,14 @@ public:
     bool isNone() { return _base64auth.size() == 0; }
     void setNone() { _base64auth.clear(); }
 
-    bool valid(std::string auth) { return _base64auth == auth; }
+    bool valid(std::string auth) {
+        if(isNone())
+            return true;
+        else if (_base64auth == encode64(":"))
+            return false;
+        else
+            return _base64auth == auth;
+    }
     
     std::string username();
     std::string password();

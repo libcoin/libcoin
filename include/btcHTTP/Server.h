@@ -4,10 +4,12 @@
 
 #include <boost/asio.hpp>
 #include <string>
-#include <boost/noncopyable.hpp>
 #include "btcHTTP/Connection.h"
 #include "btcHTTP/ConnectionManager.h"
 #include "btcHTTP/RequestHandler.h"
+
+#include <boost/noncopyable.hpp>
+#include <boost/filesystem.hpp>
 
 /// The top-level class of the HTTP server.
 class Server : private boost::noncopyable
@@ -15,12 +17,14 @@ class Server : private boost::noncopyable
 public:
     /// Construct the server to listen on the specified TCP address and port, and
     /// serve up files from the given directory.
-    explicit Server(const std::string& address, const std::string& port,
-                    const std::string& doc_root);
+    explicit Server(const std::string address = boost::asio::ip::address_v4::loopback().to_string(), const std::string port = "8333", const std::string doc_root = boost::filesystem::initial_path().string());
     
     /// Run the server's io_service loop.
     void run();
 
+    /// Shutdown the Server.
+    void shutdown();
+    
     /// Register an application handler, e.g. for RPC og CGI
     void registerMethod(method_ptr method) {
         Auth auth;
