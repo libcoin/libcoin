@@ -106,8 +106,14 @@ tribool MessageParser::consume(const Chain& chain, Message& msg, char input)
                     printf("\n\nPROCESSMESSAGE: ERRORS IN HEADER %s\n\n\n", msg.command().c_str());
                     return false;
                 }
-                _state = payload;
-                msg.payload().clear();
+                if (msg.header().nMessageSize) {
+                    _state = payload;
+                    msg.payload().clear();
+                }
+                else {
+                    reset();
+                    return true;
+                }
             }
             _counter = 0;
             return indeterminate;

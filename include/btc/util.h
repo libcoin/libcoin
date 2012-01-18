@@ -124,10 +124,6 @@ typedef u_int SOCKET;
 #define _strlwr(psz)        to_lower(psz)
 #define MAX_PATH            1024
 #define Beep(n1,n2)         (0)
-inline void Sleep(int64 n)
-{
-    boost::thread::sleep(boost::get_system_time() + boost::posix_time::milliseconds(n));
-}
 #endif
 
 inline int myclosesocket(SOCKET& hSocket)

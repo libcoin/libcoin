@@ -17,6 +17,7 @@ using namespace boost;
 using namespace boost::program_options;
 using namespace json_spirit;
 
+
 /// Base class for all Node rpc methods - they all need a handle to the node.
 class NodeMethod : public Method {
 public:
@@ -24,7 +25,6 @@ public:
 protected:
     Node& _node;
 };
-
 
 class Stop : public NodeMethod {
 public:

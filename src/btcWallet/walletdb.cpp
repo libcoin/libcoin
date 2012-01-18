@@ -380,7 +380,6 @@ bool BackupWallet(const Wallet& wallet, const string& strDest)
                 return true;
             }
         }
-        Sleep(100);
     }
     return false;
 }
