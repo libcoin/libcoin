@@ -112,7 +112,7 @@ void Client::handle_resolve(const system::error_code& err, tcp::resolver::iterat
         _socket.async_connect(endpoint, bind(&Client::handle_connect, this, placeholders::error, ++endpoint_iterator));
     }
     else {
-        std::cout << "Error: " << err.message() << "\n";
+        _completion_handler(err);
     }
 }
 
@@ -128,7 +128,7 @@ void Client::handle_connect(const system::error_code& err, tcp::resolver::iterat
         _socket.async_connect(endpoint, bind(&Client::handle_connect, this, placeholders::error, ++endpoint_iterator));
     }
     else {
-        std::cout << "Error: " << err.message() << "\n";
+        _completion_handler(err);
     }
 }
 
@@ -140,7 +140,7 @@ void Client::handle_write_request(const system::error_code& err) {
         async_read_until(_socket, _response, "\r\n", bind(&Client::handle_read_status_line, this, placeholders::error));
     }
     else {
-        std::cout << "Error: " << err.message() << "\n";
+        _completion_handler(err);
     }
 }
 
@@ -169,7 +169,7 @@ void Client::handle_read_status_line(const system::error_code& err) {
         async_read_until(_socket, _response, "\r\n\r\n", bind(&Client::handle_read_headers, this, placeholders::error));
     }
     else {
-        std::cout << "Error: " << err << "\n";
+        _completion_handler(err);
     }
 }
 
@@ -196,7 +196,7 @@ void Client::handle_read_headers(const system::error_code& err) {
         async_read(_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error));
     }
     else {
-        std::cout << "Error: " << err << "\n";
+        _completion_handler(err);
     }
 }
 

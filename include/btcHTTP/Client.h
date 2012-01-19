@@ -20,12 +20,14 @@ public:
     Client();
     Client(boost::asio::io_service& io_service);
 
-    virtual void operator()(const boost::system::error_code& err) { }
+    virtual void operator()(const boost::system::error_code& err) { _error = err; }
     
     /// Blocking post.
     Reply post(std::string url, std::string content, Headers headers = Headers()) {
         async_post(url, content, *this, headers);
         _io_service.run();
+        if(_error)
+            _reply.content += _error.message();
         // parse the reply
         return _reply;
     }
@@ -61,30 +63,5 @@ private:
     boost::asio::streambuf _response;
     Reply _reply;
     ClientCompletionHandler& _completion_handler;
+    boost::system::error_code _error;
 };
-
-/*
-int main(int argc, char* argv[])
-{
-    try
-    {
-    if (argc != 3)
-        {
-        std::cout << "Usage: async_client <server> <path>\n";
-        std::cout << "Example:\n";
-        std::cout << "  async_client www.boost.org /LICENSE_1_0.txt\n";
-        return 1;
-        }
-    
-    boost::asio::io_service io_service;
-    client c(io_service, argv[1], argv[2]);
-    io_service.run();
-    }
-    catch (std::exception& e)
-    {
-    std::cout << "Exception: " << e.what() << "\n";
-    }
-    
-    return 0;
-}
- */
