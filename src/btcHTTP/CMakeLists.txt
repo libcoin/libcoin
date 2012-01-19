@@ -20,6 +20,7 @@ SET(TARGET_H
     ${HEADER_PATH}/json/json_spirit_writer_template.h
     ${HEADER_PATH}/json/json_spirit_writer.h
     ${HEADER_PATH}/json/json_spirit.h
+    ${HEADER_PATH}/Client.h
     ${HEADER_PATH}/ConnectionManager.h
     ${HEADER_PATH}/Connection.h
     ${HEADER_PATH}/Header.h
@@ -35,6 +36,7 @@ SET(TARGET_H
 )
 
 SET(TARGET_SRC
+    Client.cpp
     ConnectionManager.cpp
     Connection.cpp
     MimeTypes.cpp

@@ -2,6 +2,7 @@
 #include "btcNode/Node.h"
 
 #include "btcHTTP/Server.h"
+#include "btcHTTP/Client.h"
 
 #include "btcWallet/wallet.h"
 #include "btcWallet/walletrpc.h"
@@ -144,7 +145,7 @@ int main(int argc, char* argv[])
         ("help,?", "Show help messages")
         ("version,v", "print version string")
         ("conf,c", value<string>(&config_file)->default_value("bitcoin.conf"), "Specify configuration file")
-        ("datadir", value<string>(&data_dir)->default_value(""), "Specify data directory")
+        ("datadir", value<string>(&data_dir)->default_value(CDB::dataDir(bitcoin.dataDirSuffix())), "Specify data directory")
     ;
     
     options_description config("Config options");
@@ -192,24 +193,45 @@ int main(int argc, char* argv[])
     }
     
     if (args.count("version")) {
-        cout << argv[0] << " version is: " << VERSION << (VERSION_IS_BETA ? "(beta)" : "" ) << pszSubVer << "\n";
+        cout << argv[0] << " version is: " << FormatFullVersion() << "\n";
         return 1;        
     }
     
     // if present, parse the config file - if no data dir is specified we always assume bitcoin chain at this stage 
-    if(data_dir.size() == 0)
-        data_dir = CDB::dataDir(bitcoin.dataDirSuffix());
-    ifstream ifs(config_file.c_str());
+    string config_path = data_dir + "/" + config_file;
+    ifstream ifs(config_path.c_str());
     if(ifs) {
-        store(parse_config_file(ifs, config_file_options), args);
+        store(parse_config_file(ifs, config_file_options, true), args);
         notify(args);
     }
+
+    Auth auth(rpc_user, rpc_pass); // if rpc_user and rpc_pass are not set all authenticated methods becomes disallowed.
     
     // If we have params on the cmdline we run as a command line client contacting a server
     if (args.count("params")) {
-        //        Client client(rpc_connect, lexical_cast<string>(rpc_port));
-        
-        return 0;
+        string rpc_method = rpc_params[0];
+        rpc_params.erase(rpc_params.begin());
+        // create URL
+        string url = "http://" + rpc_connect + ":" + lexical_cast<string>(rpc_port);
+        Client client;
+        // this is a blocking post!
+        Reply reply = client.post(url, RPC::content(rpc_method, rpc_params), auth.headers());
+        if(reply.status == Reply::ok) {
+            Object rpc_reply = RPC::reply(reply.content);
+            Value result = find_value(rpc_reply, "result");
+            cout << write_formatted(result) << "\n";
+            return 0;
+        }
+        else {
+            cout << "HTTP error code: " << reply.status << "\n";
+            Object rpc_reply = RPC::reply(reply.content);
+            Object rpc_error = find_value(rpc_reply, "error").get_obj();
+            Value code = find_value(rpc_error, "code");
+            Value message = find_value(rpc_error, "message");
+            cout << "JSON RPC Error code: " << code.get_int() << "\n";
+            cout <<  message.get_str() << "\n";
+            return 1;
+        }
     }
     
     // Else we start the bitcoin node and server!
@@ -220,9 +242,6 @@ int main(int argc, char* argv[])
     else
         chain_chooser = &bitcoin;
     const Chain& chain(*chain_chooser);
-
-    if(!args.count("datadir"))
-        data_dir = CDB::dataDir(chain.dataDirSuffix());    
 
     logfile = data_dir + "/debug.log";
     
@@ -242,7 +261,6 @@ int main(int argc, char* argv[])
     thread nodeThread(&Node::run, &node); // run this as a background thread
 
     Server server(rpc_bind, lexical_cast<string>(rpc_port), filesystem::initial_path().string());
-    Auth auth(rpc_user, rpc_pass); // if rpc_user and rpc_pass are not set all authenticated methods becomes disallowed.
     
     // Register Server methods.
     server.registerMethod(method_ptr(new Stop(server)), auth);
@@ -286,6 +304,7 @@ int main(int argc, char* argv[])
     
     server.run();
 
+    printf("Server exitted, shutting down Node...\n");
     // getting here means that we have exited from the server (e.g. by the quit method)
     node.shutdown();
     nodeThread.join();

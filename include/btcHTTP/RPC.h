@@ -9,10 +9,6 @@
 
 #include "json/json_spirit.h"
 
-using namespace std;
-using namespace boost;
-using namespace json_spirit;
-
 class RPC
 {
 public:
@@ -25,31 +21,35 @@ public:
         parse_error = -32700
     };
     
-    static Object error(Error e, const string message = "");
+    static json_spirit::Object error(Error e, const std::string message = "");
+    
+    static std::string content(std::string method, std::vector<std::string> params);
+
+    static json_spirit::Object reply(std::string content);
     
     RPC();
     
-    void parse(string payload);
+    void parse(std::string payload);
 
     //    void setContent(string& content);
     
-    string& getContent();
+    std::string& getContent();
     
-    void setError(const Value& error);
+    void setError(const json_spirit::Value& error);
 
     const Reply::status_type getStatus();
     
-    const string& method();
+    const std::string& method();
     
     void execute(Method& method);
     
 private:
-    string _method;
-    string _content;
-    Value _id;
-    Value _error;
-    Array _params;
-    Value _result;
+    std::string _method;
+    std::string _content;
+    json_spirit::Value _id;
+    json_spirit::Value _error;
+    json_spirit::Array _params;
+    json_spirit::Value _result;
 };
 
 #endif

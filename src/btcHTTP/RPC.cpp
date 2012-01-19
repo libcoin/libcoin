@@ -6,6 +6,7 @@
 #include <string>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string/join.hpp>
 
 #include "btcHTTP/json/json_spirit.h"
 
@@ -41,6 +42,23 @@ Object RPC::error(RPC::Error e, const string message) {
             err.push_back(Pair("message", "Server error."));                
             return err;
     }
+}
+
+string RPC::content(string method, vector<string> params) {
+    //    '{"jsonrpc": "1.0", "id":"curledhair", "method": "getblockcount", "params": [] }'
+    stringstream ss;
+    ss << "{\"jsonrpc\":\"2.0\", \"id\":\"libbtc\", \"method\":\"" << method << "\", \"params\":[";
+    if (params.size())
+        ss << "\"" << algorithm::join(params, "\", \"") << "\"";
+    ss << "] }";
+    return ss.str();
+}
+
+Object RPC::reply(string content) {
+    Value val;
+    if (!read(content, val))
+        throw runtime_error("couldn't parse reply from server");
+    return val.get_obj();
 }
 
 RPC::RPC() : _id(Value::null), _error(Value::null) {};

@@ -25,8 +25,8 @@ public:
     GetBalance(Wallet& wallet) : WalletMethod(wallet) {}
     virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
 protected:
-    int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinDepth);
-    int64 GetAccountBalance(const string& strAccount, int nMinDepth);
+    int64 GetAccountBalance(CWalletDB& walletdb, const std::string& strAccount, int nMinDepth);
+    int64 GetAccountBalance(const std::string& strAccount, int nMinDepth);
 };
 
 /// Get a fresh address. This will reserve the address in the wallet and hence change the wallet state.
@@ -124,8 +124,8 @@ public:
     ListMethod(Wallet& wallet) : WalletMethod(wallet) {}
 protected:
     json_spirit::Value listReceived(const json_spirit::Array& params, bool fByAccounts);
-    void listTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDepth, bool fLong, Array& ret);    
-    void acEntryToJSON(const CAccountingEntry& acentry, const string& strAccount, Array& ret);
+    void listTransactions(const CWalletTx& wtx, const std::string& strAccount, int nMinDepth, bool fLong, json_spirit::Array& ret);    
+    void acEntryToJSON(const CAccountingEntry& acentry, const std::string& strAccount, json_spirit::Array& ret);
     void walletTxToJSON(const CWalletTx& wtx, json_spirit::Object& entry);
 };
 
@@ -181,10 +181,10 @@ public:
 /// Enter the wallet passphrase and supply a timeout for when the wallet is locked again.
 class WalletPassphrase : public WalletMethod {
 public:
-    WalletPassphrase(Wallet& wallet, boost::asio::io_service& io_service) : WalletMethod(wallet), _io_service(io_service) {}
+    WalletPassphrase(Wallet& wallet, boost::asio::io_service& io_service) : WalletMethod(wallet), _lock_timer(io_service) {}
     virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
 private:
-    boost::asio::io_service& _io_service;
+    boost::asio::deadline_timer _lock_timer;
 };
 
 /// Change the wallet passphrase.

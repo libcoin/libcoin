@@ -3,6 +3,7 @@
 #define HTTP_REQUEST_HANDLER_H
 
 #include "btcHTTP/Method.h"
+#include "btcHTTP/Header.h"
 
 #include <string>
 
@@ -32,6 +33,13 @@ public:
     std::string username();
     std::string password();
     
+    Headers headers() {
+        Headers h;
+        if (isNone() || _base64auth == encode64(":"))
+            return h;
+        h["Authorization"] = "Basic " + _base64auth;
+        return h;
+    }
 private:
     std::string encode64(std::string s);
     std::string decode64(std::string s);

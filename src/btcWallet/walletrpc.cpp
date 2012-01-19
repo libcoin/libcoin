@@ -946,6 +946,17 @@ Value WalletPassphrase::operator()(const Array& params, bool fHelp)
     if (!_wallet.IsLocked())
         throw RPC::error(RPC::invalid_request, "Error: Wallet is already unlocked.");
     
+    if (params[0].type() != json_spirit::str_type)
+        throw RPC::error(RPC::invalid_params, "Error: expect a password formatted as string.");
+        
+    int timeout = 60;
+    if (params[1].type() != json_spirit::int_type) {
+        if (params[1].type() == json_spirit::str_type)
+            timeout = lexical_cast<int>(params[1].get_str());
+    }        
+    else
+        timeout = params[1].get_int();
+    
     // Note that the walletpassphrase is stored in params[0] which is not mlock()ed
     string strWalletPass;
     strWalletPass.reserve(100);
@@ -969,9 +980,8 @@ Value WalletPassphrase::operator()(const Array& params, bool fHelp)
     //    int* pnSleepTime = new int(params[1].get_int());
     //    CreateThread(ThreadCleanWalletPassphrase, pnSleepTime);
     
-    boost::asio::deadline_timer lock_timer(_io_service);
-    lock_timer.expires_from_now(boost::posix_time::seconds(params[1].get_int()));
-    lock_timer.async_wait(boost::bind(&Wallet::Lock, &_wallet));
+    _lock_timer.expires_from_now(boost::posix_time::seconds(timeout));
+    _lock_timer.async_wait(boost::bind(&Wallet::Lock, &_wallet));
     
     return Value::null;
 }
