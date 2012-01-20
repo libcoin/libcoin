@@ -19,6 +19,8 @@
 #include <vector>
 #include "btc/bignum.h"
 
+// This is the raw Address - the BitcoinAddress or more correctly the ChainAddress includes the netword Id and is hence better suited for communicating with the outside. For backwards compatability we do, however, need to use the ChainAddress in e.g. the wallet. 
+
 static const char* pszBase58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 
@@ -155,142 +157,83 @@ inline bool DecodeBase58Check(const std::string& str, std::vector<unsigned char>
     return DecodeBase58Check(str.c_str(), vchRet);
 }
 
+typedef uint160 Address;
 
-
-
-
-
-class CBase58Data
+class ChainAddress
 {
-protected:
-    unsigned char nVersion;
-    std::vector<unsigned char> vchData;
-
-    CBase58Data()
-    {
-        nVersion = 0;
-        vchData.clear();
-    }
-
-    ~CBase58Data()
-    {
-        if (!vchData.empty())
-            memset(&vchData[0], 0, vchData.size());
-    }
-
-    void SetData(int nVersionIn, const void* pdata, size_t nSize)
-    {
-        nVersion = nVersionIn;
-        vchData.resize(nSize);
-        if (!vchData.empty())
-            memcpy(&vchData[0], pdata, nSize);
-    }
-
-    void SetData(int nVersionIn, const unsigned char *pbegin, const unsigned char *pend)
-    {
-        SetData(nVersionIn, (void*)pbegin, pend - pbegin);
-    }
-
 public:
-    bool SetString(const char* psz)
-    {
-        std::vector<unsigned char> vchTemp;
-        DecodeBase58Check(psz, vchTemp);
-        if (vchTemp.empty())
-        {
-            vchData.clear();
-            nVersion = 0;
-            return false;
-        }
-        nVersion = vchTemp[0];
-        vchData.resize(vchTemp.size() - 1);
-        if (!vchData.empty())
-            memcpy(&vchData[0], &vchTemp[1], vchData.size());
-        memset(&vchTemp[0], 0, vchTemp.size());
+    bool setHash160(unsigned char network_id, const Address& address) {
+        _id = network_id;
+        _address = address;
         return true;
     }
 
-    bool SetString(const std::string& str)
-    {
-        return SetString(str.c_str());
+    bool setPubKey(unsigned char network_id, const std::vector<unsigned char>& pubKey) {
+        return setHash160(network_id, Hash160(pubKey));
     }
 
-    std::string toString() const
-    {
-        std::vector<unsigned char> vch(1, nVersion);
-        vch.insert(vch.end(), vchData.begin(), vchData.end());
-        return EncodeBase58Check(vch);
-    }
-
-    int CompareTo(const CBase58Data& b58) const
-    {
-        if (nVersion < b58.nVersion) return -1;
-        if (nVersion > b58.nVersion) return  1;
-        if (vchData < b58.vchData)   return -1;
-        if (vchData > b58.vchData)   return  1;
-        return 0;
-    }
-
-    bool operator==(const CBase58Data& b58) const { return CompareTo(b58) == 0; }
-    bool operator<=(const CBase58Data& b58) const { return CompareTo(b58) <= 0; }
-    bool operator>=(const CBase58Data& b58) const { return CompareTo(b58) >= 0; }
-    bool operator< (const CBase58Data& b58) const { return CompareTo(b58) <  0; }
-    bool operator> (const CBase58Data& b58) const { return CompareTo(b58) >  0; }
-};
-
-
-class CBitcoinAddress : public CBase58Data
-{
-public:
-    bool SetHash160(unsigned char networkId, const uint160& hash160) {
-        SetData(networkId, &hash160, 20);
-        return true;
-    }
-
-    bool SetPubKey(unsigned char networkId, const std::vector<unsigned char>& vchPubKey) {
-        return SetHash160(networkId, Hash160(vchPubKey));
-    }
-
-    bool IsValid(unsigned char networkId) const {
-        int nExpectedSize = 20;
-        return networkId == nVersion && vchData.size() == nExpectedSize;
+    bool isValid(unsigned char network_id) const {
+        return network_id == _id && _address != 0;
     }
     
     unsigned char networkId() const {
-        return nVersion;
+        return _id;
     }
 
-    CBitcoinAddress()
-    {
+    ChainAddress() : _address(0), _id(0) { }
+
+    ChainAddress(unsigned char network_id, Address address) {
+        setHash160(network_id, address);
     }
 
-    CBitcoinAddress(unsigned char networkId, uint160 hash160In)
-    {
-        SetHash160(networkId, hash160In);
+    ChainAddress(unsigned char network_id, const std::vector<unsigned char>& pubKey) {
+        setPubKey(network_id, pubKey);
     }
 
-    CBitcoinAddress(unsigned char networkId, const std::vector<unsigned char>& vchPubKey)
-    {
-        SetPubKey(networkId, vchPubKey);
+    ChainAddress(const std::string& str) {
+        setString(str);
     }
 
-    CBitcoinAddress(const std::string& strAddress)
-    {
-        SetString(strAddress);
+    Address getAddress() const {
+        return _address;
     }
 
-    CBitcoinAddress(const char* pszAddress)
-    {
-        SetString(pszAddress);
+    std::string toString() const {
+        std::vector<unsigned char> address_part(1, _id);
+        address_part.insert(address_part.end(), _address.begin(), _address.end());
+        return EncodeBase58Check(address_part);
     }
-
-    uint160 GetHash160() const
-    {
-        assert(vchData.size() == 20);
-        uint160 hash160;
-        memcpy(&hash160, &vchData[0], 20);
-        return hash160;
+    
+    bool setString(const std::string& str) {
+        std::vector<unsigned char> temp;
+        DecodeBase58Check(str, temp);
+        if (temp.empty()) {
+            _address = 0;
+            _id = 0;
+            return false;
+        }
+        _id = temp[0];
+        memcpy(&_address, &temp[1], _address.size());
+        return true;
     }
+    
+    int compare(const ChainAddress& chain_addr) const {
+        if (_id < chain_addr._id) return -1;
+        if (_id > chain_addr._id) return  1;
+        if (_address < chain_addr._address)   return -1;
+        if (_address > chain_addr._address)   return  1;
+        return 0;
+    }
+    
+    bool operator==(const ChainAddress& chain_addr) const { return compare(chain_addr) == 0; }
+    bool operator<=(const ChainAddress& chain_addr) const { return compare(chain_addr) <= 0; }
+    bool operator>=(const ChainAddress& chain_addr) const { return compare(chain_addr) >= 0; }
+    bool operator< (const ChainAddress& chain_addr) const { return compare(chain_addr) <  0; }
+    bool operator> (const ChainAddress& chain_addr) const { return compare(chain_addr) >  0; }
+    
+private:
+    Address _address;    
+    unsigned char _id;
 };
 
 #endif

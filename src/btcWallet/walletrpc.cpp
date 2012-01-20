@@ -90,13 +90,13 @@ Value GetBalance::operator()(const Array& params, bool fHelp) {
             int64 allGeneratedImmature, allGeneratedMature, allFee;
             allGeneratedImmature = allGeneratedMature = allFee = 0;
             string strSentAccount;
-            list<pair<CBitcoinAddress, int64> > listReceived;
-            list<pair<CBitcoinAddress, int64> > listSent;
+            list<pair<ChainAddress, int64> > listReceived;
+            list<pair<ChainAddress, int64> > listSent;
             wtx.GetAmounts(allGeneratedImmature, allGeneratedMature, listReceived, listSent, allFee, strSentAccount);
             if (_wallet.getDepthInMainChain(wtx.GetHash()) >= nMinDepth)
-                BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress,int64)& r, listReceived)
+                BOOST_FOREACH(const PAIRTYPE(ChainAddress,int64)& r, listReceived)
                 nBalance += r.second;
-            BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress,int64)& r, listSent)
+            BOOST_FOREACH(const PAIRTYPE(ChainAddress,int64)& r, listSent)
             nBalance -= r.second;
             nBalance -= allFee;
             nBalance += allGeneratedMature;
@@ -131,7 +131,7 @@ Value GetNewAddress::operator()(const Array& params, bool fHelp) {
     std::vector<unsigned char> newKey;
     if (!_wallet.GetKeyFromPool(newKey, false))
         throw RPC::error(RPC::internal_error, "Error: Keypool ran out, please call keypoolrefill first");
-    CBitcoinAddress address(_wallet.chain().networkId(), newKey);
+    ChainAddress address(_wallet.chain().networkId(), newKey);
     
     _wallet.SetAddressBookName(address, strAccount);
     
@@ -148,8 +148,8 @@ Value SendToAddress::operator()(const Array& params, bool fHelp) {
         throw RPC::error(RPC::invalid_params, "sendtoaddress <bitcoinaddress> <amount> [comment] [comment-to]\n"
                             "<amount> is a real and is rounded to the nearest 0.00000001");
     
-    CBitcoinAddress address(params[0].get_str());
-    if (!address.IsValid(_wallet.chain().networkId()))
+    ChainAddress address(params[0].get_str());
+    if (!address.isValid(_wallet.chain().networkId()))
         throw RPC::error(RPC::invalid_params, "Invalid bitcoin address");
     
     // Amount
@@ -172,7 +172,7 @@ Value SendToAddress::operator()(const Array& params, bool fHelp) {
     return wtx.GetHash().GetHex();
 }
 
-CBitcoinAddress GetAccountAddress::getAccountAddress(string strAccount, bool bForceNew)
+ChainAddress GetAccountAddress::getAccountAddress(string strAccount, bool bForceNew)
 {
     CWalletDB walletdb(_wallet._dataDir, _wallet.strWalletFile);
     
@@ -184,7 +184,7 @@ CBitcoinAddress GetAccountAddress::getAccountAddress(string strAccount, bool bFo
     // Check if the current key has been used
     if (!account.vchPubKey.empty()) {
         CScript scriptPubKey;
-        scriptPubKey.SetBitcoinAddress(_wallet.chain().networkId(), account.vchPubKey);
+        scriptPubKey.SetChainAddress(_wallet.chain().networkId(), account.vchPubKey);
         for (map<uint256, CWalletTx>::iterator it = _wallet.mapWallet.begin();
              it != _wallet.mapWallet.end() && !account.vchPubKey.empty();
              ++it) {
@@ -200,11 +200,11 @@ CBitcoinAddress GetAccountAddress::getAccountAddress(string strAccount, bool bFo
         if (!_wallet.GetKeyFromPool(account.vchPubKey, false))
             throw RPC::error(RPC::internal_error, "Error: Keypool ran out, please call keypoolrefill first");
         
-        _wallet.SetAddressBookName(CBitcoinAddress(_wallet.chain().networkId(), account.vchPubKey), strAccount);
+        _wallet.SetAddressBookName(ChainAddress(_wallet.chain().networkId(), account.vchPubKey), strAccount);
         walletdb.WriteAccount(strAccount, account);
     }
     
-    return CBitcoinAddress(_wallet.chain().networkId(), account.vchPubKey);
+    return ChainAddress(_wallet.chain().networkId(), account.vchPubKey);
 }
 
 Value GetAccountAddress::operator()(const Array& params, bool fHelp)
@@ -229,8 +229,8 @@ Value SetAccount::operator()(const Array& params, bool fHelp)
         throw RPC::error(RPC::invalid_params, "setaccount <bitcoinaddress> <account>\n"
                             "Sets the account associated with the given address.");
     
-    CBitcoinAddress address(params[0].get_str());
-    if (!address.IsValid(_wallet.chain().networkId()))
+    ChainAddress address(params[0].get_str());
+    if (!address.isValid(_wallet.chain().networkId()))
         throw RPC::error(RPC::invalid_params, "Invalid bitcoin address");
     
     
@@ -257,12 +257,12 @@ Value GetAccount::operator()(const Array& params, bool fHelp)
         throw RPC::error(RPC::invalid_params, "getaccount <bitcoinaddress>\n"
                             "Returns the account associated with the given address.");
     
-    CBitcoinAddress address(params[0].get_str());
-    if (!address.IsValid(_wallet.chain().networkId()))
+    ChainAddress address(params[0].get_str());
+    if (!address.isValid(_wallet.chain().networkId()))
         throw RPC::error(RPC::invalid_params, "Invalid bitcoin address");
     
     string strAccount;
-    map<CBitcoinAddress, string>::iterator mi = _wallet.mapAddressBook.find(address);
+    map<ChainAddress, string>::iterator mi = _wallet.mapAddressBook.find(address);
     if (mi != _wallet.mapAddressBook.end() && !(*mi).second.empty())
         strAccount = (*mi).second;
     return strAccount;
@@ -278,8 +278,8 @@ Value GetAddressesByAccount::operator()(const Array& params, bool fHelp)
     
     // Find all addresses that have the given account
     Array ret;
-    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, _wallet.mapAddressBook) {
-        const CBitcoinAddress& address = item.first;
+    BOOST_FOREACH(const PAIRTYPE(ChainAddress, string)& item, _wallet.mapAddressBook) {
+        const ChainAddress& address = item.first;
         const string& strName = item.second;
         if (strName == strAccount)
             ret.push_back(address.toString());
@@ -309,11 +309,11 @@ Value GetReceivedByAddress::operator()(const Array& params, bool fHelp)
                             "Returns the total amount received by <bitcoinaddress> in transactions with at least [minconf] confirmations.");
     
     // Bitcoin address
-    CBitcoinAddress address = CBitcoinAddress(params[0].get_str());
+    ChainAddress address = ChainAddress(params[0].get_str());
     CScript scriptPubKey;
-    if (!address.IsValid(_wallet.chain().networkId()))
+    if (!address.isValid(_wallet.chain().networkId()))
         throw RPC::error(RPC::invalid_params, "Invalid bitcoin address");
-    scriptPubKey.SetBitcoinAddress(address);
+    scriptPubKey.SetChainAddress(address);
     if (!IsMine(_wallet,scriptPubKey))
         return (double)0.0;
     
@@ -351,9 +351,9 @@ Value GetReceivedByAccount::operator()(const Array& params, bool fHelp)
     
     // Get the set of pub keys that have the label
     string strAccount = AccountFromValue(params[0]);
-    set<CBitcoinAddress> setAddress;
-    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, _wallet.mapAddressBook) {
-        const CBitcoinAddress& address = item.first;
+    set<ChainAddress> setAddress;
+    BOOST_FOREACH(const PAIRTYPE(ChainAddress, string)& item, _wallet.mapAddressBook) {
+        const ChainAddress& address = item.first;
         const string& strName = item.second;
         if (strName == strAccount)
             setAddress.insert(address);
@@ -367,8 +367,8 @@ Value GetReceivedByAccount::operator()(const Array& params, bool fHelp)
             continue;
         
         BOOST_FOREACH(const CTxOut& txout, wtx.vout) {
-            CBitcoinAddress address;
-            if (ExtractAddress(txout.scriptPubKey, &_wallet, address) && setAddress.count(address))
+            Address address;
+            if (ExtractAddress(txout.scriptPubKey, &_wallet, address) && setAddress.count(ChainAddress(_wallet.chain().networkId(), address)))
                 if (_wallet.getDepthInMainChain(wtx.GetHash()) >= nMinDepth)
                     nAmount += txout.nValue;
         }
@@ -432,8 +432,8 @@ Value SendFrom::operator()(const Array& params, bool fHelp)
                             "<amount> is a real and is rounded to the nearest 0.00000001");
     
     string strAccount = AccountFromValue(params[0]);
-    CBitcoinAddress address(params[1].get_str());
-    if (!address.IsValid(_wallet.chain().networkId()))
+    ChainAddress address(params[1].get_str());
+    if (!address.isValid(_wallet.chain().networkId()))
         throw RPC::error(RPC::invalid_params, "Invalid bitcoin address");
     int64 nAmount = AmountFromValue(params[2]);
     int nMinDepth = 1;
@@ -485,14 +485,14 @@ Value SendMany::operator()(const Array& params, bool fHelp)
     if (params.size() > 3 && params[3].type() != null_type && !params[3].get_str().empty())
         wtx.mapValue["comment"] = params[3].get_str();
     
-    set<CBitcoinAddress> setAddress;
+    set<ChainAddress> setAddress;
     vector<pair<CScript, int64> > vecSend;
     
     int64 totalAmount = 0;
     BOOST_FOREACH(const Pair& s, sendTo)
     {
-    CBitcoinAddress address(s.name_);
-    if (!address.IsValid(_wallet.chain().networkId()))
+    ChainAddress address(s.name_);
+    if (!address.isValid(_wallet.chain().networkId()))
         throw RPC::error(RPC::invalid_params, string("Invalid bitcoin address:")+s.name_);
     
     if (setAddress.count(address))
@@ -500,7 +500,7 @@ Value SendMany::operator()(const Array& params, bool fHelp)
     setAddress.insert(address);
     
     CScript scriptPubKey;
-    scriptPubKey.SetBitcoinAddress(address);
+    scriptPubKey.SetChainAddress(address);
     int64 nAmount = AmountFromValue(s.value_); 
     totalAmount += nAmount;
     
@@ -547,8 +547,8 @@ void ListMethod::listTransactions(const CWalletTx& wtx, const string& strAccount
 {
     int64 nGeneratedImmature, nGeneratedMature, nFee;
     string strSentAccount;
-    list<pair<CBitcoinAddress, int64> > listReceived;
-    list<pair<CBitcoinAddress, int64> > listSent;
+    list<pair<ChainAddress, int64> > listReceived;
+    list<pair<ChainAddress, int64> > listSent;
     wtx.GetAmounts(nGeneratedImmature, nGeneratedMature, listReceived, listSent, nFee, strSentAccount);
     
     bool fAllAccounts = (strAccount == string("*"));
@@ -576,7 +576,7 @@ void ListMethod::listTransactions(const CWalletTx& wtx, const string& strAccount
     // Sent
     if ((!listSent.empty() || nFee != 0) && (fAllAccounts || strAccount == strSentAccount))
         {
-        BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, int64)& s, listSent)
+        BOOST_FOREACH(const PAIRTYPE(ChainAddress, int64)& s, listSent)
             {
             Object entry;
             entry.push_back(Pair("account", strSentAccount));
@@ -592,7 +592,7 @@ void ListMethod::listTransactions(const CWalletTx& wtx, const string& strAccount
     
     // Received
     if (listReceived.size() > 0 && _wallet.getDepthInMainChain(wtx.GetHash()) >= nMinDepth)
-        BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, int64)& r, listReceived)
+        BOOST_FOREACH(const PAIRTYPE(ChainAddress, int64)& r, listReceived)
         {
         string account;
         if (_wallet.mapAddressBook.count(r.first))
@@ -650,7 +650,7 @@ Value ListMethod::listReceived(const Array& params, bool fByAccounts)
         fIncludeEmpty = params[1].get_bool();
     
     // Tally
-    map<CBitcoinAddress, tallyitem> mapTally;
+    map<ChainAddress, tallyitem> mapTally;
     for (map<uint256, CWalletTx>::iterator it = _wallet.mapWallet.begin(); it != _wallet.mapWallet.end(); ++it)
         {
         const CWalletTx& wtx = (*it).second;
@@ -663,11 +663,11 @@ Value ListMethod::listReceived(const Array& params, bool fByAccounts)
         
         BOOST_FOREACH(const CTxOut& txout, wtx.vout)
             {
-            CBitcoinAddress address;
-            if (!ExtractAddress(txout.scriptPubKey, &_wallet, address) || !address.IsValid(_wallet.chain().networkId()))
+            Address address;
+            if (!ExtractAddress(txout.scriptPubKey, &_wallet, address) || address != 0)
                 continue;
             
-            tallyitem& item = mapTally[address];
+            tallyitem& item = mapTally[ChainAddress(_wallet.chain().networkId(), address)];
             item.nAmount += txout.nValue;
             item.nConf = min(item.nConf, nDepth);
             }
@@ -676,10 +676,10 @@ Value ListMethod::listReceived(const Array& params, bool fByAccounts)
     // Reply
     Array ret;
     map<string, tallyitem> mapAccountTally;
-    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, _wallet.mapAddressBook) {
-    const CBitcoinAddress& address = item.first;
+    BOOST_FOREACH(const PAIRTYPE(ChainAddress, string)& item, _wallet.mapAddressBook) {
+    const ChainAddress& address = item.first;
     const string& strAccount = item.second;
-    map<CBitcoinAddress, tallyitem>::iterator it = mapTally.find(address);
+    map<ChainAddress, tallyitem>::iterator it = mapTally.find(address);
     if (it == mapTally.end() && !fIncludeEmpty)
         continue;
     
@@ -831,7 +831,7 @@ Value ListAccounts::operator()(const Array& params, bool fHelp)
         nMinDepth = params[0].get_int();
     
     map<string, int64> mapAccountBalances;
-    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& entry, _wallet.mapAddressBook) {
+    BOOST_FOREACH(const PAIRTYPE(ChainAddress, string)& entry, _wallet.mapAddressBook) {
         if (_wallet.HaveKey(entry.first)) // This address belongs to me
             mapAccountBalances[entry.second] = 0;
     }
@@ -840,15 +840,15 @@ Value ListAccounts::operator()(const Array& params, bool fHelp)
         const CWalletTx& wtx = (*it).second;
         int64 nGeneratedImmature, nGeneratedMature, nFee;
         string strSentAccount;
-        list<pair<CBitcoinAddress, int64> > listReceived;
-        list<pair<CBitcoinAddress, int64> > listSent;
+        list<pair<ChainAddress, int64> > listReceived;
+        list<pair<ChainAddress, int64> > listSent;
         wtx.GetAmounts(nGeneratedImmature, nGeneratedMature, listReceived, listSent, nFee, strSentAccount);
         mapAccountBalances[strSentAccount] -= nFee;
-        BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, int64)& s, listSent)
+        BOOST_FOREACH(const PAIRTYPE(ChainAddress, int64)& s, listSent)
         mapAccountBalances[strSentAccount] -= s.second;
         if (_wallet.getDepthInMainChain(wtx.GetHash()) >= nMinDepth) {
             mapAccountBalances[""] += nGeneratedMature;
-            BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, int64)& r, listReceived)
+            BOOST_FOREACH(const PAIRTYPE(ChainAddress, int64)& r, listReceived)
             if (_wallet.mapAddressBook.count(r.first))
                 mapAccountBalances[_wallet.mapAddressBook[r.first]] += r.second;
             else
@@ -1081,8 +1081,8 @@ Value ValidateAddress::operator()(const Array& params, bool fHelp)
         throw RPC::error(RPC::invalid_params, "validateaddress <bitcoinaddress>\n"
                             "Return information about <bitcoinaddress>.");
     
-    CBitcoinAddress address(params[0].get_str());
-    bool isValid = address.IsValid(_wallet.chain().networkId());
+    ChainAddress address(params[0].get_str());
+    bool isValid = address.isValid(_wallet.chain().networkId());
     
     Object ret;
     ret.push_back(Pair("isvalid", isValid));

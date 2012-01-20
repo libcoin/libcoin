@@ -44,13 +44,13 @@ public:
 };
 
 /// Get address associated with account
-class CBitcoinAddress;
+class ChainAddress;
 class GetAccountAddress : public WalletMethod {
 public:
     GetAccountAddress(Wallet& wallet) : WalletMethod(wallet) {}
     virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
 protected:
-    CBitcoinAddress getAccountAddress(std::string strAccount, bool bForceNew=false);
+    ChainAddress getAccountAddress(std::string strAccount, bool bForceNew=false);
 };
 
 /// Get address associated with account

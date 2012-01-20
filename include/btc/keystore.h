@@ -14,17 +14,17 @@ protected:
 
 public:
     virtual bool AddKey(const CKey& key) =0;
-    virtual bool HaveKey(const CBitcoinAddress &address) const =0;
+    virtual bool HaveKey(const ChainAddress &address) const =0;
     virtual bool HaveKey(const uint160 &asset) const =0;
-    virtual bool GetKey(const CBitcoinAddress &address, CKey& keyOut) const =0;
+    virtual bool GetKey(const ChainAddress &address, CKey& keyOut) const =0;
     virtual bool GetKey(const uint160 &asset, CKey& keyOut) const =0;
-    virtual bool GetPubKey(const CBitcoinAddress &address, std::vector<unsigned char>& vchPubKeyOut) const;
+    virtual bool GetPubKey(const ChainAddress &address, std::vector<unsigned char>& vchPubKeyOut) const;
     virtual bool GetPubKey(const uint160 &asset, std::vector<unsigned char>& vchPubKeyOut) const = 0;
     virtual std::vector<unsigned char> GenerateNewKey();
     virtual unsigned char getId() const = 0;
 };
 
-typedef std::map<CBitcoinAddress, CSecret> KeyMap;
+typedef std::map<ChainAddress, CSecret> KeyMap;
 
 class CBasicKeyStore : public CKeyStore
 {
@@ -37,14 +37,14 @@ public:
     virtual unsigned char getId() const { return _id; }
     
     bool AddKey(const CKey& key);
-    bool HaveKey(const CBitcoinAddress &address) const
+    bool HaveKey(const ChainAddress &address) const
     {
         bool result;
         CRITICAL_BLOCK(cs_KeyStore)
             result = (mapKeys.count(address) > 0);
         return result;
     }
-    bool GetKey(const CBitcoinAddress &address, CKey& keyOut) const
+    bool GetKey(const ChainAddress &address, CKey& keyOut) const
     {
         CRITICAL_BLOCK(cs_KeyStore)
         {
@@ -57,12 +57,12 @@ public:
         }
         return false;
     }
-    virtual bool HaveKey(const uint160 &asset) const { return HaveKey(CBitcoinAddress(_id, asset)); }
-    virtual bool GetKey(const uint160 &asset, CKey& keyOut) const { return GetKey(CBitcoinAddress(_id, asset), keyOut); }
-    virtual bool GetPubKey(const uint160 &asset, std::vector<unsigned char>& vchPubKeyOut) const { return CKeyStore::GetPubKey(CBitcoinAddress(_id, asset), vchPubKeyOut); }
+    virtual bool HaveKey(const uint160 &asset) const { return HaveKey(ChainAddress(_id, asset)); }
+    virtual bool GetKey(const uint160 &asset, CKey& keyOut) const { return GetKey(ChainAddress(_id, asset), keyOut); }
+    virtual bool GetPubKey(const uint160 &asset, std::vector<unsigned char>& vchPubKeyOut) const { return CKeyStore::GetPubKey(ChainAddress(_id, asset), vchPubKeyOut); }
 };
 
-typedef std::map<CBitcoinAddress, std::pair<std::vector<unsigned char>, std::vector<unsigned char> > > CryptedKeyMap;
+typedef std::map<ChainAddress, std::pair<std::vector<unsigned char>, std::vector<unsigned char> > > CryptedKeyMap;
 
 class CCryptoKeyStore : public CBasicKeyStore
 {
@@ -117,7 +117,7 @@ public:
     virtual bool AddCryptedKey(const std::vector<unsigned char> &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
     std::vector<unsigned char> GenerateNewKey();
     bool AddKey(const CKey& key);
-    bool HaveKey(const CBitcoinAddress &address) const
+    bool HaveKey(const ChainAddress &address) const
     {
         CRITICAL_BLOCK(cs_KeyStore)
         {
@@ -126,8 +126,8 @@ public:
             return mapCryptedKeys.count(address) > 0;
         }
     }
-    bool GetKey(const CBitcoinAddress &address, CKey& keyOut) const;
-    virtual bool GetPubKey(const CBitcoinAddress &address, std::vector<unsigned char>& vchPubKeyOut) const;
+    bool GetKey(const ChainAddress &address, CKey& keyOut) const;
+    virtual bool GetPubKey(const ChainAddress &address, std::vector<unsigned char>& vchPubKeyOut) const;
 };
 
 #endif

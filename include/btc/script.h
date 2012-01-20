@@ -623,30 +623,30 @@ public:
     }
 
 
-    CBitcoinAddress GetBitcoinAddress(unsigned int networkId) const
+    ChainAddress GetChainAddress(unsigned int networkId) const
     {
         opcodetype opcode;
         std::vector<unsigned char> vch;
         CScript::const_iterator pc = begin();
-        if (!GetOp(pc, opcode, vch) || opcode != OP_DUP) return 0;
-        if (!GetOp(pc, opcode, vch) || opcode != OP_HASH160) return 0;
-        if (!GetOp(pc, opcode, vch) || vch.size() != sizeof(uint160)) return 0;
+        if (!GetOp(pc, opcode, vch) || opcode != OP_DUP) return ChainAddress();
+        if (!GetOp(pc, opcode, vch) || opcode != OP_HASH160) return ChainAddress();
+        if (!GetOp(pc, opcode, vch) || vch.size() != sizeof(uint160)) return ChainAddress();
         uint160 hash160 = uint160(vch);
-        if (!GetOp(pc, opcode, vch) || opcode != OP_EQUALVERIFY) return 0;
-        if (!GetOp(pc, opcode, vch) || opcode != OP_CHECKSIG) return 0;
-        if (pc != end()) return 0;
-        return CBitcoinAddress(networkId, hash160);
+        if (!GetOp(pc, opcode, vch) || opcode != OP_EQUALVERIFY) return ChainAddress();
+        if (!GetOp(pc, opcode, vch) || opcode != OP_CHECKSIG) return ChainAddress();
+        if (pc != end()) return ChainAddress();
+        return ChainAddress(networkId, hash160);
     }
 
-    void SetBitcoinAddress(const CBitcoinAddress& address)
+    void SetChainAddress(const ChainAddress& address)
     {
         this->clear();
-        *this << OP_DUP << OP_HASH160 << address.GetHash160() << OP_EQUALVERIFY << OP_CHECKSIG;
+        *this << OP_DUP << OP_HASH160 << address.getAddress() << OP_EQUALVERIFY << OP_CHECKSIG;
     }
 
-    void SetBitcoinAddress(unsigned int networkId, const std::vector<unsigned char>& vchPubKey)
+    void SetChainAddress(unsigned int networkId, const std::vector<unsigned char>& vchPubKey)
     {
-        SetBitcoinAddress(CBitcoinAddress(networkId, vchPubKey));
+        SetChainAddress(ChainAddress(networkId, vchPubKey));
     }
 
 
@@ -695,7 +695,7 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
 
 bool IsStandard(const CScript& scriptPubKey);
 bool IsMine(const CKeyStore& keystore, const CScript& scriptPubKey);
-bool ExtractAddress(const CScript& scriptPubKey, const CKeyStore* pkeystore, CBitcoinAddress& addressRet);
+bool ExtractAddress(const CScript& scriptPubKey, const CKeyStore* pkeystore, Address& addressRet);
 bool SignSignature(const CKeyStore& keystore, const Transaction& txFrom, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL, CScript scriptPrereq=CScript());
 bool VerifySignature(const Transaction& txFrom, const Transaction& txTo, unsigned int nIn, int nHashType=0);
 

@@ -173,7 +173,7 @@ Value getvalue(const Array& params, bool fHelp)
                             "getvalue <btcaddr>\n"
                             "Get value of <btcaddr>");
     
-    uint160 hash160 = CBitcoinAddress(params[0].get_str()).GetHash160();
+    uint160 hash160 = ChainAddress(params[0].get_str()).GetHash160();
     
     CAsset asset;
     asset.addAddress(hash160);
@@ -195,7 +195,7 @@ Value checkvalue(const Array& params, bool fHelp)
                             "check the value of a bitcoin address, <within> seconds, get confirmations of specific <amount> or get a true/false of a minimum confirmation level");
 
     // parse the input
-    CBitcoinAddress addr = CBitcoinAddress(params[0].get_str());
+    ChainAddress addr = ChainAddress(params[0].get_str());
     if(!addr.IsValid())
         throw runtime_error("getdebit <btcaddr>\n"
                             "btcaddr invalid!");
@@ -271,12 +271,12 @@ Value GetDebit::operator()(const Array& params, bool fHelp) {
         throw runtime_error(
                             "getdebit <btcaddr>\n"
                             "Get debit coins of <btcaddr>");
-    CBitcoinAddress addr = CBitcoinAddress(params[0].get_str());
+    ChainAddress addr = ChainAddress(params[0].get_str());
     if(!addr.IsValid(_blockChain.chain().networkId()))
         throw runtime_error("getdebit <btcaddr>\n"
                             "btcaddr invalid!");
     
-    uint160 hash160 = CBitcoinAddress(params[0].get_str()).GetHash160();
+    uint160 hash160 = ChainAddress(params[0].get_str()).GetHash160();
     
     set<Coin> debit;
     
@@ -302,7 +302,7 @@ Value GetCredit::operator()(const Array& params, bool fHelp) {
         throw runtime_error("getcredit <btcaddr>\n"
                             "Get credit coins of <btcaddr>");
     
-    CBitcoinAddress addr = CBitcoinAddress(params[0].get_str());
+    ChainAddress addr = ChainAddress(params[0].get_str());
     if(!addr.IsValid(_blockChain.chain().networkId()))
         throw runtime_error("getcredit <btcaddr>\n"
                             "btcaddr invalid!");
@@ -334,7 +334,7 @@ Value getcoins(const Array& params, bool fHelp)
                             "getcoins <btcaddr>\n"
                             "Get non spend coins of <btcaddr>");
     
-    uint160 hash160 = CBitcoinAddress(params[0].get_str()).GetHash160();
+    uint160 hash160 = ChainAddress(params[0].get_str()).GetHash160();
     
     CAsset asset;
     asset.addAddress(hash160);
@@ -479,7 +479,7 @@ Value posttx(const Array& params, bool fHelp)
     }
     
     // check that the transaction contains a fee to me, the broker
-    uint160 btcbroker = CBitcoinAddress(BTCBROKER).GetHash160();
+    uint160 btcbroker = ChainAddress(BTCBROKER).GetHash160();
     if(tx.paymentTo(btcbroker) < tx.GetMinFee())
     {
         ostringstream err;

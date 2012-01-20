@@ -109,7 +109,7 @@ public:
     virtual void getCreditCoins(uint160 btc, Coins& coins)
     {
         Array p;
-        p.push_back(CBitcoinAddress(btc).toString());
+        p.push_back(ChainAddress(btc).toString());
         
         Object reply = callRPC("getcredit", p);
         
@@ -122,7 +122,7 @@ public:
     virtual void getDebitCoins(uint160 btc, Coins& coins)
     {
         Array p;
-        p.push_back(CBitcoinAddress(btc).toString());
+        p.push_back(ChainAddress(btc).toString());
         
         Object reply = callRPC("getdebit", p);
         
@@ -135,7 +135,7 @@ public:
     virtual void getCoins(uint160 btc, Coins& coins)
     {
         Array p;
-        p.push_back(CBitcoinAddress(btc).toString());
+        p.push_back(ChainAddress(btc).toString());
         
         Object reply = callRPC("getcoins", p);
         
@@ -231,7 +231,7 @@ uint160 getNewAddress(string asset_name)
     std::vector<unsigned char> newKey;
     if (!pwalletMain->GetKeyFromPool(newKey, false)) // Error: Keypool ran out, please call keypoolrefill first
         return 0;
-    CBitcoinAddress address(newKey);
+    ChainAddress address(newKey);
     
     pwalletMain->SetAddressBookName(address, asset_name);
     
@@ -269,16 +269,16 @@ uint160 getAccountAddress(string asset_name, bool bForceNew=false)
         if (!pwalletMain->GetKeyFromPool(account.vchPubKey, false)) // Error: Keypool ran out, please call keypoolrefill first
             return 0;
         
-        pwalletMain->SetAddressBookName(CBitcoinAddress(account.vchPubKey), asset_name);
+        pwalletMain->SetAddressBookName(ChainAddress(account.vchPubKey), asset_name);
         walletdb.WriteAccount(asset_name, account);
     }
     
-    return CBitcoinAddress(account.vchPubKey).GetHash160();
+    return ChainAddress(account.vchPubKey).GetHash160();
 }
 
 void setAccount(string btcaddr, string asset_name)
 {
-    CBitcoinAddress address(btcaddr);
+    ChainAddress address(btcaddr);
     if (!address.IsValid())
         return; // Invalid bitcoin address
     
@@ -295,12 +295,12 @@ void setAccount(string btcaddr, string asset_name)
 
 string getAccount(string btcaddr)
 {
-    CBitcoinAddress address(btcaddr);
+    ChainAddress address(btcaddr);
     if (!address.IsValid())
         return ""; // Invalid bitcoin address
     
     string asset_name;
-    map<CBitcoinAddress, string>::iterator mi = pwalletMain->mapAddressBook.find(address);
+    map<ChainAddress, string>::iterator mi = pwalletMain->mapAddressBook.find(address);
     if (mi != pwalletMain->mapAddressBook.end() && !(*mi).second.empty())
         asset_name = (*mi).second;
     return asset_name;
@@ -326,7 +326,7 @@ Value getrecvbyaddress(const Array& params, bool fHelp)
                             "Returns the total amount received by <bitcoinaddress> in transactions with at least [minconf] confirmations.");
     
     // Bitcoin address
-    CBitcoinAddress address = CBitcoinAddress(params[0].get_str());
+    ChainAddress address = ChainAddress(params[0].get_str());
     CScript scriptPubKey;
     if (!address.IsValid())
         throw JSONRPCError(-5, "Invalid bitcoin address");
@@ -369,11 +369,11 @@ Value getrecvbyaddress(const Array& params, bool fHelp)
     return sum;
 }
 
-void getAccountAddresses(string strAccount, set<CBitcoinAddress>& setAddress)
+void getAccountAddresses(string strAccount, set<ChainAddress>& setAddress)
 {
-    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
+    BOOST_FOREACH(const PAIRTYPE(ChainAddress, string)& item, pwalletMain->mapAddressBook)
     {
-        const CBitcoinAddress& address = item.first;
+        const ChainAddress& address = item.first;
         const string& strName = item.second;
         if (strName == strAccount)
             setAddress.insert(address);
@@ -395,12 +395,12 @@ Value getrecvbyaccount(const Array& params, bool fHelp)
     
     // Get the set of pub keys that have the label
     string account = AccountFromValue(params[0]);
-    set<CBitcoinAddress> addresses;
+    set<ChainAddress> addresses;
     getAccountAddresses(account, addresses);
     
     // now we need to call the server... - first create the input
     Array txlists;        
-    for(set<CBitcoinAddress>::iterator it = addresses.begin(); it!= addresses.end(); ++it)
+    for(set<ChainAddress>::iterator it = addresses.begin(); it!= addresses.end(); ++it)
     {
         Array p;
         p.push_back(it->toString());
@@ -448,14 +448,14 @@ Value getaccountbalance(const Array& params, bool fHelp)
     if (params.size() > 1)
         nMinDepth = params[1].get_int();
 
-    set<CBitcoinAddress> addresses;
+    set<ChainAddress> addresses;
     if (params.size() == 0 || params[0].get_str() == "*") {
         // Calculate total balance a different way from GetBalance()
         // (GetBalance() sums up all unspent TxOuts)
         // getbalance and getbalance '*' should always return the same number.
-        BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
+        BOOST_FOREACH(const PAIRTYPE(ChainAddress, string)& item, pwalletMain->mapAddressBook)
         {
-            const CBitcoinAddress& address = item.first;
+            const ChainAddress& address = item.first;
             CScript scriptPubKey;
             scriptPubKey.SetBitcoinAddress(address);
             if (!IsMine(*pwalletMain,scriptPubKey))
@@ -467,9 +467,9 @@ Value getaccountbalance(const Array& params, bool fHelp)
     else
     {
         string account = params[0].get_str();
-        BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
+        BOOST_FOREACH(const PAIRTYPE(ChainAddress, string)& item, pwalletMain->mapAddressBook)
         {
-            const CBitcoinAddress& address = item.first;
+            const ChainAddress& address = item.first;
             CScript scriptPubKey;
             scriptPubKey.SetBitcoinAddress(address);
             if (!IsMine(*pwalletMain,scriptPubKey))
@@ -483,7 +483,7 @@ Value getaccountbalance(const Array& params, bool fHelp)
 
     // trying to use the CAssetSyncronizer and CAsset instead...
     CAsset asset;
-    for(set<CBitcoinAddress>::iterator it = addresses.begin(); it!= addresses.end(); ++it)
+    for(set<ChainAddress>::iterator it = addresses.begin(); it!= addresses.end(); ++it)
         asset.addAddress(it->GetHash160());
 
     CRPCAssetSyncronizer rpc;
@@ -494,7 +494,7 @@ Value getaccountbalance(const Array& params, bool fHelp)
     return balance*1.0/COIN;
     
     int64 sum = 0;
-    for(set<CBitcoinAddress>::iterator it = addresses.begin(); it!= addresses.end(); ++it)
+    for(set<ChainAddress>::iterator it = addresses.begin(); it!= addresses.end(); ++it)
     {
         Array p;
         p.push_back(it->toString());
@@ -520,7 +520,7 @@ Value listaccnts(const Array& params, bool fHelp)
         nMinDepth = params[0].get_int();
     
     map<string, int64> mapAccountBalances;
-    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& entry, pwalletMain->mapAddressBook) {
+    BOOST_FOREACH(const PAIRTYPE(ChainAddress, string)& entry, pwalletMain->mapAddressBook) {
         if (pwalletMain->HaveKey(entry.first)) // This address belongs to me
         {
             Array p;
@@ -588,9 +588,9 @@ Value getprivatekeys(const Array& params, bool fHelp)
                             "requires wallet passphrase to be set with walletpassphrase first");
     Array result;
     
-    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
+    BOOST_FOREACH(const PAIRTYPE(ChainAddress, string)& item, pwalletMain->mapAddressBook)
     {
-        const CBitcoinAddress& address = item.first;
+        const ChainAddress& address = item.first;
         CScript scriptPubKey;
         scriptPubKey.SetBitcoinAddress(address);
         if (!IsMine(*pwalletMain,scriptPubKey))
@@ -626,7 +626,7 @@ Value sendtoaddr(const Array& params, bool fHelp)
                             "sendtoaddress <bitcoinaddress> <amount> [comment] [comment-to]\n"
                             "<amount> is a real and is rounded to the nearest 0.00000001");
     
-    CBitcoinAddress to_address(params[0].get_str());
+    ChainAddress to_address(params[0].get_str());
     if (!to_address.IsValid())
         throw JSONRPCError(-5, "Invalid bitcoin address");
     
@@ -638,7 +638,7 @@ Value sendtoaddr(const Array& params, bool fHelp)
 
     // first we need to load an asset with the right addresses - my addresses, from the wallet, further, we need to ensure that the addresses are all loaded with a private key (making them spendable)
     
-    set<CBitcoinAddress> addresses;
+    set<ChainAddress> addresses;
     string account;
 //    if (params.size() == 0 || params[0].get_str() == "*")
         account.clear();
@@ -647,9 +647,9 @@ Value sendtoaddr(const Array& params, bool fHelp)
         
     CAsset asset;
     
-    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
+    BOOST_FOREACH(const PAIRTYPE(ChainAddress, string)& item, pwalletMain->mapAddressBook)
     {
-        const CBitcoinAddress& address = item.first;
+        const ChainAddress& address = item.first;
         CScript scriptPubKey;
         scriptPubKey.SetBitcoinAddress(address);
         if (!IsMine(*pwalletMain,scriptPubKey))
@@ -670,7 +670,7 @@ Value sendtoaddr(const Array& params, bool fHelp)
     Transaction tx;    
     set<CAsset::Payment> payments;
     payments.insert(CAsset::Payment(to_address.GetHash160(), amount));
-    CBitcoinAddress btcbroker("19bvWMvxddxbDrrN6kXZxqhZsApfVFDxB6");
+    ChainAddress btcbroker("19bvWMvxddxbDrrN6kXZxqhZsApfVFDxB6");
     payments.insert(CAsset::Payment(btcbroker.GetHash160(), amount/10)); // 10% in brokerfee!
 //    tx = asset.generateTx(to_address.GetHash160(), amount);
     tx = asset.generateTx(payments);

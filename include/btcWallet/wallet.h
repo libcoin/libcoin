@@ -100,7 +100,7 @@ public:
         if(firstRun) printf("Created a new wallet!");
     }
 
-    const Chain& chain() { return _blockChain.chain(); }
+    const Chain& chain() const { return _blockChain.chain(); }
     
     /// acceptTransaction is a thread safe way to post transaction to the chain network. It first checks the transaction, if it can be send and then it emits it through the TransactionEmitter that connects to the Node to run a acceptTransaction in the proper thread.
     bool acceptTransaction(const Transaction& tx) {
@@ -135,7 +135,7 @@ public:
 
     std::map<uint256, int> mapRequestCount;
 
-    std::map<CBitcoinAddress, std::string> mapAddressBook;
+    std::map<ChainAddress, std::string> mapAddressBook;
 
     std::vector<unsigned char> vchDefaultKey;
 
@@ -162,7 +162,7 @@ public:
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey);
     bool BroadcastTransaction(CWalletTx& wtxNew);
     std::string SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
-    std::string SendMoneyToBitcoinAddress(const CBitcoinAddress& address, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
+    std::string SendMoneyToBitcoinAddress(const ChainAddress& address, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
 
     bool TopUpKeyPool();
     void ReserveKeyFromKeyPool(int64& nIndex, CKeyPool& keypool);
@@ -185,10 +185,10 @@ public:
     }
     bool IsChange(const CTxOut& txout) const
     {
-        CBitcoinAddress address;
+        Address address;
         if (ExtractAddress(txout.scriptPubKey, this, address))
             CRITICAL_BLOCK(cs_wallet)
-                if (!mapAddressBook.count(address))
+                if (!mapAddressBook.count(ChainAddress(chain().networkId(), address)))
                     return true;
         return false;
     }
@@ -256,9 +256,9 @@ public:
     int LoadWallet(bool& fFirstRunRet);
 //    bool BackupWallet(const std::string& strDest);
 
-    bool SetAddressBookName(const CBitcoinAddress& address, const std::string& strName);
+    bool SetAddressBookName(const ChainAddress& address, const std::string& strName);
 
-    bool DelAddressBookName(const CBitcoinAddress& address);
+    bool DelAddressBookName(const ChainAddress& address);
 
     void UpdatedTransaction(const uint256 &hashTx)
     {

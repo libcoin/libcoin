@@ -229,9 +229,9 @@ public:
         return true;
     }
 
-    CBitcoinAddress GetAddress(unsigned int networkId) const
+    ChainAddress GetAddress(unsigned int networkId) const
     {
-        return CBitcoinAddress(networkId, GetPubKey());
+        return ChainAddress(networkId, GetPubKey());
     }
 };
 

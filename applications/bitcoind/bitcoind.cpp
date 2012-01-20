@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
         ("help,?", "Show help messages")
         ("version,v", "print version string")
         ("conf,c", value<string>(&config_file)->default_value("bitcoin.conf"), "Specify configuration file")
-        ("datadir", value<string>(&data_dir)->default_value(CDB::dataDir(bitcoin.dataDirSuffix())), "Specify data directory")
+        ("datadir", "Specify non default data directory")
     ;
     
     options_description config("Config options");
@@ -173,7 +173,7 @@ int main(int argc, char* argv[])
     options_description config_file_options;
     config_file_options.add(config);
     
-    options_description visible("Allowed options");
+    options_description visible;
     visible.add(generic).add(config);
     
     positional_options_description pos;
@@ -196,6 +196,9 @@ int main(int argc, char* argv[])
         cout << argv[0] << " version is: " << FormatFullVersion() << "\n";
         return 1;        
     }
+
+    if(!args.count("datadir"))
+        data_dir = CDB::dataDir(bitcoin.dataDirSuffix());
     
     // if present, parse the config file - if no data dir is specified we always assume bitcoin chain at this stage 
     string config_path = data_dir + "/" + config_file;
@@ -235,7 +238,7 @@ int main(int argc, char* argv[])
     }
     
     // Else we start the bitcoin node and server!
-    
+
     const Chain* chain_chooser;
     if(args.count("testnet"))
         chain_chooser = &testnet;
@@ -243,6 +246,9 @@ int main(int argc, char* argv[])
         chain_chooser = &bitcoin;
     const Chain& chain(*chain_chooser);
 
+    if(!args.count("datadir"))
+        data_dir = CDB::dataDir(chain.dataDirSuffix());
+    
     logfile = data_dir + "/debug.log";
     
     Node node(chain, data_dir, args.count("nolisten") ? "" : "0.0.0.0"); // it is also here we specify the use of a proxy!

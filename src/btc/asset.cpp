@@ -25,15 +25,15 @@ bool CAsset::AddKey(const CKey& key)
     return true;
 }
 
-bool CAsset::HaveKey(const CBitcoinAddress &address) const
+bool CAsset::HaveKey(const ChainAddress &address) const
 {
-    uint160 hash160 = address.GetHash160();
+    uint160 hash160 = address.getAddress();
     return (_keymap.count(hash160) > 0);
 }
 
-bool CAsset::GetKey(const CBitcoinAddress &address, CKey& keyOut) const
+bool CAsset::GetKey(const ChainAddress &address, CKey& keyOut) const
 {
-    uint160 hash160 = address.GetHash160();
+    uint160 hash160 = address.getAddress();
     KeyMap::const_iterator pair = _keymap.find(hash160);
     if(pair != _keymap.end())
     {

@@ -269,7 +269,7 @@ bool Wallet::AddToWallet(const CWalletTx& wtxIn)
 
         // If default receiving address gets used, replace it with a new one
         CScript scriptDefaultKey;
-        scriptDefaultKey.SetBitcoinAddress(_blockChain.chain().networkId(), vchDefaultKey);
+        scriptDefaultKey.SetChainAddress(_blockChain.chain().networkId(), vchDefaultKey);
         BOOST_FOREACH(const CTxOut& txout, wtx.vout)
         {
             if (txout.scriptPubKey == scriptDefaultKey)
@@ -278,7 +278,7 @@ bool Wallet::AddToWallet(const CWalletTx& wtxIn)
                 if (GetKeyFromPool(newDefaultKey, false))
                 {
                     SetDefaultKey(newDefaultKey);
-                    SetAddressBookName(CBitcoinAddress(_blockChain.chain().networkId(), vchDefaultKey), "");
+                    SetAddressBookName(ChainAddress(_blockChain.chain().networkId(), vchDefaultKey), "");
                 }
             }
         }
@@ -827,8 +827,8 @@ bool Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CWa
 
                     // Fill a vout to ourself, using same address type as the payment
                     CScript scriptChange;
-                    if (vecSend[0].first.GetBitcoinAddress(_blockChain.chain().networkId()).IsValid(_blockChain.chain().networkId()))
-                        scriptChange.SetBitcoinAddress(_blockChain.chain().networkId(),vchPubKey);
+                    if (vecSend[0].first.GetChainAddress(_blockChain.chain().networkId()).isValid(_blockChain.chain().networkId()))
+                        scriptChange.SetChainAddress(_blockChain.chain().networkId(),vchPubKey);
                     else
                         scriptChange << vchPubKey << OP_CHECKSIG;
 
@@ -972,7 +972,7 @@ string Wallet::SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, 
 
 
 
-string Wallet::SendMoneyToBitcoinAddress(const CBitcoinAddress& address, int64 nValue, CWalletTx& wtxNew, bool fAskFee)
+string Wallet::SendMoneyToBitcoinAddress(const ChainAddress& address, int64 nValue, CWalletTx& wtxNew, bool fAskFee)
 {
     // Check amount
     if (nValue <= 0)
@@ -982,7 +982,7 @@ string Wallet::SendMoneyToBitcoinAddress(const CBitcoinAddress& address, int64 n
 
     // Parse bitcoin address
     CScript scriptPubKey;
-    scriptPubKey.SetBitcoinAddress(address);
+    scriptPubKey.SetChainAddress(address);
 
     return SendMoney(scriptPubKey, nValue, wtxNew, fAskFee);
 }
@@ -1003,7 +1003,7 @@ int Wallet::LoadWallet(bool& fFirstRunRet)
         return nLoadWalletRet;
     fFirstRunRet = vchDefaultKey.empty();
 
-    if (!HaveKey(CBitcoinAddress(_blockChain.chain().networkId(), Hash160(vchDefaultKey))))
+    if (!HaveKey(ChainAddress(_blockChain.chain().networkId(), Hash160(vchDefaultKey))))
     {
         // Create new keyUser and set as default key
         RandAddSeedPerfmon();
@@ -1012,7 +1012,7 @@ int Wallet::LoadWallet(bool& fFirstRunRet)
         if (!GetKeyFromPool(newDefaultKey, false))
             return DB_LOAD_FAIL;
         SetDefaultKey(newDefaultKey);
-        if (!SetAddressBookName(CBitcoinAddress(_blockChain.chain().networkId(), vchDefaultKey), ""))
+        if (!SetAddressBookName(ChainAddress(_blockChain.chain().networkId(), vchDefaultKey), ""))
             return DB_LOAD_FAIL;
     }
 
@@ -1021,7 +1021,7 @@ int Wallet::LoadWallet(bool& fFirstRunRet)
 }
 
 
-bool Wallet::SetAddressBookName(const CBitcoinAddress& address, const string& strName)
+bool Wallet::SetAddressBookName(const ChainAddress& address, const string& strName)
 {
     mapAddressBook[address] = strName;
     if (!fFileBacked)
@@ -1029,7 +1029,7 @@ bool Wallet::SetAddressBookName(const CBitcoinAddress& address, const string& st
     return CWalletDB(_dataDir, strWalletFile).WriteName(address.toString(), strName);
 }
 
-bool Wallet::DelAddressBookName(const CBitcoinAddress& address)
+bool Wallet::DelAddressBookName(const ChainAddress& address)
 {
     mapAddressBook.erase(address);
     if (!fFileBacked)
@@ -1128,7 +1128,7 @@ void Wallet::ReserveKeyFromKeyPool(int64& nIndex, CKeyPool& keypool)
         setKeyPool.erase(setKeyPool.begin());
         if (!walletdb.ReadPool(nIndex, keypool))
             throw runtime_error("ReserveKeyFromKeyPool() : read failed");
-        if (!HaveKey(CBitcoinAddress(_blockChain.chain().networkId(), Hash160(keypool.vchPubKey))))
+        if (!HaveKey(ChainAddress(_blockChain.chain().networkId(), Hash160(keypool.vchPubKey))))
             throw runtime_error("ReserveKeyFromKeyPool() : unknown key in key pool");
         assert(!keypool.vchPubKey.empty());
         printf("keypool reserve %"PRI64d"\n", nIndex);
@@ -1239,82 +1239,5 @@ void CReserveKey::ReturnKey()
     nIndex = -1;
     vchPubKey.clear();
 }
-
-//////////////////////////////////////////////////////////////////////////////
-//
-// dispatching functions
-//
-/*
-void RegisterWallet(Wallet* pwalletIn)
-{
-    CRITICAL_BLOCK(cs_setpwalletRegistered)
-    {
-        setpwalletRegistered.insert(pwalletIn);
-    }
-}
-
-void UnregisterWallet(Wallet* pwalletIn)
-{
-    CRITICAL_BLOCK(cs_setpwalletRegistered)
-    {
-        setpwalletRegistered.erase(pwalletIn);
-    }
-}
-
-bool static IsFromMe(Transaction& tx)
-{
-    BOOST_FOREACH(Wallet* pwallet, setpwalletRegistered)
-    if (pwallet->IsFromMe(tx))
-        return true;
-    return false;
-}
-
-bool static GetTransaction(const uint256& hashTx, CWalletTx& wtx)
-{
-    BOOST_FOREACH(Wallet* pwallet, setpwalletRegistered)
-    if (pwallet->GetTransaction(hashTx,wtx))
-        return true;
-    return false;
-}
-
-void static EraseFromWallets(uint256 hash)
-{
-    BOOST_FOREACH(Wallet* pwallet, setpwalletRegistered)
-    pwallet->EraseFromWallet(hash);
-}
-
-void static SyncWithWallets(const Transaction& tx, const Block* pblock = NULL, bool fUpdate = false)
-{
-    BOOST_FOREACH(Wallet* pwallet, setpwalletRegistered)
-    pwallet->AddToWalletIfInvolvingMe(tx, pblock, fUpdate);
-}
-
-void static SetBestChain(const CBlockLocator& loc)
-{
-    BOOST_FOREACH(Wallet* pwallet, setpwalletRegistered)
-    pwallet->SetBestChain(loc);
-}
-
-void static UpdatedTransaction(const uint256& hashTx)
-{
-    BOOST_FOREACH(Wallet* pwallet, setpwalletRegistered)
-    pwallet->UpdatedTransaction(hashTx);
-}
-
-void static PrintWallets(const Block& block)
-{
-    BOOST_FOREACH(Wallet* pwallet, setpwalletRegistered)
-    pwallet->PrintWallet(block);
-}
-
-void static Inventory(const uint256& hash)
-{
-    BOOST_FOREACH(Wallet* pwallet, setpwalletRegistered)
-    pwallet->Inventory(hash);
-}
-
-
-*/
-
 
 

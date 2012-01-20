@@ -10,63 +10,7 @@
 
 using namespace std;
 using namespace boost;
-/*
-int64 static GetBlockValue(int nHeight, int64 nFees)
-{
-    int64 nSubsidy = 50 * COIN;
-    
-    // Subsidy is cut in half every 4 years
-    nSubsidy >>= (nHeight / 210000);
-    
-    return nSubsidy + nFees;
-}
 
-unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast)
-{
-    const int64 nTargetTimespan = 14 * 24 * 60 * 60; // two weeks
-    const int64 nTargetSpacing = 10 * 60;
-    const int64 nInterval = nTargetTimespan / nTargetSpacing;
-    
-    // Genesis block
-    if (pindexLast == NULL)
-        return Block::proofOfWorkLimit().GetCompact();
-    
-    // Only change once per interval
-    if ((pindexLast->nHeight+1) % nInterval != 0)
-        return pindexLast->nBits;
-    
-    // Go back by what we want to be 14 days worth of blocks
-    const CBlockIndex* pindexFirst = pindexLast;
-    for (int i = 0; pindexFirst && i < nInterval-1; i++)
-        pindexFirst = pindexFirst->pprev;
-    assert(pindexFirst);
-    
-    // Limit adjustment step
-    int64 nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
-    printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
-    if (nActualTimespan < nTargetTimespan/4)
-        nActualTimespan = nTargetTimespan/4;
-    if (nActualTimespan > nTargetTimespan*4)
-        nActualTimespan = nTargetTimespan*4;
-    
-    // Retarget
-    CBigNum bnNew;
-    bnNew.SetCompact(pindexLast->nBits);
-    bnNew *= nActualTimespan;
-    bnNew /= nTargetTimespan;
-    
-    if (bnNew > Block::proofOfWorkLimit())
-        bnNew = Block::proofOfWorkLimit();
-    
-    /// debug print
-    printf("GetNextWorkRequired RETARGET\n");
-    printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
-    printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().toString().c_str());
-    printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
-    
-    return bnNew.GetCompact();
-}
-*/
 //
 // BlockChain
 //
@@ -483,13 +427,13 @@ typedef pair<uint256, unsigned int> Coin;
 bool BlockChain::readDrIndex(uint160 hash160, set<Coin>& debit) const
 {
     //    txindex.SetNull();
-    return Read(make_pair(string("dr"), CBitcoinAddress(_chain.networkId(), hash160).toString()), debit);
+    return Read(make_pair(string("dr"), ChainAddress(_chain.networkId(), hash160).toString()), debit);
 }
 
 bool BlockChain::readCrIndex(uint160 hash160, set<Coin>& credit) const
 {
     //    txindex.SetNull();
-    return Read(make_pair(string("cr"), CBitcoinAddress(_chain.networkId(), hash160).toString()), credit);
+    return Read(make_pair(string("cr"), ChainAddress(_chain.networkId(), hash160).toString()), credit);
 }
 
 bool Solver(const CScript& scriptPubKey, vector<pair<opcodetype, vector<unsigned char> > >& vSolutionRet);
@@ -563,19 +507,19 @@ bool BlockChain::UpdateTxIndex(uint256 hash, const TxIndex& txindex)
     for(vector<AssetPair>::iterator hashpair = vDebit.begin(); hashpair != vDebit.end(); ++hashpair)
         {
         set<Coin> txhashes;
-        Read(make_pair(string("dr"), CBitcoinAddress(hashpair->first).toString()), txhashes);
-        //        cout << "\t debit: " << CBitcoinAddress(hashpair->first).toString() << endl;    
+        Read(make_pair(string("dr"), ChainAddress(hashpair->first).toString()), txhashes);
+        //        cout << "\t debit: " << ChainAddress(hashpair->first).toString() << endl;    
         txhashes.insert(Coin(hash, hashpair->second));
-        Write(make_pair(string("dr"), CBitcoinAddress(hashpair->first).toString()), txhashes); // overwrite!
+        Write(make_pair(string("dr"), ChainAddress(hashpair->first).toString()), txhashes); // overwrite!
         }
     
     for(vector<AssetPair>::iterator hashpair = vCredit.begin(); hashpair != vCredit.end(); ++hashpair)
         {
         set<Coin> txhashes;
-        Read(make_pair(string("cr"), CBitcoinAddress(hashpair->first).toString()), txhashes);
-        //        cout << "\t credit: " << CBitcoinAddress(hashpair->first).toString() << endl;    
+        Read(make_pair(string("cr"), ChainAddress(hashpair->first).toString()), txhashes);
+        //        cout << "\t credit: " << ChainAddress(hashpair->first).toString() << endl;    
         txhashes.insert(Coin(hash, hashpair->second));
-        Write(make_pair(string("cr"), CBitcoinAddress(hashpair->first).toString()), txhashes); // overwrite!
+        Write(make_pair(string("cr"), ChainAddress(hashpair->first).toString()), txhashes); // overwrite!
         }
     //    cout << "and write tx" << std::endl;
      */
@@ -658,17 +602,17 @@ bool BlockChain::EraseTxIndex(const Transaction& tx)
     for(vector<AssetPair>::iterator hashpair = vDebit.begin(); hashpair != vDebit.end(); ++hashpair)
         {
         set<Coin> txhashes;
-        Read(make_pair(string("dr"), CBitcoinAddress(hashpair->first).toString()), txhashes);
+        Read(make_pair(string("dr"), ChainAddress(hashpair->first).toString()), txhashes);
         txhashes.erase(Coin(hash, hashpair->second));
-        Write(make_pair(string("dr"), CBitcoinAddress(hashpair->first).toString()), txhashes); // overwrite!
+        Write(make_pair(string("dr"), ChainAddress(hashpair->first).toString()), txhashes); // overwrite!
         }
     
     for(vector<AssetPair>::iterator hashpair = vCredit.begin(); hashpair != vCredit.end(); ++hashpair)
         {
         set<Coin> txhashes;
-        Read(make_pair(string("cr"), CBitcoinAddress(hashpair->first).toString()), txhashes);
+        Read(make_pair(string("cr"), ChainAddress(hashpair->first).toString()), txhashes);
         txhashes.erase(Coin(hash, hashpair->second));
-        Write(make_pair(string("cr"), CBitcoinAddress(hashpair->first).toString()), txhashes); // overwrite!
+        Write(make_pair(string("cr"), ChainAddress(hashpair->first).toString()), txhashes); // overwrite!
         }
 */    
     return Erase(make_pair(string("tx"), hash));
@@ -1414,123 +1358,6 @@ bool BlockChain::AcceptToMemoryPool(const Transaction& tx, bool fCheckInputs, bo
     else
        return false;
 }
-/*
-bool BlockChain::AcceptToMemoryPool(Transaction& tx, bool fCheckInputs, bool* pfMissingInputs)
-{
-    if (pfMissingInputs)
-        *pfMissingInputs = false;
-    
-    if (!tx.CheckTransaction())
-        return error("AcceptToMemoryPool() : CheckTransaction failed");
-    
-    // Coinbase is only valid in a block, not as a loose transaction
-    if (tx.IsCoinBase())
-        return error("AcceptToMemoryPool() : coinbase as individual tx");
-    
-    // To help v0.1.5 clients who would see it as a negative number
-    if ((int64)tx.nLockTime > INT_MAX)
-        return error("AcceptToMemoryPool() : not accepting nLockTime beyond 2038 yet");
-    
-    // Safety limits
-    unsigned int nSize = ::GetSerializeSize(tx, SER_NETWORK);
-    // Checking ECDSA signatures is a CPU bottleneck, so to avoid denial-of-service
-    // attacks disallow transactions with more than one SigOp per 34 bytes.
-    // 34 bytes because a TxOut is:
-    //   20-byte address + 8 byte bitcoin amount + 5 bytes of ops + 1 byte script length
-    if (tx.GetSigOpCount() > nSize / 34 || nSize < 100)
-        return error("AcceptToMemoryPool() : nonstandard transaction");
-    
-    // Rather not work on nonstandard transactions (unless -testnet)
-    if (!_chain.isStandard(tx))
-        return error("AcceptToMemoryPool() : nonstandard transaction type");
-    
-    // Do we already have it?
-    uint256 hash = tx.GetHash();
-    if (_transactionIndex.count(hash))
-        return false;
-    if (fCheckInputs)
-        if (haveTx(hash, true))
-            return false;
-    
-    // Check for conflicts with in-memory transactions
-    Transaction* ptxOld = NULL;
-    for (int i = 0; i < tx.vin.size(); i++) {
-        COutPoint outpoint = tx.vin[i].prevout;
-        if (_transactionConnections.count(outpoint)) {
-            // Disable replacement feature for now
-            return false;
-            
-            // Allow replacing with a newer version of the same transaction
-            if (i != 0)
-                return false;
-            ptxOld = (Transaction*)_transactionConnections[outpoint].ptx;
-            if (isFinal(*ptxOld))
-                return false;
-            if (!tx.IsNewerThan(*ptxOld))
-                return false;
-            for (int i = 0; i < tx.vin.size(); i++) {
-                COutPoint outpoint = tx.vin[i].prevout;
-                if (!_transactionConnections.count(outpoint) || _transactionConnections[outpoint].ptx != ptxOld)
-                    return false;
-            }
-            break;
-        }
-    }
-    
-    if (fCheckInputs) {
-        // Check against previous transactions
-        map<uint256, TxIndex> mapUnused;
-        int64 nFees = 0;
-        if (!connectInputs(tx, mapUnused, DiskTxPos(1,1,1), getBestIndex(), nFees, false, false)) {
-            if (pfMissingInputs)
-                *pfMissingInputs = true;
-            return error("AcceptToMemoryPool() : ConnectInputs failed %s", hash.toString().substr(0,10).c_str());
-        }
-        
-        // Don't accept it if it can't get into a block
-        if (nFees < tx.GetMinFee(1000, true, true))
-            return error("AcceptToMemoryPool() : not enough fees");
-        
-        // Continuously rate-limit free transactions
-        // This mitigates 'penny-flooding' -- sending thousands of free transactions just to
-        // be annoying or make other's transactions take longer to confirm.
-        if (nFees < MIN_RELAY_TX_FEE) {
-            static CCriticalSection cs;
-            static double dFreeCount;
-            static int64 nLastTime;
-            int64 nNow = GetTime();
-            
-            CRITICAL_BLOCK(cs) {
-                // Use an exponentially decaying ~10-minute window:
-                dFreeCount *= pow(1.0 - 1.0/600.0, (double)(nNow - nLastTime));
-                nLastTime = nNow;
-                // -limitfreerelay unit is thousand-bytes-per-minute
-                // At default rate it would take over a month to fill 1GB
-                if (dFreeCount > GetArg("-limitfreerelay", 15)*10*1000 )
-                    return error("AcceptToMemoryPool() : free transaction rejected by rate limiter");
-                if (fDebug)
-                    printf("Rate limit dFreeCount: %g => %g\n", dFreeCount, dFreeCount+nSize);
-                dFreeCount += nSize;
-            }
-        }
-    }
-    
-    // Store transaction in memory
-    if (ptxOld) {
-        printf("AcceptToMemoryPool() : replacing tx %s with new version\n", ptxOld->GetHash().toString().c_str());
-        RemoveFromMemoryPool(*ptxOld);
-    }
-    AddToMemoryPoolUnchecked(tx);
-    
-    ///// are we sure this is ok when loading transactions or restoring block txes
-    // If updated, erase old tx from wallet
-    //    if (ptxOld)
-    //        EraseFromWallets(ptxOld->GetHash());
-    
-    printf("AcceptToMemoryPool(): accepted %s\n", hash.toString().substr(0,10).c_str());
-    return true;
-}
-*/
 
 bool BlockChain::AddToMemoryPoolUnchecked(const Transaction& tx)
 {

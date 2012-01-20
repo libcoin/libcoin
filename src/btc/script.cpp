@@ -1134,7 +1134,7 @@ bool IsMine(const CKeyStore &keystore, const CScript& scriptPubKey)
     return true;
 }
 
-bool static ExtractAddressInner(const CScript& scriptPubKey, const CKeyStore* keystore, CBitcoinAddress& addressRet)
+bool static ExtractAddressInner(const CScript& scriptPubKey, const CKeyStore* keystore, Address& addressRet)
 {
     vector<pair<opcodetype, valtype> > vSolution;
     if (!Solver(scriptPubKey, vSolution))
@@ -1143,9 +1143,9 @@ bool static ExtractAddressInner(const CScript& scriptPubKey, const CKeyStore* ke
     BOOST_FOREACH(PAIRTYPE(opcodetype, valtype)& item, vSolution)
     {
         if (item.first == OP_PUBKEY)
-            addressRet.SetPubKey(keystore->getId(), item.second);
+            addressRet = Hash160(item.second);
         else if (item.first == OP_PUBKEYHASH)
-            addressRet.SetHash160(keystore->getId(), (uint160)item.second);
+            addressRet = (uint160)item.second;
         if (keystore == NULL || keystore->HaveKey(addressRet))
             return true;
     }
@@ -1153,7 +1153,7 @@ bool static ExtractAddressInner(const CScript& scriptPubKey, const CKeyStore* ke
 }
 
 
-bool ExtractAddress(const CScript& scriptPubKey, const CKeyStore* keystore, CBitcoinAddress& addressRet)
+bool ExtractAddress(const CScript& scriptPubKey, const CKeyStore* keystore, Address& addressRet)
 {
     if (keystore)
         return ExtractAddressInner(scriptPubKey, keystore, addressRet);

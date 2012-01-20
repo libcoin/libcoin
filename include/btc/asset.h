@@ -44,12 +44,12 @@ public:
     
     virtual bool AddKey(const CKey& key);
     
-    virtual bool HaveKey(const CBitcoinAddress &address) const;
+    virtual bool HaveKey(const ChainAddress &address) const;
     
-    virtual bool GetKey(const CBitcoinAddress &address, CKey& keyOut) const;
+    virtual bool GetKey(const ChainAddress &address, CKey& keyOut) const;
     
     // we might need to override these as well... Depending how well we want to support having only keys with pub/160 part
-    //    virtual bool GetPubKey(const CBitcoinAddress &address, std::vector<unsigned char>& vchPubKeyOut) const
+    //    virtual bool GetPubKey(const ChainAddress &address, std::vector<unsigned char>& vchPubKeyOut) const
     //    virtual std::vector<unsigned char> GenerateNewKey();
     
     const Transaction& getTx(uint256 hash) const;
