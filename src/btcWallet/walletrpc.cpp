@@ -67,15 +67,21 @@ int64 GetBalance::GetAccountBalance(const string& strAccount, int nMinDepth)
 Value GetBalance::operator()(const Array& params, bool fHelp) {
     if (fHelp || params.size() > 2)
         throw RPC::error(RPC::invalid_params, "getbalance [account] [minconf=1]\n"
-                            "If [account] is not specified, returns the server's total available balance.\n"
-                            "If [account] is specified, returns the balance in the account.");
-    
-    if (params.size() == 0)
-        return  ValueFromAmount(_wallet.GetBalance());
+                         "If [account] is not specified, returns the server's total available balance.\n"
+                         "If [account] is specified, returns the balance in the account.");
     
     int nMinDepth = 1;
-    if (params.size() > 1)
-        nMinDepth = params[1].get_int();
+    if (params.size() > 1) {
+        if (params[1].type() != json_spirit::int_type) {
+            if (params[1].type() == json_spirit::str_type)
+                nMinDepth = lexical_cast<int>(params[1].get_str());
+        }
+        else
+            nMinDepth = params[1].get_int();
+    }
+    
+    if (params.size() == 0)
+        return  ValueFromAmount(_wallet.GetBalance(nMinDepth>0));
     
     if (params[0].get_str() == "*") {
         // Calculate total balance a different way from GetBalance()
@@ -100,7 +106,7 @@ Value GetBalance::operator()(const Array& params, bool fHelp) {
             nBalance -= r.second;
             nBalance -= allFee;
             nBalance += allGeneratedMature;
-            }
+        }
         return  ValueFromAmount(nBalance);
     }
     
@@ -109,9 +115,9 @@ Value GetBalance::operator()(const Array& params, bool fHelp) {
     int64 nBalance = GetAccountBalance(strAccount, nMinDepth);
     
     return ValueFromAmount(nBalance);
-
-}
     
+}
+
 Value GetNewAddress::operator()(const Array& params, bool fHelp) {
     if (fHelp || params.size() > 1)
         throw RPC::error(RPC::invalid_params, "getnewaddress [account]\n"

@@ -29,6 +29,12 @@ protected:
     int64 GetAccountBalance(const std::string& strAccount, int nMinDepth);
 };
 
+/// Return the unconfirmed balance or Held balance.
+class GetHeldBalance : public GetBalance {
+    GetHeldBalance(Wallet& wallet) : GetBalance(wallet) {}
+    virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+};
+
 /// Get a fresh address. This will reserve the address in the wallet and hence change the wallet state.
 class GetNewAddress : public WalletMethod {
 public:

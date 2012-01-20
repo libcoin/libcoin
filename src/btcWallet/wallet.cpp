@@ -586,7 +586,7 @@ bool Wallet::WriteToDisk(const CWalletTx& wtx) {
 //
 
 
-int64 Wallet::GetBalance() const
+int64 Wallet::GetBalance(bool confirmed) const
 {
     int64 nTotal = 0;
     CRITICAL_BLOCK(cs_wallet)
@@ -594,7 +594,7 @@ int64 Wallet::GetBalance() const
         for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
         {
             const CWalletTx* pcoin = &(*it).second;
-            if (!_blockChain.isFinal(*pcoin) || !IsConfirmed(*pcoin))
+            if (confirmed && !IsConfirmed(*pcoin))
                 continue;
             nTotal += pcoin->GetAvailableCredit();
         }
