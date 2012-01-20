@@ -67,4 +67,5 @@ void Server::handle_stop() {
     // will exit.
     _acceptor.close();
     _connectionManager.stop_all();
+    _io_service.stop();
 }

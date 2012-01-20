@@ -204,4 +204,5 @@ void Node::handle_stop() {
     // will exit.
     _acceptor.close();
     _peerManager.stop_all();
+    _io_service.stop();
 }
