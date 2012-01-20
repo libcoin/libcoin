@@ -28,11 +28,11 @@ SET(TARGET_H
     ${HEADER_PATH}/MessageHandler.h
     ${HEADER_PATH}/MessageParser.h
     ${HEADER_PATH}/Node.h
+    ${HEADER_PATH}/NodeRPC.h
     ${HEADER_PATH}/Peer.h
     ${HEADER_PATH}/PeerManager.h
     ${HEADER_PATH}/TransactionFilter.h
     ${HEADER_PATH}/VersionFilter.h
-#    ${HEADER_PATH}/WebClient.h
     ${BITCOIN_CONFIG_HEADER}
 )
 
@@ -57,15 +57,15 @@ SET(TARGET_SRC
     MessageHandler.cpp
     MessageParser.cpp
     Node.cpp
+    NodeRPC.cpp
     Peer.cpp
     PeerManager.cpp
     TransactionFilter.cpp
     VersionFilter.cpp
-#    WebClient.cpp
 
     ${BITCOIN_VERSIONINFO_RC}
 )
-SET(TARGET_LIBRARIES btc)
+SET(TARGET_LIBRARIES btc btcHTTP)
 
 SET(TARGET_EXTERNAL_LIBRARIES
     ${CMAKE_THREAD_LIBS_INIT}    

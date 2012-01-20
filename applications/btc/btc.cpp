@@ -4,7 +4,6 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 #include "btcNode/db.h"
-#include "btcNode/net.h"
 
 #include "btcRPC/rpc.h"
 

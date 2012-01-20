@@ -1,5 +1,7 @@
 
 #include "btcHTTP/Method.h"
+#include "btcHTTP/RPC.h"
+#include "btcHTTP/Server.h"
 
 #include <string>
 #include <algorithm>
@@ -16,4 +18,13 @@ const string Method::name() const {
     transform(n.begin(), n.end(), n.begin(), ::tolower);
     return n;
 };
+
+Value Stop::operator()(const Array& params, bool fHelp) {
+    if (fHelp || params.size() != 0)
+        throw RPC::error(RPC::invalid_params, "stop\n"
+                         "Stop bitcoin server.");
+    
+    _server.shutdown();
+    return "Node and Server is stopping";
+}    
 

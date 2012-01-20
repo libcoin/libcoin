@@ -26,4 +26,13 @@ public:
 typedef boost::shared_ptr<Method> method_ptr;
 typedef std::map<std::string, method_ptr> Methods;
 
+class Server;
+class Stop : public Method {
+public:
+    Stop(Server& server) : _server(server) {}
+    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
+protected:
+    Server& _server;
+};
+
 #endif // METHOD_H
