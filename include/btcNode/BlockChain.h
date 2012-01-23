@@ -137,7 +137,7 @@ private:
 typedef std::map<uint256, CBlockIndex*> BlockChainIndex;
 typedef std::map<uint256, Transaction> TransactionIndex;
 typedef std::map<uint160, Coins> AssetIndex;
-
+typedef std::vector<Transaction> Transactions;
 
 class BlockChain : private CDB
 {
@@ -160,6 +160,14 @@ public:
     /// Get transactions from db or memory.
     void getTransaction(const uint256& hash, Transaction& tx) const;
     void getTransaction(const uint256& hash, Transaction& tx, int64& height, int64& time) const;
+    
+    /// Get all unconfirmed transactions.
+    Transactions unconfirmedTransactions() const {
+        Transactions txes;
+        for(TransactionIndex::const_iterator i = _transactionIndex.begin(); i != _transactionIndex.end(); ++i)
+            txes.push_back(i->second);
+        return txes;
+    }
     
     /// Query for existence of a Transaction.
     bool haveTx(uint256 hash, bool must_be_confirmed = false) const;
@@ -253,6 +261,8 @@ public:
     
     const Chain& chain() const { return _chain; }
     
+    bool connectInputs(const Transaction& tx, std::map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx, const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee = 0) const;
+    
 protected:
     /// Read a Transaction from Disk.
     bool readDrIndex(uint160 hash160, std::set<std::pair<uint256, unsigned int> >& debit) const;
@@ -265,8 +275,6 @@ protected:
     bool isInMainChain(CBlockIndex* bi) const {
         return (bi->pnext || bi == _bestIndex);
     }    
-    
-    bool connectInputs(const Transaction& tx, std::map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx, const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee = 0) const;
     
     bool disconnectInputs(Transaction& tx);    
     

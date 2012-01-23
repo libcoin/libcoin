@@ -8,6 +8,9 @@
 #include "btcWallet/wallet.h"
 #include "btcWallet/walletrpc.h"
 
+#include "btcMine/Miner.h"
+#include "btcMine/MinerRPC.h"
+
 #include <boost/thread.hpp>
 #include <boost/program_options.hpp>
 
@@ -51,6 +54,7 @@ int main(int argc, char* argv[])
         ("rpcconnect", value<string>(&rpc_connect)->default_value(asio::ip::address_v4::loopback().to_string()), "Send commands to node running on <arg>")
         ("keypool", value<unsigned short>(), "Set key pool size to <arg>")
         ("rescan", "Rescan the block chain for missing wallet transactions")
+        ("gen", "Generate coins")
     ;
     
     options_description hidden("Hidden options");
@@ -155,9 +159,11 @@ int main(int argc, char* argv[])
     
     thread nodeThread(&Node::run, &node); // run this as a background thread
 
-    //    Miner miner(node);
-    //    thread miningThread(&Miner::run, &miner);
-    //    miner.setGenerate(args.count("gen"));
+    CReserveKey reservekey(&wallet);
+    
+    Miner miner(node, reservekey);
+    miner.setGenerate(args.count("gen"));
+    thread miningThread(&Miner::run, &miner);
     
     Server server(rpc_bind, lexical_cast<string>(rpc_port), filesystem::initial_path().string());
     
@@ -199,16 +205,17 @@ int main(int argc, char* argv[])
     server.registerMethod(method_ptr(new WalletPassphrase(wallet, server.get_io_service())), auth);
     
     // Register Mining methods.
-    //    server.registerMethod(method_ptr(new SetGenerate(miner)), auth);
-    
+    server.registerMethod(method_ptr(new SetGenerate(miner)), auth);    
+    server.registerMethod(method_ptr(new GetGenerate(miner)), auth);    
+    server.registerMethod(method_ptr(new GetHashesPerSec(miner)), auth);    
     
     server.run();
 
     printf("Server exitted, shutting down Node and Miner...\n");
     // getting here means that we have exited from the server (e.g. by the quit method)
     
-    //    miner.shutdown();
-    //    mineingThread.join();
+    miner.shutdown();
+    miningThread.join();
     
     node.shutdown();
     nodeThread.join();

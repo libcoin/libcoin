@@ -1,5 +1,5 @@
 SET(TARGET_SRC bitcoind.cpp)
 
-SET(TARGET_ADDED_LIBRARIES btcWallet)
+SET(TARGET_ADDED_LIBRARIES btcWallet btcMine)
 
 SETUP_APPLICATION(bitcoind)

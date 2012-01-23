@@ -87,6 +87,8 @@ public:
 typedef std::vector<unsigned char, secure_allocator<unsigned char> > CPrivKey;
 typedef std::vector<unsigned char, secure_allocator<unsigned char> > CSecret;
 
+typedef std::vector<unsigned char> PubKey;
+
 class CKey
 {
 protected:
@@ -188,7 +190,7 @@ public:
         return vchPrivKey;
     }
 
-    bool SetPubKey(const std::vector<unsigned char>& vchPubKey)
+    bool SetPubKey(const PubKey& vchPubKey)
     {
         const unsigned char* pbegin = &vchPubKey[0];
         if (!o2i_ECPublicKey(&pkey, &pbegin, vchPubKey.size()))
@@ -197,12 +199,12 @@ public:
         return true;
     }
 
-    std::vector<unsigned char> GetPubKey() const
+    PubKey GetPubKey() const
     {
         unsigned int nSize = i2o_ECPublicKey(pkey, NULL);
         if (!nSize)
             throw key_error("CKey::GetPubKey() : i2o_ECPublicKey failed");
-        std::vector<unsigned char> vchPubKey(nSize, 0);
+        PubKey vchPubKey(nSize, 0);
         unsigned char* pbegin = &vchPubKey[0];
         if (i2o_ECPublicKey(pkey, &pbegin) != nSize)
             throw key_error("CKey::GetPubKey() : i2o_ECPublicKey returned unexpected size");

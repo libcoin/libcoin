@@ -87,6 +87,10 @@ public:
     
     uint256 buildMerkleTree() const;
 
+    void updateMerkleTree() {
+        _merkleRoot = buildMerkleTree();
+    }
+    
     MerkleBranch getMerkleBranch(int index) const;
 
     static uint256 checkMerkleBranch(uint256 hash, const std::vector<uint256>& merkleBranch, int index);
@@ -106,6 +110,8 @@ public:
     const int getBits() const { return _bits; }
     
     const int getNonce() const { return _nonce; }
+
+    void setNonce(unsigned int nonce) { _nonce = nonce; }
 
     /// This function has changed as it served two purposes: sanity check for headers and real proof of work check. We only need the proofOfWorkLimit for the latter
     const bool checkProofOfWork(const CBigNum& proofOfWorkLimit = 0) {

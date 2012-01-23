@@ -28,7 +28,7 @@
 class Node : private boost::noncopyable
 {
 public:
-    /// Construct the server to listen on the specified TCP address and port. Further, connect to IRC (irc.lfnet.org)
+    /// Construct the node to listen on the specified TCP address and port. Further, connect to IRC (irc.lfnet.org)
     explicit Node(const Chain& chain = bitcoin, std::string dataDir = "", const std::string& address = "0.0.0.0", const std::string& port = "0", bool proxy = false, const std::string& irc = "92.243.23.21");
     
     /// Run the server's io_service loop.
@@ -68,9 +68,9 @@ public:
     /// Post a Transaction to the Node. (Note that we use dispatch - no need to post if we are already in the same thread)
     void post(const Transaction& tx) { _io_service.dispatch(boost::bind(&BlockChain::acceptTransaction, &_blockChain, tx)); }
     
-    /// Post a Block to the Node.
-    //    void post(const Block& blk) { _io_service.post(); }
-    
+    /// Post a Transaction to the Node. (Note that we use dispatch - no need to post if we are already in the same thread)
+    void post(const Block& block) { _io_service.dispatch(boost::bind(&BlockChain::acceptBlock, &_blockChain, block)); }
+        
     /// Subscribe to Transaction accept notifications
     void subscribe(TransactionFilter::listener_ptr listener) { static_cast<TransactionFilter*>(_transactionFilter.get())->subscribe(listener); }
     

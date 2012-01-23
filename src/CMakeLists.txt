@@ -12,7 +12,7 @@ FOREACH( mylibfolder
         btcNode 
         btcHTTP
         btcWallet 
-#        btcMine 
+        btcMine 
     )
 
     ADD_SUBDIRECTORY(${mylibfolder})

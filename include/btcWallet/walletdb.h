@@ -22,14 +22,14 @@ class CKeyPool
 {
 public:
     int64 nTime;
-    std::vector<unsigned char> vchPubKey;
+    PubKey vchPubKey;
     
     CKeyPool()
     {
         nTime = GetTime();
     }
     
-    CKeyPool(const std::vector<unsigned char>& vchPubKeyIn)
+    CKeyPool(const PubKey& vchPubKeyIn)
     {
         nTime = GetTime();
         vchPubKey = vchPubKeyIn;
@@ -86,20 +86,20 @@ public:
         return Erase(std::make_pair(std::string("tx"), hash));
     }
 
-    bool ReadKey(const std::vector<unsigned char>& vchPubKey, CPrivKey& vchPrivKey)
+    bool ReadKey(const PubKey& vchPubKey, CPrivKey& vchPrivKey)
     {
         vchPrivKey.clear();
         return Read(std::make_pair(std::string("key"), vchPubKey), vchPrivKey);
     }
 
-    bool WriteKey(const std::vector<unsigned char>& vchPubKey, const CPrivKey& vchPrivKey)
+    bool WriteKey(const PubKey& vchPubKey, const CPrivKey& vchPrivKey)
     {
         boost::mutex::scoped_lock lock(_write);
         nWalletDBUpdated++;
         return Write(std::make_pair(std::string("key"), vchPubKey), vchPrivKey, false);
     }
 
-    bool WriteCryptedKey(const std::vector<unsigned char>& vchPubKey, const std::vector<unsigned char>& vchCryptedSecret, bool fEraseUnencryptedKey = true)
+    bool WriteCryptedKey(const PubKey& vchPubKey, const std::vector<unsigned char>& vchCryptedSecret, bool fEraseUnencryptedKey = true)
     {
         boost::mutex::scoped_lock lock(_write);
         nWalletDBUpdated++;
@@ -132,13 +132,13 @@ public:
         return Read(std::string("bestblock"), locator);
     }
 
-    bool ReadDefaultKey(std::vector<unsigned char>& vchPubKey)
+    bool ReadDefaultKey(PubKey& vchPubKey)
     {
         vchPubKey.clear();
         return Read(std::string("defaultkey"), vchPubKey);
     }
 
-    bool WriteDefaultKey(const std::vector<unsigned char>& vchPubKey)
+    bool WriteDefaultKey(const PubKey& vchPubKey)
     {
         boost::mutex::scoped_lock lock(_write);
         nWalletDBUpdated++;
