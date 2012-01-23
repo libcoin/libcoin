@@ -47,6 +47,10 @@ public:
     /// Check generation performance.
     const int64 hashesPerSecond() const { return _hashes_per_second; }
     
+    /// Setter and Getter for the update interval in millisec.
+    const unsigned int getUpdateInterval() const { return _update_interval; }
+    void setUpdateInterval(unsigned int t) { _update_interval = t; }
+    
     /// Interface to a Hashing algorithm. The hashing algorithm takes a <block>, tries <nonces> hashes
     /// of the block header and returns if the proof of work condition is met (true) or all
     /// hashes has been tried (false).
