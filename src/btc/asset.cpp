@@ -9,9 +9,9 @@
 using namespace std;
 using namespace boost;
 
-bool Solver(const CScript& scriptPubKey, vector<pair<opcodetype, vector<unsigned char> > >& vSolutionRet);
+bool Solver(const Script& scriptPubKey, vector<pair<opcodetype, vector<unsigned char> > >& vSolutionRet);
 
-set<uint160> CAsset::getAddresses()
+set<uint160> Asset::getAddresses()
 {
     set<uint160> addresses;
     for(KeyMap::iterator addr = _keymap.begin(); addr != _keymap.end(); ++addr)
@@ -19,19 +19,19 @@ set<uint160> CAsset::getAddresses()
     return addresses;
 }
     
-bool CAsset::AddKey(const CKey& key)
+bool Asset::AddKey(const CKey& key)
 {
     _keymap[Hash160(key.GetPubKey())] = key;
     return true;
 }
 
-bool CAsset::HaveKey(const ChainAddress &address) const
+bool Asset::HaveKey(const ChainAddress &address) const
 {
     uint160 hash160 = address.getAddress();
     return (_keymap.count(hash160) > 0);
 }
 
-bool CAsset::GetKey(const ChainAddress &address, CKey& keyOut) const
+bool Asset::GetKey(const ChainAddress &address, CKey& keyOut) const
 {
     uint160 hash160 = address.getAddress();
     KeyMap::const_iterator pair = _keymap.find(hash160);
@@ -43,7 +43,7 @@ bool CAsset::GetKey(const ChainAddress &address, CKey& keyOut) const
     return false;        
 }
 
-const Transaction& CAsset::getTx(uint256 hash) const
+const Transaction& Asset::getTx(uint256 hash) const
 {
     TxCache::const_iterator pair = _tx_cache.find(hash);
     if(pair != _tx_cache.end())
@@ -54,7 +54,7 @@ const Transaction& CAsset::getTx(uint256 hash) const
     // throw something!
 }
 
-uint160 CAsset::getAddress(const Output& out) const
+uint160 Asset::getAddress(const Output& out) const
 {
     vector<pair<opcodetype, vector<unsigned char> > > vSolution;
     if (!Solver(out.script(), vSolution))
@@ -76,12 +76,12 @@ uint160 CAsset::getAddress(const Output& out) const
     return 0;
 }
 
-void CAsset::remote_sync()
+void Asset::remote_sync()
 {
     
 }
 
-void CAsset::syncronize(CAssetSyncronizer& sync, bool all_transactions)
+void Asset::syncronize(CAssetSyncronizer& sync, bool all_transactions)
 {
     _coins.clear();
 
@@ -137,7 +137,7 @@ void CAsset::syncronize(CAssetSyncronizer& sync, bool all_transactions)
     // now _coins contains all non-spend coins !
 }
 
-bool CAsset::isSpendable(Coin coin) const 
+bool Asset::isSpendable(Coin coin) const 
 {
     // get the address
     Transaction tx = getTx(coin.hash);
@@ -157,14 +157,14 @@ bool CAsset::isSpendable(Coin coin) const
     return true;        
 }
 
-const int64 CAsset::value(Coin coin) const
+const int64 Asset::value(Coin coin) const
 {
     const Transaction& tx = getTx(coin.hash);
     const Output& out = tx.getOutput(coin.index);
     return out.value();
 }
 
-int64 CAsset::balance()
+int64 Asset::balance()
 {
     int64 sum = 0;
     for(Coins::iterator coin = _coins.begin(); coin != _coins.end(); ++coin)
@@ -172,7 +172,7 @@ int64 CAsset::balance()
     return sum;
 }
 
-int64 CAsset::spendable_balance()
+int64 Asset::spendable_balance()
 {
     int64 sum = 0;
     for(Coins::iterator coin = _coins.begin(); coin != _coins.end(); ++coin)
@@ -181,7 +181,7 @@ int64 CAsset::spendable_balance()
     return sum;
 }
 
-Transaction CAsset::generateTx(set<Payment> payments, uint160 changeaddr)
+Transaction Asset::generateTx(set<Payment> payments, uint160 changeaddr)
 {
     int64 amount = 0;
     for(set<Payment>::iterator payment = payments.begin(); payment != payments.end(); ++payment)
@@ -224,7 +224,7 @@ Transaction CAsset::generateTx(set<Payment> payments, uint160 changeaddr)
     // now fill in the tx outs
     for(set<Payment>::iterator payment = payments.begin(); payment != payments.end(); ++payment)
     {
-        CScript scriptPubKey;
+        Script scriptPubKey;
         scriptPubKey << OP_DUP << OP_HASH160 << payment->first << OP_EQUALVERIFY << OP_CHECKSIG;
         
         Output out(payment->second, scriptPubKey);
@@ -241,7 +241,7 @@ Transaction CAsset::generateTx(set<Payment> payments, uint160 changeaddr)
     
     if(change > 5000) // skip smaller amounts of change
     {
-        CScript scriptPubKey;
+        Script scriptPubKey;
         scriptPubKey << OP_DUP << OP_HASH160 << changeto << OP_EQUALVERIFY << OP_CHECKSIG;
         
         Output out(change, scriptPubKey);
@@ -277,7 +277,7 @@ Transaction CAsset::generateTx(set<Payment> payments, uint160 changeaddr)
     }
 }
 
-Transaction CAsset::generateTx(uint160 to, int64 amount, uint160 change)
+Transaction Asset::generateTx(uint160 to, int64 amount, uint160 change)
 {
     set<Payment> payments;
     payments.insert(Payment(to, amount));

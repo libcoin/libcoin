@@ -79,13 +79,13 @@ public:
         _sequence = UINT_MAX;
     }
 
-    explicit Input(Coin prevout, CScript signature=CScript(), unsigned int sequence=UINT_MAX) {
+    explicit Input(Coin prevout, Script signature=Script(), unsigned int sequence=UINT_MAX) {
         _prevout = prevout;
         _signature = signature;
         _sequence = sequence;
     }
 
-    Input(uint256 prev_hash, unsigned int prev_index, CScript signature=CScript(), unsigned int sequence=UINT_MAX) {
+    Input(uint256 prev_hash, unsigned int prev_index, Script signature=Script(), unsigned int sequence=UINT_MAX) {
         _prevout = Coin(prev_hash, prev_index);
         _signature = signature;
         _sequence = sequence;
@@ -99,7 +99,7 @@ public:
     )
 
     const Coin prevout() const { return _prevout; }
-    const CScript signature() const { return _signature; }
+    const Script signature() const { return _signature; }
     const unsigned int sequence() const { return _sequence; }
     
     
@@ -141,7 +141,7 @@ public:
     
 private:
     Coin _prevout;
-    CScript _signature;
+    Script _signature;
     unsigned int _sequence;
 };
 
@@ -158,7 +158,7 @@ public:
         setNull();
     }
 
-    Output(int64 value, CScript script) {
+    Output(int64 value, Script script) {
         _value = value;
         _script = script;
     }
@@ -180,7 +180,7 @@ public:
 
     const int64 value() const { return _value; }
     
-    const CScript script() const { return _script; }
+    const Script script() const { return _script; }
     
     uint256 getHash() const {
         return SerializeHash(*this);
@@ -209,7 +209,7 @@ public:
     
 private:
     int64 _value;
-    CScript _script;
+    Script _script;
 };
 
 typedef std::vector<Output> Outputs;
@@ -279,29 +279,7 @@ public:
     const Outputs& getOutputs() const { return _outputs; } 
     
     /// Compare two transaction that only differ in sequence number to enable transaction replacements
-    bool isNewerThan(const Transaction& old) const {
-        if (_inputs.size() != old._inputs.size())
-            return false;
-        for (int i = 0; i < _inputs.size(); i++)
-            if (_inputs[i].prevout() != old._inputs[i].prevout())
-                return false;
-
-        bool newer = false;
-        unsigned int lowest = UINT_MAX;
-        for (int i = 0; i < _inputs.size(); i++) {
-            if (_inputs[i].sequence() != old._inputs[i].sequence()) {
-                if (_inputs[i].sequence() <= lowest) {
-                    newer = false;
-                    lowest = _inputs[i].sequence();
-                }
-                if (old._inputs[i].sequence() < lowest) {
-                    newer = true;
-                    lowest = old._inputs[i].sequence();
-                }
-            }
-        }
-        return newer;
-    }
+    bool isNewerThan(const Transaction& old) const;
 
     /// Check if the transaction is a coin base transaction.
     bool isCoinBase() const {
@@ -310,40 +288,14 @@ public:
 
     /// Count the number of operations in the scripts. We need to monitor for huge (in bytes) transactions
     /// and demand a suitable extra fee.
-    int getSigOpCount() const {
-        int n = 0;
-        BOOST_FOREACH(const Input& input, _inputs)
-            n += input.signature().GetSigOpCount();
-        BOOST_FOREACH(const Output& output, _outputs)
-            n += output.script().GetSigOpCount();
-        return n;
-    }
+    int getSigOpCount() const;
 
     /// Get the total value of the transaction (excluding the fee).
-    int64 getValueOut() const
-    {
-        int64 valueOut = 0;
-        BOOST_FOREACH(const Output& output, _outputs)
-        {
-            valueOut += output.value();
-            if (!MoneyRange(output.value()) || !MoneyRange(valueOut))
-                throw std::runtime_error("Transaction::GetValueOut() : value out of range");
-        }
-        return valueOut;
-    }
+    int64 getValueOut() const;
 
     /// Calculate the amount payed to a spicific address by this transaction. If the address is not part of the
     /// transaction, 0 will be returned. 
-    int64 paymentTo(Address address) const {
-        int64 value = 0;
-        BOOST_FOREACH(const Output& output, _outputs)
-        {
-            if(output.getAddress() == address)
-                value += output.value();
-        }
-        
-        return value;
-    }
+    int64 paymentTo(Address address) const;
     
     /// Check if a transaction with a given priority can be completed with no fee.
     static bool allowFree(double dPriority) {
@@ -353,45 +305,7 @@ public:
     }
 
     /// Calculate minimum transaction fee.
-    int64 getMinFee(unsigned int nBlockSize=1, bool fAllowFree=true, bool fForRelay=false) const {
-        // Base fee is either MIN_TX_FEE or MIN_RELAY_TX_FEE
-        int64 nBaseFee = fForRelay ? MIN_RELAY_TX_FEE : MIN_TX_FEE;
-
-        unsigned int nBytes = ::GetSerializeSize(*this, SER_NETWORK);
-        unsigned int nNewBlockSize = nBlockSize + nBytes;
-        int64 nMinFee = (1 + (int64)nBytes / 1000) * nBaseFee;
-
-        if (fAllowFree) {
-            if (nBlockSize == 1) {
-                // Transactions under 10K are free
-                // (about 4500bc if made of 50bc inputs)
-                if (nBytes < 10000)
-                    nMinFee = 0;
-            }
-            else {
-                // Free transaction area
-                if (nNewBlockSize < 27000)
-                    nMinFee = 0;
-            }
-        }
-
-        // To limit dust spam, require MIN_TX_FEE/MIN_RELAY_TX_FEE if any output is less than 0.01
-        if (nMinFee < nBaseFee)
-            BOOST_FOREACH(const Output& output, _outputs)
-                if (output.value() < CENT)
-                    nMinFee = nBaseFee;
-
-        // Raise the price as the block approaches full
-        if (nBlockSize != 1 && nNewBlockSize >= MAX_BLOCK_SIZE_GEN/2) {
-            if (nNewBlockSize >= MAX_BLOCK_SIZE_GEN)
-                return MAX_MONEY;
-            nMinFee *= MAX_BLOCK_SIZE_GEN / (MAX_BLOCK_SIZE_GEN - nNewBlockSize);
-        }
-
-        if (!MoneyRange(nMinFee))
-            nMinFee = MAX_MONEY;
-        return nMinFee;
-    }
+    int64 getMinFee(unsigned int nBlockSize=1, bool fAllowFree=true, bool fForRelay=false) const;
 
     /// Compare two transactions.
     friend bool operator==(const Transaction& a, const Transaction& b) {

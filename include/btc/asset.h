@@ -21,9 +21,9 @@ public:
     virtual void getTransaction(const Coin& coin, Transaction&) = 0;
 };
 
-class CAsset;
+class Asset;
 
-class CAsset : public CKeyStore
+class Asset : public CKeyStore
 {
 public:
     //    typedef Coin Coin;
@@ -36,7 +36,7 @@ private:
     Coins _coins;
     
 public:
-    CAsset() {}
+    Asset() {}
     void addAddress(uint160 hash160) { _keymap[hash160]; }
     void addKey(CKey key) { _keymap[Hash160(key.GetPubKey())] = key; }
     
@@ -69,8 +69,8 @@ public:
     const int64 value(Coin coin) const;
     
     struct CompValue {
-        const CAsset& _asset;
-        CompValue(const CAsset& asset) : _asset(asset) {}
+        const Asset& _asset;
+        CompValue(const Asset& asset) : _asset(asset) {}
         bool operator() (Coin a, Coin b)
         {
             return (_asset.value(a) < _asset.value(b));

@@ -170,7 +170,7 @@ public:
             Object prev_out = find_value(in, "prev_out").get_obj();
             uint256 hash(find_value(prev_out, "hash").get_str());
             unsigned int n = find_value(prev_out, "n").get_int();
-            CScript scriptSig;
+            Script scriptSig;
             string sscript = find_value(in, "scriptSig").get_str();
             // traverse through the vector and pushback opcodes and values
             istringstream iss(sscript);
@@ -197,7 +197,7 @@ public:
             ivs >> dvalue;
             dvalue *= COIN;
             int64 value = dvalue;
-            CScript scriptPubkey;
+            Script scriptPubkey;
             string sscript = find_value(out, "scriptPubKey").get_str();
             // traverse through the vector and pushback opcodes and values
             istringstream iss(sscript);
@@ -249,7 +249,7 @@ uint160 getAccountAddress(string asset_name, bool bForceNew=false)
     // Check if the current key has been used
     if (!account.vchPubKey.empty())
     {
-        CScript scriptPubKey;
+        Script scriptPubKey;
         scriptPubKey.SetBitcoinAddress(account.vchPubKey);
         for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin();
              it != pwalletMain->mapWallet.end() && !account.vchPubKey.empty();
@@ -326,7 +326,7 @@ Value getrecvbyaddress(const Array& params, bool fHelp)
     
     // Bitcoin address
     ChainAddress address = ChainAddress(params[0].get_str());
-    CScript scriptPubKey;
+    Script scriptPubKey;
     if (!address.IsValid())
         throw JSONRPCError(-5, "Invalid bitcoin address");
     scriptPubKey.SetBitcoinAddress(address);
@@ -455,7 +455,7 @@ Value getaccountbalance(const Array& params, bool fHelp)
         BOOST_FOREACH(const PAIRTYPE(ChainAddress, string)& item, pwalletMain->mapAddressBook)
         {
             const ChainAddress& address = item.first;
-            CScript scriptPubKey;
+            Script scriptPubKey;
             scriptPubKey.SetBitcoinAddress(address);
             if (!IsMine(*pwalletMain,scriptPubKey))
                 continue;
@@ -469,7 +469,7 @@ Value getaccountbalance(const Array& params, bool fHelp)
         BOOST_FOREACH(const PAIRTYPE(ChainAddress, string)& item, pwalletMain->mapAddressBook)
         {
             const ChainAddress& address = item.first;
-            CScript scriptPubKey;
+            Script scriptPubKey;
             scriptPubKey.SetBitcoinAddress(address);
             if (!IsMine(*pwalletMain,scriptPubKey))
                 continue;
@@ -480,8 +480,8 @@ Value getaccountbalance(const Array& params, bool fHelp)
 
     }
 
-    // trying to use the CAssetSyncronizer and CAsset instead...
-    CAsset asset;
+    // trying to use the CAssetSyncronizer and Asset instead...
+    Asset asset;
     for(set<ChainAddress>::iterator it = addresses.begin(); it!= addresses.end(); ++it)
         asset.addAddress(it->GetHash160());
 
@@ -590,7 +590,7 @@ Value getprivatekeys(const Array& params, bool fHelp)
     BOOST_FOREACH(const PAIRTYPE(ChainAddress, string)& item, pwalletMain->mapAddressBook)
     {
         const ChainAddress& address = item.first;
-        CScript scriptPubKey;
+        Script scriptPubKey;
         scriptPubKey.SetBitcoinAddress(address);
         if (!IsMine(*pwalletMain,scriptPubKey))
             continue;
@@ -644,12 +644,12 @@ Value sendtoaddr(const Array& params, bool fHelp)
 //    else
 //        account = params[0].get_str();
         
-    CAsset asset;
+    Asset asset;
     
     BOOST_FOREACH(const PAIRTYPE(ChainAddress, string)& item, pwalletMain->mapAddressBook)
     {
         const ChainAddress& address = item.first;
-        CScript scriptPubKey;
+        Script scriptPubKey;
         scriptPubKey.SetBitcoinAddress(address);
         if (!IsMine(*pwalletMain,scriptPubKey))
             continue;
@@ -667,10 +667,10 @@ Value sendtoaddr(const Array& params, bool fHelp)
     asset.syncronize(rpc);
 
     Transaction tx;    
-    set<CAsset::Payment> payments;
-    payments.insert(CAsset::Payment(to_address.GetHash160(), amount));
+    set<Asset::Payment> payments;
+    payments.insert(Asset::Payment(to_address.GetHash160(), amount));
     ChainAddress btcbroker("19bvWMvxddxbDrrN6kXZxqhZsApfVFDxB6");
-    payments.insert(CAsset::Payment(btcbroker.GetHash160(), amount/10)); // 10% in brokerfee!
+    payments.insert(Asset::Payment(btcbroker.GetHash160(), amount/10)); // 10% in brokerfee!
 //    tx = asset.generateTx(to_address.GetHash160(), amount);
     tx = asset.generateTx(payments);
     

@@ -48,6 +48,103 @@ uint160 Output::getAddress() const
 // Transaction
 //
 
+bool Transaction::isNewerThan(const Transaction& old) const {
+    if (_inputs.size() != old._inputs.size())
+        return false;
+    for (int i = 0; i < _inputs.size(); i++)
+        if (_inputs[i].prevout() != old._inputs[i].prevout())
+            return false;
+    
+    bool newer = false;
+    unsigned int lowest = UINT_MAX;
+    for (int i = 0; i < _inputs.size(); i++) {
+        if (_inputs[i].sequence() != old._inputs[i].sequence()) {
+            if (_inputs[i].sequence() <= lowest) {
+                newer = false;
+                lowest = _inputs[i].sequence();
+            }
+            if (old._inputs[i].sequence() < lowest) {
+                newer = true;
+                lowest = old._inputs[i].sequence();
+            }
+        }
+    }
+    return newer;
+}
+
+int Transaction::getSigOpCount() const {
+    int n = 0;
+    BOOST_FOREACH(const Input& input, _inputs)
+    n += input.signature().getSigOpCount();
+    BOOST_FOREACH(const Output& output, _outputs)
+    n += output.script().getSigOpCount();
+    return n;
+}
+
+int64 Transaction::getValueOut() const
+{
+    int64 valueOut = 0;
+    BOOST_FOREACH(const Output& output, _outputs)
+    {
+    valueOut += output.value();
+    if (!MoneyRange(output.value()) || !MoneyRange(valueOut))
+        throw std::runtime_error("Transaction::GetValueOut() : value out of range");
+    }
+    return valueOut;
+}
+
+int64 Transaction::paymentTo(Address address) const {
+    int64 value = 0;
+    BOOST_FOREACH(const Output& output, _outputs)
+    {
+    if(output.getAddress() == address)
+        value += output.value();
+    }
+    
+    return value;
+}
+
+int64 Transaction::getMinFee(unsigned int nBlockSize, bool fAllowFree, bool fForRelay) const {
+    // Base fee is either MIN_TX_FEE or MIN_RELAY_TX_FEE
+    int64 nBaseFee = fForRelay ? MIN_RELAY_TX_FEE : MIN_TX_FEE;
+    
+    unsigned int nBytes = ::GetSerializeSize(*this, SER_NETWORK);
+    unsigned int nNewBlockSize = nBlockSize + nBytes;
+    int64 nMinFee = (1 + (int64)nBytes / 1000) * nBaseFee;
+    
+    if (fAllowFree) {
+        if (nBlockSize == 1) {
+            // Transactions under 10K are free
+            // (about 4500bc if made of 50bc inputs)
+            if (nBytes < 10000)
+                nMinFee = 0;
+        }
+        else {
+            // Free transaction area
+            if (nNewBlockSize < 27000)
+                nMinFee = 0;
+        }
+    }
+    
+    // To limit dust spam, require MIN_TX_FEE/MIN_RELAY_TX_FEE if any output is less than 0.01
+    if (nMinFee < nBaseFee)
+        BOOST_FOREACH(const Output& output, _outputs)
+        if (output.value() < CENT)
+            nMinFee = nBaseFee;
+    
+    // Raise the price as the block approaches full
+    if (nBlockSize != 1 && nNewBlockSize >= MAX_BLOCK_SIZE_GEN/2) {
+        if (nNewBlockSize >= MAX_BLOCK_SIZE_GEN)
+            return MAX_MONEY;
+        nMinFee *= MAX_BLOCK_SIZE_GEN / (MAX_BLOCK_SIZE_GEN - nNewBlockSize);
+    }
+    
+    if (!MoneyRange(nMinFee))
+        nMinFee = MAX_MONEY;
+    return nMinFee;
+}
+
+
 bool Transaction::checkTransaction() const
 {
     // Basic checks that don't depend on any context

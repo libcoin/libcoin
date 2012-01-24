@@ -54,7 +54,7 @@ typedef unsigned long long  uint64;
   (((((size_t)(a)) + (b) - 1) | ((PAGESIZE) - 1)) + 1) - (((size_t)(a)) & (~((PAGESIZE) - 1))))
 #endif
 
-class CScript;
+class Script;
 class CDataStream;
 class CAutoFile;
 static const unsigned int MAX_SIZE = 0x02000000;
@@ -376,9 +376,9 @@ template<typename Stream, typename T, typename A> void Unserialize_impl(Stream& 
 template<typename Stream, typename T, typename A> inline void Unserialize(Stream& is, std::vector<T, A>& v, int nType, int nVersion=VERSION);
 
 // others derived from vector
-extern inline unsigned int GetSerializeSize(const CScript& v, int nType, int nVersion=VERSION);
-template<typename Stream> void Serialize(Stream& os, const CScript& v, int nType, int nVersion=VERSION);
-template<typename Stream> void Unserialize(Stream& is, CScript& v, int nType, int nVersion=VERSION);
+extern inline unsigned int GetSerializeSize(const Script& v, int nType, int nVersion=VERSION);
+template<typename Stream> void Serialize(Stream& os, const Script& v, int nType, int nVersion=VERSION);
+template<typename Stream> void Unserialize(Stream& is, Script& v, int nType, int nVersion=VERSION);
 
 // pair
 template<typename K, typename T> unsigned int GetSerializeSize(const std::pair<K, T>& item, int nType, int nVersion=VERSION);
@@ -567,19 +567,19 @@ inline void Unserialize(Stream& is, std::vector<T, A>& v, int nType, int nVersio
 //
 // others derived from vector
 //
-inline unsigned int GetSerializeSize(const CScript& v, int nType, int nVersion)
+inline unsigned int GetSerializeSize(const Script& v, int nType, int nVersion)
 {
     return GetSerializeSize((const std::vector<unsigned char>&)v, nType, nVersion);
 }
 
 template<typename Stream>
-void Serialize(Stream& os, const CScript& v, int nType, int nVersion)
+void Serialize(Stream& os, const Script& v, int nType, int nVersion)
 {
     Serialize(os, (const std::vector<unsigned char>&)v, nType, nVersion);
 }
 
 template<typename Stream>
-void Unserialize(Stream& is, CScript& v, int nType, int nVersion)
+void Unserialize(Stream& is, Script& v, int nType, int nVersion)
 {
     Unserialize(is, (std::vector<unsigned char>&)v, nType, nVersion);
 }

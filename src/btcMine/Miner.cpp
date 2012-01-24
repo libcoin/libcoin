@@ -37,10 +37,10 @@ void Miner::handle_generate() {
     // generate the coin base transaction
     Transaction tx;
     unsigned int extraNonce = 1; // dosn't really matter for anything...
-    CScript signature = CScript() << bestIndex->nBits << CBigNum(extraNonce);
+    Script signature = Script() << bestIndex->nBits << CBigNum(extraNonce);
     tx.addInput(Input(Coin(), signature));
     
-    CScript script;
+    Script script;
     if (_address != 0)
         script << OP_DUP << OP_HASH160 << _address << OP_EQUALVERIFY << OP_CHECKSIG;
     else if (_pub_key.size())

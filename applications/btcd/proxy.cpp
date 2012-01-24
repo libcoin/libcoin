@@ -175,7 +175,7 @@ Value getvalue(const Array& params, bool fHelp)
     
     uint160 hash160 = ChainAddress(params[0].get_str()).GetHash160();
     
-    CAsset asset;
+    Asset asset;
     asset.addAddress(hash160);
     
     CDBAssetSyncronizer sync(*__blockChain);
@@ -215,7 +215,7 @@ Value checkvalue(const Array& params, bool fHelp)
     
     // now we have a all the params - we need to do some querying
 
-    CAsset asset;
+    Asset asset;
     asset.addAddress(hash160); // only one address in this asset
 
     CDBAssetSyncronizer sync(*__blockChain);
@@ -336,7 +336,7 @@ Value getcoins(const Array& params, bool fHelp)
     
     uint160 hash160 = ChainAddress(params[0].get_str()).GetHash160();
     
-    CAsset asset;
+    Asset asset;
     asset.addAddress(hash160);
 
     CDBAssetSyncronizer sync(_blockChain);
@@ -379,7 +379,7 @@ Transaction json2tx(Object entry)
         Object prev_out = find_value(in, "prev_out").get_obj();
         uint256 hash(find_value(prev_out, "hash").get_str());
         unsigned int n = find_value(prev_out, "n").get_int();
-        CScript scriptSig;
+        Script scriptSig;
         string sscript = find_value(in, "scriptSig").get_str();
         // traverse through the vector and pushback opcodes and values
         istringstream iss(sscript);
@@ -406,7 +406,7 @@ Transaction json2tx(Object entry)
         ivs >> dvalue;
         dvalue *= COIN;
         int64 value = floor(dvalue+0.1);
-        CScript scriptPubkey;
+        Script scriptPubkey;
         string sscript = find_value(out, "scriptPubKey").get_str();
         // traverse through the vector and pushback opcodes and values
         istringstream iss(sscript);

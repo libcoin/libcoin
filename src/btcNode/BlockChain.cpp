@@ -434,7 +434,7 @@ bool BlockChain::readCrIndex(uint160 hash160, set<Coin>& credit) const
     return Read(make_pair(string("cr"), ChainAddress(_chain.networkId(), hash160).toString()), credit);
 }
 
-bool Solver(const CScript& scriptPubKey, vector<pair<opcodetype, vector<unsigned char> > >& vSolutionRet);
+bool Solver(const Script& scriptPubKey, vector<pair<opcodetype, vector<unsigned char> > >& vSolutionRet);
 
 bool BlockChain::UpdateTxIndex(uint256 hash, const TxIndex& txindex)
 {

@@ -13,7 +13,7 @@
 using namespace std;
 using namespace boost;
 
-bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CScript scriptCode, const Transaction& txTo, unsigned int nIn, int nHashType);
+bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, Script scriptCode, const Transaction& txTo, unsigned int nIn, int nHashType);
 
 
 
@@ -75,12 +75,12 @@ static inline void popstack(vector<valtype>& stack)
 }
 
 
-bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, const Transaction& txTo, unsigned int nIn, int nHashType)
+bool EvalScript(vector<vector<unsigned char> >& stack, const Script& script, const Transaction& txTo, unsigned int nIn, int nHashType)
 {
     CAutoBN_CTX pctx;
-    CScript::const_iterator pc = script.begin();
-    CScript::const_iterator pend = script.end();
-    CScript::const_iterator pbegincodehash = script.begin();
+    Script::const_iterator pc = script.begin();
+    Script::const_iterator pend = script.end();
+    Script::const_iterator pbegincodehash = script.begin();
     opcodetype opcode;
     valtype vchPushValue;
     vector<bool> vfExec;
@@ -99,7 +99,7 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, co
             //
             // Read instruction
             //
-            if (!script.GetOp(pc, opcode, vchPushValue))
+            if (!script.getOp(pc, opcode, vchPushValue))
                 return false;
             if (vchPushValue.size() > 520)
                 return false;
@@ -756,10 +756,10 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, co
                     //PrintHex(vchPubKey.begin(), vchPubKey.end(), "pubkey: %s\n");
 
                     // Subset of script starting at the most recent codeseparator
-                    CScript scriptCode(pbegincodehash, pend);
+                    Script scriptCode(pbegincodehash, pend);
 
                     // Drop the signature, since there's no way for a signature to sign itself
-                    scriptCode.FindAndDelete(CScript(vchSig));
+                    scriptCode.findAndDelete(Script(vchSig));
 
                     bool fSuccess = CheckSig(vchSig, vchPubKey, scriptCode, txTo, nIn, nHashType);
 
@@ -805,13 +805,13 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, co
                         return false;
 
                     // Subset of script starting at the most recent codeseparator
-                    CScript scriptCode(pbegincodehash, pend);
+                    Script scriptCode(pbegincodehash, pend);
 
                     // Drop the signatures, since there's no way for a signature to sign itself
                     for (int k = 0; k < nSigsCount; k++)
                     {
                         valtype& vchSig = stacktop(-isig-k);
-                        scriptCode.FindAndDelete(CScript(vchSig));
+                        scriptCode.findAndDelete(Script(vchSig));
                     }
 
                     bool fSuccess = true;
@@ -878,7 +878,7 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, co
 
 
 
-uint256 SignatureHash(CScript scriptCode, const Transaction& txTo, unsigned int nIn, int nHashType)
+uint256 SignatureHash(Script scriptCode, const Transaction& txTo, unsigned int nIn, int nHashType)
 {
     if (nIn >= txTo.getNumInputs())
     {
@@ -889,13 +889,13 @@ uint256 SignatureHash(CScript scriptCode, const Transaction& txTo, unsigned int 
 
     // In case concatenating two scripts ends up with two codeseparators,
     // or an extra one at the end, this prevents all those possible incompatibilities.
-    scriptCode.FindAndDelete(CScript(OP_CODESEPARATOR));
+    scriptCode.findAndDelete(Script(OP_CODESEPARATOR));
 
     //    txTmp.vin.clear();
     txTmp.removeInputs();
     for(unsigned int i = 0; i < txTo.getNumInputs(); i++) {
         Coin prevout = txTo.getInput(i).prevout();
-        CScript signature = CScript();
+        Script signature = Script();
         if (i == nIn) signature = scriptCode;
         unsigned int sequence = txTo.getInput(i).sequence();
         if ((nHashType & 0x1f) == SIGHASH_NONE || (nHashType & 0x1f) == SIGHASH_SINGLE) 
@@ -905,7 +905,7 @@ uint256 SignatureHash(CScript scriptCode, const Transaction& txTo, unsigned int 
     
     // Blank out other inputs' signatures
     //    for (int i = 0; i < txTmp.vin.size(); i++)
-    //        txTmp.vin[i].scriptSig = CScript();
+    //        txTmp.vin[i].scriptSig = Script();
     //    txTmp.vin[nIn].scriptSig = scriptCode;
 
     // Blank out some of the outputs
@@ -969,7 +969,7 @@ uint256 SignatureHash(CScript scriptCode, const Transaction& txTo, unsigned int 
 }
 
 
-bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CScript scriptCode,
+bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, Script scriptCode,
               const Transaction& txTo, unsigned int nIn, int nHashType)
 {
     CKey key;
@@ -997,30 +997,30 @@ bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CSc
 
 
 
-bool Solver(const CScript& scriptPubKey, vector<pair<opcodetype, valtype> >& vSolutionRet)
+bool Solver(const Script& scriptPubKey, vector<pair<opcodetype, valtype> >& vSolutionRet)
 {
     // Templates
-    static vector<CScript> vTemplates;
+    static vector<Script> vTemplates;
     if (vTemplates.empty())
     {
         // Standard tx, sender provides pubkey, receiver adds signature
-        vTemplates.push_back(CScript() << OP_PUBKEY << OP_CHECKSIG);
+        vTemplates.push_back(Script() << OP_PUBKEY << OP_CHECKSIG);
 
         // Bitcoin address tx, sender provides hash of pubkey, receiver provides signature and pubkey
-        vTemplates.push_back(CScript() << OP_DUP << OP_HASH160 << OP_PUBKEYHASH << OP_EQUALVERIFY << OP_CHECKSIG);
+        vTemplates.push_back(Script() << OP_DUP << OP_HASH160 << OP_PUBKEYHASH << OP_EQUALVERIFY << OP_CHECKSIG);
     }
 
     // Scan templates
-    const CScript& script1 = scriptPubKey;
-    BOOST_FOREACH(const CScript& script2, vTemplates)
+    const Script& script1 = scriptPubKey;
+    BOOST_FOREACH(const Script& script2, vTemplates)
     {
         vSolutionRet.clear();
         opcodetype opcode1, opcode2;
         vector<unsigned char> vch1, vch2;
 
         // Compare
-        CScript::const_iterator pc1 = script1.begin();
-        CScript::const_iterator pc2 = script2.begin();
+        Script::const_iterator pc1 = script1.begin();
+        Script::const_iterator pc2 = script2.begin();
         loop
         {
             if (pc1 == script1.end() && pc2 == script2.end())
@@ -1029,9 +1029,9 @@ bool Solver(const CScript& scriptPubKey, vector<pair<opcodetype, valtype> >& vSo
                 reverse(vSolutionRet.begin(), vSolutionRet.end());
                 return true;
             }
-            if (!script1.GetOp(pc1, opcode1, vch1))
+            if (!script1.getOp(pc1, opcode1, vch1))
                 break;
-            if (!script2.GetOp(pc2, opcode2, vch2))
+            if (!script2.getOp(pc2, opcode2, vch2))
                 break;
             if (opcode2 == OP_PUBKEY)
             {
@@ -1057,7 +1057,7 @@ bool Solver(const CScript& scriptPubKey, vector<pair<opcodetype, valtype> >& vSo
 }
 
 
-bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash, int nHashType, CScript& scriptSigRet)
+bool Solver(const CKeyStore& keystore, const Script& scriptPubKey, uint256 hash, int nHashType, Script& scriptSigRet)
 {
     scriptSigRet.clear();
 
@@ -1110,15 +1110,7 @@ bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash
     return true;
 }
 
-/*
-bool IsStandard(const CScript& scriptPubKey)
-{
-    vector<pair<opcodetype, valtype> > vSolution;
-    return Solver(scriptPubKey, vSolution);
-}
-*/
-
-bool IsMine(const CKeyStore &keystore, const CScript& scriptPubKey)
+bool IsMine(const CKeyStore &keystore, const Script& scriptPubKey)
 {
     vector<pair<opcodetype, valtype> > vSolution;
     if (!Solver(scriptPubKey, vSolution))
@@ -1150,7 +1142,7 @@ bool IsMine(const CKeyStore &keystore, const CScript& scriptPubKey)
     return true;
 }
 
-bool static ExtractAddressInner(const CScript& scriptPubKey, const CKeyStore* keystore, Address& addressRet)
+bool static ExtractAddressInner(const Script& scriptPubKey, const CKeyStore* keystore, Address& addressRet)
 {
     vector<pair<opcodetype, valtype> > vSolution;
     if (!Solver(scriptPubKey, vSolution))
@@ -1169,7 +1161,7 @@ bool static ExtractAddressInner(const CScript& scriptPubKey, const CKeyStore* ke
 }
 
 
-bool ExtractAddress(const CScript& scriptPubKey, const CKeyStore* keystore, Address& addressRet)
+bool ExtractAddress(const Script& scriptPubKey, const CKeyStore* keystore, Address& addressRet)
 {
     if (keystore)
         return ExtractAddressInner(scriptPubKey, keystore, addressRet);
@@ -1179,7 +1171,7 @@ bool ExtractAddress(const CScript& scriptPubKey, const CKeyStore* keystore, Addr
 }
 
 
-bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const Transaction& txTo, unsigned int nIn, int nHashType)
+bool VerifyScript(const Script& scriptSig, const Script& scriptPubKey, const Transaction& txTo, unsigned int nIn, int nHashType)
 {
     vector<vector<unsigned char> > stack;
     if (!EvalScript(stack, scriptSig, txTo, nIn, nHashType))
@@ -1192,7 +1184,7 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const T
 }
 
 
-bool SignSignature(const CKeyStore &keystore, const Transaction& txFrom, Transaction& txTo, unsigned int nIn, int nHashType, CScript scriptPrereq)
+bool SignSignature(const CKeyStore &keystore, const Transaction& txFrom, Transaction& txTo, unsigned int nIn, int nHashType, Script scriptPrereq)
 {
     assert(nIn < txTo.getNumInputs());
     Coin prevout = txTo.getInput(nIn).prevout();
@@ -1204,7 +1196,7 @@ bool SignSignature(const CKeyStore &keystore, const Transaction& txFrom, Transac
     // The checksig op will also drop the signatures from its hash.
     uint256 hash = SignatureHash(scriptPrereq + txout.script(), txTo, nIn, nHashType);
 
-    CScript signature;
+    Script signature;
     if (!Solver(keystore, txout.script(), hash, nHashType, signature))
         return false;
 

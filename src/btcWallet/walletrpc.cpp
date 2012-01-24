@@ -189,8 +189,8 @@ ChainAddress GetAccountAddress::getAccountAddress(string strAccount, bool bForce
     
     // Check if the current key has been used
     if (!account.vchPubKey.empty()) {
-        CScript scriptPubKey;
-        scriptPubKey.SetChainAddress(_wallet.chain().networkId(), account.vchPubKey);
+        Script scriptPubKey;
+        scriptPubKey.setChainAddress(_wallet.chain().networkId(), account.vchPubKey);
         for (map<uint256, CWalletTx>::iterator it = _wallet.mapWallet.begin();
              it != _wallet.mapWallet.end() && !account.vchPubKey.empty();
              ++it) {
@@ -316,10 +316,10 @@ Value GetReceivedByAddress::operator()(const Array& params, bool fHelp)
     
     // Bitcoin address
     ChainAddress address = ChainAddress(params[0].get_str());
-    CScript scriptPubKey;
+    Script scriptPubKey;
     if (!address.isValid(_wallet.chain().networkId()))
         throw RPC::error(RPC::invalid_params, "Invalid bitcoin address");
-    scriptPubKey.SetChainAddress(address);
+    scriptPubKey.setChainAddress(address);
     if (!IsMine(_wallet,scriptPubKey))
         return (double)0.0;
     
@@ -492,7 +492,7 @@ Value SendMany::operator()(const Array& params, bool fHelp)
         wtx.mapValue["comment"] = params[3].get_str();
     
     set<ChainAddress> setAddress;
-    vector<pair<CScript, int64> > vecSend;
+    vector<pair<Script, int64> > vecSend;
     
     int64 totalAmount = 0;
     BOOST_FOREACH(const Pair& s, sendTo)
@@ -505,8 +505,8 @@ Value SendMany::operator()(const Array& params, bool fHelp)
         throw RPC::error(RPC::invalid_params, string("Invalid parameter, duplicated address: ")+s.name_);
     setAddress.insert(address);
     
-    CScript scriptPubKey;
-    scriptPubKey.SetChainAddress(address);
+    Script scriptPubKey;
+    scriptPubKey.setChainAddress(address);
     int64 nAmount = AmountFromValue(s.value_); 
     totalAmount += nAmount;
     

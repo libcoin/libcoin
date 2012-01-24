@@ -268,8 +268,8 @@ bool Wallet::AddToWallet(const CWalletTx& wtxIn)
                 return false;
 
         // If default receiving address gets used, replace it with a new one
-        CScript scriptDefaultKey;
-        scriptDefaultKey.SetChainAddress(_blockChain.chain().networkId(), vchDefaultKey);
+        Script scriptDefaultKey;
+        scriptDefaultKey.setChainAddress(_blockChain.chain().networkId(), vchDefaultKey);
         BOOST_FOREACH(const Output& txout, wtx.getOutputs())
         {
             if (txout.script() == scriptDefaultKey)
@@ -759,10 +759,10 @@ bool Wallet::SelectCoins(int64 nTargetValue, set<pair<const CWalletTx*,unsigned 
 
 
 
-bool Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
+bool Wallet::CreateTransaction(const vector<pair<Script, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
 {
     int64 nValue = 0;
-    BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
+    BOOST_FOREACH (const PAIRTYPE(Script, int64)& s, vecSend)
     {
         if (nValue < 0)
             return false;
@@ -788,7 +788,7 @@ bool Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CWa
                 int64 nTotalValue = nValue + nFeeRet;
                 double dPriority = 0;
                 // vouts to the payees
-                BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
+                BOOST_FOREACH (const PAIRTYPE(Script, int64)& s, vecSend)
                     wtxNew.addOutput(Output(s.second, s.first));
 
                 // Choose coins to use
@@ -826,9 +826,9 @@ bool Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CWa
                     // assert(mapKeys.count(vchPubKey));
 
                     // Fill a vout to ourself, using same address type as the payment
-                    CScript scriptChange;
-                    if (vecSend[0].first.GetChainAddress(_blockChain.chain().networkId()).isValid(_blockChain.chain().networkId()))
-                        scriptChange.SetChainAddress(_blockChain.chain().networkId(),vchPubKey);
+                    Script scriptChange;
+                    if (vecSend[0].first.getChainAddress(_blockChain.chain().networkId()).isValid(_blockChain.chain().networkId()))
+                        scriptChange.setChainAddress(_blockChain.chain().networkId(),vchPubKey);
                     else
                         scriptChange << vchPubKey << OP_CHECKSIG;
 
@@ -876,9 +876,9 @@ bool Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CWa
     return true;
 }
 
-bool Wallet::CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
+bool Wallet::CreateTransaction(Script scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
 {
-    vector< pair<CScript, int64> > vecSend;
+    vector< pair<Script, int64> > vecSend;
     vecSend.push_back(make_pair(scriptPubKey, nValue));
     return CreateTransaction(vecSend, wtxNew, reservekey, nFeeRet);
 }
@@ -939,7 +939,7 @@ inline bool ThreadSafeAskFee(int64 nFeeRequired, const std::string& strCaption, 
 }
 
 
-string Wallet::SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee)
+string Wallet::SendMoney(Script scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee)
 {
     CReserveKey reservekey(this);
     int64 nFeeRequired;
@@ -981,8 +981,8 @@ string Wallet::SendMoneyToBitcoinAddress(const ChainAddress& address, int64 nVal
         return _("Insufficient funds");
 
     // Parse bitcoin address
-    CScript scriptPubKey;
-    scriptPubKey.SetChainAddress(address);
+    Script scriptPubKey;
+    scriptPubKey.setChainAddress(address);
 
     return SendMoney(scriptPubKey, nValue, wtxNew, fAskFee);
 }

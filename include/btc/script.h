@@ -347,10 +347,10 @@ inline std::string StackString(const std::vector<std::vector<unsigned char> >& v
 
 
 
-class CScript : public std::vector<unsigned char>
+class Script : public std::vector<unsigned char>
 {
 protected:
-    CScript& push_int64(int64 n)
+    Script& push_int64(int64 n)
     {
         if (n == -1 || (n >= 1 && n <= 16))
         {
@@ -364,7 +364,7 @@ protected:
         return *this;
     }
 
-    CScript& push_uint64(uint64 n)
+    Script& push_uint64(uint64 n)
     {
         if (n >= 1 && n <= 16)
         {
@@ -379,84 +379,84 @@ protected:
     }
 
 public:
-    CScript() { }
-    CScript(const CScript& b) : std::vector<unsigned char>(b.begin(), b.end()) { }
-    CScript(const_iterator pbegin, const_iterator pend) : std::vector<unsigned char>(pbegin, pend) { }
+    Script() { }
+    Script(const Script& b) : std::vector<unsigned char>(b.begin(), b.end()) { }
+    Script(const_iterator pbegin, const_iterator pend) : std::vector<unsigned char>(pbegin, pend) { }
 #ifndef _MSC_VER
-    CScript(const unsigned char* pbegin, const unsigned char* pend) : std::vector<unsigned char>(pbegin, pend) { }
+    Script(const unsigned char* pbegin, const unsigned char* pend) : std::vector<unsigned char>(pbegin, pend) { }
 #endif
 
-    CScript& operator+=(const CScript& b)
+    Script& operator+=(const Script& b)
     {
         insert(end(), b.begin(), b.end());
         return *this;
     }
 
-    friend CScript operator+(const CScript& a, const CScript& b)
+    friend Script operator+(const Script& a, const Script& b)
     {
-        CScript ret = a;
+        Script ret = a;
         ret += b;
         return ret;
     }
 
 
-    explicit CScript(char b)           { operator<<(b); }
-    explicit CScript(short b)          { operator<<(b); }
-    explicit CScript(int b)            { operator<<(b); }
-    explicit CScript(long b)           { operator<<(b); }
-    explicit CScript(int64 b)          { operator<<(b); }
-    explicit CScript(unsigned char b)  { operator<<(b); }
-    explicit CScript(unsigned int b)   { operator<<(b); }
-    explicit CScript(unsigned short b) { operator<<(b); }
-    explicit CScript(unsigned long b)  { operator<<(b); }
-    explicit CScript(uint64 b)         { operator<<(b); }
+    explicit Script(char b)           { operator<<(b); }
+    explicit Script(short b)          { operator<<(b); }
+    explicit Script(int b)            { operator<<(b); }
+    explicit Script(long b)           { operator<<(b); }
+    explicit Script(int64 b)          { operator<<(b); }
+    explicit Script(unsigned char b)  { operator<<(b); }
+    explicit Script(unsigned int b)   { operator<<(b); }
+    explicit Script(unsigned short b) { operator<<(b); }
+    explicit Script(unsigned long b)  { operator<<(b); }
+    explicit Script(uint64 b)         { operator<<(b); }
 
-    explicit CScript(opcodetype b)     { operator<<(b); }
-    explicit CScript(const uint256& b) { operator<<(b); }
-    explicit CScript(const CBigNum& b) { operator<<(b); }
-    explicit CScript(const std::vector<unsigned char>& b) { operator<<(b); }
+    explicit Script(opcodetype b)     { operator<<(b); }
+    explicit Script(const uint256& b) { operator<<(b); }
+    explicit Script(const CBigNum& b) { operator<<(b); }
+    explicit Script(const std::vector<unsigned char>& b) { operator<<(b); }
 
 
-    CScript& operator<<(char b)           { return push_int64(b); }
-    CScript& operator<<(short b)          { return push_int64(b); }
-    CScript& operator<<(int b)            { return push_int64(b); }
-    CScript& operator<<(long b)           { return push_int64(b); }
-    CScript& operator<<(int64 b)          { return push_int64(b); }
-    CScript& operator<<(unsigned char b)  { return push_uint64(b); }
-    CScript& operator<<(unsigned int b)   { return push_uint64(b); }
-    CScript& operator<<(unsigned short b) { return push_uint64(b); }
-    CScript& operator<<(unsigned long b)  { return push_uint64(b); }
-    CScript& operator<<(uint64 b)         { return push_uint64(b); }
+    Script& operator<<(char b)           { return push_int64(b); }
+    Script& operator<<(short b)          { return push_int64(b); }
+    Script& operator<<(int b)            { return push_int64(b); }
+    Script& operator<<(long b)           { return push_int64(b); }
+    Script& operator<<(int64 b)          { return push_int64(b); }
+    Script& operator<<(unsigned char b)  { return push_uint64(b); }
+    Script& operator<<(unsigned int b)   { return push_uint64(b); }
+    Script& operator<<(unsigned short b) { return push_uint64(b); }
+    Script& operator<<(unsigned long b)  { return push_uint64(b); }
+    Script& operator<<(uint64 b)         { return push_uint64(b); }
 
-    CScript& operator<<(opcodetype opcode)
+    Script& operator<<(opcodetype opcode)
     {
         if (opcode < 0 || opcode > 0xff)
-            throw std::runtime_error("CScript::operator<<() : invalid opcode");
+            throw std::runtime_error("Script::operator<<() : invalid opcode");
         insert(end(), (unsigned char)opcode);
         return *this;
     }
 
-    CScript& operator<<(const uint160& b)
+    Script& operator<<(const uint160& b)
     {
         insert(end(), sizeof(b));
         insert(end(), (unsigned char*)&b, (unsigned char*)&b + sizeof(b));
         return *this;
     }
 
-    CScript& operator<<(const uint256& b)
+    Script& operator<<(const uint256& b)
     {
         insert(end(), sizeof(b));
         insert(end(), (unsigned char*)&b, (unsigned char*)&b + sizeof(b));
         return *this;
     }
 
-    CScript& operator<<(const CBigNum& b)
+    Script& operator<<(const CBigNum& b)
     {
         *this << b.getvch();
         return *this;
     }
 
-    CScript& operator<<(const std::vector<unsigned char>& b)
+    Script& operator<<(const std::vector<unsigned char>& b)
     {
         if (b.size() < OP_PUSHDATA1)
         {
@@ -483,43 +483,43 @@ public:
         return *this;
     }
 
-    CScript& operator<<(const CScript& b)
+    Script& operator<<(const Script& b)
     {
         // I'm not sure if this should push the script or concatenate scripts.
         // If there's ever a use for pushing a script onto a script, delete this member fn
-        assert(!"warning: pushing a CScript onto a CScript with << is probably not intended, use + to concatenate");
+        assert(!"warning: pushing a Script onto a Script with << is probably not intended, use + to concatenate");
         return *this;
     }
 
 
-    bool GetOp(iterator& pc, opcodetype& opcodeRet, std::vector<unsigned char>& vchRet)
+    bool getOp(iterator& pc, opcodetype& opcodeRet, std::vector<unsigned char>& vchRet)
     {
          // Wrapper so it can be called with either iterator or const_iterator
          const_iterator pc2 = pc;
-         bool fRet = GetOp2(pc2, opcodeRet, &vchRet);
+         bool fRet = getOp2(pc2, opcodeRet, &vchRet);
          pc = begin() + (pc2 - begin());
          return fRet;
     }
 
-    bool GetOp(iterator& pc, opcodetype& opcodeRet)
+    bool getOp(iterator& pc, opcodetype& opcodeRet)
     {
          const_iterator pc2 = pc;
-         bool fRet = GetOp2(pc2, opcodeRet, NULL);
+         bool fRet = getOp2(pc2, opcodeRet, NULL);
          pc = begin() + (pc2 - begin());
          return fRet;
     }
 
-    bool GetOp(const_iterator& pc, opcodetype& opcodeRet, std::vector<unsigned char>& vchRet) const
+    bool getOp(const_iterator& pc, opcodetype& opcodeRet, std::vector<unsigned char>& vchRet) const
     {
-        return GetOp2(pc, opcodeRet, &vchRet);
+        return getOp2(pc, opcodeRet, &vchRet);
     }
 
-    bool GetOp(const_iterator& pc, opcodetype& opcodeRet) const
+    bool getOp(const_iterator& pc, opcodetype& opcodeRet) const
     {
-        return GetOp2(pc, opcodeRet, NULL);
+        return getOp2(pc, opcodeRet, NULL);
     }
 
-    bool GetOp2(const_iterator& pc, opcodetype& opcodeRet, std::vector<unsigned char>* pvchRet) const
+    bool getOp2(const_iterator& pc, opcodetype& opcodeRet, std::vector<unsigned char>* pvchRet) const
     {
         opcodeRet = OP_INVALIDOPCODE;
         if (pvchRet)
@@ -573,7 +573,7 @@ public:
     }
 
 
-    void FindAndDelete(const CScript& b)
+    void findAndDelete(const Script& b)
     {
         if (b.empty())
             return;
@@ -584,18 +584,18 @@ public:
             while (end() - pc >= b.size() && memcmp(&pc[0], &b[0], b.size()) == 0)
                 erase(pc, pc + b.size());
         }
-        while (GetOp(pc, opcode));
+        while (getOp(pc, opcode));
     }
 
 
-    int GetSigOpCount() const
+    int getSigOpCount() const
     {
         int n = 0;
         const_iterator pc = begin();
         while (pc < end())
         {
             opcodetype opcode;
-            if (!GetOp(pc, opcode))
+            if (!getOp(pc, opcode))
                 break;
             if (opcode == OP_CHECKSIG || opcode == OP_CHECKSIGVERIFY)
                 n++;
@@ -606,7 +606,7 @@ public:
     }
 
 
-    bool IsPushOnly() const
+    bool isPushOnly() const
     {
         if (size() > 200)
             return false;
@@ -614,7 +614,7 @@ public:
         while (pc < end())
         {
             opcodetype opcode;
-            if (!GetOp(pc, opcode))
+            if (!getOp(pc, opcode))
                 return false;
             if (opcode > OP_16)
                 return false;
@@ -623,36 +623,36 @@ public:
     }
 
 
-    ChainAddress GetChainAddress(unsigned int networkId) const
+    ChainAddress getChainAddress(unsigned int networkId) const
     {
         opcodetype opcode;
         std::vector<unsigned char> vch;
-        CScript::const_iterator pc = begin();
-        if (!GetOp(pc, opcode, vch) || opcode != OP_DUP) return ChainAddress();
-        if (!GetOp(pc, opcode, vch) || opcode != OP_HASH160) return ChainAddress();
-        if (!GetOp(pc, opcode, vch) || vch.size() != sizeof(uint160)) return ChainAddress();
+        Script::const_iterator pc = begin();
+        if (!getOp(pc, opcode, vch) || opcode != OP_DUP) return ChainAddress();
+        if (!getOp(pc, opcode, vch) || opcode != OP_HASH160) return ChainAddress();
+        if (!getOp(pc, opcode, vch) || vch.size() != sizeof(uint160)) return ChainAddress();
         uint160 hash160 = uint160(vch);
-        if (!GetOp(pc, opcode, vch) || opcode != OP_EQUALVERIFY) return ChainAddress();
-        if (!GetOp(pc, opcode, vch) || opcode != OP_CHECKSIG) return ChainAddress();
+        if (!getOp(pc, opcode, vch) || opcode != OP_EQUALVERIFY) return ChainAddress();
+        if (!getOp(pc, opcode, vch) || opcode != OP_CHECKSIG) return ChainAddress();
         if (pc != end()) return ChainAddress();
         return ChainAddress(networkId, hash160);
     }
 
-    void SetChainAddress(const ChainAddress& address)
+    void setChainAddress(const ChainAddress& address)
     {
         this->clear();
         *this << OP_DUP << OP_HASH160 << address.getAddress() << OP_EQUALVERIFY << OP_CHECKSIG;
     }
 
-    void SetChainAddress(unsigned int networkId, const std::vector<unsigned char>& vchPubKey)
+    void setChainAddress(unsigned int networkId, const std::vector<unsigned char>& vchPubKey)
     {
-        SetChainAddress(ChainAddress(networkId, vchPubKey));
+        setChainAddress(ChainAddress(networkId, vchPubKey));
     }
 
 
-    void PrintHex() const
+    void printHex() const
     {
-        printf("CScript(%s)\n", HexStr(begin(), end(), true).c_str());
+        printf("Script(%s)\n", HexStr(begin(), end(), true).c_str());
     }
 
     std::string toString() const
@@ -665,7 +665,7 @@ public:
         {
             if (!str.empty())
                 str += " ";
-            if (!GetOp(pc, opcode, vch))
+            if (!getOp(pc, opcode, vch))
             {
                 str += "[error]";
                 return str;
@@ -689,14 +689,13 @@ public:
 
 
 
-bool Solver(const CScript& scriptPubKey, std::vector<std::pair<opcodetype, std::vector<unsigned char> > >& vSolutionRet);
+bool Solver(const Script& scriptPubKey, std::vector<std::pair<opcodetype, std::vector<unsigned char> > >& vSolutionRet);
 
-bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, const Transaction& txTo, unsigned int nIn, int nHashType);
+bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const Script& script, const Transaction& txTo, unsigned int nIn, int nHashType);
 
-//bool IsStandard(const CScript& scriptPubKey);
-bool IsMine(const CKeyStore& keystore, const CScript& scriptPubKey);
-bool ExtractAddress(const CScript& scriptPubKey, const CKeyStore* pkeystore, Address& addressRet);
-bool SignSignature(const CKeyStore& keystore, const Transaction& txFrom, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL, CScript scriptPrereq=CScript());
+bool IsMine(const CKeyStore& keystore, const Script& scriptPubKey);
+bool ExtractAddress(const Script& scriptPubKey, const CKeyStore* pkeystore, Address& addressRet);
+bool SignSignature(const CKeyStore& keystore, const Transaction& txFrom, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL, Script scriptPrereq=Script());
 bool VerifySignature(const Transaction& txFrom, const Transaction& txTo, unsigned int nIn, int nHashType=0);
 
 #endif
