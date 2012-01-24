@@ -78,13 +78,7 @@ public:
     size_t getNumTransactions() { return _transactions.size(); }
     const TransactionList getTransactions() const { return _transactions; }
     Transaction& getTransaction(size_t i) { return _transactions[i]; }
-    
-    uint256 buildMerkleTree(bool genesisBlock) {
-        uint256 merkleRoot = buildMerkleTree();
-        if(genesisBlock) _merkleRoot = merkleRoot;
-        return merkleRoot;
-    }
-    
+
     uint256 buildMerkleTree() const;
 
     void updateMerkleTree() {

@@ -73,7 +73,7 @@ bool Transaction::CheckTransaction() const
     }
 
     // Check for duplicate inputs
-    set<COutPoint> vInOutPoints;
+    set<Coin> vInOutPoints;
     BOOST_FOREACH(const CTxIn& txin, vin)
     {
         if (vInOutPoints.count(txin.prevout))
@@ -89,7 +89,7 @@ bool Transaction::CheckTransaction() const
     else
     {
         BOOST_FOREACH(const CTxIn& txin, vin)
-            if (txin.prevout.IsNull())
+            if (txin.prevout.isNull())
                 return error("Transaction::CheckTransaction() : prevout is null");
     }
 

@@ -11,11 +11,6 @@
 
 #include <list>
 
-class CKeyItem;
-
-//class Endpoint;
-//class CRequestTracker;
-
 static const unsigned int MAX_BLOCK_SIZE = 1000000;
 static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
 static const int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
@@ -31,66 +26,62 @@ static const int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 
 class Transaction;
 
-class CInPoint
+class CoinRef // was CInPoint
 {
 public:
     Transaction* ptx;
-    unsigned int n;
+    unsigned int index;
 
-    CInPoint() { SetNull(); }
-    CInPoint(Transaction* ptxIn, unsigned int nIn) { ptx = ptxIn; n = nIn; }
-    void SetNull() { ptx = NULL; n = -1; }
-    bool IsNull() const { return (ptx == NULL && n == -1); }
+    CoinRef() { setNull(); }
+    CoinRef(Transaction* ptxIn, unsigned int nIn) { ptx = ptxIn; index = nIn; }
+    
+    void setNull() { ptx = NULL; index = -1; }
+    bool isNull() const { return (ptx == NULL && index == -1); }
 };
 
-class COutPoint
+struct Coin // was COutPoint
 {
-public:
     uint256 hash;
-    unsigned int n;
+    unsigned int index;
+    
+    Coin() { setNull(); }
+    Coin(uint256 hashIn, unsigned int nIn) { hash = hashIn; index = nIn; }
 
-    COutPoint() { SetNull(); }
-    COutPoint(uint256 hashIn, unsigned int nIn) { hash = hashIn; n = nIn; }
     IMPLEMENT_SERIALIZE( READWRITE(FLATDATA(*this)); )
-    void SetNull() { hash = 0; n = -1; }
-    bool IsNull() const { return (hash == 0 && n == -1); }
-
-    friend bool operator<(const COutPoint& a, const COutPoint& b)
-    {
-        return (a.hash < b.hash || (a.hash == b.hash && a.n < b.n));
+    
+    void setNull() { hash = 0; index = -1; }
+    bool isNull() const { return (hash == 0 && index == -1); }
+    
+    friend bool operator<(const Coin& a, const Coin& b) {
+        return (a.hash < b.hash || (a.hash == b.hash && a.index < b.index));
     }
-
-    friend bool operator==(const COutPoint& a, const COutPoint& b)
-    {
-        return (a.hash == b.hash && a.n == b.n);
+    
+    friend bool operator==(const Coin& a, const Coin& b) {
+        return (a.hash == b.hash && a.index == b.index);
     }
-
-    friend bool operator!=(const COutPoint& a, const COutPoint& b)
-    {
+    
+    friend bool operator!=(const Coin& a, const Coin& b) {
         return !(a == b);
     }
-
-    std::string toString() const
-    {
-        return strprintf("COutPoint(%s, %d)", hash.toString().substr(0,10).c_str(), n);
+    
+    std::string toString() const {
+        return strprintf("COutPoint(%s, %d)", hash.toString().substr(0,10).c_str(), index);
     }
-
-    void print() const
-    {
+    
+    void print() const {
         printf("%s\n", toString().c_str());
     }
 };
-
 
 //
 // An input of a transaction.  It contains the location of the previous
 // transaction's output that it claims and a signature that matches the
 // output's public key.
 //
-class CTxIn
+class CTxIn // TxInput
 {
 public:
-    COutPoint prevout;
+    Coin prevout;
     CScript scriptSig;
     unsigned int nSequence;
 
@@ -99,7 +90,7 @@ public:
         nSequence = UINT_MAX;
     }
 
-    explicit CTxIn(COutPoint prevoutIn, CScript scriptSigIn=CScript(), unsigned int nSequenceIn=UINT_MAX)
+    explicit CTxIn(Coin prevoutIn, CScript scriptSigIn=CScript(), unsigned int nSequenceIn=UINT_MAX)
     {
         prevout = prevoutIn;
         scriptSig = scriptSigIn;
@@ -108,7 +99,7 @@ public:
 
     CTxIn(uint256 hashPrevTx, unsigned int nOut, CScript scriptSigIn=CScript(), unsigned int nSequenceIn=UINT_MAX)
     {
-        prevout = COutPoint(hashPrevTx, nOut);
+        prevout = Coin(hashPrevTx, nOut);
         scriptSig = scriptSigIn;
         nSequence = nSequenceIn;
     }
@@ -142,7 +133,7 @@ public:
         std::string str;
         str += strprintf("CTxIn(");
         str += prevout.toString();
-        if (prevout.IsNull())
+        if (prevout.isNull())
             str += strprintf(", coinbase %s", HexStr(scriptSig).c_str());
         else
             str += strprintf(", scriptSig=%s", scriptSig.toString().substr(0,24).c_str());
@@ -164,7 +155,7 @@ public:
 // must be able to sign with to claim it.
 //
 
-class CTxOut
+class CTxOut // 
 {
 public:
     int64 nValue;
@@ -306,7 +297,7 @@ public:
 
     bool IsCoinBase() const
     {
-        return (vin.size() == 1 && vin[0].prevout.IsNull());
+        return (vin.size() == 1 && vin[0].prevout.isNull());
     }
 
     int GetSigOpCount() const

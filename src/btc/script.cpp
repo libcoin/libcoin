@@ -1180,8 +1180,8 @@ bool SignSignature(const CKeyStore &keystore, const Transaction& txFrom, Transac
 {
     assert(nIn < txTo.vin.size());
     CTxIn& txin = txTo.vin[nIn];
-    assert(txin.prevout.n < txFrom.vout.size());
-    const CTxOut& txout = txFrom.vout[txin.prevout.n];
+    assert(txin.prevout.index < txFrom.vout.size());
+    const CTxOut& txout = txFrom.vout[txin.prevout.index];
 
     // Leave out the signature from the hash, since a signature can't sign itself.
     // The checksig op will also drop the signatures from its hash.
@@ -1205,9 +1205,9 @@ bool VerifySignature(const Transaction& txFrom, const Transaction& txTo, unsigne
 {
     assert(nIn < txTo.vin.size());
     const CTxIn& txin = txTo.vin[nIn];
-    if (txin.prevout.n >= txFrom.vout.size())
+    if (txin.prevout.index >= txFrom.vout.size())
         return false;
-    const CTxOut& txout = txFrom.vout[txin.prevout.n];
+    const CTxOut& txout = txFrom.vout[txin.prevout.index];
 
     if (txin.prevout.hash != txFrom.GetHash())
         return false;

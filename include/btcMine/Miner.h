@@ -33,7 +33,7 @@ public:
     explicit Miner(Node& node, Address& address);
     
     /// Run the miner's io_service loop.
-    void run() { _io_service.run(); }
+    void run();
     
     /// Shutdown the Miner.
     void shutdown() { _io_service.dispatch(boost::bind(&Miner::handle_stop, this)); }
@@ -86,18 +86,22 @@ private:
     /// handle_stop cancels all pending requests and exits the loop.
     void handle_stop() { _io_service.stop(); }
     
+    /// handle_work is called when the idle timer expires
+    void handle_work() {};
+    
     /// fillinTransactions is based in CreateNewBlock from the Satoshi client
     void fillinTransactions(Block& block, const CBlockIndex* prev);
     
 private:
     Node& _node;    
     boost::asio::io_service _io_service;
+    boost::asio::deadline_timer _idle_timer;
     Hashers _hashers;
     std::string _override_name;
     unsigned int _update_interval; // milliseconds
     bool _generate;
-    const Address& _address;
-    const PubKey& _pub_key;
+    const Address _address;
+    const PubKey _pub_key;
     CReserveKey _reserve_key;
     uint64 _hashes_per_second;
 };

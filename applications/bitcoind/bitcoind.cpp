@@ -30,6 +30,7 @@ int main(int argc, char* argv[])
     strings rpc_params;
     strings connect_peers;
     strings add_peers;
+    bool gen;
 
     // Commandline options
     options_description generic("Generic options");
@@ -54,7 +55,7 @@ int main(int argc, char* argv[])
         ("rpcconnect", value<string>(&rpc_connect)->default_value(asio::ip::address_v4::loopback().to_string()), "Send commands to node running on <arg>")
         ("keypool", value<unsigned short>(), "Set key pool size to <arg>")
         ("rescan", "Rescan the block chain for missing wallet transactions")
-        ("gen", "Generate coins")
+        ("gen", value<bool>(&gen)->default_value(false), "Generate coins")
     ;
     
     options_description hidden("Hidden options");
@@ -162,7 +163,7 @@ int main(int argc, char* argv[])
     CReserveKey reservekey(&wallet);
     
     Miner miner(node, reservekey);
-    miner.setGenerate(args.count("gen"));
+    miner.setGenerate(gen);
     thread miningThread(&Miner::run, &miner);
     
     Server server(rpc_bind, lexical_cast<string>(rpc_port), filesystem::initial_path().string());

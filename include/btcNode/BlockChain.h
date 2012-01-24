@@ -265,8 +265,8 @@ public:
     
 protected:
     /// Read a Transaction from Disk.
-    bool readDrIndex(uint160 hash160, std::set<std::pair<uint256, unsigned int> >& debit) const;
-    bool readCrIndex(uint160 hash160, std::set<std::pair<uint256, unsigned int> >& credit) const;
+    bool readDrIndex(uint160 hash160, std::set<Coin>& debit) const;
+    bool readCrIndex(uint160 hash160, std::set<Coin>& credit) const;
     bool readDiskTx(uint256 hash, Transaction& tx) const;
     bool readDiskTx(uint256 hash, Transaction& tx, int64& height, int64& time) const;
     
@@ -291,8 +291,8 @@ protected:
 
     bool ReadOwnerTxes(uint160 hash160, int nHeight, std::vector<Transaction>& vtx);
     bool ReadDiskTx(uint256 hash, Transaction& tx, TxIndex& txindex) const;
-    bool ReadDiskTx(COutPoint outpoint, Transaction& tx, TxIndex& txindex) const;
-    bool ReadDiskTx(COutPoint outpoint, Transaction& tx) const;
+    bool ReadDiskTx(Coin outpoint, Transaction& tx, TxIndex& txindex) const;
+    bool ReadDiskTx(Coin outpoint, Transaction& tx) const;
     bool WriteBlockIndex(const CDiskBlockIndex& blockindex);
     bool EraseBlockIndex(uint256 hash);
     bool ReadHashBestChain();
@@ -334,7 +334,7 @@ private:
     TransactionIndex _transactionIndex;
     AssetIndex _creditIndex;
     AssetIndex _debitIndex;
-    typedef std::map<COutPoint, CInPoint> TransactionConnections;
+    typedef std::map<Coin, CoinRef> TransactionConnections;
     TransactionConnections _transactionConnections;
     unsigned int _transactionsUpdated;
 };

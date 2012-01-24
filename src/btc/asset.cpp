@@ -100,17 +100,17 @@ void CAsset::syncronize(CAssetSyncronizer& sync, bool all_transactions)
             {
                 Transaction tx;
                 sync.getTransaction(*coin, tx);
-                _tx_cache[coin->first] = tx; // caches the relevant transactions
+                _tx_cache[coin->hash] = tx; // caches the relevant transactions
                 coins.insert(*coin);
             }
             for(Coins::iterator coin = credit.begin(); coin != credit.end(); ++coin)
             {
                 Transaction tx;
                 sync.getTransaction(*coin, tx);
-                _tx_cache[coin->first] = tx; // caches the relevant transactions
+                _tx_cache[coin->hash] = tx; // caches the relevant transactions
                 
-                CTxIn in = tx.vin[coin->second];
-                Coin spend(in.prevout.hash, in.prevout.n);
+                CTxIn in = tx.vin[coin->index];
+                Coin spend(in.prevout.hash, in.prevout.index);
                 coins.erase(spend);
             }
             
@@ -128,7 +128,7 @@ void CAsset::syncronize(CAssetSyncronizer& sync, bool all_transactions)
             {
                 Transaction tx;
                 sync.getTransaction(*coin, tx);
-                _tx_cache[coin->first] = tx; // caches the relevant transactions
+                _tx_cache[coin->hash] = tx; // caches the relevant transactions
             }
             _coins.insert(coins.begin(), coins.end());
         }
@@ -140,8 +140,8 @@ void CAsset::syncronize(CAssetSyncronizer& sync, bool all_transactions)
 bool CAsset::isSpendable(Coin coin)
 {
     // get the address
-    Transaction tx = getTx(coin.first);
-    CTxOut& out = tx.vout[coin.second];
+    Transaction tx = getTx(coin.hash);
+    CTxOut& out = tx.vout[coin.index];
     uint160 addr = getAddress(out);
     KeyMap::iterator keypair = _keymap.find(addr);
     if(keypair->second.IsNull())
@@ -159,8 +159,8 @@ bool CAsset::isSpendable(Coin coin)
 
 const int64 CAsset::value(Coin coin) const
 {
-    const Transaction& tx = getTx(coin.first);
-    const CTxOut& out = tx.vout[coin.second];
+    const Transaction& tx = getTx(coin.hash);
+    const CTxOut& out = tx.vout[coin.index];
     return out.nValue;
 }
 
@@ -235,8 +235,8 @@ Transaction CAsset::generateTx(set<Payment> payments, uint160 changeaddr)
     uint160 changeto = changeaddr;
     if(changeto == 0)
     {
-        Transaction txchange = getTx(spendable_coins[0].first);
-        changeto = getAddress(txchange.vout[spendable_coins[0].second]);
+        Transaction txchange = getTx(spendable_coins[0].hash);
+        changeto = getAddress(txchange.vout[spendable_coins[0].index]);
     }
     
     if(change > 5000) // skip smaller amounts of change
@@ -253,7 +253,7 @@ Transaction CAsset::generateTx(set<Payment> payments, uint160 changeaddr)
     {
         const Coin& coin = spendable_coins[i];
         invalue += value(spendable_coins[i]);
-        CTxIn in(coin.first, coin.second);
+        CTxIn in(coin.hash, coin.index);
         
         tx.vin.push_back(in);
     }
@@ -261,7 +261,7 @@ Transaction CAsset::generateTx(set<Payment> payments, uint160 changeaddr)
     for(int i = 0; i < coins; i++)
     {
         const Coin& coin = spendable_coins[i];
-        const Transaction& txfrom = getTx(coin.first);
+        const Transaction& txfrom = getTx(coin.hash);
         if (!SignSignature(*this, txfrom, tx, i))
         {
             // throw something!                

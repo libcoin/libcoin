@@ -6,12 +6,18 @@
 using namespace std;
 using namespace boost;
 
-Miner::Miner(Node& node, CReserveKey& reservekey) : _node(node), _update_interval(2000), _generate(false), _address(0), _pub_key(0), _reserve_key(reservekey), _hashes_per_second(100000) { registerHasher(hasher_ptr(new CPUHasher)); }
+Miner::Miner(Node& node, CReserveKey& reservekey) : _node(node), _idle_timer(_io_service), _update_interval(2000), _generate(false), _address(0), _pub_key(), _reserve_key(reservekey), _hashes_per_second(100000) { registerHasher(hasher_ptr(new CPUHasher)); }
 
-Miner::Miner(Node& node, PubKey& pubkey) : _node(node), _update_interval(2000), _generate(false), _address(0), _pub_key(pubkey), _reserve_key(NULL), _hashes_per_second(100000) { registerHasher(hasher_ptr(new CPUHasher)); }
+Miner::Miner(Node& node, PubKey& pubkey) : _node(node), _idle_timer(_io_service), _update_interval(2000), _generate(false), _address(0), _pub_key(pubkey), _reserve_key(NULL), _hashes_per_second(100000) { registerHasher(hasher_ptr(new CPUHasher)); }
 
 
-Miner::Miner(Node& node, Address& address) : _node(node), _update_interval(2000), _generate(false), _address(address), _pub_key(0), _reserve_key(NULL), _hashes_per_second(100000) { registerHasher(hasher_ptr(new CPUHasher)); }
+Miner::Miner(Node& node, Address& address) : _node(node), _idle_timer(_io_service), _update_interval(2000), _generate(false), _address(address), _pub_key(), _reserve_key(NULL), _hashes_per_second(100000) { registerHasher(hasher_ptr(new CPUHasher)); }
+
+void Miner::run() {
+    _idle_timer.expires_at(posix_time::pos_infin);
+    _idle_timer.async_wait(boost::bind(&Miner::handle_work, this));
+    _io_service.run();
+}
 
 
 void Miner::setGenerate(bool gen) {
@@ -31,7 +37,7 @@ void Miner::handle_generate() {
     // generate the coin base transaction
     Transaction tx;
     tx.vin.resize(1);
-    tx.vin[0].prevout.SetNull();
+    tx.vin[0].prevout.setNull();
     unsigned int extraNonce = 1; // dosn't really matter for anything...
     tx.vin[0].scriptSig = CScript() << bestIndex->nBits << CBigNum(extraNonce);
     
@@ -155,7 +161,7 @@ void Miner::fillinTransactions(Block& block, const CBlockIndex* prev) {
                 porphan->setDependsOn.insert(txin.prevout.hash);
                 continue;
             }
-            int64 nValueIn = txPrev.vout[txin.prevout.n].nValue;
+            int64 nValueIn = txPrev.vout[txin.prevout.index].nValue;
             
             // Read block header
             int nConf = _node.blockChain().getDepthInMainChain(txin.prevout.hash);

@@ -7,7 +7,7 @@
 
 #include "btc/tx.h"
 
-typedef std::pair<uint256, unsigned int> Coin;
+//typedef std::pair<uint256, unsigned int> Coin;
 typedef std::set<Coin> Coins;
 
 class CAssetSyncronizer
@@ -26,7 +26,7 @@ class CAsset;
 class CAsset : public CKeyStore
 {
 public:
-    //    typedef COutPoint Coin;
+    //    typedef Coin Coin;
     typedef std::map<uint256, Transaction> TxCache;
     typedef std::set<uint256> TxSet;
     typedef std::map<uint160, CKey> KeyMap;

@@ -18,7 +18,7 @@ BitcoinChain::BitcoinChain() : _genesis("0x000000000019d6689c085ae165831e934ff76
     txNew.vout[0].scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
     _genesisBlock = Block(1, 0, 0, 1231006505, 0x1d00ffff, 2083236893);
     _genesisBlock.addTransaction(txNew);
-    _genesisBlock.buildMerkleTree(true); // genesisBlock
+    _genesisBlock.updateMerkleTree(); // genesisBlock
     assert(_genesisBlock.getHash() == _genesis);
 }
 
@@ -123,7 +123,7 @@ TestNetChain::TestNetChain() : _genesis("0x00000007199508e34a9ff81e6ec0c477a4ccc
     txNew.vout[0].scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
     _genesisBlock = Block(1, 0, 0, 1296688602, 0x1d07fff8, 384568319);
     _genesisBlock.addTransaction(txNew);
-    _genesisBlock.buildMerkleTree(true); // genesisBlock
+    _genesisBlock.updateMerkleTree(); // genesisBlock
     assert(_genesisBlock.getHash() == _genesis);
     
 }

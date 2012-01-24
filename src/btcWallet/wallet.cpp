@@ -211,10 +211,10 @@ void Wallet::WalletUpdateSpent(const Transaction &tx)
             if (mi != mapWallet.end())
             {
                 CWalletTx& wtx = (*mi).second;
-                if (!wtx.IsSpent(txin.prevout.n) && IsMine(wtx.vout[txin.prevout.n]))
+                if (!wtx.IsSpent(txin.prevout.index) && IsMine(wtx.vout[txin.prevout.index]))
                 {
                     printf("WalletUpdateSpent found spent coin %sbc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().toString().c_str());
-                    wtx.MarkSpent(txin.prevout.n);
+                    wtx.MarkSpent(txin.prevout.index);
                     wtx.WriteToDisk();
                     vWalletUpdated.push_back(txin.prevout.hash);
                 }
@@ -337,8 +337,8 @@ bool Wallet::IsMine(const CTxIn &txin) const
         if (mi != mapWallet.end())
         {
             const CWalletTx& prev = (*mi).second;
-            if (txin.prevout.n < prev.vout.size())
-                if (IsMine(prev.vout[txin.prevout.n]))
+            if (txin.prevout.index < prev.vout.size())
+                if (IsMine(prev.vout[txin.prevout.index]))
                     return true;
         }
     }
@@ -353,9 +353,9 @@ int64 Wallet::GetDebit(const CTxIn &txin) const
         if (mi != mapWallet.end())
         {
             const CWalletTx& prev = (*mi).second;
-            if (txin.prevout.n < prev.vout.size())
-                if (IsMine(prev.vout[txin.prevout.n]))
-                    return prev.vout[txin.prevout.n].nValue;
+            if (txin.prevout.index < prev.vout.size())
+                if (IsMine(prev.vout[txin.prevout.index]))
+                    return prev.vout[txin.prevout.index].nValue;
         }
     }
     return 0;
@@ -908,7 +908,7 @@ bool Wallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
             {
                 CWalletTx &coin = mapWallet[txin.prevout.hash];
                 coin.pwallet = this;
-                coin.MarkSpent(txin.prevout.n);
+                coin.MarkSpent(txin.prevout.index);
                 coin.WriteToDisk();
                 vWalletUpdated.push_back(coin.GetHash());
             }

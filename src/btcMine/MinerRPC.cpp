@@ -13,8 +13,14 @@ Value SetGenerate::operator()(const Array& params, bool fHelp) {
                             "<generate> is true or false to turn generation on or off.");
     
     bool gen = true;
-    if (params.size() > 0)
-        gen = params[0].get_bool();
+    if (params.size() > 0) {
+        if (params[0].type() != json_spirit::bool_type) {
+            if (params[0].type() == json_spirit::str_type)
+                gen = params[0].get_str() == "true";
+        }
+        else
+            gen = params[0].get_bool();
+    }
         
     // atomic - we don't need to create a lock here
     _miner.setGenerate(gen);
