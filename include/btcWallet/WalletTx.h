@@ -132,7 +132,7 @@ public:
                 BOOST_FOREACH(char c, pthis->mapValue["spent"])
                     pthis->vfSpent.push_back(c != '0');
             else
-                pthis->vfSpent.assign(vout.size(), fSpent);
+                pthis->vfSpent.assign(getNumOutputs(), fSpent);
         }
 
         pthis->mapValue.erase("fromaccount");
@@ -170,9 +170,9 @@ public:
 
     void MarkSpent(unsigned int nOut)
     {
-        if (nOut >= vout.size())
+        if (nOut >= _outputs.size())
             throw std::runtime_error("CWalletTx::MarkSpent() : nOut out of range");
-        vfSpent.resize(vout.size());
+        vfSpent.resize(_outputs.size());
         if (!vfSpent[nOut])
         {
             vfSpent[nOut] = true;
@@ -182,7 +182,7 @@ public:
 
     bool IsSpent(unsigned int nOut) const
     {
-        if (nOut >= vout.size())
+        if (nOut >= _outputs.size())
             throw std::runtime_error("CWalletTx::IsSpent() : nOut out of range");
         if (nOut >= vfSpent.size())
             return false;

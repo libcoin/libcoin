@@ -13,7 +13,7 @@ int Block::GetSigOpCount() const
 {
     int n = 0;
     BOOST_FOREACH(const Transaction& tx, _transactions)
-    n += tx.GetSigOpCount();
+    n += tx.getSigOpCount();
     return n;
 }
 
@@ -21,7 +21,7 @@ uint256 Block::buildMerkleTree() const
 {
     _merkleTree.clear();
     BOOST_FOREACH(const Transaction& tx, _transactions)
-    _merkleTree.push_back(tx.GetHash());
+    _merkleTree.push_back(tx.getHash());
     int j = 0;
     for (int size = _transactions.size(); size > 1; size = (size + 1) / 2) {
         for (int i = 0; i < size; i += 2) {
@@ -103,16 +103,16 @@ bool Block::checkBlock(const CBigNum& proofOfWorkLimit)
         return error("CheckBlock() : block timestamp too far in the future");
     
     // First transaction must be coinbase, the rest must not be
-    if (_transactions.empty() || !_transactions[0].IsCoinBase())
+    if (_transactions.empty() || !_transactions[0].isCoinBase())
         return error("CheckBlock() : first tx is not coinbase");
     for (int i = 1; i < _transactions.size(); i++)
-        if (_transactions[i].IsCoinBase())
+        if (_transactions[i].isCoinBase())
             return error("CheckBlock() : more than one coinbase");
     
     // Check transactions
     BOOST_FOREACH(const Transaction& tx, _transactions)
-    if (!tx.CheckTransaction())
-        return error("CheckBlock() : CheckTransaction failed");
+    if (!tx.checkTransaction())
+        return error("CheckBlock() : checkTransaction failed");
     
     // Check that it's not full of nonstandard transactions
     if (GetSigOpCount() > MAX_BLOCK_SIGOPS)

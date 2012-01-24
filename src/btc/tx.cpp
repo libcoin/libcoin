@@ -48,12 +48,12 @@ uint160 Output::getAddress() const
 // Transaction
 //
 
-bool Transaction::CheckTransaction() const
+bool Transaction::checkTransaction() const
 {
     // Basic checks that don't depend on any context
-    if (vin.empty())
+    if (_inputs.empty())
         return error("Transaction::CheckTransaction() : vin empty");
-    if (vout.empty())
+    if (_outputs.empty())
         return error("Transaction::CheckTransaction() : vout empty");
     // Size limits
     if (::GetSerializeSize(*this, SER_NETWORK) > MAX_BLOCK_SIZE)
@@ -61,35 +61,35 @@ bool Transaction::CheckTransaction() const
 
     // Check for negative or overflow output values
     int64 nValueOut = 0;
-    BOOST_FOREACH(const Output& txout, vout)
+    BOOST_FOREACH(const Output& output, _outputs)
     {
-        if (txout.value() < 0)
+        if (output.value() < 0)
             return error("Transaction::CheckTransaction() : txout.nValue negative");
-        if (txout.value() > MAX_MONEY)
+        if (output.value() > MAX_MONEY)
             return error("Transaction::CheckTransaction() : txout.nValue too high");
-        nValueOut += txout.value();
+        nValueOut += output.value();
         if (!MoneyRange(nValueOut))
             return error("Transaction::CheckTransaction() : txout total out of range");
     }
 
     // Check for duplicate inputs
     set<Coin> vInOutPoints;
-    BOOST_FOREACH(const Input& txin, vin)
+    BOOST_FOREACH(const Input& input, _inputs)
     {
-        if (vInOutPoints.count(txin.prevout()))
+        if (vInOutPoints.count(input.prevout()))
             return false;
-        vInOutPoints.insert(txin.prevout());
+        vInOutPoints.insert(input.prevout());
     }
 
-    if (IsCoinBase())
+    if (isCoinBase())
     {
-        if (vin[0].signature().size() < 2 || vin[0].signature().size() > 100)
+        if (_inputs[0].signature().size() < 2 || _inputs[0].signature().size() > 100)
             return error("Transaction::CheckTransaction() : coinbase script size");
     }
     else
     {
-        BOOST_FOREACH(const Input& txin, vin)
-            if (txin.prevout().isNull())
+        BOOST_FOREACH(const Input& input, _inputs)
+            if (input.prevout().isNull())
                 return error("Transaction::CheckTransaction() : prevout is null");
     }
 

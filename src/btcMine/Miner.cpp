@@ -38,7 +38,7 @@ void Miner::handle_generate() {
     Transaction tx;
     unsigned int extraNonce = 1; // dosn't really matter for anything...
     CScript signature = CScript() << bestIndex->nBits << CBigNum(extraNonce);
-    tx.vin.push_back(Input(Coin(), signature));
+    tx.addInput(Input(Coin(), signature));
     
     CScript script;
     if (_address != 0)
@@ -47,7 +47,7 @@ void Miner::handle_generate() {
         script << _pub_key << OP_CHECKSIG;
     else
         script << _reserve_key.GetReservedKey() << OP_CHECKSIG;
-    tx.vout.push_back(Output(_node.blockChain().chain().subsidy(bestIndex->nHeight+1), script));
+    tx.addOutput(Output(_node.blockChain().chain().subsidy(bestIndex->nHeight+1), script));
     
     // generate a block candidate
     Block block(VERSION, bestIndex->GetBlockHash(), 0, max(bestIndex->GetMedianTimePast()+1, GetAdjustedTime()), _node.blockChain().chain().nextWorkRequired(bestIndex), 0);
@@ -93,7 +93,7 @@ void Miner::handle_generate() {
         printf("proof-of-work found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
         block.print();
         printf("%s ", DateTimeStrFormat("%x %H:%M", GetTime()).c_str());
-        printf("generated %s\n", FormatMoney(block.getTransaction(0).vout[0].value()).c_str());
+        printf("generated %s\n", FormatMoney(block.getTransaction(0).getOutput(0).value()).c_str());
         
         // Remove key from key pool
         if (_pub_key.empty() && _address == 0)
@@ -122,7 +122,7 @@ public:
     }
     
     void print() const {
-        printf("COrphan(hash=%s, dPriority=%.1f)\n", ptx->GetHash().toString().substr(0,10).c_str(), dPriority);
+        printf("COrphan(hash=%s, dPriority=%.1f)\n", ptx->getHash().toString().substr(0,10).c_str(), dPriority);
         BOOST_FOREACH(uint256 hash, setDependsOn)
         printf("   setDependsOn %s\n", hash.toString().substr(0,10).c_str());
     }
@@ -139,17 +139,17 @@ void Miner::fillinTransactions(Block& block, const CBlockIndex* prev) {
     Transactions transactions = _node.blockChain().unconfirmedTransactions();
     for (Transactions::iterator itx = transactions.begin(); itx != transactions.end(); ++itx) {
         Transaction& tx = *itx;
-        if (tx.IsCoinBase() || !_node.blockChain().isFinal(tx))
+        if (tx.isCoinBase() || !_node.blockChain().isFinal(tx))
             continue;
         
         COrphan* porphan = NULL;
         double dPriority = 0;
-        BOOST_FOREACH(const Input& txin, tx.vin) {
+        BOOST_FOREACH(const Input& txin, tx.getInputs()) {
             // Read prev transaction
             Transaction txPrev;
             //            TxIndex txindex;
             _node.blockChain().getTransaction(txin.prevout().hash, txPrev);
-            if (txPrev.IsNull()) {
+            if (txPrev.isNull()) {
                 // Has to wait for dependencies
                 if (!porphan) {
                     // Use list for automatic deletion
@@ -160,7 +160,7 @@ void Miner::fillinTransactions(Block& block, const CBlockIndex* prev) {
                 porphan->setDependsOn.insert(txin.prevout().hash);
                 continue;
             }
-            int64 nValueIn = txPrev.vout[txin.prevout().index].value();
+            int64 nValueIn = txPrev.getOutput(txin.prevout().index).value();
             
             // Read block header
             int nConf = _node.blockChain().getDepthInMainChain(txin.prevout().hash);
@@ -180,7 +180,7 @@ void Miner::fillinTransactions(Block& block, const CBlockIndex* prev) {
             mapPriority.insert(make_pair(-dPriority, &tx));
         
         if (fDebug && GetBoolArg("-printpriority")) {
-            printf("priority %-20.1f %s\n%s", dPriority, tx.GetHash().toString().substr(0,10).c_str(), tx.toString().c_str());
+            printf("priority %-20.1f %s\n%s", dPriority, tx.getHash().toString().substr(0,10).c_str(), tx.toString().c_str());
             if (porphan)
                 porphan->print();
             printf("\n");
@@ -201,13 +201,13 @@ void Miner::fillinTransactions(Block& block, const CBlockIndex* prev) {
         unsigned int nTxSize = ::GetSerializeSize(tx, SER_NETWORK);
         if (nBlockSize + nTxSize >= MAX_BLOCK_SIZE_GEN)
             continue;
-        int nTxSigOps = tx.GetSigOpCount();
+        int nTxSigOps = tx.getSigOpCount();
         if (nBlockSigOps + nTxSigOps >= MAX_BLOCK_SIGOPS)
             continue;
         
         // Transaction fee required depends on block size
-        bool fAllowFree = (nBlockSize + nTxSize < 4000 || Transaction::AllowFree(dPriority));
-        int64 nMinFee = tx.GetMinFee(nBlockSize, fAllowFree, true);
+        bool fAllowFree = (nBlockSize + nTxSize < 4000 || Transaction::allowFree(dPriority));
+        int64 nMinFee = tx.getMinFee(nBlockSize, fAllowFree, true);
         
         // Connecting shouldn't fail due to dependency on other memory pool transactions
         // because we're already processing them in order of dependency
@@ -222,7 +222,7 @@ void Miner::fillinTransactions(Block& block, const CBlockIndex* prev) {
         nBlockSigOps += nTxSigOps;
         
         // Add transactions that depend on this one to the priority queue
-        uint256 hash = tx.GetHash();
+        uint256 hash = tx.getHash();
         if (mapDependers.count(hash)) {
             BOOST_FOREACH(COrphan* porphan, mapDependers[hash]) {
                 if (!porphan->setDependsOn.empty()) {
@@ -235,8 +235,8 @@ void Miner::fillinTransactions(Block& block, const CBlockIndex* prev) {
     }
     Transaction& coinBase = block.getTransaction(0);
     // replace the counbase output to update the value:
-    Output output(coinBase.vout[0].value() + nFees, coinBase.vout[0].script());
-    coinBase.vout[0] = output;
+    Output output(coinBase.getOutput(0).value() + nFees, coinBase.getOutput(0).script());
+    coinBase.replaceOutput(0, output);
     
     block.updateMerkleTree();    
 }

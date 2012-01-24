@@ -155,7 +155,7 @@ int CWalletDB::LoadWallet(Wallet* pwallet)
                 ssValue >> wtx;
                 wtx.pwallet = pwallet;
 
-                if (wtx.GetHash() != hash)
+                if (wtx.getHash() != hash)
                     printf("Error in wallet.dat, hash mismatch\n");
 
                 // Undo serialize changes in 31600

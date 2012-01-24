@@ -47,7 +47,7 @@ int64 GetBalance::GetAccountBalance(CWalletDB& walletdb, const string& strAccoun
         int64 nGenerated, nReceived, nSent, nFee;
         wtx.GetAccountAmounts(strAccount, nGenerated, nReceived, nSent, nFee);
         
-        if (nReceived != 0 && _wallet.getDepthInMainChain(wtx.GetHash()) >= nMinDepth)
+        if (nReceived != 0 && _wallet.getDepthInMainChain(wtx.getHash()) >= nMinDepth)
             nBalance += nReceived;
         nBalance += nGenerated - nSent - nFee;
         }
@@ -99,7 +99,7 @@ Value GetBalance::operator()(const Array& params, bool fHelp) {
             list<pair<ChainAddress, int64> > listReceived;
             list<pair<ChainAddress, int64> > listSent;
             wtx.GetAmounts(allGeneratedImmature, allGeneratedMature, listReceived, listSent, allFee, strSentAccount);
-            if (_wallet.getDepthInMainChain(wtx.GetHash()) >= nMinDepth)
+            if (_wallet.getDepthInMainChain(wtx.getHash()) >= nMinDepth)
                 BOOST_FOREACH(const PAIRTYPE(ChainAddress,int64)& r, listReceived)
                 nBalance += r.second;
             BOOST_FOREACH(const PAIRTYPE(ChainAddress,int64)& r, listSent)
@@ -175,7 +175,7 @@ Value SendToAddress::operator()(const Array& params, bool fHelp) {
     if (strError != "")
         throw RPC::error(RPC::invalid_request, strError);
     
-    return wtx.GetHash().GetHex();
+    return wtx.getHash().GetHex();
 }
 
 ChainAddress GetAccountAddress::getAccountAddress(string strAccount, bool bForceNew)
@@ -195,7 +195,7 @@ ChainAddress GetAccountAddress::getAccountAddress(string strAccount, bool bForce
              it != _wallet.mapWallet.end() && !account.vchPubKey.empty();
              ++it) {
             const CWalletTx& wtx = (*it).second;
-            BOOST_FOREACH(const Output& txout, wtx.vout)
+            BOOST_FOREACH(const Output& txout, wtx.getOutputs())
             if (txout.script() == scriptPubKey)
                 bKeyUsed = true;
         }
@@ -332,12 +332,12 @@ Value GetReceivedByAddress::operator()(const Array& params, bool fHelp)
     int64 nAmount = 0;
     for (map<uint256, CWalletTx>::iterator it = _wallet.mapWallet.begin(); it != _wallet.mapWallet.end(); ++it) {
         const CWalletTx& wtx = (*it).second;
-        if (wtx.IsCoinBase() || !_wallet.isFinal(wtx))
+        if (wtx.isCoinBase() || !_wallet.isFinal(wtx))
             continue;
         
-        BOOST_FOREACH(const Output& txout, wtx.vout)
+        BOOST_FOREACH(const Output& txout, wtx.getOutputs())
         if (txout.script() == scriptPubKey)
-            if (_wallet.getDepthInMainChain(wtx.GetHash()) >= nMinDepth)
+            if (_wallet.getDepthInMainChain(wtx.getHash()) >= nMinDepth)
                 nAmount += txout.value();
     }
     
@@ -369,13 +369,13 @@ Value GetReceivedByAccount::operator()(const Array& params, bool fHelp)
     int64 nAmount = 0;
     for (map<uint256, CWalletTx>::iterator it = _wallet.mapWallet.begin(); it != _wallet.mapWallet.end(); ++it) {
         const CWalletTx& wtx = (*it).second;
-        if (wtx.IsCoinBase() || !_wallet.isFinal(wtx))
+        if (wtx.isCoinBase() || !_wallet.isFinal(wtx))
             continue;
         
-        BOOST_FOREACH(const Output& txout, wtx.vout) {
+        BOOST_FOREACH(const Output& txout, wtx.getOutputs()) {
             Address address;
             if (ExtractAddress(txout.script(), &_wallet, address) && setAddress.count(ChainAddress(_wallet.chain().networkId(), address)))
-                if (_wallet.getDepthInMainChain(wtx.GetHash()) >= nMinDepth)
+                if (_wallet.getDepthInMainChain(wtx.getHash()) >= nMinDepth)
                     nAmount += txout.value();
         }
     }
@@ -466,7 +466,7 @@ Value SendFrom::operator()(const Array& params, bool fHelp)
     if (strError != "")
         throw RPC::error(RPC::invalid_request, strError);
     
-    return wtx.GetHash().GetHex();
+    return wtx.getHash().GetHex();
 }
 
 
@@ -534,7 +534,7 @@ Value SendMany::operator()(const Array& params, bool fHelp)
     if (!_wallet.CommitTransaction(wtx, keyChange))
         throw RPC::error(RPC::internal_error, "Transaction commit failed");
     
-    return wtx.GetHash().GetHex();
+    return wtx.getHash().GetHex();
 }
 
 // Convenience class for the ListMethod base class
@@ -566,7 +566,7 @@ void ListMethod::listTransactions(const CWalletTx& wtx, const string& strAccount
         entry.push_back(Pair("account", string("")));
         if (nGeneratedImmature)
             {
-            entry.push_back(Pair("category", _wallet.getDepthInMainChain(wtx.GetHash()) ? "immature" : "orphan"));
+            entry.push_back(Pair("category", _wallet.getDepthInMainChain(wtx.getHash()) ? "immature" : "orphan"));
             entry.push_back(Pair("amount", ValueFromAmount(nGeneratedImmature)));
             }
         else
@@ -597,7 +597,7 @@ void ListMethod::listTransactions(const CWalletTx& wtx, const string& strAccount
         }
     
     // Received
-    if (listReceived.size() > 0 && _wallet.getDepthInMainChain(wtx.GetHash()) >= nMinDepth)
+    if (listReceived.size() > 0 && _wallet.getDepthInMainChain(wtx.getHash()) >= nMinDepth)
         BOOST_FOREACH(const PAIRTYPE(ChainAddress, int64)& r, listReceived)
         {
         string account;
@@ -636,8 +636,8 @@ void ListMethod::acEntryToJSON(const CAccountingEntry& acentry, const string& st
 
 void ListMethod::walletTxToJSON(const CWalletTx& wtx, Object& entry)
 {
-    entry.push_back(Pair("confirmations", _wallet.getDepthInMainChain(wtx.GetHash())));
-    entry.push_back(Pair("txid", wtx.GetHash().GetHex()));
+    entry.push_back(Pair("confirmations", _wallet.getDepthInMainChain(wtx.getHash())));
+    entry.push_back(Pair("txid", wtx.getHash().GetHex()));
     entry.push_back(Pair("time", (boost::int64_t)wtx.GetTxTime()));
     BOOST_FOREACH(const PAIRTYPE(string,string)& item, wtx.mapValue)
     entry.push_back(Pair(item.first, item.second));
@@ -660,14 +660,14 @@ Value ListMethod::listReceived(const Array& params, bool fByAccounts)
     for (map<uint256, CWalletTx>::iterator it = _wallet.mapWallet.begin(); it != _wallet.mapWallet.end(); ++it)
         {
         const CWalletTx& wtx = (*it).second;
-        if (wtx.IsCoinBase() || !_wallet.isFinal(wtx))
+        if (wtx.isCoinBase() || !_wallet.isFinal(wtx))
             continue;
         
-        int nDepth = _wallet.getDepthInMainChain(wtx.GetHash());
+        int nDepth = _wallet.getDepthInMainChain(wtx.getHash());
         if (nDepth < nMinDepth)
             continue;
         
-        BOOST_FOREACH(const Output& txout, wtx.vout)
+        BOOST_FOREACH(const Output& txout, wtx.getOutputs())
             {
             Address address;
             if (!ExtractAddress(txout.script(), &_wallet, address) || address != 0)
@@ -852,7 +852,7 @@ Value ListAccounts::operator()(const Array& params, bool fHelp)
         mapAccountBalances[strSentAccount] -= nFee;
         BOOST_FOREACH(const PAIRTYPE(ChainAddress, int64)& s, listSent)
         mapAccountBalances[strSentAccount] -= s.second;
-        if (_wallet.getDepthInMainChain(wtx.GetHash()) >= nMinDepth) {
+        if (_wallet.getDepthInMainChain(wtx.getHash()) >= nMinDepth) {
             mapAccountBalances[""] += nGeneratedMature;
             BOOST_FOREACH(const PAIRTYPE(ChainAddress, int64)& r, listReceived)
             if (_wallet.mapAddressBook.count(r.first))
@@ -892,7 +892,7 @@ Value GetTransaction::operator()(const Array& params, bool fHelp)
     int64 nCredit = wtx.GetCredit();
     int64 nDebit = wtx.GetDebit();
     int64 nNet = nCredit - nDebit;
-    int64 nFee = (wtx.IsFromMe() ? wtx.GetValueOut() - nDebit : 0);
+    int64 nFee = (wtx.IsFromMe() ? wtx.getValueOut() - nDebit : 0);
     
     entry.push_back(Pair("amount", ValueFromAmount(nNet - nFee)));
     if (wtx.IsFromMe())

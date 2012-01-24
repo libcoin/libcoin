@@ -15,7 +15,7 @@ using namespace std;
 
 int64 CWalletTx::GetDebit() const
 {
-    if (vin.empty())
+    if (_inputs.empty())
         return 0;
     if (fDebitCached)
         return nDebitCached;
@@ -27,7 +27,7 @@ int64 CWalletTx::GetDebit() const
 int64 CWalletTx::GetCredit(bool fUseCache) const
 {
     // Must wait until coinbase is safely deep enough in the chain before valuing it
-    if (IsCoinBase() && pwallet->GetBlocksToMaturity(*this) > 0)
+    if (isCoinBase() && pwallet->GetBlocksToMaturity(*this) > 0)
         return 0;
     
     // GetBalance can assume transactions in mapWallet won't change
@@ -41,18 +41,18 @@ int64 CWalletTx::GetCredit(bool fUseCache) const
 int64 CWalletTx::GetAvailableCredit(bool fUseCache) const
 {
     // Must wait until coinbase is safely deep enough in the chain before valuing it
-    if (IsCoinBase() && pwallet->GetBlocksToMaturity(*this) > 0)
+    if (isCoinBase() && pwallet->GetBlocksToMaturity(*this) > 0)
         return 0;
     
     if (fUseCache && fAvailableCreditCached)
         return nAvailableCreditCached;
     
     int64 nCredit = 0;
-    for (int i = 0; i < vout.size(); i++)
+    for (int i = 0; i < _outputs.size(); i++)
         {
         if (!IsSpent(i))
             {
-            const Output &txout = vout[i];
+            const Output &txout = _outputs[i];
             nCredit += pwallet->GetCredit(txout);
             if (!MoneyRange(nCredit))
                 throw std::runtime_error("CWalletTx::GetAvailableCredit() : value out of range");
@@ -86,7 +86,7 @@ int CWalletTx::GetRequestCount() const
     int nRequests = -1;
     CRITICAL_BLOCK(pwallet->cs_wallet)
     {
-        if (IsCoinBase())
+        if (isCoinBase())
         {
             // Generated block
             if (_blockHash != 0)
@@ -99,7 +99,7 @@ int CWalletTx::GetRequestCount() const
         else
         {
             // Did anyone request this transaction?
-            map<uint256, int>::const_iterator mi = pwallet->mapRequestCount.find(GetHash());
+            map<uint256, int>::const_iterator mi = pwallet->mapRequestCount.find(getHash());
             if (mi != pwallet->mapRequestCount.end())
             {
                 nRequests = (*mi).second;
@@ -127,7 +127,7 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
     listSent.clear();
     strSentAccount = strFromAccount;
 
-    if (IsCoinBase())
+    if (isCoinBase())
     {
         if (pwallet->GetBlocksToMaturity(*this) > 0)
             nGeneratedImmature = pwallet->GetCredit(*this);
@@ -140,20 +140,20 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
     int64 nDebit = GetDebit();
     if (nDebit > 0) // debit>0 means we signed/sent this transaction
     {
-        int64 nValueOut = GetValueOut();
+        int64 nValueOut = getValueOut();
         nFee = nDebit - nValueOut;
     }
 
     // Sent/received.  Standard client will never generate a send-to-multiple-recipients,
     // but non-standard clients might (so return a list of address/amount pairs)
-    BOOST_FOREACH(const Output& txout, vout)
+    BOOST_FOREACH(const Output& txout, _outputs)
     {
         Address address;
         vector<unsigned char> vchPubKey;
         if (!ExtractAddress(txout.script(), NULL, address))
         {
             printf("CWalletTx::GetAmounts: Unknown transaction type found, txid %s\n",
-                   this->GetHash().toString().c_str());
+                   this->getHash().toString().c_str());
             address = 0;
         }
 
@@ -217,7 +217,7 @@ void CWalletTx::AddSupportingTransactions(const BlockChain& blockChain)
     //    if (setMerkleBranch(block, blockChain) < COPY_DEPTH)
     //{
     vector<uint256> vWorkQueue;
-    BOOST_FOREACH(const Input& txin, vin)
+    BOOST_FOREACH(const Input& txin, _inputs)
     vWorkQueue.push_back(txin.prevout().hash);
     
     // This critsect is OK because txdb is already open
@@ -235,13 +235,13 @@ void CWalletTx::AddSupportingTransactions(const BlockChain& blockChain)
             if (mi != pwallet->mapWallet.end()) {
                 tx = (*mi).second;
                 BOOST_FOREACH(const CMerkleTx& txWalletPrev, (*mi).second.vtxPrev)
-                mapWalletPrev[txWalletPrev.GetHash()] = &txWalletPrev;
+                mapWalletPrev[txWalletPrev.getHash()] = &txWalletPrev;
             }
             else if (mapWalletPrev.count(hash)) {
                 tx = *mapWalletPrev[hash];
             }
             //            else if (!fClient && txdb.ReadDiskTx(hash, tx)) {
-            else if (blockChain.getTransaction(hash, tx), !tx.IsNull()) {
+            else if (blockChain.getTransaction(hash, tx), !tx.isNull()) {
                 ;
             }
             else {
@@ -250,12 +250,12 @@ void CWalletTx::AddSupportingTransactions(const BlockChain& blockChain)
             }
             
             Block block;
-            blockChain.getBlock(tx.GetHash(), block);
+            blockChain.getBlock(tx.getHash(), block);
             int nDepth = tx.setMerkleBranch(block, blockChain);
             vtxPrev.push_back(tx);
             
             if (nDepth < COPY_DEPTH)
-                BOOST_FOREACH(const Input& txin, tx.vin)
+                BOOST_FOREACH(const Input& txin, tx._inputs)
                 vWorkQueue.push_back(txin.prevout().hash);
         }
     }

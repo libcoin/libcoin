@@ -20,7 +20,7 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
         Transaction tx;
         data >> tx;
         
-        Inventory inv(MSG_TX, tx.GetHash());
+        Inventory inv(MSG_TX, tx.getHash());
         origin->AddInventoryKnown(inv);
         
         bool fMissingInputs = false;
@@ -40,7 +40,7 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
                     const CDataStream& payload = *((*mi).second);
                     Transaction tx;
                     CDataStream(payload) >> tx;
-                    Inventory inv(MSG_TX, tx.GetHash());
+                    Inventory inv(MSG_TX, tx.getHash());
                     
                     if (_blockChain.acceptTransaction(tx)){
                         for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
@@ -118,11 +118,11 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
 void TransactionFilter::addOrphanTx(const CDataStream& payload) {
     Transaction tx;
     CDataStream(payload) >> tx;
-    uint256 hash = tx.GetHash();
+    uint256 hash = tx.getHash();
     if (_orphanTransactions.count(hash))
         return;
     CDataStream* p = _orphanTransactions[hash] = new CDataStream(payload);
-    BOOST_FOREACH(const Input& txin, tx.vin)
+    BOOST_FOREACH(const Input& txin, tx.getInputs())
     _orphanTransactionsByPrev.insert(make_pair(txin.prevout().hash, p));
 }
 
@@ -132,7 +132,7 @@ void TransactionFilter::eraseOrphanTx(uint256 hash) {
     const CDataStream* p = _orphanTransactions[hash];
     Transaction tx;
     CDataStream(*p) >> tx;
-    BOOST_FOREACH(const Input& txin, tx.vin) {
+    BOOST_FOREACH(const Input& txin, tx.getInputs()) {
         for (multimap<uint256, CDataStream*>::iterator mi = _orphanTransactionsByPrev.lower_bound(txin.prevout().hash);
              mi != _orphanTransactionsByPrev.upper_bound(txin.prevout().hash);) {
             if ((*mi).second == p)

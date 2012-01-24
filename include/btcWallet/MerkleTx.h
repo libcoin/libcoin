@@ -42,7 +42,7 @@ public:
     IMPLEMENT_SERIALIZE
     (
      nSerSize += SerReadWrite(s, *(Transaction*)this, nType, nVersion, ser_action);
-     nVersion = this->nVersion;
+     nVersion = this->_version;
      READWRITE(_blockHash);
      READWRITE(_merkleBranch);
      READWRITE(_index);

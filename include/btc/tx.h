@@ -1,7 +1,4 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2011 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file license.txt or http://www.opensource.org/licenses/mit-license.php.
+
 #ifndef BITCOIN_TX_H
 #define BITCOIN_TX_H
 
@@ -70,11 +67,11 @@ struct CoinRef // was CInPoint
     bool isNull() const { return (ptx == NULL && index == -1); }
 };
 
-//
-// An input of a transaction.  It contains the location of the previous
-// transaction's output that it claims and a signature that matches the
-// output's public key.
-//
+
+/// An input of a transaction.  It contains the location of the previous
+/// transaction's output that it claims and a signature that matches the
+/// output's public key.
+
 class Input // was CTxInput
 {
 public:
@@ -148,11 +145,11 @@ private:
     unsigned int _sequence;
 };
 
+typedef std::vector<Input> Inputs;
 
-//
-// An output of a transaction.  It contains the public key that the next input
-// must be able to sign with to claim it.
-//
+
+/// An output of a transaction.  It contains the public key that the next input
+/// must be able to sign with to claim it.
 
 class Output // was CTxOut
 {
@@ -215,6 +212,7 @@ private:
     CScript _script;
 };
 
+typedef std::vector<Output> Outputs;
 
 //
 // The basic transaction that is broadcasted on the network and contained in
@@ -223,129 +221,139 @@ private:
 class Transaction
 {
 public:
-    int nVersion;
-    std::vector<Input> vin;
-    std::vector<Output> vout;
-    unsigned int nLockTime;
-
-
-    Transaction()
-    {
-        SetNull();
+    Transaction() {
+        setNull();
     }
 
     IMPLEMENT_SERIALIZE
     (
-        READWRITE(this->nVersion);
-        nVersion = this->nVersion;
-        READWRITE(vin);
-        READWRITE(vout);
-        READWRITE(nLockTime);
+        READWRITE(this->_version);
+        nVersion = this->_version;
+        READWRITE(_inputs);
+        READWRITE(_outputs);
+        READWRITE(_lockTime);
     )
 
-    void SetNull()
-    {
-        nVersion = 1;
-        vin.clear();
-        vout.clear();
-        nLockTime = 0;
+    void setNull() {
+        _version = 1;
+        _inputs.clear();
+        _outputs.clear();
+        _lockTime = 0;
     }
 
-    bool IsNull() const
-    {
-        return (vin.empty() && vout.empty());
+    bool isNull() const {
+        return (_inputs.empty() && _outputs.empty());
     }
 
-    uint256 GetHash() const
-    {
+    /// Get the transaction hash. Note it is computed on call, so it is recommended to cache it.
+    uint256 getHash() const {
         return SerializeHash(*this);
     }
+    
+    /// Get version.
+    unsigned int version() const { return _version; }
+    
+    /// Get lock time
+    unsigned int lockTime() const { return _lockTime; }
+    
 
-    bool IsNewerThan(const Transaction& old) const
-    {
-        if (vin.size() != old.vin.size())
+    /// Add, replace and remove inputs. pos denotes the position.
+    void addInput(const Input& input) { _inputs.push_back(input); }
+    void replaceInput(unsigned int pos, const Input& input) { _inputs[pos] = input; }
+    void removeInputs() { _inputs.clear(); }
+
+    /// Const getters for total number of inputs, single input and the set of inputs for iteration. 
+    unsigned int getNumInputs() const { return _inputs.size(); }
+    const Input& getInput(unsigned int i) const { return _inputs[i]; }
+    const Inputs& getInputs() const { return _inputs; } 
+    
+    /// Add, replace, insert and remove outputs. pos denotes the position.
+    void addOutput(const Output& output) { _outputs.push_back(output); }
+    void replaceOutput(unsigned int pos, const Output& output) { _outputs[pos] = output; }
+    void insertOutput(unsigned int pos, const Output& output) { _outputs.insert(_outputs.begin() + pos, output); }
+    void removeOutputs() { _outputs.clear(); }
+
+    /// Const getters for total number of outputs, single output and the set of outputs for iteration. 
+    unsigned int getNumOutputs() const { return _outputs.size(); }
+    const Output& getOutput(unsigned int i) const { return _outputs[i]; }
+    const Outputs& getOutputs() const { return _outputs; } 
+    
+    /// Compare two transaction that only differ in sequence number to enable transaction replacements
+    bool isNewerThan(const Transaction& old) const {
+        if (_inputs.size() != old._inputs.size())
             return false;
-        for (int i = 0; i < vin.size(); i++)
-            if (vin[i].prevout() != old.vin[i].prevout())
+        for (int i = 0; i < _inputs.size(); i++)
+            if (_inputs[i].prevout() != old._inputs[i].prevout())
                 return false;
 
         bool newer = false;
         unsigned int lowest = UINT_MAX;
-        for (int i = 0; i < vin.size(); i++) {
-            if (vin[i].sequence() != old.vin[i].sequence()) {
-                if (vin[i].sequence() <= lowest) {
+        for (int i = 0; i < _inputs.size(); i++) {
+            if (_inputs[i].sequence() != old._inputs[i].sequence()) {
+                if (_inputs[i].sequence() <= lowest) {
                     newer = false;
-                    lowest = vin[i].sequence();
+                    lowest = _inputs[i].sequence();
                 }
-                if (old.vin[i].sequence() < lowest) {
+                if (old._inputs[i].sequence() < lowest) {
                     newer = true;
-                    lowest = old.vin[i].sequence();
+                    lowest = old._inputs[i].sequence();
                 }
             }
         }
         return newer;
     }
 
-    bool IsCoinBase() const
-    {
-        return (vin.size() == 1 && vin[0].isSubsidy());
+    /// Check if the transaction is a coin base transaction.
+    bool isCoinBase() const {
+        return (_inputs.size() == 1 && _inputs[0].isSubsidy());
     }
 
-    int GetSigOpCount() const
-    {
+    /// Count the number of operations in the scripts. We need to monitor for huge (in bytes) transactions
+    /// and demand a suitable extra fee.
+    int getSigOpCount() const {
         int n = 0;
-        BOOST_FOREACH(const Input& txin, vin)
-            n += txin.signature().GetSigOpCount();
-        BOOST_FOREACH(const Output& txout, vout)
-            n += txout.script().GetSigOpCount();
+        BOOST_FOREACH(const Input& input, _inputs)
+            n += input.signature().GetSigOpCount();
+        BOOST_FOREACH(const Output& output, _outputs)
+            n += output.script().GetSigOpCount();
         return n;
     }
-/*
- // IsStandard is chain dependent - so it cannot be evaluated on a pr class basis.
-    bool IsStandard() const
+
+    /// Get the total value of the transaction (excluding the fee).
+    int64 getValueOut() const
     {
-        BOOST_FOREACH(const Input& txin, vin)
-            if (!txin.scriptSig.IsPushOnly())
-                return error("nonstandard txin: %s", txin.scriptSig.toString().c_str());
-        BOOST_FOREACH(const Output& txout, vout)
-            if (!::IsStandard(txout.scriptPubKey))
-                return error("nonstandard txout: %s", txout.scriptPubKey.toString().c_str());
-        return true;
-    }
-*/
-    int64 GetValueOut() const
-    {
-        int64 nValueOut = 0;
-        BOOST_FOREACH(const Output& txout, vout)
+        int64 valueOut = 0;
+        BOOST_FOREACH(const Output& output, _outputs)
         {
-            nValueOut += txout.value();
-            if (!MoneyRange(txout.value()) || !MoneyRange(nValueOut))
+            valueOut += output.value();
+            if (!MoneyRange(output.value()) || !MoneyRange(valueOut))
                 throw std::runtime_error("Transaction::GetValueOut() : value out of range");
         }
-        return nValueOut;
+        return valueOut;
     }
 
-    int64 paymentTo(uint160 btc) const
-    {
+    /// Calculate the amount payed to a spicific address by this transaction. If the address is not part of the
+    /// transaction, 0 will be returned. 
+    int64 paymentTo(Address address) const {
         int64 value = 0;
-        BOOST_FOREACH(const Output& txout, vout)
+        BOOST_FOREACH(const Output& output, _outputs)
         {
-            if(txout.getAddress() == btc)
-                value += txout.value();
+            if(output.getAddress() == address)
+                value += output.value();
         }
         
         return value;
     }
     
-    static bool AllowFree(double dPriority)
-    {
+    /// Check if a transaction with a given priority can be completed with no fee.
+    static bool allowFree(double dPriority) {
         // Large (in bytes) low-priority (new, small-coin) transactions
         // need a fee.
         return dPriority > COIN * 144 / 250;
     }
 
-    int64 GetMinFee(unsigned int nBlockSize=1, bool fAllowFree=true, bool fForRelay=false) const
-    {
+    /// Calculate minimum transaction fee.
+    int64 getMinFee(unsigned int nBlockSize=1, bool fAllowFree=true, bool fForRelay=false) const {
         // Base fee is either MIN_TX_FEE or MIN_RELAY_TX_FEE
         int64 nBaseFee = fForRelay ? MIN_RELAY_TX_FEE : MIN_TX_FEE;
 
@@ -353,17 +361,14 @@ public:
         unsigned int nNewBlockSize = nBlockSize + nBytes;
         int64 nMinFee = (1 + (int64)nBytes / 1000) * nBaseFee;
 
-        if (fAllowFree)
-        {
-            if (nBlockSize == 1)
-            {
+        if (fAllowFree) {
+            if (nBlockSize == 1) {
                 // Transactions under 10K are free
                 // (about 4500bc if made of 50bc inputs)
                 if (nBytes < 10000)
                     nMinFee = 0;
             }
-            else
-            {
+            else {
                 // Free transaction area
                 if (nNewBlockSize < 27000)
                     nMinFee = 0;
@@ -372,13 +377,12 @@ public:
 
         // To limit dust spam, require MIN_TX_FEE/MIN_RELAY_TX_FEE if any output is less than 0.01
         if (nMinFee < nBaseFee)
-            BOOST_FOREACH(const Output& txout, vout)
-                if (txout.value() < CENT)
+            BOOST_FOREACH(const Output& output, _outputs)
+                if (output.value() < CENT)
                     nMinFee = nBaseFee;
 
         // Raise the price as the block approaches full
-        if (nBlockSize != 1 && nNewBlockSize >= MAX_BLOCK_SIZE_GEN/2)
-        {
+        if (nBlockSize != 1 && nNewBlockSize >= MAX_BLOCK_SIZE_GEN/2) {
             if (nNewBlockSize >= MAX_BLOCK_SIZE_GEN)
                 return MAX_MONEY;
             nMinFee *= MAX_BLOCK_SIZE_GEN / (MAX_BLOCK_SIZE_GEN - nNewBlockSize);
@@ -389,42 +393,47 @@ public:
         return nMinFee;
     }
 
-    friend bool operator==(const Transaction& a, const Transaction& b)
-    {
-        return (a.nVersion  == b.nVersion &&
-                a.vin       == b.vin &&
-                a.vout      == b.vout &&
-                a.nLockTime == b.nLockTime);
+    /// Compare two transactions.
+    friend bool operator==(const Transaction& a, const Transaction& b) {
+        return (a._version  == b._version &&
+                a._inputs   == b._inputs &&
+                a._outputs  == b._outputs &&
+                a._lockTime == b._lockTime);
     }
 
-    friend bool operator!=(const Transaction& a, const Transaction& b)
-    {
+    friend bool operator!=(const Transaction& a, const Transaction& b) {
         return !(a == b);
     }
 
 
-    std::string toString() const
-    {
+    /// toString and print - for debugging.
+    std::string toString() const {
         std::string str;
         str += strprintf("Transaction(hash=%s, ver=%d, vin.size=%d, vout.size=%d, nLockTime=%d)\n",
-            GetHash().toString().substr(0,10).c_str(),
-            nVersion,
-            vin.size(),
-            vout.size(),
-            nLockTime);
-        for (int i = 0; i < vin.size(); i++)
-            str += "    " + vin[i].toString() + "\n";
-        for (int i = 0; i < vout.size(); i++)
-            str += "    " + vout[i].toString() + "\n";
+            getHash().toString().substr(0,10).c_str(),
+            _version,
+            _inputs.size(),
+            _outputs.size(),
+            _lockTime);
+        for (int i = 0; i < _inputs.size(); i++)
+            str += "    " + _inputs[i].toString() + "\n";
+        for (int i = 0; i < _outputs.size(); i++)
+            str += "    " + _outputs[i].toString() + "\n";
         return str;
     }
 
-    void print() const
-    {
+    void print() const {
         printf("%s", toString().c_str());
     }
 
-    bool CheckTransaction() const;
+    /// Check if all internal settings of a transaction are valid. This is not a check if e.g. the inputs are spent.
+    bool checkTransaction() const;
+    
+protected:
+    int _version;
+    Inputs _inputs;
+    Outputs _outputs;
+    unsigned int _lockTime;
 };
 
 #endif

@@ -236,9 +236,9 @@ public:
     
     /// Get number of blocks to maturity - only relevant for Coin base transactions.
     int getBlocksToMaturity(const Transaction& tx) const {
-        if (!tx.IsCoinBase())
+        if (!tx.isCoinBase())
             return 0;
-        return std::max(0, (COINBASE_MATURITY+20) - getDepthInMainChain(tx.GetHash()));
+        return std::max(0, (COINBASE_MATURITY+20) - getDepthInMainChain(tx.getHash()));
     }
     
     /// Check if the hash of a block belongs to a block in the main chain:

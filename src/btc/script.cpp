@@ -880,7 +880,7 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, co
 
 uint256 SignatureHash(CScript scriptCode, const Transaction& txTo, unsigned int nIn, int nHashType)
 {
-    if (nIn >= txTo.vin.size())
+    if (nIn >= txTo.getNumInputs())
     {
         printf("ERROR: SignatureHash() : nIn=%d out of range\n", nIn);
         return 1;
@@ -891,15 +891,16 @@ uint256 SignatureHash(CScript scriptCode, const Transaction& txTo, unsigned int 
     // or an extra one at the end, this prevents all those possible incompatibilities.
     scriptCode.FindAndDelete(CScript(OP_CODESEPARATOR));
 
-    txTmp.vin.clear();
-    for(unsigned int i = 0; i < txTo.vin.size(); i++) {
-        Coin prevout = txTo.vin[i].prevout();
+    //    txTmp.vin.clear();
+    txTmp.removeInputs();
+    for(unsigned int i = 0; i < txTo.getNumInputs(); i++) {
+        Coin prevout = txTo.getInput(i).prevout();
         CScript signature = CScript();
         if (i == nIn) signature = scriptCode;
-        unsigned int sequence = txTo.vin[i].sequence();
+        unsigned int sequence = txTo.getInput(i).sequence();
         if ((nHashType & 0x1f) == SIGHASH_NONE || (nHashType & 0x1f) == SIGHASH_SINGLE) 
             if(i != nIn) sequence = 0;
-        txTmp.vin.push_back(Input(prevout, signature, sequence));
+        txTmp.addInput(Input(prevout, signature, sequence));
     }
     
     // Blank out other inputs' signatures
@@ -908,28 +909,30 @@ uint256 SignatureHash(CScript scriptCode, const Transaction& txTo, unsigned int 
     //    txTmp.vin[nIn].scriptSig = scriptCode;
 
     // Blank out some of the outputs
-    if ((nHashType & 0x1f) == SIGHASH_NONE)
-    {
+    if ((nHashType & 0x1f) == SIGHASH_NONE) {
         // Wildcard payee
-        txTmp.vout.clear();
+        txTmp.removeOutputs();
 
         // Let the others update at will
         //        for (int i = 0; i < txTmp.vin.size(); i++)
         //            if (i != nIn)
         //                txTmp.vin[i].nSequence = 0;
     }
-    else if ((nHashType & 0x1f) == SIGHASH_SINGLE)
-    {
+    else if ((nHashType & 0x1f) == SIGHASH_SINGLE) {
         // Only lockin the txout payee at same index as txin
         unsigned int nOut = nIn;
-        if (nOut >= txTmp.vout.size())
+        if (nOut >= txTmp.getNumOutputs())
         {
             printf("ERROR: SignatureHash() : nOut=%d out of range\n", nOut);
             return 1;
         }
-        txTmp.vout.resize(nOut+1);
-        for (int i = 0; i < nOut; i++)
-            txTmp.vout[i].setNull();
+
+        txTmp.removeOutputs();
+        for (int i = 0; i < nOut + 1; i++)
+            txTmp.addOutput(Output());
+        //        txTmp.vout.resize(nOut+1);
+        //        for (int i = 0; i < nOut; i++)
+        //            txTmp.vout[i].setNull();
 
         // Let the others update at will
         //        for (int i = 0; i < txTmp.vin.size(); i++)
@@ -938,10 +941,12 @@ uint256 SignatureHash(CScript scriptCode, const Transaction& txTo, unsigned int 
     }
 
     // Blank out other inputs completely, not recommended for open transactions
-    if (nHashType & SIGHASH_ANYONECANPAY)
-    {
-        txTmp.vin[0] = txTmp.vin[nIn];
-        txTmp.vin.resize(1);
+    if (nHashType & SIGHASH_ANYONECANPAY) {
+        Input input = txTmp.getInput(nIn);
+        txTmp.removeInputs();
+        txTmp.addInput(input);
+        //        txTmp.vin[0] = txTmp.getInput(nIn);
+        //        txTmp.vin.resize(1);
     }
 
     // Serialize and hash
@@ -1189,11 +1194,11 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const T
 
 bool SignSignature(const CKeyStore &keystore, const Transaction& txFrom, Transaction& txTo, unsigned int nIn, int nHashType, CScript scriptPrereq)
 {
-    assert(nIn < txTo.vin.size());
-    Coin prevout = txTo.vin[nIn].prevout();
+    assert(nIn < txTo.getNumInputs());
+    Coin prevout = txTo.getInput(nIn).prevout();
     //    Input& txin = txTo.vin[nIn];
-    assert(prevout.index < txFrom.vout.size());
-    const Output& txout = txFrom.vout[prevout.index];
+    assert(prevout.index < txFrom.getNumOutputs());
+    const Output& txout = txFrom.getOutput(prevout.index);
 
     // Leave out the signature from the hash, since a signature can't sign itself.
     // The checksig op will also drop the signatures from its hash.
@@ -1205,7 +1210,7 @@ bool SignSignature(const CKeyStore &keystore, const Transaction& txFrom, Transac
 
     signature = scriptPrereq + signature;
     
-    txTo.vin[nIn] = Input(prevout, signature, txTo.vin[nIn].sequence());
+    txTo.replaceInput(nIn, Input(prevout, signature, txTo.getInput(nIn).sequence()));
     
     // Test solution
     if (scriptPrereq.empty())
@@ -1218,16 +1223,16 @@ bool SignSignature(const CKeyStore &keystore, const Transaction& txFrom, Transac
 
 bool VerifySignature(const Transaction& txFrom, const Transaction& txTo, unsigned int nIn, int nHashType)
 {
-    assert(nIn < txTo.vin.size());
-    const Input& txin = txTo.vin[nIn];
-    if (txin.prevout().index >= txFrom.vout.size())
+    assert(nIn < txTo.getNumInputs());
+    const Input& input = txTo.getInput(nIn);
+    if (input.prevout().index >= txFrom.getNumOutputs())
         return false;
-    const Output& txout = txFrom.vout[txin.prevout().index];
+    const Output& output = txFrom.getOutput(input.prevout().index);
 
-    if (txin.prevout().hash != txFrom.GetHash())
+    if (input.prevout().hash != txFrom.getHash())
         return false;
 
-    if (!VerifyScript(txin.signature(), txout.script(), txTo, nIn, nHashType))
+    if (!VerifyScript(input.signature(), output.script(), txTo, nIn, nHashType))
         return false;
 
     return true;

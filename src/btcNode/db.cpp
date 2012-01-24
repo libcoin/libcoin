@@ -242,12 +242,12 @@ void DBFlush(bool fShutdown)
 
 bool CBrokerDB::WriteTx(const Transaction& tx)
 {
-    return Write(make_pair(string("hash"), tx.GetHash()), tx);
+    return Write(make_pair(string("hash"), tx.getHash()), tx);
 }
 
 bool CBrokerDB::EraseTx(const Transaction& tx)
 {
-    return Erase(make_pair(string("hash"), tx.GetHash()));
+    return Erase(make_pair(string("hash"), tx.getHash()));
 }
 
 bool CBrokerDB::LoadTxes(map<uint256, Transaction>& txes)
@@ -275,7 +275,7 @@ bool CBrokerDB::LoadTxes(map<uint256, Transaction>& txes)
         {
             Transaction tx;
             ssValue >> tx;
-            txes.insert(make_pair(tx.GetHash(), tx));
+            txes.insert(make_pair(tx.getHash(), tx));
         }
     }
     pcursor->close();

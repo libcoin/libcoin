@@ -257,10 +257,10 @@ bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& map
                    const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee) const
 {
     // Take over previous transactions' spent pointers
-    if (!tx.IsCoinBase()) {
+    if (!tx.isCoinBase()) {
         int64 nValueIn = 0;
-        for (int i = 0; i < tx.vin.size(); i++) {
-            Coin prevout = tx.vin[i].prevout();
+        for (int i = 0; i < tx.getNumInputs(); i++) {
+            Coin prevout = tx.getInput(i).prevout();
             
             // Read txindex
             TxIndex txindex;
@@ -274,7 +274,7 @@ bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& map
                 fFound = ReadTxIndex(prevout.hash, txindex);
             }
             if (!fFound && (fBlock || fMiner))
-                return fMiner ? false : error("ConnectInputs() : %s prev tx %s index entry not found", tx.GetHash().toString().substr(0,10).c_str(),  prevout.hash.toString().substr(0,10).c_str());
+                return fMiner ? false : error("ConnectInputs() : %s prev tx %s index entry not found", tx.getHash().toString().substr(0,10).c_str(),  prevout.hash.toString().substr(0,10).c_str());
             
             // Read txPrev
             Transaction txPrev;
@@ -282,37 +282,37 @@ bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& map
                 // Get prev tx from single transactions in memory
                 TransactionIndex::const_iterator index = _transactionIndex.find(prevout.hash);
                 if (index == _transactionIndex.end())
-                    return error("ConnectInputs() : %s mapTransactions prev not found %s", tx.GetHash().toString().substr(0,10).c_str(),  prevout.hash.toString().substr(0,10).c_str());
+                    return error("ConnectInputs() : %s mapTransactions prev not found %s", tx.getHash().toString().substr(0,10).c_str(),  prevout.hash.toString().substr(0,10).c_str());
                 txPrev = index->second;
                 if (!fFound)
-                    txindex.resizeSpents(txPrev.vout.size());
+                    txindex.resizeSpents(txPrev.getNumOutputs());
             }
             else {
                 // Get prev tx from disk
                 if (!_blockFile.readFromDisk(txPrev, txindex.getPos()))
-                    return error("ConnectInputs() : %s ReadFromDisk prev tx %s failed", tx.GetHash().toString().substr(0,10).c_str(),  prevout.hash.toString().substr(0,10).c_str());
+                    return error("ConnectInputs() : %s ReadFromDisk prev tx %s failed", tx.getHash().toString().substr(0,10).c_str(),  prevout.hash.toString().substr(0,10).c_str());
                 }
             
-            if (prevout.index >= txPrev.vout.size() || prevout.index >= txindex.getNumSpents())
-                return error("ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", tx.GetHash().toString().substr(0,10).c_str(), prevout.index, txPrev.vout.size(), txindex.getNumSpents(), prevout.hash.toString().substr(0,10).c_str(), txPrev.toString().c_str());
+            if (prevout.index >= txPrev.getNumOutputs() || prevout.index >= txindex.getNumSpents())
+                return error("ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", tx.getHash().toString().substr(0,10).c_str(), prevout.index, txPrev.getNumOutputs(), txindex.getNumSpents(), prevout.hash.toString().substr(0,10).c_str(), txPrev.toString().c_str());
             
             // If prev is coinbase, check that it's matured
-            if (txPrev.IsCoinBase())
+            if (txPrev.isCoinBase())
                 for (const CBlockIndex* pindex = pindexBlock; pindex && pindexBlock->nHeight - pindex->nHeight < COINBASE_MATURITY; pindex = pindex->pprev)
                     if (pindex->nBlockPos == txindex.getPos().getBlockPos() && pindex->nFile == txindex.getPos().getFile())
                         return error("ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
             
             // Verify signature
             if (!VerifySignature(txPrev, tx, i))
-                return error("ConnectInputs() : %s VerifySignature failed", tx.GetHash().toString().substr(0,10).c_str());
+                return error("ConnectInputs() : %s VerifySignature failed", tx.getHash().toString().substr(0,10).c_str());
             
             // Check for conflicts
             if (!txindex.getSpent(prevout.index).isNull())
-                return fMiner ? false : error("ConnectInputs() : %s prev tx already used at %s", tx.GetHash().toString().substr(0,10).c_str(), txindex.getSpent(prevout.index).toString().c_str());
+                return fMiner ? false : error("ConnectInputs() : %s prev tx already used at %s", tx.getHash().toString().substr(0,10).c_str(), txindex.getSpent(prevout.index).toString().c_str());
             
             // Check for negative or overflow input values
-            nValueIn += txPrev.vout[prevout.index].value();
-            if (!MoneyRange(txPrev.vout[prevout.index].value()) || !MoneyRange(nValueIn))
+            nValueIn += txPrev.getOutput(prevout.index).value();
+            if (!MoneyRange(txPrev.getOutput(prevout.index).value()) || !MoneyRange(nValueIn))
                 return error("ConnectInputs() : txin values out of range");
             
             // Mark outpoints as spent
@@ -324,13 +324,13 @@ bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& map
             }
         }
         
-        if (nValueIn < tx.GetValueOut())
-            return error("ConnectInputs() : %s value in < value out", tx.GetHash().toString().substr(0,10).c_str());
+        if (nValueIn < tx.getValueOut())
+            return error("ConnectInputs() : %s value in < value out", tx.getHash().toString().substr(0,10).c_str());
         
         // Tally transaction fees
-        int64 nTxFee = nValueIn - tx.GetValueOut();
+        int64 nTxFee = nValueIn - tx.getValueOut();
         if (nTxFee < 0)
-            return error("ConnectInputs() : %s nTxFee < 0", tx.GetHash().toString().substr(0,10).c_str());
+            return error("ConnectInputs() : %s nTxFee < 0", tx.getHash().toString().substr(0,10).c_str());
         if (nTxFee < nMinFee)
             return false;
         nFees += nTxFee;
@@ -340,11 +340,11 @@ bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& map
     
     if (fBlock) {
         // Add transaction to changes
-        mapTestPool[tx.GetHash()] = TxIndex(posThisTx, tx.vout.size());
+        mapTestPool[tx.getHash()] = TxIndex(posThisTx, tx.getNumOutputs());
     }
     else if (fMiner) {
         // Add transaction to test pool
-        mapTestPool[tx.GetHash()] = TxIndex(DiskTxPos(1,1,1), tx.vout.size());
+        mapTestPool[tx.getHash()] = TxIndex(DiskTxPos(1,1,1), tx.getNumOutputs());
     }
     
     return true;
@@ -353,8 +353,8 @@ bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& map
 bool BlockChain::disconnectInputs(Transaction& tx)
 {
     // Relinquish previous transactions' spent pointers
-    if (!tx.IsCoinBase()) {
-        BOOST_FOREACH(const Input& txin, tx.vin) {
+    if (!tx.isCoinBase()) {
+        BOOST_FOREACH(const Input& txin, tx.getInputs()) {
             Coin prevout = txin.prevout();
             
             // Get prev txindex from disk
@@ -527,8 +527,8 @@ bool BlockChain::UpdateTxIndex(uint256 hash, const TxIndex& txindex)
 bool BlockChain::AddTxIndex(const Transaction& tx, const DiskTxPos& pos, int nHeight)
 {
     // Add to tx index
-    uint256 hash = tx.GetHash();
-    TxIndex txindex(pos, tx.vout.size());
+    uint256 hash = tx.getHash();
+    TxIndex txindex(pos, tx.getNumOutputs());
     
     return UpdateTxIndex(hash, txindex);
     //    return Write(make_pair(string("tx"), hash), txindex);
@@ -537,7 +537,7 @@ bool BlockChain::AddTxIndex(const Transaction& tx, const DiskTxPos& pos, int nHe
 
 bool BlockChain::EraseTxIndex(const Transaction& tx)
 {
-    uint256 hash = tx.GetHash();
+    uint256 hash = tx.getHash();
 /*    
     // gronager: hook to enable public key / hash160 lookups by a separate database
     // first find the keys and hash160s that are referenced in this transaction
@@ -629,15 +629,15 @@ bool BlockChain::haveTx(uint256 hash, bool must_be_confirmed) const
 bool BlockChain::isFinal(const Transaction& tx, int nBlockHeight, int64 nBlockTime) const
 {
     // Time based nLockTime implemented in 0.1.6
-    if (tx.nLockTime == 0)
+    if (tx.lockTime() == 0)
         return true;
     if (nBlockHeight == 0)
         nBlockHeight = getBestHeight();
     if (nBlockTime == 0)
         nBlockTime = GetAdjustedTime();
-    if ((int64)tx.nLockTime < (tx.nLockTime < LOCKTIME_THRESHOLD ? (int64)nBlockHeight : nBlockTime))
+    if ((int64)tx.lockTime() < (tx.lockTime() < LOCKTIME_THRESHOLD ? (int64)nBlockHeight : nBlockTime))
         return true;
-    BOOST_FOREACH(const Input& txin, tx.vin)
+    BOOST_FOREACH(const Input& txin, tx.getInputs())
         if (!txin.isFinal())
             return false;
     return true;
@@ -703,7 +703,7 @@ bool BlockChain::ReadOwnerTxes(uint160 hash160, int nMinHeight, vector<Transacti
 
 bool BlockChain::ReadDiskTx(uint256 hash, Transaction& tx, TxIndex& txindex) const
 {
-    tx.SetNull();
+    tx.setNull();
     if (!ReadTxIndex(hash, txindex))
         return false;
     return (_blockFile.readFromDisk(tx, txindex.getPos()));
@@ -958,7 +958,7 @@ bool BlockChain::connectBlock(Block& block, CBlockIndex* pindex)
             return error("ConnectBlock() : UpdateTxIndex failed");
     }
     
-    if (block.getTransaction(0).GetValueOut() > _chain.subsidy(pindex->nHeight) + fees)
+    if (block.getTransaction(0).getValueOut() > _chain.subsidy(pindex->nHeight) + fees)
         return false;
     
     // Update block index on disk without changing it in memory.
@@ -1018,7 +1018,7 @@ bool BlockChain::reorganize(Block& block, CBlockIndex* pindexNew)
     
     // Queue memory transactions to resurrect
     BOOST_FOREACH(const Transaction& tx, block.getTransactions())
-    if (!tx.IsCoinBase())
+    if (!tx.isCoinBase())
         vResurrect.push_back(tx);
     }
     
@@ -1178,7 +1178,7 @@ bool BlockChain::addToBlockIndex(Block& block, unsigned int nFile, unsigned int 
         // Notify UI to display prev block's coinbase if it was ours
         static uint256 hashPrevBestCoinBase;
         //        UpdatedTransaction(hashPrevBestCoinBase);
-        hashPrevBestCoinBase = block.getTransaction(0).GetHash();
+        hashPrevBestCoinBase = block.getTransaction(0).getHash();
     }
     
     return true;
@@ -1235,15 +1235,15 @@ bool BlockChain::CheckForMemoryPool(const Transaction& tx, Transaction*& ptxOld,
     if (pfMissingInputs)
         *pfMissingInputs = false;
     
-    if (!tx.CheckTransaction())
+    if (!tx.checkTransaction())
         return error("AcceptToMemoryPool() : CheckTransaction failed");
     
     // Coinbase is only valid in a block, not as a loose transaction
-    if (tx.IsCoinBase())
+    if (tx.isCoinBase())
         return error("AcceptToMemoryPool() : coinbase as individual tx");
     
     // To help v0.1.5 clients who would see it as a negative number
-    if ((int64)tx.nLockTime > INT_MAX)
+    if ((int64)tx.lockTime() > INT_MAX)
         return error("AcceptToMemoryPool() : not accepting nLockTime beyond 2038 yet");
     
     // Safety limits
@@ -1252,7 +1252,7 @@ bool BlockChain::CheckForMemoryPool(const Transaction& tx, Transaction*& ptxOld,
     // attacks disallow transactions with more than one SigOp per 34 bytes.
     // 34 bytes because a TxOut is:
     //   20-byte address + 8 byte bitcoin amount + 5 bytes of ops + 1 byte script length
-    if (tx.GetSigOpCount() > nSize / 34 || nSize < 100)
+    if (tx.getSigOpCount() > nSize / 34 || nSize < 100)
         return error("AcceptToMemoryPool() : nonstandard transaction");
     
     // Rather not work on nonstandard transactions (unless -testnet)
@@ -1260,7 +1260,7 @@ bool BlockChain::CheckForMemoryPool(const Transaction& tx, Transaction*& ptxOld,
         return error("AcceptToMemoryPool() : nonstandard transaction type");
     
     // Do we already have it?
-    uint256 hash = tx.GetHash();
+    uint256 hash = tx.getHash();
     if (_transactionIndex.count(hash))
         return false;
     if (fCheckInputs)
@@ -1269,8 +1269,8 @@ bool BlockChain::CheckForMemoryPool(const Transaction& tx, Transaction*& ptxOld,
     
     // Check for conflicts with in-memory transactions
     //    Transaction* ptxOld = NULL;
-    for (int i = 0; i < tx.vin.size(); i++) {
-        Coin outpoint = tx.vin[i].prevout();
+    for (int i = 0; i < tx.getNumInputs(); i++) {
+        Coin outpoint = tx.getInput(i).prevout();
         TransactionConnections::const_iterator cnx = _transactionConnections.find(outpoint);
         if (cnx != _transactionConnections.end()) {
             // Disable replacement feature for now
@@ -1282,10 +1282,10 @@ bool BlockChain::CheckForMemoryPool(const Transaction& tx, Transaction*& ptxOld,
             ptxOld = (Transaction*)cnx->second.ptx;
             if (isFinal(*ptxOld))
                 return false;
-            if (!tx.IsNewerThan(*ptxOld))
+            if (!tx.isNewerThan(*ptxOld))
                 return false;
-            for (int i = 0; i < tx.vin.size(); i++) {
-                Coin outpoint = tx.vin[i].prevout();
+            for (int i = 0; i < tx.getNumInputs(); i++) {
+                Coin outpoint = tx.getInput(i).prevout();
                 TransactionConnections::const_iterator cnx = _transactionConnections.find(outpoint);
                 if (cnx == _transactionConnections.end() || cnx->second.ptx != ptxOld)
                     return false;
@@ -1305,7 +1305,7 @@ bool BlockChain::CheckForMemoryPool(const Transaction& tx, Transaction*& ptxOld,
         }
         
         // Don't accept it if it can't get into a block
-        if (nFees < tx.GetMinFee(1000, true, true))
+        if (nFees < tx.getMinFee(1000, true, true))
             return error("AcceptToMemoryPool() : not enough fees");
         
         // Continuously rate-limit free transactions
@@ -1340,7 +1340,7 @@ bool BlockChain::AcceptToMemoryPool(const Transaction& tx, bool fCheckInputs, bo
     if(CheckForMemoryPool(tx, ptxOld, fCheckInputs, pfMissingInputs)) {
         // Store transaction in memory
         if (ptxOld) {
-            printf("AcceptToMemoryPool() : replacing tx %s with new version\n", ptxOld->GetHash().toString().c_str());
+            printf("AcceptToMemoryPool() : replacing tx %s with new version\n", ptxOld->getHash().toString().c_str());
             RemoveFromMemoryPool(*ptxOld);
         }
         AddToMemoryPoolUnchecked(tx);
@@ -1350,7 +1350,7 @@ bool BlockChain::AcceptToMemoryPool(const Transaction& tx, bool fCheckInputs, bo
         //    if (ptxOld)
         //        EraseFromWallets(ptxOld->GetHash());
         
-        printf("AcceptToMemoryPool(): accepted %s\n", tx.GetHash().toString().substr(0,10).c_str());
+        printf("AcceptToMemoryPool(): accepted %s\n", tx.getHash().toString().substr(0,10).c_str());
         return true;
     }
     else
@@ -1362,23 +1362,23 @@ bool BlockChain::AddToMemoryPoolUnchecked(const Transaction& tx)
     // Add to memory pool without checking anything.  Don't call this directly,
     // call AcceptToMemoryPool to properly check the transaction first.
     
-    uint256 hash = tx.GetHash();
+    uint256 hash = tx.getHash();
     
     typedef pair<uint160, unsigned int> AssetPair;
     vector<AssetPair> debits;
     vector<AssetPair> credits;
     
     // for each tx out in the newly added tx check for a pubkey or a pubkeyhash in the script
-    for(unsigned int n = 0; n < tx.vout.size(); n++)
-        debits.push_back(AssetPair(tx.vout[n].getAddress(), n));
+    for(unsigned int n = 0; n < tx.getNumOutputs(); n++)
+        debits.push_back(AssetPair(tx.getOutput(n).getAddress(), n));
     
-    if(!tx.IsCoinBase()) {
-        for(unsigned int n = 0; n < tx.vin.size(); n++) {
-            const Input& txin = tx.vin[n];
+    if(!tx.isCoinBase()) {
+        for(unsigned int n = 0; n < tx.getNumInputs(); n++) {
+            const Input& txin = tx.getInput(n);
             Transaction prevtx;
             if(!readDiskTx(txin.prevout().hash, prevtx))
                 continue; // OK ???
-            Output txout = prevtx.vout[txin.prevout().index];        
+            Output txout = prevtx.getOutput(txin.prevout().index);        
             
             credits.push_back(AssetPair(txout.getAddress(), n));
         }
@@ -1391,8 +1391,8 @@ bool BlockChain::AddToMemoryPoolUnchecked(const Transaction& tx)
         _creditIndex[assetpair->first].insert(Coin(hash, assetpair->second));
     
     _transactionIndex[hash] = tx;
-    for (int i = 0; i < tx.vin.size(); i++)
-        _transactionConnections[tx.vin[i].prevout()] = CoinRef(&_transactionIndex[hash], i);
+    for (int i = 0; i < tx.getNumInputs(); i++)
+        _transactionConnections[tx.getInput(i).prevout()] = CoinRef(&_transactionIndex[hash], i);
     _transactionsUpdated++;
     
     return true;
@@ -1403,23 +1403,23 @@ bool BlockChain::RemoveFromMemoryPool(Transaction& tx)
 {
     // Remove transaction from memory pool
     
-    uint256 hash = tx.GetHash();
+    uint256 hash = tx.getHash();
     
     typedef pair<uint160, unsigned int> AssetPair;
     vector<AssetPair> debits;
     vector<AssetPair> credits;
     
     // for each tx out in the newly added tx check for a pubkey or a pubkeyhash in the script
-    for(unsigned int n = 0; n < tx.vout.size(); n++)
-        debits.push_back(AssetPair(tx.vout[n].getAddress(), n));
+    for(unsigned int n = 0; n < tx.getNumOutputs(); n++)
+        debits.push_back(AssetPair(tx.getOutput(n).getAddress(), n));
     
-    if(!tx.IsCoinBase()) {
-        for(unsigned int n = 0; n < tx.vin.size(); n++) {
-            const Input& txin = tx.vin[n];
+    if(!tx.isCoinBase()) {
+        for(unsigned int n = 0; n < tx.getNumInputs(); n++) {
+            const Input& txin = tx.getInput(n);
             Transaction prevtx;
             if(!readDiskTx(txin.prevout().hash, prevtx))
                 continue; // OK ???
-            Output txout = prevtx.vout[txin.prevout().index];        
+            Output txout = prevtx.getOutput(txin.prevout().index);        
             
             credits.push_back(AssetPair(txout.getAddress(), n));
         }
@@ -1437,9 +1437,9 @@ bool BlockChain::RemoveFromMemoryPool(Transaction& tx)
             _creditIndex.erase(assetpair->first); 
     }
     
-    BOOST_FOREACH(const Input& txin, tx.vin)
+    BOOST_FOREACH(const Input& txin, tx.getInputs())
     _transactionConnections.erase(txin.prevout());
-    _transactionIndex.erase(tx.GetHash());
+    _transactionIndex.erase(tx.getHash());
     _transactionsUpdated++;
     
     return true;
@@ -1463,7 +1463,7 @@ void BlockChain::getDebit(const uint160& btc, Coins& coins) const
 
 void BlockChain::getTransaction(const uint256& hash, Transaction& tx) const
 {
-    tx.SetNull();
+    tx.setNull();
     if(!readDiskTx(hash, tx)) {
         TransactionIndex::const_iterator hashtx = _transactionIndex.find(hash);
         if(hashtx != _transactionIndex.end())
@@ -1473,7 +1473,7 @@ void BlockChain::getTransaction(const uint256& hash, Transaction& tx) const
 
 void BlockChain::getTransaction(const uint256& hash, Transaction& tx, int64& height, int64& time) const
 {
-    tx.SetNull();
+    tx.setNull();
     height = -1;
     time = -1;
     if(!readDiskTx(hash, tx, height, time)) {
@@ -1505,7 +1505,7 @@ uint256 BlockChain::spentIn(Coin coin) const {
         const DiskTxPos& diskpos = index.getSpent(coin.index);
         Transaction tx;
         _blockFile.readFromDisk(tx, diskpos);
-        return tx.GetHash();
+        return tx.getHash();
     }
     else
         return 0;    
@@ -1549,7 +1549,7 @@ void CDBAssetSyncronizer::getCoins(uint160 btc, Coins& coins)
         Transaction tx;
         getTransaction(*coin, tx);
         
-        Input in = tx.vin[coin->index];
+        Input in = tx.getInput(coin->index);
         Coin spend(in.prevout().hash, in.prevout().index);
         coins.erase(spend);
     }

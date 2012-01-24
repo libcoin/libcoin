@@ -54,7 +54,7 @@ public:
     
     const Transaction& getTx(uint256 hash) const;
     
-    uint160 getAddress(const Output& out);
+    uint160 getAddress(const Output& out) const;
     
     void remote_sync();
 
@@ -65,7 +65,7 @@ public:
         return _coins;
     }
     
-    bool isSpendable(Coin coin);
+    bool isSpendable(Coin coin) const;
     const int64 value(Coin coin) const;
     
     struct CompValue {
