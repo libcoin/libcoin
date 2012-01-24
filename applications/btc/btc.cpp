@@ -183,7 +183,7 @@ public:
                 else // value read
                     scriptSig << ParseHex(token);
             }
-            CTxIn txin(hash, n, scriptSig);
+            Input txin(hash, n, scriptSig);
             tx.vin.push_back(txin);
         }
         
@@ -210,7 +210,7 @@ public:
                 else // value read
                     scriptPubkey << ParseHex(token);
             }
-            CTxOut txout(value, scriptPubkey);
+            Output txout(value, scriptPubkey);
             tx.vout.push_back(txout);
         }
         
@@ -256,7 +256,7 @@ uint160 getAccountAddress(string asset_name, bool bForceNew=false)
              ++it)
         {
             const CWalletTx& wtx = (*it).second;
-            BOOST_FOREACH(const CTxOut& txout, wtx.vout)
+            BOOST_FOREACH(const Output& txout, wtx.vout)
             if (txout.scriptPubKey == scriptPubKey)
                 bKeyUsed = true;
         }
@@ -688,7 +688,7 @@ Value sendtoaddr(const Array& params, bool fHelp)
     
     // now loop over the txins
     Array txins;
-    BOOST_FOREACH(const CTxIn& txin, tx.vin)
+    BOOST_FOREACH(const Input& txin, tx.vin)
     {
         Object inentry;
         inentry.clear();
@@ -707,7 +707,7 @@ Value sendtoaddr(const Array& params, bool fHelp)
     
     // now loop over the txouts
     Array txouts;
-    BOOST_FOREACH(const CTxOut& txout, tx.vout)
+    BOOST_FOREACH(const Output& txout, tx.vout)
     {
         Object outentry;
         outentry.clear();

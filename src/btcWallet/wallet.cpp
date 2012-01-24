@@ -205,18 +205,18 @@ void Wallet::WalletUpdateSpent(const Transaction &tx)
     // restored from backup or the user making copies of wallet.dat.
     CRITICAL_BLOCK(cs_wallet)
     {
-        BOOST_FOREACH(const CTxIn& txin, tx.vin)
+        BOOST_FOREACH(const Input& txin, tx.vin)
         {
-            map<uint256, CWalletTx>::iterator mi = mapWallet.find(txin.prevout.hash);
+            map<uint256, CWalletTx>::iterator mi = mapWallet.find(txin.prevout().hash);
             if (mi != mapWallet.end())
             {
                 CWalletTx& wtx = (*mi).second;
-                if (!wtx.IsSpent(txin.prevout.index) && IsMine(wtx.vout[txin.prevout.index]))
+                if (!wtx.IsSpent(txin.prevout().index) && IsMine(wtx.vout[txin.prevout().index]))
                 {
                     printf("WalletUpdateSpent found spent coin %sbc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().toString().c_str());
-                    wtx.MarkSpent(txin.prevout.index);
+                    wtx.MarkSpent(txin.prevout().index);
                     wtx.WriteToDisk();
-                    vWalletUpdated.push_back(txin.prevout.hash);
+                    vWalletUpdated.push_back(txin.prevout().hash);
                 }
             }
         }
@@ -270,9 +270,9 @@ bool Wallet::AddToWallet(const CWalletTx& wtxIn)
         // If default receiving address gets used, replace it with a new one
         CScript scriptDefaultKey;
         scriptDefaultKey.SetChainAddress(_blockChain.chain().networkId(), vchDefaultKey);
-        BOOST_FOREACH(const CTxOut& txout, wtx.vout)
+        BOOST_FOREACH(const Output& txout, wtx.vout)
         {
-            if (txout.scriptPubKey == scriptDefaultKey)
+            if (txout.script() == scriptDefaultKey)
             {
                 std::vector<unsigned char> newDefaultKey;
                 if (GetKeyFromPool(newDefaultKey, false))
@@ -329,33 +329,33 @@ bool Wallet::EraseFromWallet(uint256 hash)
 }
 
 
-bool Wallet::IsMine(const CTxIn &txin) const
+bool Wallet::IsMine(const Input &txin) const
 {
     CRITICAL_BLOCK(cs_wallet)
     {
-        map<uint256, CWalletTx>::const_iterator mi = mapWallet.find(txin.prevout.hash);
+        map<uint256, CWalletTx>::const_iterator mi = mapWallet.find(txin.prevout().hash);
         if (mi != mapWallet.end())
         {
             const CWalletTx& prev = (*mi).second;
-            if (txin.prevout.index < prev.vout.size())
-                if (IsMine(prev.vout[txin.prevout.index]))
+            if (txin.prevout().index < prev.vout.size())
+                if (IsMine(prev.vout[txin.prevout().index]))
                     return true;
         }
     }
     return false;
 }
 
-int64 Wallet::GetDebit(const CTxIn &txin) const
+int64 Wallet::GetDebit(const Input &txin) const
 {
     CRITICAL_BLOCK(cs_wallet)
     {
-        map<uint256, CWalletTx>::const_iterator mi = mapWallet.find(txin.prevout.hash);
+        map<uint256, CWalletTx>::const_iterator mi = mapWallet.find(txin.prevout().hash);
         if (mi != mapWallet.end())
         {
             const CWalletTx& prev = (*mi).second;
-            if (txin.prevout.index < prev.vout.size())
-                if (IsMine(prev.vout[txin.prevout.index]))
-                    return prev.vout[txin.prevout.index].nValue;
+            if (txin.prevout().index < prev.vout.size())
+                if (IsMine(prev.vout[txin.prevout().index]))
+                    return prev.vout[txin.prevout().index].value();
         }
     }
     return 0;
@@ -392,11 +392,11 @@ bool Wallet::IsConfirmed(const CWalletTx& tx) const
             BOOST_FOREACH(const CMerkleTx& mtx, tx.vtxPrev)
                 mapPrev[tx.GetHash()] = &mtx;
         
-        BOOST_FOREACH(const CTxIn& txin, ptx->vin)
+        BOOST_FOREACH(const Input& txin, ptx->vin)
             {
-            if (!mapPrev.count(txin.prevout.hash))
+            if (!mapPrev.count(txin.prevout().hash))
                 return false;
-            vWorkQueue.push_back(mapPrev[txin.prevout.hash]);
+            vWorkQueue.push_back(mapPrev[txin.prevout().hash]);
             }
         }
     return true;
@@ -641,7 +641,7 @@ bool Wallet::SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfThei
                 if (pcoin->IsSpent(i) || !IsMine(pcoin->vout[i]))
                     continue;
 
-                int64 n = pcoin->vout[i].nValue;
+                int64 n = pcoin->vout[i].value();
 
                 if (n <= 0)
                     continue;
@@ -789,7 +789,7 @@ bool Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CWa
                 double dPriority = 0;
                 // vouts to the payees
                 BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
-                    wtxNew.vout.push_back(CTxOut(s.second, s.first));
+                    wtxNew.vout.push_back(Output(s.second, s.first));
 
                 // Choose coins to use
                 set<pair<const CWalletTx*,unsigned int> > setCoins;
@@ -798,7 +798,7 @@ bool Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CWa
                     return false;
                 BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int) pcoin, setCoins)
                 {
-                    int64 nCredit = pcoin.first->vout[pcoin.second].nValue;
+                    int64 nCredit = pcoin.first->vout[pcoin.second].value();
                     dPriority += (double)nCredit * _blockChain.getDepthInMainChain(pcoin.first->GetHash());
                 }
 
@@ -833,15 +833,15 @@ bool Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CWa
                         scriptChange << vchPubKey << OP_CHECKSIG;
 
                     // Insert change txn at random position:
-                    vector<CTxOut>::iterator position = wtxNew.vout.begin()+GetRandInt(wtxNew.vout.size());
-                    wtxNew.vout.insert(position, CTxOut(nChange, scriptChange));
+                    vector<Output>::iterator position = wtxNew.vout.begin()+GetRandInt(wtxNew.vout.size());
+                    wtxNew.vout.insert(position, Output(nChange, scriptChange));
                 }
                 else
                     reservekey.ReturnKey();
 
                 // Fill vin
                 BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
-                    wtxNew.vin.push_back(CTxIn(coin.first->GetHash(),coin.second));
+                    wtxNew.vin.push_back(Input(coin.first->GetHash(),coin.second));
 
                 // Sign
                 int nIn = 0;
@@ -904,11 +904,11 @@ bool Wallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
 
             // Mark old coins as spent
             set<CWalletTx*> setCoins;
-            BOOST_FOREACH(const CTxIn& txin, wtxNew.vin)
+            BOOST_FOREACH(const Input& txin, wtxNew.vin)
             {
-                CWalletTx &coin = mapWallet[txin.prevout.hash];
+                CWalletTx &coin = mapWallet[txin.prevout().hash];
                 coin.pwallet = this;
-                coin.MarkSpent(txin.prevout.index);
+                coin.MarkSpent(txin.prevout().index);
                 coin.WriteToDisk();
                 vWalletUpdated.push_back(coin.GetHash());
             }

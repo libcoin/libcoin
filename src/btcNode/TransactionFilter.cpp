@@ -122,8 +122,8 @@ void TransactionFilter::addOrphanTx(const CDataStream& payload) {
     if (_orphanTransactions.count(hash))
         return;
     CDataStream* p = _orphanTransactions[hash] = new CDataStream(payload);
-    BOOST_FOREACH(const CTxIn& txin, tx.vin)
-    _orphanTransactionsByPrev.insert(make_pair(txin.prevout.hash, p));
+    BOOST_FOREACH(const Input& txin, tx.vin)
+    _orphanTransactionsByPrev.insert(make_pair(txin.prevout().hash, p));
 }
 
 void TransactionFilter::eraseOrphanTx(uint256 hash) {
@@ -132,9 +132,9 @@ void TransactionFilter::eraseOrphanTx(uint256 hash) {
     const CDataStream* p = _orphanTransactions[hash];
     Transaction tx;
     CDataStream(*p) >> tx;
-    BOOST_FOREACH(const CTxIn& txin, tx.vin) {
-        for (multimap<uint256, CDataStream*>::iterator mi = _orphanTransactionsByPrev.lower_bound(txin.prevout.hash);
-             mi != _orphanTransactionsByPrev.upper_bound(txin.prevout.hash);) {
+    BOOST_FOREACH(const Input& txin, tx.vin) {
+        for (multimap<uint256, CDataStream*>::iterator mi = _orphanTransactionsByPrev.lower_bound(txin.prevout().hash);
+             mi != _orphanTransactionsByPrev.upper_bound(txin.prevout().hash);) {
             if ((*mi).second == p)
                 _orphanTransactionsByPrev.erase(mi++);
             else

@@ -171,36 +171,36 @@ public:
     bool GetKeyFromPool(std::vector<unsigned char> &key, bool fAllowReuse=true);
     int64 GetOldestKeyPoolTime();
 
-    bool IsMine(const CTxIn& txin) const;
-    int64 GetDebit(const CTxIn& txin) const;
-    bool IsMine(const CTxOut& txout) const
+    bool IsMine(const Input& txin) const;
+    int64 GetDebit(const Input& txin) const;
+    bool IsMine(const Output& txout) const
     {
-        return ::IsMine(*this, txout.scriptPubKey);
+        return ::IsMine(*this, txout.script());
     }
-    int64 GetCredit(const CTxOut& txout) const
+    int64 GetCredit(const Output& txout) const
     {
-        if (!MoneyRange(txout.nValue))
+        if (!MoneyRange(txout.value()))
             throw std::runtime_error("Wallet::GetCredit() : value out of range");
-        return (IsMine(txout) ? txout.nValue : 0);
+        return (IsMine(txout) ? txout.value() : 0);
     }
-    bool IsChange(const CTxOut& txout) const
+    bool IsChange(const Output& txout) const
     {
         Address address;
-        if (ExtractAddress(txout.scriptPubKey, this, address))
+        if (ExtractAddress(txout.script(), this, address))
             CRITICAL_BLOCK(cs_wallet)
                 if (!mapAddressBook.count(ChainAddress(chain().networkId(), address)))
                     return true;
         return false;
     }
-    int64 GetChange(const CTxOut& txout) const
+    int64 GetChange(const Output& txout) const
     {
-        if (!MoneyRange(txout.nValue))
+        if (!MoneyRange(txout.value()))
             throw std::runtime_error("Wallet::GetChange() : value out of range");
-        return (IsChange(txout) ? txout.nValue : 0);
+        return (IsChange(txout) ? txout.value() : 0);
     }
     bool IsMine(const Transaction& tx) const
     {
-        BOOST_FOREACH(const CTxOut& txout, tx.vout)
+        BOOST_FOREACH(const Output& txout, tx.vout)
             if (IsMine(txout))
                 return true;
         return false;
@@ -215,7 +215,7 @@ public:
     int64 GetDebit(const Transaction& tx) const
     {
         int64 nDebit = 0;
-        BOOST_FOREACH(const CTxIn& txin, tx.vin)
+        BOOST_FOREACH(const Input& txin, tx.vin)
         {
             nDebit += GetDebit(txin);
             if (!MoneyRange(nDebit))
@@ -226,7 +226,7 @@ public:
     int64 GetCredit(const Transaction& tx) const
     {
         int64 nCredit = 0;
-        BOOST_FOREACH(const CTxOut& txout, tx.vout)
+        BOOST_FOREACH(const Output& txout, tx.vout)
         {
             nCredit += GetCredit(txout);
             if (!MoneyRange(nCredit))
@@ -237,7 +237,7 @@ public:
     int64 GetChange(const Transaction& tx) const
     {
         int64 nChange = 0;
-        BOOST_FOREACH(const CTxOut& txout, tx.vout)
+        BOOST_FOREACH(const Output& txout, tx.vout)
         {
             nChange += GetChange(txout);
             if (!MoneyRange(nChange))

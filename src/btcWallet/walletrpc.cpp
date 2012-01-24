@@ -195,8 +195,8 @@ ChainAddress GetAccountAddress::getAccountAddress(string strAccount, bool bForce
              it != _wallet.mapWallet.end() && !account.vchPubKey.empty();
              ++it) {
             const CWalletTx& wtx = (*it).second;
-            BOOST_FOREACH(const CTxOut& txout, wtx.vout)
-            if (txout.scriptPubKey == scriptPubKey)
+            BOOST_FOREACH(const Output& txout, wtx.vout)
+            if (txout.script() == scriptPubKey)
                 bKeyUsed = true;
         }
     }
@@ -335,10 +335,10 @@ Value GetReceivedByAddress::operator()(const Array& params, bool fHelp)
         if (wtx.IsCoinBase() || !_wallet.isFinal(wtx))
             continue;
         
-        BOOST_FOREACH(const CTxOut& txout, wtx.vout)
-        if (txout.scriptPubKey == scriptPubKey)
+        BOOST_FOREACH(const Output& txout, wtx.vout)
+        if (txout.script() == scriptPubKey)
             if (_wallet.getDepthInMainChain(wtx.GetHash()) >= nMinDepth)
-                nAmount += txout.nValue;
+                nAmount += txout.value();
     }
     
     return  ValueFromAmount(nAmount);
@@ -372,11 +372,11 @@ Value GetReceivedByAccount::operator()(const Array& params, bool fHelp)
         if (wtx.IsCoinBase() || !_wallet.isFinal(wtx))
             continue;
         
-        BOOST_FOREACH(const CTxOut& txout, wtx.vout) {
+        BOOST_FOREACH(const Output& txout, wtx.vout) {
             Address address;
-            if (ExtractAddress(txout.scriptPubKey, &_wallet, address) && setAddress.count(ChainAddress(_wallet.chain().networkId(), address)))
+            if (ExtractAddress(txout.script(), &_wallet, address) && setAddress.count(ChainAddress(_wallet.chain().networkId(), address)))
                 if (_wallet.getDepthInMainChain(wtx.GetHash()) >= nMinDepth)
-                    nAmount += txout.nValue;
+                    nAmount += txout.value();
         }
     }
     
@@ -667,14 +667,14 @@ Value ListMethod::listReceived(const Array& params, bool fByAccounts)
         if (nDepth < nMinDepth)
             continue;
         
-        BOOST_FOREACH(const CTxOut& txout, wtx.vout)
+        BOOST_FOREACH(const Output& txout, wtx.vout)
             {
             Address address;
-            if (!ExtractAddress(txout.scriptPubKey, &_wallet, address) || address != 0)
+            if (!ExtractAddress(txout.script(), &_wallet, address) || address != 0)
                 continue;
             
             tallyitem& item = mapTally[ChainAddress(_wallet.chain().networkId(), address)];
-            item.nAmount += txout.nValue;
+            item.nAmount += txout.value();
             item.nConf = min(item.nConf, nDepth);
             }
         }

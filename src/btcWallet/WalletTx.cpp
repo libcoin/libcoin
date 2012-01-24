@@ -52,7 +52,7 @@ int64 CWalletTx::GetAvailableCredit(bool fUseCache) const
         {
         if (!IsSpent(i))
             {
-            const CTxOut &txout = vout[i];
+            const Output &txout = vout[i];
             nCredit += pwallet->GetCredit(txout);
             if (!MoneyRange(nCredit))
                 throw std::runtime_error("CWalletTx::GetAvailableCredit() : value out of range");
@@ -146,11 +146,11 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
 
     // Sent/received.  Standard client will never generate a send-to-multiple-recipients,
     // but non-standard clients might (so return a list of address/amount pairs)
-    BOOST_FOREACH(const CTxOut& txout, vout)
+    BOOST_FOREACH(const Output& txout, vout)
     {
         Address address;
         vector<unsigned char> vchPubKey;
-        if (!ExtractAddress(txout.scriptPubKey, NULL, address))
+        if (!ExtractAddress(txout.script(), NULL, address))
         {
             printf("CWalletTx::GetAmounts: Unknown transaction type found, txid %s\n",
                    this->GetHash().toString().c_str());
@@ -162,10 +162,10 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
             continue;
 
         if (nDebit > 0)
-            listSent.push_back(make_pair(ChainAddress(pwallet->chain().networkId(), address), txout.nValue));
+            listSent.push_back(make_pair(ChainAddress(pwallet->chain().networkId(), address), txout.value()));
 
         if (pwallet->IsMine(txout))
-            listReceived.push_back(make_pair(ChainAddress(pwallet->chain().networkId(), address), txout.nValue));
+            listReceived.push_back(make_pair(ChainAddress(pwallet->chain().networkId(), address), txout.value()));
     }
 
 }
@@ -217,8 +217,8 @@ void CWalletTx::AddSupportingTransactions(const BlockChain& blockChain)
     //    if (setMerkleBranch(block, blockChain) < COPY_DEPTH)
     //{
     vector<uint256> vWorkQueue;
-    BOOST_FOREACH(const CTxIn& txin, vin)
-    vWorkQueue.push_back(txin.prevout.hash);
+    BOOST_FOREACH(const Input& txin, vin)
+    vWorkQueue.push_back(txin.prevout().hash);
     
     // This critsect is OK because txdb is already open
     CRITICAL_BLOCK(pwallet->cs_wallet) {
@@ -255,8 +255,8 @@ void CWalletTx::AddSupportingTransactions(const BlockChain& blockChain)
             vtxPrev.push_back(tx);
             
             if (nDepth < COPY_DEPTH)
-                BOOST_FOREACH(const CTxIn& txin, tx.vin)
-                vWorkQueue.push_back(txin.prevout.hash);
+                BOOST_FOREACH(const Input& txin, tx.vin)
+                vWorkQueue.push_back(txin.prevout().hash);
         }
     }
     //}

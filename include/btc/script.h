@@ -693,7 +693,7 @@ bool Solver(const CScript& scriptPubKey, std::vector<std::pair<opcodetype, std::
 
 bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, const Transaction& txTo, unsigned int nIn, int nHashType);
 
-bool IsStandard(const CScript& scriptPubKey);
+//bool IsStandard(const CScript& scriptPubKey);
 bool IsMine(const CKeyStore& keystore, const CScript& scriptPubKey);
 bool ExtractAddress(const CScript& scriptPubKey, const CKeyStore* pkeystore, Address& addressRet);
 bool SignSignature(const CKeyStore& keystore, const Transaction& txFrom, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL, CScript scriptPrereq=CScript());

@@ -111,7 +111,7 @@ Object tx2json(Transaction &tx, int64 timestamp = 0, int64 blockheight = 0)
     
     // now loop over the txins
     Array txins;
-    BOOST_FOREACH(const CTxIn& txin, tx.vin)
+    BOOST_FOREACH(const Input& txin, tx.vin)
     {
         Object inentry;
         inentry.clear();
@@ -130,7 +130,7 @@ Object tx2json(Transaction &tx, int64 timestamp = 0, int64 blockheight = 0)
     
     // now loop over the txouts
     Array txouts;
-    BOOST_FOREACH(const CTxOut& txout, tx.vout)
+    BOOST_FOREACH(const Output& txout, tx.vout)
     {
         Object outentry;
         outentry.clear();
@@ -392,7 +392,7 @@ Transaction json2tx(Object entry)
             else // value read
                 scriptSig << ParseHex(token);
         }
-        CTxIn txin(hash, n, scriptSig);
+        Input txin(hash, n, scriptSig);
         tx.vin.push_back(txin);
     }
     
@@ -419,7 +419,7 @@ Transaction json2tx(Object entry)
             else // value read
                 scriptPubkey << ParseHex(token);
         }
-        CTxOut txout(value, scriptPubkey);
+        Output txout(value, scriptPubkey);
         tx.vout.push_back(txout);
     }
 

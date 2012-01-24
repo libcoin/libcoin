@@ -9,8 +9,6 @@
 #include "btc/key.h"
 #include "btc/script.h"
 
-#include <list>
-
 static const unsigned int MAX_BLOCK_SIZE = 1000000;
 static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
 static const int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
@@ -25,19 +23,6 @@ static const int COINBASE_MATURITY = 100;
 static const int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 
 class Transaction;
-
-class CoinRef // was CInPoint
-{
-public:
-    Transaction* ptx;
-    unsigned int index;
-
-    CoinRef() { setNull(); }
-    CoinRef(Transaction* ptxIn, unsigned int nIn) { ptx = ptxIn; index = nIn; }
-    
-    void setNull() { ptx = NULL; index = -1; }
-    bool isNull() const { return (ptx == NULL && index == -1); }
-};
 
 struct Coin // was COutPoint
 {
@@ -73,80 +58,94 @@ struct Coin // was COutPoint
     }
 };
 
+struct CoinRef // was CInPoint
+{
+    Transaction* ptx;
+    unsigned int index;
+    
+    CoinRef() { setNull(); }
+    CoinRef(Transaction* ptxIn, unsigned int nIn) { ptx = ptxIn; index = nIn; }
+    
+    void setNull() { ptx = NULL; index = -1; }
+    bool isNull() const { return (ptx == NULL && index == -1); }
+};
+
 //
 // An input of a transaction.  It contains the location of the previous
 // transaction's output that it claims and a signature that matches the
 // output's public key.
 //
-class CTxIn // TxInput
+class Input // was CTxInput
 {
 public:
-    Coin prevout;
-    CScript scriptSig;
-    unsigned int nSequence;
-
-    CTxIn()
-    {
-        nSequence = UINT_MAX;
+    Input() {
+        _sequence = UINT_MAX;
     }
 
-    explicit CTxIn(Coin prevoutIn, CScript scriptSigIn=CScript(), unsigned int nSequenceIn=UINT_MAX)
-    {
-        prevout = prevoutIn;
-        scriptSig = scriptSigIn;
-        nSequence = nSequenceIn;
+    explicit Input(Coin prevout, CScript signature=CScript(), unsigned int sequence=UINT_MAX) {
+        _prevout = prevout;
+        _signature = signature;
+        _sequence = sequence;
     }
 
-    CTxIn(uint256 hashPrevTx, unsigned int nOut, CScript scriptSigIn=CScript(), unsigned int nSequenceIn=UINT_MAX)
-    {
-        prevout = Coin(hashPrevTx, nOut);
-        scriptSig = scriptSigIn;
-        nSequence = nSequenceIn;
+    Input(uint256 prev_hash, unsigned int prev_index, CScript signature=CScript(), unsigned int sequence=UINT_MAX) {
+        _prevout = Coin(prev_hash, prev_index);
+        _signature = signature;
+        _sequence = sequence;
     }
 
     IMPLEMENT_SERIALIZE
     (
-        READWRITE(prevout);
-        READWRITE(scriptSig);
-        READWRITE(nSequence);
+        READWRITE(_prevout);
+        READWRITE(_signature);
+        READWRITE(_sequence);
     )
 
-    bool IsFinal() const
-    {
-        return (nSequence == UINT_MAX);
+    const Coin prevout() const { return _prevout; }
+    const CScript signature() const { return _signature; }
+    const unsigned int sequence() const { return _sequence; }
+    
+    
+    bool isFinal() const {
+        return (_sequence == UINT_MAX);
     }
 
-    friend bool operator==(const CTxIn& a, const CTxIn& b)
-    {
-        return (a.prevout   == b.prevout &&
-                a.scriptSig == b.scriptSig &&
-                a.nSequence == b.nSequence);
+    friend bool operator==(const Input& a, const Input& b) {
+        return (a._prevout   == b._prevout &&
+                a._signature == b._signature &&
+                a._sequence == b._sequence);
     }
 
-    friend bool operator!=(const CTxIn& a, const CTxIn& b)
-    {
+    friend bool operator!=(const Input& a, const Input& b) {
         return !(a == b);
     }
 
-    std::string toString() const
-    {
+    bool isSubsidy() const {
+        return _prevout.isNull();
+    }
+    
+    std::string toString() const {
         std::string str;
         str += strprintf("CTxIn(");
-        str += prevout.toString();
-        if (prevout.isNull())
-            str += strprintf(", coinbase %s", HexStr(scriptSig).c_str());
+        str += _prevout.toString();
+        if (_prevout.isNull())
+            str += strprintf(", coinbase %s", HexStr(_signature).c_str());
         else
-            str += strprintf(", scriptSig=%s", scriptSig.toString().substr(0,24).c_str());
-        if (nSequence != UINT_MAX)
-            str += strprintf(", nSequence=%u", nSequence);
+            str += strprintf(", scriptSig=%s", _signature.toString().substr(0,24).c_str());
+        if (_sequence != UINT_MAX)
+            str += strprintf(", nSequence=%u", _sequence);
         str += ")";
         return str;
     }
 
-    void print() const
-    {
+    void print() const {
         printf("%s\n", toString().c_str());
     }
+    
+private:
+    Coin _prevout;
+    CScript _signature;
+    unsigned int _sequence;
 };
 
 
@@ -155,69 +154,65 @@ public:
 // must be able to sign with to claim it.
 //
 
-class CTxOut // 
+class Output // was CTxOut
 {
 public:
-    int64 nValue;
-    CScript scriptPubKey;
-
-    CTxOut()
-    {
-        SetNull();
+    Output() {
+        setNull();
     }
 
-    CTxOut(int64 nValueIn, CScript scriptPubKeyIn)
-    {
-        nValue = nValueIn;
-        scriptPubKey = scriptPubKeyIn;
+    Output(int64 value, CScript script) {
+        _value = value;
+        _script = script;
     }
 
     IMPLEMENT_SERIALIZE
     (
-        READWRITE(nValue);
-        READWRITE(scriptPubKey);
+        READWRITE(_value);
+        READWRITE(_script);
     )
 
-    void SetNull()
-    {
-        nValue = -1;
-        scriptPubKey.clear();
+    void setNull() {
+        _value = -1;
+        _script.clear();
     }
 
-    bool IsNull()
-    {
-        return (nValue == -1);
+    bool isNull() {
+        return (_value == -1);
     }
 
-    uint256 GetHash() const
-    {
+    const int64 value() const { return _value; }
+    
+    const CScript script() const { return _script; }
+    
+    uint256 getHash() const {
         return SerializeHash(*this);
     }
 
-    uint160 getAsset() const;
+    uint160 getAddress() const;
     
-    friend bool operator==(const CTxOut& a, const CTxOut& b)
-    {
-        return (a.nValue       == b.nValue &&
-                a.scriptPubKey == b.scriptPubKey);
+    friend bool operator==(const Output& a, const Output& b) {
+        return (a._value       == b._value &&
+                a._script == b._script);
     }
 
-    friend bool operator!=(const CTxOut& a, const CTxOut& b)
-    {
+    friend bool operator!=(const Output& a, const Output& b) {
         return !(a == b);
     }
 
-    std::string toString() const
-    {
-        if (scriptPubKey.size() < 6)
+    std::string toString() const {
+        if (_script.size() < 6)
             return "CTxOut(error)";
-        return strprintf("CTxOut(nValue=%"PRI64d".%08"PRI64d", scriptPubKey=%s)", nValue / COIN, nValue % COIN, scriptPubKey.toString().substr(0,30).c_str());
+        return strprintf("CTxOut(nValue=%"PRI64d".%08"PRI64d", scriptPubKey=%s)", _value / COIN, _value % COIN, _script.toString().substr(0,30).c_str());
     }
 
-    void print() const
-    {
+    void print() const {
         printf("%s\n", toString().c_str());
     }
+    
+private:
+    int64 _value;
+    CScript _script;
 };
 
 
@@ -229,8 +224,8 @@ class Transaction
 {
 public:
     int nVersion;
-    std::vector<CTxIn> vin;
-    std::vector<CTxOut> vout;
+    std::vector<Input> vin;
+    std::vector<Output> vout;
     unsigned int nLockTime;
 
 
@@ -271,63 +266,60 @@ public:
         if (vin.size() != old.vin.size())
             return false;
         for (int i = 0; i < vin.size(); i++)
-            if (vin[i].prevout != old.vin[i].prevout)
+            if (vin[i].prevout() != old.vin[i].prevout())
                 return false;
 
-        bool fNewer = false;
-        unsigned int nLowest = UINT_MAX;
-        for (int i = 0; i < vin.size(); i++)
-        {
-            if (vin[i].nSequence != old.vin[i].nSequence)
-            {
-                if (vin[i].nSequence <= nLowest)
-                {
-                    fNewer = false;
-                    nLowest = vin[i].nSequence;
+        bool newer = false;
+        unsigned int lowest = UINT_MAX;
+        for (int i = 0; i < vin.size(); i++) {
+            if (vin[i].sequence() != old.vin[i].sequence()) {
+                if (vin[i].sequence() <= lowest) {
+                    newer = false;
+                    lowest = vin[i].sequence();
                 }
-                if (old.vin[i].nSequence < nLowest)
-                {
-                    fNewer = true;
-                    nLowest = old.vin[i].nSequence;
+                if (old.vin[i].sequence() < lowest) {
+                    newer = true;
+                    lowest = old.vin[i].sequence();
                 }
             }
         }
-        return fNewer;
+        return newer;
     }
 
     bool IsCoinBase() const
     {
-        return (vin.size() == 1 && vin[0].prevout.isNull());
+        return (vin.size() == 1 && vin[0].isSubsidy());
     }
 
     int GetSigOpCount() const
     {
         int n = 0;
-        BOOST_FOREACH(const CTxIn& txin, vin)
-            n += txin.scriptSig.GetSigOpCount();
-        BOOST_FOREACH(const CTxOut& txout, vout)
-            n += txout.scriptPubKey.GetSigOpCount();
+        BOOST_FOREACH(const Input& txin, vin)
+            n += txin.signature().GetSigOpCount();
+        BOOST_FOREACH(const Output& txout, vout)
+            n += txout.script().GetSigOpCount();
         return n;
     }
-
+/*
+ // IsStandard is chain dependent - so it cannot be evaluated on a pr class basis.
     bool IsStandard() const
     {
-        BOOST_FOREACH(const CTxIn& txin, vin)
+        BOOST_FOREACH(const Input& txin, vin)
             if (!txin.scriptSig.IsPushOnly())
                 return error("nonstandard txin: %s", txin.scriptSig.toString().c_str());
-        BOOST_FOREACH(const CTxOut& txout, vout)
+        BOOST_FOREACH(const Output& txout, vout)
             if (!::IsStandard(txout.scriptPubKey))
                 return error("nonstandard txout: %s", txout.scriptPubKey.toString().c_str());
         return true;
     }
-
+*/
     int64 GetValueOut() const
     {
         int64 nValueOut = 0;
-        BOOST_FOREACH(const CTxOut& txout, vout)
+        BOOST_FOREACH(const Output& txout, vout)
         {
-            nValueOut += txout.nValue;
-            if (!MoneyRange(txout.nValue) || !MoneyRange(nValueOut))
+            nValueOut += txout.value();
+            if (!MoneyRange(txout.value()) || !MoneyRange(nValueOut))
                 throw std::runtime_error("Transaction::GetValueOut() : value out of range");
         }
         return nValueOut;
@@ -336,10 +328,10 @@ public:
     int64 paymentTo(uint160 btc) const
     {
         int64 value = 0;
-        BOOST_FOREACH(const CTxOut& txout, vout)
+        BOOST_FOREACH(const Output& txout, vout)
         {
-            if(txout.getAsset() == btc)
-                value += txout.nValue;
+            if(txout.getAddress() == btc)
+                value += txout.value();
         }
         
         return value;
@@ -380,8 +372,8 @@ public:
 
         // To limit dust spam, require MIN_TX_FEE/MIN_RELAY_TX_FEE if any output is less than 0.01
         if (nMinFee < nBaseFee)
-            BOOST_FOREACH(const CTxOut& txout, vout)
-                if (txout.nValue < CENT)
+            BOOST_FOREACH(const Output& txout, vout)
+                if (txout.value() < CENT)
                     nMinFee = nBaseFee;
 
         // Raise the price as the block approaches full

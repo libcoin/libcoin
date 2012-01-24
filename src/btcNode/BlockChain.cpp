@@ -260,7 +260,7 @@ bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& map
     if (!tx.IsCoinBase()) {
         int64 nValueIn = 0;
         for (int i = 0; i < tx.vin.size(); i++) {
-            Coin prevout = tx.vin[i].prevout;
+            Coin prevout = tx.vin[i].prevout();
             
             // Read txindex
             TxIndex txindex;
@@ -311,8 +311,8 @@ bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& map
                 return fMiner ? false : error("ConnectInputs() : %s prev tx already used at %s", tx.GetHash().toString().substr(0,10).c_str(), txindex.getSpent(prevout.index).toString().c_str());
             
             // Check for negative or overflow input values
-            nValueIn += txPrev.vout[prevout.index].nValue;
-            if (!MoneyRange(txPrev.vout[prevout.index].nValue) || !MoneyRange(nValueIn))
+            nValueIn += txPrev.vout[prevout.index].value();
+            if (!MoneyRange(txPrev.vout[prevout.index].value()) || !MoneyRange(nValueIn))
                 return error("ConnectInputs() : txin values out of range");
             
             // Mark outpoints as spent
@@ -354,8 +354,8 @@ bool BlockChain::disconnectInputs(Transaction& tx)
 {
     // Relinquish previous transactions' spent pointers
     if (!tx.IsCoinBase()) {
-        BOOST_FOREACH(const CTxIn& txin, tx.vin) {
-            Coin prevout = txin.prevout;
+        BOOST_FOREACH(const Input& txin, tx.vin) {
+            Coin prevout = txin.prevout();
             
             // Get prev txindex from disk
             TxIndex txindex;
@@ -453,7 +453,7 @@ bool BlockChain::UpdateTxIndex(uint256 hash, const TxIndex& txindex)
     // for each tx out in the newly added tx check for a pubkey or a pubkeyhash in the script
     for(unsigned int n = 0; n < tx.vout.size(); n++)
         {
-        const CTxOut& txout = tx.vout[n];
+        const Output& txout = tx.vout[n];
         vector<pair<opcodetype, vector<unsigned char> > > vSolution;
         if (!Solver(txout.scriptPubKey, vSolution))
             break;
@@ -476,11 +476,11 @@ bool BlockChain::UpdateTxIndex(uint256 hash, const TxIndex& txindex)
         {
         for(unsigned int n = 0; n < tx.vin.size(); n++)
             {
-            const CTxIn& txin = tx.vin[n];
+            const Input& txin = tx.vin[n];
             Transaction prevtx;
             if(!ReadDiskTx(txin.prevout, prevtx))
                 continue; // OK ???
-            CTxOut txout = prevtx.vout[txin.prevout.n];        
+            Output txout = prevtx.vout[txin.prevout.n];        
             
             vector<pair<opcodetype, vector<unsigned char> > > vSolution;
             if (!Solver(txout.scriptPubKey, vSolution))
@@ -548,7 +548,7 @@ bool BlockChain::EraseTxIndex(const Transaction& tx)
     // for each tx out in the newly added tx check for a pubkey or a pubkeyhash in the script
     for(unsigned int n = 0; n < tx.vout.size(); n++)
         {
-        const CTxOut& txout = tx.vout[n];
+        const Output& txout = tx.vout[n];
         vector<pair<opcodetype, vector<unsigned char> > > vSolution;
         if (!Solver(txout.scriptPubKey, vSolution))
             break;
@@ -571,11 +571,11 @@ bool BlockChain::EraseTxIndex(const Transaction& tx)
         {
         for(unsigned int n = 0; n < tx.vin.size(); n++)
             {
-            const CTxIn& txin = tx.vin[n];
+            const Input& txin = tx.vin[n];
             Transaction prevtx;
             if(!ReadDiskTx(txin.prevout, prevtx))
                 continue; // OK ???
-            CTxOut txout = prevtx.vout[txin.prevout.n];        
+            Output txout = prevtx.vout[txin.prevout.n];        
             
             vector<pair<opcodetype, vector<unsigned char> > > vSolution;
             if (!Solver(txout.scriptPubKey, vSolution))
@@ -637,8 +637,8 @@ bool BlockChain::isFinal(const Transaction& tx, int nBlockHeight, int64 nBlockTi
         nBlockTime = GetAdjustedTime();
     if ((int64)tx.nLockTime < (tx.nLockTime < LOCKTIME_THRESHOLD ? (int64)nBlockHeight : nBlockTime))
         return true;
-    BOOST_FOREACH(const CTxIn& txin, tx.vin)
-        if (!txin.IsFinal())
+    BOOST_FOREACH(const Input& txin, tx.vin)
+        if (!txin.isFinal())
             return false;
     return true;
 }
@@ -1270,7 +1270,7 @@ bool BlockChain::CheckForMemoryPool(const Transaction& tx, Transaction*& ptxOld,
     // Check for conflicts with in-memory transactions
     //    Transaction* ptxOld = NULL;
     for (int i = 0; i < tx.vin.size(); i++) {
-        Coin outpoint = tx.vin[i].prevout;
+        Coin outpoint = tx.vin[i].prevout();
         TransactionConnections::const_iterator cnx = _transactionConnections.find(outpoint);
         if (cnx != _transactionConnections.end()) {
             // Disable replacement feature for now
@@ -1285,7 +1285,7 @@ bool BlockChain::CheckForMemoryPool(const Transaction& tx, Transaction*& ptxOld,
             if (!tx.IsNewerThan(*ptxOld))
                 return false;
             for (int i = 0; i < tx.vin.size(); i++) {
-                Coin outpoint = tx.vin[i].prevout;
+                Coin outpoint = tx.vin[i].prevout();
                 TransactionConnections::const_iterator cnx = _transactionConnections.find(outpoint);
                 if (cnx == _transactionConnections.end() || cnx->second.ptx != ptxOld)
                     return false;
@@ -1370,17 +1370,17 @@ bool BlockChain::AddToMemoryPoolUnchecked(const Transaction& tx)
     
     // for each tx out in the newly added tx check for a pubkey or a pubkeyhash in the script
     for(unsigned int n = 0; n < tx.vout.size(); n++)
-        debits.push_back(AssetPair(tx.vout[n].getAsset(), n));
+        debits.push_back(AssetPair(tx.vout[n].getAddress(), n));
     
     if(!tx.IsCoinBase()) {
         for(unsigned int n = 0; n < tx.vin.size(); n++) {
-            const CTxIn& txin = tx.vin[n];
+            const Input& txin = tx.vin[n];
             Transaction prevtx;
-            if(!readDiskTx(txin.prevout.hash, prevtx))
+            if(!readDiskTx(txin.prevout().hash, prevtx))
                 continue; // OK ???
-            CTxOut txout = prevtx.vout[txin.prevout.index];        
+            Output txout = prevtx.vout[txin.prevout().index];        
             
-            credits.push_back(AssetPair(txout.getAsset(), n));
+            credits.push_back(AssetPair(txout.getAddress(), n));
         }
     }
     
@@ -1392,7 +1392,7 @@ bool BlockChain::AddToMemoryPoolUnchecked(const Transaction& tx)
     
     _transactionIndex[hash] = tx;
     for (int i = 0; i < tx.vin.size(); i++)
-        _transactionConnections[tx.vin[i].prevout] = CoinRef(&_transactionIndex[hash], i);
+        _transactionConnections[tx.vin[i].prevout()] = CoinRef(&_transactionIndex[hash], i);
     _transactionsUpdated++;
     
     return true;
@@ -1411,17 +1411,17 @@ bool BlockChain::RemoveFromMemoryPool(Transaction& tx)
     
     // for each tx out in the newly added tx check for a pubkey or a pubkeyhash in the script
     for(unsigned int n = 0; n < tx.vout.size(); n++)
-        debits.push_back(AssetPair(tx.vout[n].getAsset(), n));
+        debits.push_back(AssetPair(tx.vout[n].getAddress(), n));
     
     if(!tx.IsCoinBase()) {
         for(unsigned int n = 0; n < tx.vin.size(); n++) {
-            const CTxIn& txin = tx.vin[n];
+            const Input& txin = tx.vin[n];
             Transaction prevtx;
-            if(!readDiskTx(txin.prevout.hash, prevtx))
+            if(!readDiskTx(txin.prevout().hash, prevtx))
                 continue; // OK ???
-            CTxOut txout = prevtx.vout[txin.prevout.index];        
+            Output txout = prevtx.vout[txin.prevout().index];        
             
-            credits.push_back(AssetPair(txout.getAsset(), n));
+            credits.push_back(AssetPair(txout.getAddress(), n));
         }
     }
     
@@ -1437,8 +1437,8 @@ bool BlockChain::RemoveFromMemoryPool(Transaction& tx)
             _creditIndex.erase(assetpair->first); 
     }
     
-    BOOST_FOREACH(const CTxIn& txin, tx.vin)
-    _transactionConnections.erase(txin.prevout);
+    BOOST_FOREACH(const Input& txin, tx.vin)
+    _transactionConnections.erase(txin.prevout());
     _transactionIndex.erase(tx.GetHash());
     _transactionsUpdated++;
     
@@ -1549,8 +1549,8 @@ void CDBAssetSyncronizer::getCoins(uint160 btc, Coins& coins)
         Transaction tx;
         getTransaction(*coin, tx);
         
-        CTxIn in = tx.vin[coin->index];
-        Coin spend(in.prevout.hash, in.prevout.index);
+        Input in = tx.vin[coin->index];
+        Coin spend(in.prevout().hash, in.prevout().index);
         coins.erase(spend);
     }
 }

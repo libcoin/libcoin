@@ -54,10 +54,10 @@ const Transaction& CAsset::getTx(uint256 hash) const
     // throw something!
 }
 
-uint160 CAsset::getAddress(const CTxOut& out)
+uint160 CAsset::getAddress(const Output& out)
 {
     vector<pair<opcodetype, vector<unsigned char> > > vSolution;
-    if (!Solver(out.scriptPubKey, vSolution))
+    if (!Solver(out.script(), vSolution))
         return 0;
     
     BOOST_FOREACH(PAIRTYPE(opcodetype, vector<unsigned char>)& item, vSolution)
@@ -109,8 +109,8 @@ void CAsset::syncronize(CAssetSyncronizer& sync, bool all_transactions)
                 sync.getTransaction(*coin, tx);
                 _tx_cache[coin->hash] = tx; // caches the relevant transactions
                 
-                CTxIn in = tx.vin[coin->index];
-                Coin spend(in.prevout.hash, in.prevout.index);
+                Input in = tx.vin[coin->index];
+                Coin spend(in.prevout().hash, in.prevout().index);
                 coins.erase(spend);
             }
             
@@ -141,7 +141,7 @@ bool CAsset::isSpendable(Coin coin)
 {
     // get the address
     Transaction tx = getTx(coin.hash);
-    CTxOut& out = tx.vout[coin.index];
+    Output& out = tx.vout[coin.index];
     uint160 addr = getAddress(out);
     KeyMap::iterator keypair = _keymap.find(addr);
     if(keypair->second.IsNull())
@@ -160,8 +160,8 @@ bool CAsset::isSpendable(Coin coin)
 const int64 CAsset::value(Coin coin) const
 {
     const Transaction& tx = getTx(coin.hash);
-    const CTxOut& out = tx.vout[coin.index];
-    return out.nValue;
+    const Output& out = tx.vout[coin.index];
+    return out.value();
 }
 
 int64 CAsset::balance()
@@ -227,7 +227,7 @@ Transaction CAsset::generateTx(set<Payment> payments, uint160 changeaddr)
         CScript scriptPubKey;
         scriptPubKey << OP_DUP << OP_HASH160 << payment->first << OP_EQUALVERIFY << OP_CHECKSIG;
         
-        CTxOut out(payment->second, scriptPubKey);
+        Output out(payment->second, scriptPubKey);
         tx.vout.push_back(out);
     }            
     // handle change!
@@ -244,7 +244,7 @@ Transaction CAsset::generateTx(set<Payment> payments, uint160 changeaddr)
         CScript scriptPubKey;
         scriptPubKey << OP_DUP << OP_HASH160 << changeto << OP_EQUALVERIFY << OP_CHECKSIG;
         
-        CTxOut out(change, scriptPubKey);
+        Output out(change, scriptPubKey);
         tx.vout.push_back(out);
     }            
     
@@ -253,7 +253,7 @@ Transaction CAsset::generateTx(set<Payment> payments, uint160 changeaddr)
     {
         const Coin& coin = spendable_coins[i];
         invalue += value(spendable_coins[i]);
-        CTxIn in(coin.hash, coin.index);
+        Input in(coin.hash, coin.index);
         
         tx.vin.push_back(in);
     }

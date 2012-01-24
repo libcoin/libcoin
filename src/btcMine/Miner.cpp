@@ -36,19 +36,18 @@ void Miner::handle_generate() {
         return;
     // generate the coin base transaction
     Transaction tx;
-    tx.vin.resize(1);
-    tx.vin[0].prevout.setNull();
     unsigned int extraNonce = 1; // dosn't really matter for anything...
-    tx.vin[0].scriptSig = CScript() << bestIndex->nBits << CBigNum(extraNonce);
+    CScript signature = CScript() << bestIndex->nBits << CBigNum(extraNonce);
+    tx.vin.push_back(Input(Coin(), signature));
     
-    tx.vout.resize(1);
+    CScript script;
     if (_address != 0)
-        tx.vout[0].scriptPubKey << OP_DUP << OP_HASH160 << _address << OP_EQUALVERIFY << OP_CHECKSIG;
+        script << OP_DUP << OP_HASH160 << _address << OP_EQUALVERIFY << OP_CHECKSIG;
     else if (_pub_key.size())
-        tx.vout[0].scriptPubKey << _pub_key << OP_CHECKSIG;
+        script << _pub_key << OP_CHECKSIG;
     else
-        tx.vout[0].scriptPubKey << _reserve_key.GetReservedKey() << OP_CHECKSIG;
-    tx.vout[0].nValue = _node.blockChain().chain().subsidy(bestIndex->nHeight+1);
+        script << _reserve_key.GetReservedKey() << OP_CHECKSIG;
+    tx.vout.push_back(Output(_node.blockChain().chain().subsidy(bestIndex->nHeight+1), script));
     
     // generate a block candidate
     Block block(VERSION, bestIndex->GetBlockHash(), 0, max(bestIndex->GetMedianTimePast()+1, GetAdjustedTime()), _node.blockChain().chain().nextWorkRequired(bestIndex), 0);
@@ -94,7 +93,7 @@ void Miner::handle_generate() {
         printf("proof-of-work found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
         block.print();
         printf("%s ", DateTimeStrFormat("%x %H:%M", GetTime()).c_str());
-        printf("generated %s\n", FormatMoney(block.getTransaction(0).vout[0].nValue).c_str());
+        printf("generated %s\n", FormatMoney(block.getTransaction(0).vout[0].value()).c_str());
         
         // Remove key from key pool
         if (_pub_key.empty() && _address == 0)
@@ -145,11 +144,11 @@ void Miner::fillinTransactions(Block& block, const CBlockIndex* prev) {
         
         COrphan* porphan = NULL;
         double dPriority = 0;
-        BOOST_FOREACH(const CTxIn& txin, tx.vin) {
+        BOOST_FOREACH(const Input& txin, tx.vin) {
             // Read prev transaction
             Transaction txPrev;
             //            TxIndex txindex;
-            _node.blockChain().getTransaction(txin.prevout.hash, txPrev);
+            _node.blockChain().getTransaction(txin.prevout().hash, txPrev);
             if (txPrev.IsNull()) {
                 // Has to wait for dependencies
                 if (!porphan) {
@@ -157,14 +156,14 @@ void Miner::fillinTransactions(Block& block, const CBlockIndex* prev) {
                     vOrphan.push_back(COrphan(&tx));
                     porphan = &vOrphan.back();
                 }
-                mapDependers[txin.prevout.hash].push_back(porphan);
-                porphan->setDependsOn.insert(txin.prevout.hash);
+                mapDependers[txin.prevout().hash].push_back(porphan);
+                porphan->setDependsOn.insert(txin.prevout().hash);
                 continue;
             }
-            int64 nValueIn = txPrev.vout[txin.prevout.index].nValue;
+            int64 nValueIn = txPrev.vout[txin.prevout().index].value();
             
             // Read block header
-            int nConf = _node.blockChain().getDepthInMainChain(txin.prevout.hash);
+            int nConf = _node.blockChain().getDepthInMainChain(txin.prevout().hash);
             
             dPriority += (double)nValueIn * nConf;
             
@@ -235,7 +234,9 @@ void Miner::fillinTransactions(Block& block, const CBlockIndex* prev) {
         }
     }
     Transaction& coinBase = block.getTransaction(0);
-    coinBase.vout[0].nValue += nFees;
+    // replace the counbase output to update the value:
+    Output output(coinBase.vout[0].value() + nFees, coinBase.vout[0].script());
+    coinBase.vout[0] = output;
     
     block.updateMerkleTree();    
 }

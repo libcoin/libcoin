@@ -11,11 +11,10 @@ BitcoinChain::BitcoinChain() : _genesis("0x000000000019d6689c085ae165831e934ff76
     _messageStart[0] = 0xf9; _messageStart[1] = 0xbe; _messageStart[2] = 0xb4; _messageStart[3] = 0xd9;
     const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
     Transaction txNew;
-    txNew.vin.resize(1);
-    txNew.vout.resize(1);
-    txNew.vin[0].scriptSig = CScript() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-    txNew.vout[0].nValue = 50 * COIN;
-    txNew.vout[0].scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
+    CScript signature = CScript() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
+    txNew.vin.push_back(Input(Coin(), signature)); 
+    CScript script = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
+    txNew.vout.push_back(Output(50 * COIN, script)); 
     _genesisBlock = Block(1, 0, 0, 1231006505, 0x1d00ffff, 2083236893);
     _genesisBlock.addTransaction(txNew);
     _genesisBlock.updateMerkleTree(); // genesisBlock
@@ -36,13 +35,13 @@ const int64 BitcoinChain::subsidy(unsigned int height) const {
 }
 
 bool BitcoinChain::isStandard(const Transaction& tx) const {
-    BOOST_FOREACH(const CTxIn& txin, tx.vin)
-        if (!txin.scriptSig.IsPushOnly())
-            return error("nonstandard txin: %s", txin.scriptSig.toString().c_str());
-    BOOST_FOREACH(const CTxOut& txout, tx.vout) {
+    BOOST_FOREACH(const Input& txin, tx.vin)
+        if (!txin.signature().IsPushOnly())
+            return error("nonstandard txin: %s", txin.signature().toString().c_str());
+    BOOST_FOREACH(const Output& txout, tx.vout) {
         vector<pair<opcodetype, valtype> > solution;
-        if (!Solver(txout.scriptPubKey, solution))
-            return error("nonstandard txout: %s", txout.scriptPubKey.toString().c_str());        
+        if (!Solver(txout.script(), solution))
+            return error("nonstandard txout: %s", txout.script().toString().c_str());        
     }
     return true;
 }
@@ -116,11 +115,12 @@ TestNetChain::TestNetChain() : _genesis("0x00000007199508e34a9ff81e6ec0c477a4ccc
 
     const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
     Transaction txNew;
-    txNew.vin.resize(1);
-    txNew.vout.resize(1);
-    txNew.vin[0].scriptSig = CScript() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-    txNew.vout[0].nValue = 50 * COIN;
-    txNew.vout[0].scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
+    
+    CScript signature = CScript() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
+    txNew.vin.push_back(Input(Coin(), signature)); 
+    CScript script = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
+    txNew.vout.push_back(Output(50 * COIN, script)); 
+
     _genesisBlock = Block(1, 0, 0, 1296688602, 0x1d07fff8, 384568319);
     _genesisBlock.addTransaction(txNew);
     _genesisBlock.updateMerkleTree(); // genesisBlock

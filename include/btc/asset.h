@@ -54,7 +54,7 @@ public:
     
     const Transaction& getTx(uint256 hash) const;
     
-    uint160 getAddress(const CTxOut& out);
+    uint160 getAddress(const Output& out);
     
     void remote_sync();
 
