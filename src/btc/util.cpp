@@ -4,7 +4,7 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 //#include "headers.h"
 #include "btc/util.h"
-#include "btc/tx.h"
+#include "btc/Transaction.h"
 
 #include <boost/program_options/parsers.hpp>
 #include <boost/filesystem.hpp>
@@ -20,8 +20,8 @@
 using namespace std;
 using namespace boost;
 
-map<string, string> mapArgs;
-map<string, vector<string> > mapMultiArgs;
+//map<string, string> mapArgs;
+//map<string, vector<string> > mapMultiArgs;
 bool fDebug = false;
 bool fPrintToConsole = false;
 bool fPrintToDebugger = false;
@@ -146,16 +146,6 @@ int GetRandInt(int nMax)
 {
     return GetRand(nMax);
 }
-
-
-
-
-
-
-
-
-
-
 
 inline int OutputDebugStringF(const char* pszFormat, ...)
 {
@@ -447,68 +437,6 @@ vector<unsigned char> ParseHex(const string& str)
     return ParseHex(str.c_str());
 }
 
-/*
-void ParseParameters(int argc, char* argv[])
-{
-    mapArgs.clear();
-    mapMultiArgs.clear();
-    for (int i = 1; i < argc; i++)
-    {
-        char psz[10000];
-        strlcpy(psz, argv[i], sizeof(psz));
-        char* pszValue = (char*)"";
-        if (strchr(psz, '='))
-        {
-            pszValue = strchr(psz, '=');
-            *pszValue++ = '\0';
-        }
-        #ifdef _WIN32
-        _strlwr(psz);
-        if (psz[0] == '/')
-            psz[0] = '-';
-        #endif
-        if (psz[0] != '-')
-            break;
-        mapArgs[psz] = pszValue;
-        mapMultiArgs[psz].push_back(pszValue);
-    }
-}
-*/
-
-const char* wxGetTranslation(const char* pszEnglish)
-{
-#ifdef GUI
-    // Wrapper of wxGetTranslation returning the same const char* type as was passed in
-    static CCriticalSection cs;
-    CRITICAL_BLOCK(cs)
-    {
-        // Look in cache
-        static map<string, char*> mapCache;
-        map<string, char*>::iterator mi = mapCache.find(pszEnglish);
-        if (mi != mapCache.end())
-            return (*mi).second;
-
-        // wxWidgets translation
-        wxString strTranslated = wxGetTranslation(wxString(pszEnglish, wxConvUTF8));
-
-        // We don't cache unknown strings because caller might be passing in a
-        // dynamic string and we would keep allocating memory for each variation.
-        if (strcmp(pszEnglish, strTranslated.utf8_str()) == 0)
-            return pszEnglish;
-
-        // Add to cache, memory doesn't need to be freed.  We only cache because
-        // we must pass back a pointer to permanently allocated memory.
-        char* pszCached = new char[strlen(strTranslated.utf8_str())+1];
-        strcpy(pszCached, strTranslated.utf8_str());
-        mapCache[pszEnglish] = pszCached;
-        return pszCached;
-    }
-    return NULL;
-#else
-    return pszEnglish;
-#endif
-}
-
 
 bool WildcardMatch(const char* psz, const char* mask)
 {
@@ -538,13 +466,6 @@ bool WildcardMatch(const string& str, const string& mask)
 {
     return WildcardMatch(str.c_str(), mask.c_str());
 }
-
-
-
-
-
-
-
 
 void FormatException(char* pszMessage, std::exception* pex, const char* pszThread)
 {
@@ -801,7 +722,7 @@ void AddTimeData(unsigned int ip, int64 nTime)
                 if (!fMatch)
                 {
                     fDone = true;
-                    string strMessage = _("Warning: Please check that your computer's date and time are correct.  If your clock is wrong Bitcoin will not work properly.");
+                    string strMessage = "Warning: Please check that your computer's date and time are correct.  If your clock is wrong Bitcoin will not work properly.";
                     strMiscWarning = strMessage;
                     printf("*** %s\n", strMessage.c_str());
 //                    boost::thread(boost::bind(ThreadSafeMessageBox, strMessage+" ", string("Bitcoin"), wxOK | wxICON_EXCLAMATION, (wxWindow*)NULL, -1, -1));
@@ -835,7 +756,7 @@ string FormatFullVersion()
     string s = FormatVersion(VERSION) + pszSubVer;
     if (VERSION_IS_BETA) {
         s += "-";
-        s += _("beta");
+        s += "beta";
     }
     return s;
 }

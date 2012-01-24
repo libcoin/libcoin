@@ -5,7 +5,7 @@
 #include "btc/bignum.h"
 #include "btc/key.h"
 #include "btc/script.h"
-#include "btc/tx.h"
+#include "btc/Transaction.h"
 
 //#include "btc/Block.h"
 

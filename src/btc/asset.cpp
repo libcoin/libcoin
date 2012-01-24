@@ -21,7 +21,7 @@ set<uint160> Asset::getAddresses()
     
 bool Asset::AddKey(const CKey& key)
 {
-    _keymap[Hash160(key.GetPubKey())] = key;
+    _keymap[toAddress(key.GetPubKey())] = key;
     return true;
 }
 
@@ -66,7 +66,7 @@ uint160 Asset::getAddress(const Output& out) const
         if (item.first == OP_PUBKEY)
         {
             // encode the pubkey into a hash160
-            return Hash160(item.second);                
+            return toAddress(item.second);                
         }
         else if (item.first == OP_PUBKEYHASH)
         {
@@ -81,7 +81,7 @@ void Asset::remote_sync()
     
 }
 
-void Asset::syncronize(CAssetSyncronizer& sync, bool all_transactions)
+void Asset::syncronize(AssetSyncronizer& sync, bool all_transactions)
 {
     _coins.clear();
 

@@ -464,7 +464,7 @@ bool BlockChain::UpdateTxIndex(uint256 hash, const TxIndex& txindex)
             if (item.first == OP_PUBKEY)
                 {
                 // encode the pubkey into a hash160
-                vDebit.push_back(AssetPair(Hash160(item.second), n));                
+                vDebit.push_back(AssetPair(toAddress(item.second), n));                
                 }
             else if (item.first == OP_PUBKEYHASH)
                 {
@@ -492,7 +492,7 @@ bool BlockChain::UpdateTxIndex(uint256 hash, const TxIndex& txindex)
                 if (item.first == OP_PUBKEY)
                     {
                     // encode the pubkey into a hash160
-                    vCredit.push_back(pair<uint160, unsigned int>(Hash160(item.second), n));                
+                    vCredit.push_back(pair<uint160, unsigned int>(toAddress(item.second), n));                
                     }
                 else if (item.first == OP_PUBKEYHASH)
                     {
@@ -559,7 +559,7 @@ bool BlockChain::EraseTxIndex(const Transaction& tx)
             if (item.first == OP_PUBKEY)
                 {
                 // encode the pubkey into a hash160
-                vDebit.push_back(AssetPair(Hash160(item.second), n));                
+                vDebit.push_back(AssetPair(toAddress(item.second), n));                
                 }
             else if (item.first == OP_PUBKEYHASH)
                 {
@@ -587,7 +587,7 @@ bool BlockChain::EraseTxIndex(const Transaction& tx)
                 if (item.first == OP_PUBKEY)
                     {
                     // encode the pubkey into a hash160
-                    vCredit.push_back(pair<uint160, unsigned int>(Hash160(item.second), n));                
+                    vCredit.push_back(pair<uint160, unsigned int>(toAddress(item.second), n));                
                     }
                 else if (item.first == OP_PUBKEYHASH)
                     {
@@ -891,7 +891,8 @@ bool BlockChain::LoadBlockIndex()
     CBlockIndex* pindexFork = NULL;
     for (CBlockIndex* pindex = _bestIndex; pindex && pindex->pprev; pindex = pindex->pprev)
         {
-        if (pindex->nHeight < getBestHeight()-2500 && !mapArgs.count("-checkblocks"))
+        //        if (pindex->nHeight < getBestHeight()-2500 && !mapArgs.count("-checkblocks"))
+        if (pindex->nHeight < getBestHeight()-2500)
             break;
         Block block;
         if (!_blockFile.readFromDisk(block, pindex))
@@ -1323,7 +1324,8 @@ bool BlockChain::CheckForMemoryPool(const Transaction& tx, Transaction*& ptxOld,
                 nLastTime = nNow;
                 // -limitfreerelay unit is thousand-bytes-per-minute
                 // At default rate it would take over a month to fill 1GB
-                if (dFreeCount > GetArg("-limitfreerelay", 15)*10*1000 /*&& !IsFromMe(*this)*/)
+                if (dFreeCount > 15*10*1000 /*&& !IsFromMe(*this)*/)
+                    //                    if (dFreeCount > GetArg("-limitfreerelay", 15)*10*1000 /*&& !IsFromMe(*this)*/)
                     return error("AcceptToMemoryPool() : free transaction rejected by rate limiter");
                 if (fDebug)
                     printf("Rate limit dFreeCount: %g => %g\n", dFreeCount, dFreeCount+nSize);

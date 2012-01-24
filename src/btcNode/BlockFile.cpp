@@ -133,7 +133,7 @@ bool BlockFile::checkDiskSpace(uint64 nAdditionalBytes)
     // Check for 15MB because database could create another 10MB log file at any time
     if (nFreeBytesAvailable < (uint64)15000000 + nAdditionalBytes) {
         fShutdown = true;
-        string strMessage = _("Warning: Disk space is low  ");
+        string strMessage = "Warning: Disk space is low  ";
         strMiscWarning = strMessage;
         printf("*** %s\n", strMessage.c_str());
 //        ThreadSafeMessageBox(strMessage, "Bitcoin", wxOK | wxICON_EXCLAMATION);

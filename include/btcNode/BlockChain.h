@@ -5,7 +5,7 @@
 #include "btc/bignum.h"
 #include "btc/key.h"
 #include "btc/script.h"
-#include "btc/tx.h"
+#include "btc/Transaction.h"
 
 #include "btcNode/db.h"
 
@@ -340,7 +340,7 @@ private:
 };
 
 
-class CDBAssetSyncronizer : public CAssetSyncronizer
+class CDBAssetSyncronizer : public AssetSyncronizer
 {
 public:
     CDBAssetSyncronizer(BlockChain& bc) : _blockChain(bc) {}

@@ -38,6 +38,20 @@ template <class T> inline T rotlFixed(T x, unsigned int y)
     return T((x<<y) | (x>>(sizeof(T)*8-y)));
 }
 
+// Align by increasing pointer, must have extra space at end of buffer
+template <size_t nBytes, typename T>
+T* alignup(T* p)
+{
+    union
+    {
+    T* ptr;
+    size_t n;
+    } u;
+    u.ptr = p;
+    u.n = (u.n + (nBytes-1)) & ~(nBytes-1);
+    return u.ptr;
+}
+
 #define Ch(x,y,z) (z^(x&(y^z)))
 #define Maj(x,y,z) (y^((x^y)&(y^z)))
 

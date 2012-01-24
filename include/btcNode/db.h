@@ -6,7 +6,7 @@
 #define BITCOIN_DB_H
 
 #include "btc/key.h"
-#include "btc/tx.h"
+#include "btc/Transaction.h"
 #include "btc/asset.h"
 
 #include <map>

@@ -12,6 +12,7 @@
 #include "btc/Block.h"
 #include "btcNode/Node.h"
 
+#include "btcWallet/CryptoKeyStore.h"
 #include "btcWallet/WalletTx.h"
 
 #include <boost/bind.hpp>

@@ -933,8 +933,8 @@ Value KeypoolRefill::operator()(const Array& params, bool fHelp)
     
     _wallet.TopUpKeyPool();
     
-    if (_wallet.GetKeyPoolSize() < GetArg("-keypool", 100))
-        throw RPC::error(RPC::internal_error, "Error refreshing keypool.");
+    //    if (_wallet.GetKeyPoolSize() < GetArg("-keypool", 100))
+    //        throw RPC::error(RPC::internal_error, "Error refreshing keypool.");
     
     return Value::null;
 }

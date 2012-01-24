@@ -7,7 +7,7 @@
 #include "btcWallet/WalletTx.h"
 #include "btcWallet/wallet.h"
 
-#include "btc/crypter.h"
+#include "btcWallet/Crypter.h"
 
 #include <openssl/rand.h>
 

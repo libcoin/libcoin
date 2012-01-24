@@ -2,7 +2,7 @@
 #include "btcNode/ChatClient.h"
 #include "btcNode/EndpointPool.h"
 
-#include "btc/base58.h"
+#include "btc/Address.h"
 #include "btc/util.h"
 //#include "btcNode/Peer.h"
 

@@ -5,12 +5,12 @@
 #ifndef _BITCOIN_ASSET_H_
 #define _BITCOIN_ASSET_H_
 
-#include "btc/tx.h"
+#include "btc/Transaction.h"
 
 //typedef std::pair<uint256, unsigned int> Coin;
 typedef std::set<Coin> Coins;
 
-class CAssetSyncronizer
+class AssetSyncronizer
 {
 public:
     typedef std::set<Coin> Coins;
@@ -38,7 +38,7 @@ private:
 public:
     Asset() {}
     void addAddress(uint160 hash160) { _keymap[hash160]; }
-    void addKey(CKey key) { _keymap[Hash160(key.GetPubKey())] = key; }
+    void addKey(CKey key) { _keymap[toAddress(key.GetPubKey())] = key; }
     
     std::set<uint160> getAddresses();
     
@@ -58,7 +58,7 @@ public:
     
     void remote_sync();
 
-    void syncronize(CAssetSyncronizer& sync, bool all_transactions = false);
+    void syncronize(AssetSyncronizer& sync, bool all_transactions = false);
     
     const Coins& getCoins()
     {

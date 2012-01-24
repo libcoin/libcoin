@@ -10,11 +10,13 @@ SET(LIB_NAME btcWallet)
 
 SET(HEADER_PATH ${PROJECT_SOURCE_DIR}/include/${LIB_NAME})
 SET(TARGET_H
+    ${HEADER_PATH}/Crypter.h
+    ${HEADER_PATH}/CryptoKeyStore.h
+    ${HEADER_PATH}/MerkleTx.h
     ${HEADER_PATH}/wallet.h
     ${HEADER_PATH}/walletdb.h
-    ${HEADER_PATH}/walletrpc.h
-    ${HEADER_PATH}/MerkleTx.h
     ${HEADER_PATH}/WalletTx.h
+    ${HEADER_PATH}/walletrpc.h
     ${BITCOIN_CONFIG_HEADER}
 )
 
@@ -22,11 +24,13 @@ SET(TARGET_H
 #    ${BITCOIN_USER_DEFINED_DYNAMIC_OR_STATIC}
 #    ${LIB_PUBLIC_HEADERS}
 SET(TARGET_SRC
+    Crypter.cpp
+    CryptoKeyStore.cpp
+    MerkleTx.cpp
     wallet.cpp
     walletdb.cpp
-    walletrpc.cpp
-    MerkleTx.cpp
     WalletTx.cpp
+    walletrpc.cpp
     ${BITCOIN_VERSIONINFO_RC}
 )
 SET(TARGET_LIBRARIES btc btcNode btcHTTP)

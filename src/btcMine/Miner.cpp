@@ -167,7 +167,7 @@ void Miner::fillinTransactions(Block& block, const CBlockIndex* prev) {
             
             dPriority += (double)nValueIn * nConf;
             
-            if (fDebug && GetBoolArg("-printpriority"))
+            if (fDebug)
                 printf("priority     nValueIn=%-12I64d nConf=%-5d dPriority=%-20.1f\n", nValueIn, nConf, dPriority);
         }
         
@@ -179,7 +179,7 @@ void Miner::fillinTransactions(Block& block, const CBlockIndex* prev) {
         else
             mapPriority.insert(make_pair(-dPriority, &tx));
         
-        if (fDebug && GetBoolArg("-printpriority")) {
+        if (fDebug) {
             printf("priority %-20.1f %s\n%s", dPriority, tx.getHash().toString().substr(0,10).c_str(), tx.toString().c_str());
             if (porphan)
                 porphan->print();

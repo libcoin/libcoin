@@ -100,7 +100,7 @@ inline int MyMessageBox(const std::string& message, const std::string& caption="
 
 Object callRPC(const string& strMethod, const Array& params);
 
-class CRPCAssetSyncronizer : public CAssetSyncronizer
+class CRPCAssetSyncronizer : public AssetSyncronizer
 {
 public:
     CRPCAssetSyncronizer(string server = "btc.ceptacle.com:8332") : _server(server) {}
@@ -480,7 +480,7 @@ Value getaccountbalance(const Array& params, bool fHelp)
 
     }
 
-    // trying to use the CAssetSyncronizer and Asset instead...
+    // trying to use the AssetSyncronizer and Asset instead...
     Asset asset;
     for(set<ChainAddress>::iterator it = addresses.begin(); it!= addresses.end(); ++it)
         asset.addAddress(it->GetHash160());

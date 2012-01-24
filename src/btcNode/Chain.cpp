@@ -2,7 +2,7 @@
 
 #include "btc/Block.h"
 #include "btcNode/BlockIndex.h"
-#include "btc/tx.h"
+#include "btc/Transaction.h"
 
 using namespace std;
 using namespace boost;

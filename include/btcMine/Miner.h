@@ -5,7 +5,7 @@
 #include <boost/asio.hpp>
 
 
-#include "btc/base58.h"
+#include "btc/Address.h"
 #include "btc/key.h"
 
 #include "btcWallet/wallet.h"

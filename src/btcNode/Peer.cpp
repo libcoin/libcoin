@@ -336,11 +336,13 @@ void Peer::AbortMessage() {
 }
 
 void Peer::EndMessage() {
+    /*
     if (mapArgs.count("-dropmessagestest") && GetRand(atoi(mapArgs["-dropmessagestest"])) == 0) {
         printf("dropmessages DROPPING SEND MESSAGE\n");
         AbortMessage();
         return;
     }
+    */
     
     if (nHeaderStart == -1)
         return;

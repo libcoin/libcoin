@@ -5,7 +5,7 @@
 #ifndef MERKLETX_H
 #define MERKLETX_H
 
-#include "btc/tx.h"
+#include "btc/Transaction.h"
 #include "btc/bignum.h"
 #include "btc/key.h"
 #include "btc/script.h"

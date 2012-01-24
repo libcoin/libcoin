@@ -19,18 +19,18 @@ ENDIF()
 
 SET(HEADER_PATH ${PROJECT_SOURCE_DIR}/include/${LIB_NAME})
 SET(TARGET_H
-    ${HEADER_PATH}/asset.h
-    ${HEADER_PATH}/base58.h
     ${HEADER_PATH}/bignum.h
+    ${HEADER_PATH}/serialize.h
+    ${HEADER_PATH}/uint256.h
+    ${HEADER_PATH}/util.h
+    
+    ${HEADER_PATH}/asset.h
+    ${HEADER_PATH}/Address.h
     ${HEADER_PATH}/Block.h
-    ${HEADER_PATH}/crypter.h
     ${HEADER_PATH}/key.h
     ${HEADER_PATH}/keystore.h
     ${HEADER_PATH}/script.h
-    ${HEADER_PATH}/serialize.h
-    ${HEADER_PATH}/tx.h
-    ${HEADER_PATH}/uint256.h
-    ${HEADER_PATH}/util.h
+    ${HEADER_PATH}/Transaction.h
     ${BITCOIN_CONFIG_HEADER}
 )
 
@@ -38,17 +38,18 @@ SET(TARGET_H
 #    ${BITCOIN_USER_DEFINED_DYNAMIC_OR_STATIC}
 #    ${LIB_PUBLIC_HEADERS}
 SET(TARGET_SRC
+    util.cpp
+    
+    Address.cpp
     asset.cpp
     Block.cpp
-    crypter.cpp
     keystore.cpp
-    tx.cpp
+    Transaction.cpp
     script.cpp
-    util.cpp
-
     ${BITCOIN_VERSIONINFO_RC}
 )
 SET(TARGET_LIBRARIES )
+
 
 SET(TARGET_EXTERNAL_LIBRARIES
     ${CMAKE_THREAD_LIBS_INIT}    

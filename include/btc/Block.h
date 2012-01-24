@@ -2,7 +2,7 @@
 #ifndef BLOCK_H
 #define BLOCK_H
 
-#include "btc/tx.h"
+#include "btc/Transaction.h"
 #include "btc/uint256.h"
 
 #include <vector>

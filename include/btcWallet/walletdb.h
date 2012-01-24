@@ -44,6 +44,7 @@ public:
      )
 };
 
+class CMasterKey;
 
 // Changed the WalletDB to be thread safe - keep a static mutex that is locked on write
 class CWalletDB : public CDB

@@ -14,7 +14,7 @@
 
 #include "btc/serialize.h"
 #include "btc/uint256.h"
-#include "btc/base58.h"
+#include "btc/Address.h"
 
 // secp160k1
 // const unsigned int PRIVATE_KEY_SIZE = 192;

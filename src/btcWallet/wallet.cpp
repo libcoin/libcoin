@@ -7,7 +7,8 @@
 #include "btcWallet/walletdb.h"
 #include "btcWallet/WalletTx.h"
 //#include "btcNode/db.h"
-#include "btc/crypter.h"
+#include "btcWallet/Crypter.h"
+#include "btcWallet/CryptoKeyStore.h"
 
 #include <openssl/rand.h>
 
@@ -946,7 +947,7 @@ string Wallet::SendMoney(Script scriptPubKey, int64 nValue, CWalletTx& wtxNew, b
 
     if (IsLocked())
     {
-        string strError = _("Error: Wallet locked, unable to create transaction  ");
+        string strError = "Error: Wallet locked, unable to create transaction  ";
         printf("SendMoney() : %s", strError.c_str());
         return strError;
     }
@@ -954,18 +955,18 @@ string Wallet::SendMoney(Script scriptPubKey, int64 nValue, CWalletTx& wtxNew, b
     {
         string strError;
         if (nValue + nFeeRequired > GetBalance())
-            strError = strprintf(_("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds  "), FormatMoney(nFeeRequired).c_str());
+            strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds  ", FormatMoney(nFeeRequired).c_str());
         else
-            strError = _("Error: Transaction creation failed  ");
+            strError = "Error: Transaction creation failed  ";
         printf("SendMoney() : %s", strError.c_str());
         return strError;
     }
 
-    if (fAskFee && !ThreadSafeAskFee(nFeeRequired, _("Sending..."), NULL))
+    if (fAskFee && !ThreadSafeAskFee(nFeeRequired, "Sending...", NULL))
         return "ABORTED";
 
     if (!CommitTransaction(wtxNew, reservekey))
-        return _("Error: The transaction was rejected.  This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
+        return "Error: The transaction was rejected.  This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.";
 
     return "";
 }
@@ -976,9 +977,9 @@ string Wallet::SendMoneyToBitcoinAddress(const ChainAddress& address, int64 nVal
 {
     // Check amount
     if (nValue <= 0)
-        return _("Invalid amount");
+        return "Invalid amount";
     if (nValue + nTransactionFee > GetBalance())
-        return _("Insufficient funds");
+        return "Insufficient funds";
 
     // Parse bitcoin address
     Script scriptPubKey;
@@ -1003,7 +1004,7 @@ int Wallet::LoadWallet(bool& fFirstRunRet)
         return nLoadWalletRet;
     fFirstRunRet = vchDefaultKey.empty();
 
-    if (!HaveKey(ChainAddress(_blockChain.chain().networkId(), Hash160(vchDefaultKey))))
+    if (!HaveKey(ChainAddress(_blockChain.chain().networkId(), toAddress(vchDefaultKey))))
     {
         // Create new keyUser and set as default key
         RandAddSeedPerfmon();
@@ -1094,7 +1095,7 @@ bool Wallet::TopUpKeyPool()
         CWalletDB walletdb(_dataDir, strWalletFile);
 
         // Top up key pool
-        int64 nTargetSize = max(GetArg("-keypool", 100), (int64)0);
+    int64 nTargetSize = 100;//max(GetArg("-keypool", 100), (int64)0);
         while (setKeyPool.size() < nTargetSize+1)
         {
             int64 nEnd = 1;
@@ -1128,7 +1129,7 @@ void Wallet::ReserveKeyFromKeyPool(int64& nIndex, CKeyPool& keypool)
         setKeyPool.erase(setKeyPool.begin());
         if (!walletdb.ReadPool(nIndex, keypool))
             throw runtime_error("ReserveKeyFromKeyPool() : read failed");
-        if (!HaveKey(ChainAddress(_blockChain.chain().networkId(), Hash160(keypool.vchPubKey))))
+        if (!HaveKey(ChainAddress(_blockChain.chain().networkId(), toAddress(keypool.vchPubKey))))
             throw runtime_error("ReserveKeyFromKeyPool() : unknown key in key pool");
         assert(!keypool.vchPubKey.empty());
         printf("keypool reserve %"PRI64d"\n", nIndex);

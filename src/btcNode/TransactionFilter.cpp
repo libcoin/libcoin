@@ -4,7 +4,7 @@
 #include "btcNode/Peer.h"
 #include "btcNode/Inventory.h"
 
-#include "btc/tx.h"
+#include "btc/Transaction.h"
 
 using namespace std;
 using namespace boost;

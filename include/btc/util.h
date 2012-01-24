@@ -70,20 +70,6 @@ typedef unsigned long long  uint64;
 // This is needed because the foreach macro can't get over the comma in pair<t1, t2>
 #define PAIRTYPE(t1, t2)    pair<t1, t2>
 
-// Align by increasing pointer, must have extra space at end of buffer
-template <size_t nBytes, typename T>
-T* alignup(T* p)
-{
-    union
-    {
-        T* ptr;
-        size_t n;
-    } u;
-    u.ptr = p;
-    u.n = (u.n + (nBytes-1)) & ~(nBytes-1);
-    return u.ptr;
-}
-
 #ifdef __MACH__
 #define MSG_NOSIGNAL        0
 #endif
@@ -105,20 +91,8 @@ T* alignup(T* p)
 #define S_IWUSR             0200
 #endif
 #define unlink              _unlink
-typedef int socklen_t;
 #else
 #define WSAGetLastError()   errno
-#define WSAEINVAL           EINVAL
-#define WSAEALREADY         EALREADY
-#define WSAEWOULDBLOCK      EWOULDBLOCK
-#define WSAEMSGSIZE         EMSGSIZE
-#define WSAEINTR            EINTR
-#define WSAEINPROGRESS      EINPROGRESS
-#define WSAEADDRINUSE       EADDRINUSE
-#define WSAENOTSOCK         EBADF
-#define INVALID_SOCKET      (SOCKET)(~0)
-#define SOCKET_ERROR        -1
-typedef u_int SOCKET;
 #define _vsnprintf(a,b,c,d) vsnprintf(a,b,c,d)
 #define strlwr(psz)         to_lower(psz)
 #define _strlwr(psz)        to_lower(psz)
@@ -126,38 +100,8 @@ typedef u_int SOCKET;
 #define Beep(n1,n2)         (0)
 #endif
 
-inline int myclosesocket(SOCKET& hSocket)
-{
-    if (hSocket == INVALID_SOCKET)
-        return WSAENOTSOCK;
-#ifdef _WIN32
-    int ret = closesocket(hSocket);
-#else
-    int ret = close(hSocket);
-#endif
-    hSocket = INVALID_SOCKET;
-    return ret;
-}
-#define closesocket(s)      myclosesocket(s)
-
-#ifndef GUI
-inline const char* _(const char* psz)
-{
-    return psz;
-}
-#endif
-
-
-
-
-
-
-
-
-
-
-extern std::map<std::string, std::string> mapArgs;
-extern std::map<std::string, std::vector<std::string> > mapMultiArgs;
+//extern std::map<std::string, std::string> mapArgs;
+//extern std::map<std::string, std::vector<std::string> > mapMultiArgs;
 extern bool fDebug;
 extern bool fPrintToConsole;
 extern bool fPrintToDebugger;
@@ -190,10 +134,10 @@ bool WildcardMatch(const char* psz, const char* mask);
 bool WildcardMatch(const std::string& str, const std::string& mask);
 int GetFilesize(FILE* file);
 //void GetDataDir(char* pszDirRet);
-std::string GetConfigFile();
+//std::string GetConfigFile();
 std::string GetPidFile();
 //void CreatePidFile(std::string pidFile, pid_t pid);
-void ReadConfigFile(std::map<std::string, std::string>& mapSettingsRet, std::map<std::string, std::vector<std::string> >& mapMultiSettingsRet);
+//void ReadConfigFile(std::map<std::string, std::string>& mapSettingsRet, std::map<std::string, std::vector<std::string> >& mapMultiSettingsRet);
 #ifdef _WIN32
 std::string MyGetSpecialFolderPath(int nFolder, bool fCreate);
 #endif
@@ -431,7 +375,7 @@ inline bool IsSwitchChar(char c)
     return c == '-';
 #endif
 }
-
+/*
 inline std::string GetArg(const std::string& strArg, const std::string& strDefault)
 {
     if (mapArgs.count(strArg))
@@ -456,7 +400,7 @@ inline bool GetBoolArg(const std::string& strArg)
     }
     return false;
 }
-
+*/
 
 
 
@@ -592,14 +536,6 @@ uint256 SerializeHash(const T& obj, int nType=SER_GETHASH, int nVersion=VERSION)
     return Hash(ss.begin(), ss.end());
 }
 
-inline uint160 Hash160(const std::vector<unsigned char>& vch)
-{
-    uint256 hash1;
-    SHA256(&vch[0], vch.size(), (unsigned char*)&hash1);
-    uint160 hash2;
-    RIPEMD160((unsigned char*)&hash1, sizeof(hash1), (unsigned char*)&hash2);
-    return hash2;
-}
 
 
 

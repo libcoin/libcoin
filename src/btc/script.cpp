@@ -8,7 +8,7 @@
 #include <boost/foreach.hpp>
 
 #include "btc/bignum.h"
-#include "btc/tx.h"
+#include "btc/Transaction.h"
 
 using namespace std;
 using namespace boost;
@@ -721,7 +721,7 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const Script& script, con
                         SHA256(&vch[0], vch.size(), &vchHash[0]);
                     else if (opcode == OP_HASH160)
                     {
-                        uint160 hash160 = Hash160(vch);
+                        uint160 hash160 = toAddress(vch);
                         memcpy(&vchHash[0], &hash160, sizeof(hash160));
                     }
                     else if (opcode == OP_HASH256)
@@ -1073,7 +1073,7 @@ bool Solver(const CKeyStore& keystore, const Script& scriptPubKey, uint256 hash,
             // Sign
             const valtype& vchPubKey = item.second;
             CKey key;
-            if (!keystore.GetKey(Hash160(vchPubKey), key))
+            if (!keystore.GetKey(toAddress(vchPubKey), key))
                 return false;
             if (key.GetPubKey() != vchPubKey)
                 return false;
@@ -1123,7 +1123,7 @@ bool IsMine(const CKeyStore &keystore, const Script& scriptPubKey)
         {
             const valtype& vchPubKey = item.second;
             vector<unsigned char> vchPubKeyFound;
-            if (!keystore.GetPubKey(Hash160(vchPubKey), vchPubKeyFound))
+            if (!keystore.GetPubKey(toAddress(vchPubKey), vchPubKeyFound))
                 return false;
             if (vchPubKeyFound != vchPubKey)
                 return false;
@@ -1151,7 +1151,7 @@ bool static ExtractAddressInner(const Script& scriptPubKey, const CKeyStore* key
     BOOST_FOREACH(PAIRTYPE(opcodetype, valtype)& item, vSolution)
     {
         if (item.first == OP_PUBKEY)
-            addressRet = Hash160(item.second);
+            addressRet = toAddress(item.second);
         else if (item.first == OP_PUBKEYHASH)
             addressRet = (uint160)item.second;
         if (keystore == NULL || keystore->HaveKey(addressRet))
