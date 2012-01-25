@@ -15,6 +15,34 @@
 #include "btcNode/TransactionFilter.h"
 #include "btcNode/BlockFilter.h"
 
+#include <boost/interprocess/sync/file_lock.hpp>
+#include <fstream>
+
+
+// Make sure only a single bitcoin process is using the data directory.
+// lock the lock file or else throw an exception
+class LockFile : boost::noncopyable {
+public:
+    class Touch : boost::noncopyable {
+    public:
+        /// Touch is like Posix touch - it touches the file to ensure it exists.
+        Touch(std::string lock_file_name) {
+            std::fstream f(lock_file_name.c_str(), std::ios_base::app | std::ios_base::in | std::ios_base::out);
+            if(!f.is_open())
+                throw std::runtime_error(("Cannot open the lockfile ( " + lock_file_name + " ) - do you have permissions?").c_str());
+        }
+    };
+    LockFile(std::string lockfile) : 
+    _touch(lockfile), 
+    _file_lock(lockfile.c_str()) {
+        if( !_file_lock.try_lock())
+            throw std::runtime_error( ("Cannot obtain a lock on data directory ( " + lockfile + " ) Bitcoin is probably already running.").c_str());
+    }
+private:
+    Touch _touch;
+    boost::interprocess::file_lock _file_lock;
+};
+
 /// The top-level class of the btc Node.
 /// Node keeps a list of Peers and accepts and initiates connectes using a list of endpoints
 /// To bootstrap the process a connection to IRC is made - or a lookup in the existing endpoints is used
@@ -105,15 +133,18 @@ private:
     /// Get a candidate to connect to using the internal list of peers.
     Endpoint getCandidate(const std::set<unsigned int>& not_in);
 
+    /// The data directory holding the block file, the address file, the database and logfiles
+    std::string _dataDir;
+    
+    /// The lock file
+    LockFile _fileLock;
+    
     /// The io_service used to perform asynchronous operations.
     boost::asio::io_service _io_service;
     
     /// Acceptor used to listen for incoming connections.
     boost::asio::ip::tcp::acceptor _acceptor;
 
-    /// The data directory holding the block file, the address file, the database and logfiles
-    std::string _dataDir;
-    
     /// The connection manager which owns all live connections.
     PeerManager _peerManager;
     

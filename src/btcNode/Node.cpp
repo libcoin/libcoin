@@ -14,8 +14,19 @@
 using namespace std;
 using namespace boost;
 using namespace asio;
-
-Node::Node(const Chain& chain, std::string dataDir, const string& address, const string& port, bool proxy, const string& irc) : _io_service(), _acceptor(_io_service), _dataDir(dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir), _peerManager(*this), _connection_deadline(_io_service), _messageHandler(), _endpointPool(chain.defaultPort(), _dataDir), _blockChain(chain, _dataDir), _chatClient(_io_service, irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy), _proxy(proxy) {
+ 
+Node::Node(const Chain& chain, std::string dataDir, const string& address, const string& port, bool proxy, const string& irc) : 
+    _dataDir(dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir),
+    _fileLock(_dataDir + "/.lock"),
+    _io_service(),
+    _acceptor(_io_service),
+    _peerManager(*this),
+    _connection_deadline(_io_service),
+    _messageHandler(),
+    _endpointPool(chain.defaultPort(), _dataDir),
+    _blockChain(chain, _dataDir),
+    _chatClient(_io_service, irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy),
+    _proxy(proxy) {
     
     _transactionFilter = filter_ptr(new TransactionFilter(_blockChain));
     _blockFilter = filter_ptr(new BlockFilter(_blockChain));
