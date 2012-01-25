@@ -1,0 +1,5 @@
+SET(TARGET_SRC btcsimple.cpp)
+
+SET(TARGET_ADDED_LIBRARIES btcWallet)
+
+SETUP_EXAMPLE(btcsimple)
