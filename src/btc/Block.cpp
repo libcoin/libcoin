@@ -85,7 +85,7 @@ void Block::print() const
     printf("\n");
 }
 
-bool Block::checkBlock(const CBigNum& proofOfWorkLimit)
+bool Block::checkBlock(const CBigNum& proofOfWorkLimit) const
 {
     // These are checks that are independent of context
     // that can be verified before saving an orphan block.

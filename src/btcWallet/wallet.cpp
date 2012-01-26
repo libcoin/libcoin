@@ -518,17 +518,7 @@ void Wallet::ReacceptWalletTransactions()
 }
 
 // This will be polled from the TransactionFilter infrequently
-void Wallet::ResendWalletTransactions(set<uint256>& hashes) {
-    // Do this infrequently and randomly to avoid giving away
-    // that these are our transactions.
-    static int64 nNextTime;
-    if (GetTime() < nNextTime)
-        return;
-    bool fFirst = (nNextTime == 0);
-    nNextTime = GetTime() + GetRand(30 * 60);
-    if (fFirst)
-        return;
-
+void Wallet::resend() {
     // Only do it if there's been a new block since last time
     static int64 nLastTime;
     if (_blockChain.getBestReceivedTime() < nLastTime)
@@ -537,7 +527,6 @@ void Wallet::ResendWalletTransactions(set<uint256>& hashes) {
 
     // Rebroadcast any of our txes that aren't in a block yet
     printf("ResendWalletTransactions()\n");
-    //    CTxDB txdb("r");
     CRITICAL_BLOCK(cs_wallet) {
         // Sort them in chronological order
         multimap<unsigned int, CWalletTx*> mapSorted;
@@ -550,6 +539,7 @@ void Wallet::ResendWalletTransactions(set<uint256>& hashes) {
         }
         BOOST_FOREACH(PAIRTYPE(const unsigned int, CWalletTx*)& item, mapSorted) {
             CWalletTx& wtx = *item.second;
+            _emit(wtx);
             /*
              BOOST_FOREACH(const CMerkleTx& tx, vtxPrev)
              {
@@ -570,11 +560,13 @@ void Wallet::ResendWalletTransactions(set<uint256>& hashes) {
              }
              }
              */
-            const uint256 hash = wtx.getHash();
-            hashes.insert(hash);
+            //            const uint256 hash = wtx.getHash();
+            //hashes.insert(hash);
             //            wtx.RelayWalletTransaction(txdb);
         }
     }
+    _resend_timer.expires_from_now(boost::posix_time::seconds(GetRand(30 * 60)));
+    _resend_timer.async_wait(boost::bind(&Wallet::resend, this));
 }
 
 bool Wallet::WriteToDisk(const CWalletTx& wtx) {
@@ -597,7 +589,7 @@ int64 Wallet::GetBalance(bool confirmed) const
             const CWalletTx* pcoin = &(*it).second;
             if (confirmed && !IsConfirmed(*pcoin))
                 continue;
-            nTotal += pcoin->GetAvailableCredit();
+            nTotal += pcoin->GetAvailableCredit(false);
         }
     }
 
@@ -894,7 +886,7 @@ bool Wallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
             // This is only to keep the database open to defeat the auto-flush for the
             // duration of this scope.  This is the only place where this optimization
             // maybe makes sense; please don't do it anywhere else.
-            CWalletDB* pwalletdb = fFileBacked ? new CWalletDB(strWalletFile,"r") : NULL;
+            // CWalletDB* pwalletdb = fFileBacked ? new CWalletDB(strWalletFile,"r") : NULL;
 
             // Take key pair from key pool so it won't be used again
             reservekey.KeepKey();
@@ -914,8 +906,8 @@ bool Wallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
                 vWalletUpdated.push_back(coin.getHash());
             }
 
-            if (fFileBacked)
-                delete pwalletdb;
+        //            if (fFileBacked)
+        //        delete pwalletdb;
         }
 
         // Track how many getdata requests our transaction gets
@@ -1199,13 +1191,6 @@ void BlockListener::operator()(const Block& blk) {
     // sync with wallet
     _wallet.blockAccepted(blk);
 }
-
-void TransactionReminder::operator()(std::set<uint256>& hashes) {
-    // Fill the hashes with transactions not already in a blocks and return.
-    _wallet.ResendWalletTransactions(hashes);
-}
-
-
 
 vector<unsigned char> CReserveKey::GetReservedKey()
 {

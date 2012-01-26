@@ -9,7 +9,7 @@ using namespace std;
 using namespace boost;
 
 
-size_t SendBufferSize() { return 10*1000; }
+size_t SendBufferSize() { return 10*1000*1000; }
 
 bool BlockFilter::operator()(Peer* origin, Message& msg) {
     if (origin->nVersion == 0) {
@@ -26,7 +26,30 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         Inventory inv(MSG_BLOCK, block.getHash());
         origin->AddInventoryKnown(inv);
         
-        if (processBlock(origin, block))
+        // Check for duplicate
+        uint256 hash = block.getHash();
+        if (_blockChain.haveBlock(hash))
+            return error("ProcessBlock() : already have block %d %s", _blockChain.getBlockIndex(hash)->nHeight, hash.toString().substr(0,20).c_str());
+        if (_orphanBlocks.count(hash))
+            return error("ProcessBlock() : already have block (orphan) %s", hash.toString().substr(0,20).c_str());
+        
+        // Preliminary checks
+        if (!block.checkBlock(_blockChain.chain().proofOfWorkLimit()))
+            return error("ProcessBlock() : CheckBlock FAILED");
+        
+        // If don't already have its previous block, shunt it off to holding area until we get it
+        if (!_blockChain.haveBlock(block.getPrevBlock())) {
+            printf("ProcessBlock: ORPHAN BLOCK, prev=%s\n", block.getPrevBlock().toString().substr(0,20).c_str());
+            Block* block_copy = new Block(block);
+            _orphanBlocks.insert(make_pair(hash, block_copy));
+            _orphanBlocksByPrev.insert(make_pair(block_copy->getPrevBlock(), block_copy));
+            
+            // Ask this guy to fill in what we're missing
+            if (origin)
+                origin->PushGetBlocks(_blockChain.getBestLocator(), getOrphanRoot(block_copy));            
+        }
+        
+        if (process(block, origin->getAllPeers()))
             _alreadyAskedFor.erase(inv);
     }
     else if (msg.command() == "getblocks") {
@@ -174,35 +197,8 @@ uint256 BlockFilter::getOrphanRoot(const Block* pblock) {
 }
 
 /// Need access to mapOrphanBlocks/ByPrev and a call to GetOrphanRoot
-bool BlockFilter::processBlock(Peer* origin, Block& block) {
-    // Check for duplicate
+bool BlockFilter::process(const Block& block, Peers peers) {
     uint256 hash = block.getHash();
-    if (_blockChain.haveBlock(hash))
-        return error("ProcessBlock() : already have block %d %s", _blockChain.getBlockIndex(hash)->nHeight, hash.toString().substr(0,20).c_str());
-    if (_orphanBlocks.count(hash))
-        return error("ProcessBlock() : already have block (orphan) %s", hash.toString().substr(0,20).c_str());
-    
-    // Preliminary checks
-    if (!block.checkBlock(_blockChain.chain().proofOfWorkLimit()))
-        return error("ProcessBlock() : CheckBlock FAILED");
-    
-    // If don't already have its previous block, shunt it off to holding area until we get it
-    if (!_blockChain.haveBlock(block.getPrevBlock())) {
-        printf("ProcessBlock: ORPHAN BLOCK, prev=%s\n", block.getPrevBlock().toString().substr(0,20).c_str());
-        Block* block_copy = new Block(block);
-        _orphanBlocks.insert(make_pair(hash, block_copy));
-        _orphanBlocksByPrev.insert(make_pair(block_copy->getPrevBlock(), block_copy));
-        
-        // Ask this guy to fill in what we're missing
-        if (origin)
-            origin->PushGetBlocks(_blockChain.getBestLocator(), getOrphanRoot(block_copy));            
-        return true;
-    }
-
-    /////////////////  ----- Make this a thread ----- //////////////////
-    
-    //    pushBlock(block);
-    
     // Store to disk
     if (!_blockChain.acceptBlock(block))
         return error("ProcessBlock() : AcceptBlock FAILED");
@@ -213,12 +209,10 @@ bool BlockFilter::processBlock(Peer* origin, Block& block) {
 
         // Relay inventory, but don't relay old inventory during initial block download
         uint256 bestChain = _blockChain.getBestChain();
-        uint256 blockHash = block.getHash();
-        if (bestChain == blockHash) {
-            Peers peers = origin->getAllPeers();
+        if (bestChain == hash) {
             for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
                 if (bestChain > ((*peer)->nStartingHeight != -1 ? (*peer)->nStartingHeight - 2000 : 140700))
-                    (*peer)->PushInventory(Inventory(MSG_BLOCK, blockHash));
+                    (*peer)->PushInventory(Inventory(MSG_BLOCK, hash));
         }
     }
     
@@ -241,7 +235,6 @@ bool BlockFilter::processBlock(Peer* origin, Block& block) {
                 uint256 bestChain = _blockChain.getBestChain();
                 uint256 blockHash = block.getHash();
                 if (bestChain == blockHash) {
-                    Peers peers = origin->getAllPeers();
                     for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
                         if (bestChain > ((*peer)->nStartingHeight != -1 ? (*peer)->nStartingHeight - 2000 : 140700))
                             (*peer)->PushInventory(Inventory(MSG_BLOCK, blockHash));

@@ -57,7 +57,7 @@ public:
         nNonce         = 0;
     }
 
-    CBlockIndex(unsigned int nFileIn, unsigned int nBlockPosIn, Block& block);
+    CBlockIndex(unsigned int nFileIn, unsigned int nBlockPosIn, const Block& block);
 
     Block GetBlockHeader() const;
 

@@ -8,7 +8,7 @@
 using namespace std;
 using namespace boost;
 
-CBlockIndex::CBlockIndex(unsigned int nFileIn, unsigned int nBlockPosIn, Block& block)
+CBlockIndex::CBlockIndex(unsigned int nFileIn, unsigned int nBlockPosIn, const Block& block)
 {
     phashBlock = NULL;
     pprev = NULL;

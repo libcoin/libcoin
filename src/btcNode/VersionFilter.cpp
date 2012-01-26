@@ -33,8 +33,9 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
             data >> addrFrom >> nNonce;
         if (origin->nVersion >= 106 && !msg.payload().empty())
             data >> origin->strSubVer;
+        int bestHeight;
         if (origin->nVersion >= 209 && !msg.payload().empty())
-            data >> origin->nStartingHeight;
+            data >> bestHeight;
         
         if (origin->nVersion == 0)
             return false;
@@ -49,6 +50,10 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
         // Be shy and don't send version until we hear
         if (origin->fInbound)
             origin->PushVersion();
+
+        // We need to wait till after we have sent our data setting the nStartingHeight for the remote. Otherwise the remote will only get its onw height back.
+        
+        origin->nStartingHeight = bestHeight;
         
         origin->fClient = !(origin->nServices & NODE_NETWORK);
         

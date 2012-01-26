@@ -50,6 +50,9 @@ public:
         return c;
     }
     
+    /// Call process to get a hook into the transaction processing, e.g. if for injecting wallet generated txes
+    void process(Transaction& tx, Peers peers);
+    
 private:
     BlockChain& _blockChain;
     Listeners _listeners;
@@ -58,7 +61,7 @@ private:
     std::map<uint256, CDataStream*> _orphanTransactions;
     std::multimap<uint256, CDataStream*> _orphanTransactionsByPrev;
     
-    void addOrphanTx(const CDataStream& payload);
+    void addOrphanTx(const Transaction& tx);
     
     void eraseOrphanTx(uint256 hash);
     

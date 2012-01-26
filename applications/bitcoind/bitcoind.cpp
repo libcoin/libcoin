@@ -21,6 +21,74 @@ using namespace boost;
 using namespace boost::program_options;
 using namespace json_spirit;
 
+//#define USE_UPNP
+#ifdef USE_UPNP
+#include <miniupnpc/miniwget.h>
+#include <miniupnpc/miniupnpc.h>
+#include <miniupnpc/upnpcommands.h>
+#include <miniupnpc/upnperrors.h>
+
+class PortMapper : boost::noncopyable {
+public:
+    PortMapper(boost::asio::io_service& io_service, unsigned short port, unsigned int repeat_interval = 60*60) : _repeat_timer(io_service), _devlist(NULL) {
+        
+        sprintf(_port, "%d", port);
+
+        _repeat_timer.expires_from_now(posix_time::seconds(0));
+        _repeat_timer.async_wait(boost::bind(PortMapper::handle_mapping));
+    }
+                                 
+    void handle_mapping(const system::error_code& e) {
+        printf("ThreadMapPort started\n");
+                
+        const char * rootdescurl = 0;
+        const char * multicastif = 0;
+        const char * minissdpdpath = 0;
+        char lanaddr[64];
+        
+        _devlist = upnpDiscover(2000, multicastif, minissdpdpath, 0);
+        
+        int r;
+        
+        r = UPNP_GetValidIGD(_devlist, &_urls, &_data, lanaddr, sizeof(lanaddr));
+        if (r == 1) {
+            char intClient[16];
+            char intPort[6];
+            
+#ifndef __WXMSW__
+            r = UPNP_AddPortMapping(_urls.controlURL, _data.first.servicetype, _port, _port, lanaddr, 0, "TCP", 0);
+#else
+            r = UPNP_AddPortMapping(_urls.controlURL, _data.first.servicetype, _port, _port, lanaddr, 0, "TCP", 0, "0");
+#endif
+            if(r!=UPNPCOMMAND_SUCCESS)
+                printf("AddPortMapping(%s, %s, %s) failed with code %d (%s)\n", _port, _port, lanaddr, r, strupnperror(r));
+            else
+                printf("UPnP Port Mapping successful.\n");
+        } else {
+            printf("No valid UPnP IGDs found\n");
+            freeUPNPDevlist(_devlist); devlist = 0;
+            if (r != 0)
+                FreeUPNPUrls(&_urls);
+        }
+        _repeat_timer.expires_from_now(posix_time::seconds(10*60));
+        _repeat_timer.async_wait(boost::bind(PortMapper::handle_mapping));
+    }
+    
+    ~PortMapper() {
+        r = UPNP_DeletePortMapping(_urls.controlURL, _data.first.servicetype, _port, "TCP", 0);
+        printf("UPNP_DeletePortMapping() returned : %d\n", r);
+        freeUPNPDevlist(_devlist); devlist = 0;
+        FreeUPNPUrls(&_urls);
+    }
+private:
+    boost::asio::deadline_timer _repeat_timer;
+    char _port[6];
+    struct UPNPDev* _devlist;
+    struct UPNPUrls _urls;
+    struct IGDdatas _data;
+};
+#endif
+
 int main(int argc, char* argv[])
 {
     try {
@@ -152,6 +220,7 @@ int main(int argc, char* argv[])
         logfile = data_dir + "/debug.log";
         
         Node node(chain, data_dir, args.count("nolisten") ? "" : "0.0.0.0"); // it is also here we specify the use of a proxy!
+//        PortMapper(node.get_io_service(), port); // this will use the Node call
 
         // use the connect and addnode options to restrict and supplement the irc and endpoint db.
         for(strings::iterator ep = add_peers.begin(); ep != add_peers.end(); ++ep) node.addPeer(*ep);

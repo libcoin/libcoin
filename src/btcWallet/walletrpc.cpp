@@ -16,7 +16,11 @@ Value ValueFromAmount(int64 amount) {
 
 int64 AmountFromValue(const Value& value)
 {
-    double dAmount = value.get_real();
+    double dAmount;
+    if(value.type() == str_type)
+        dAmount = lexical_cast<double>(value.get_str());
+    else
+        dAmount = value.get_real();
     if (dAmount <= 0.0 || dAmount > 21000000.0)
         throw RPC::error(RPC::invalid_request, "Invalid amount");
     int64 nAmount = roundint64(dAmount * COIN);

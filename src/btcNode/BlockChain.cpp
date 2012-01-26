@@ -352,7 +352,7 @@ bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& map
     return true;
 }
 
-bool BlockChain::disconnectInputs(Transaction& tx)
+bool BlockChain::disconnectInputs(const Transaction& tx)
 {
     // Relinquish previous transactions' spent pointers
     if (!tx.isCoinBase()) {
@@ -917,7 +917,7 @@ bool BlockChain::LoadBlockIndex()
     return true;
 }
 
-bool BlockChain::disconnectBlock(Block& block, CBlockIndex* pindex)
+bool BlockChain::disconnectBlock(const Block& block, CBlockIndex* pindex)
 {
     // Disconnect in reverse order
     for (int i = block.getNumTransactions()-1; i >= 0; i--)
@@ -936,7 +936,7 @@ bool BlockChain::disconnectBlock(Block& block, CBlockIndex* pindex)
     return true;
 }
 
-bool BlockChain::connectBlock(Block& block, CBlockIndex* pindex)
+bool BlockChain::connectBlock(const Block& block, CBlockIndex* pindex)
 {
     // Check it again in case a previous version let a bad block in
     if (!block.checkBlock(_chain.proofOfWorkLimit()))
@@ -948,7 +948,7 @@ bool BlockChain::connectBlock(Block& block, CBlockIndex* pindex)
     map<uint256, TxIndex> queuedChanges;
     int64 fees = 0;
     for(int i = 0; i < block.getNumTransactions(); ++i) {
-        Transaction& tx = block.getTransaction(i);
+        const Transaction& tx = block.getTransaction(i);
         DiskTxPos posThisTx(pindex->nFile, pindex->nBlockPos, nTxPos);
         nTxPos += ::GetSerializeSize(tx, SER_DISK);
         
@@ -980,7 +980,7 @@ bool BlockChain::connectBlock(Block& block, CBlockIndex* pindex)
     return true;
 }
 
-bool BlockChain::reorganize(Block& block, CBlockIndex* pindexNew)
+bool BlockChain::reorganize(const Block& block, CBlockIndex* pindexNew)
 {
     printf("REORGANIZE\n");
     
@@ -1083,7 +1083,7 @@ void BlockChain::InvalidChainFound(CBlockIndex* pindexNew)
         printf("InvalidChainFound: WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.\n");
 }
 
-bool BlockChain::setBestChain(Block& block, CBlockIndex* pindexNew)
+bool BlockChain::setBestChain(const Block& block, CBlockIndex* pindexNew)
 {
     uint256 hash = block.getHash();
     
@@ -1147,7 +1147,7 @@ bool BlockChain::setBestChain(Block& block, CBlockIndex* pindexNew)
 }
 
 
-bool BlockChain::addToBlockIndex(Block& block, unsigned int nFile, unsigned int nBlockPos)
+bool BlockChain::addToBlockIndex(const Block& block, unsigned int nFile, unsigned int nBlockPos)
 {
     // Check for duplicate
     uint256 hash = block.getHash();
@@ -1187,7 +1187,7 @@ bool BlockChain::addToBlockIndex(Block& block, unsigned int nFile, unsigned int 
     return true;
 }
 
-bool BlockChain::acceptBlock(Block& block)
+bool BlockChain::acceptBlock(const Block& block)
 {
     // Check for duplicate
     uint256 hash = block.getHash();
@@ -1403,7 +1403,7 @@ bool BlockChain::AddToMemoryPoolUnchecked(const Transaction& tx)
 }
 
 
-bool BlockChain::RemoveFromMemoryPool(Transaction& tx)
+bool BlockChain::RemoveFromMemoryPool(const Transaction& tx)
 {
     // Remove transaction from memory pool
     

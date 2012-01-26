@@ -38,14 +38,6 @@ private:
     Wallet& _wallet;
 };
 
-class TransactionReminder : public TransactionFilter::Reminder {
-public:
-    TransactionReminder(Wallet& wallet) : _wallet(wallet) {}
-    virtual void operator()(std::set<uint256>& hashes);
-private:
-    Wallet& _wallet;
-};
-
 class Wallet : public CCryptoKeyStore
 {
 private:
@@ -78,7 +70,7 @@ public:
         Node& _node; 
     };
 
-    Wallet(Node& node, std::string walletFile = "", std::string dataDir = "") : CCryptoKeyStore(node.blockChain().chain().networkId()), _blockChain(node.blockChain()), nTransactionFee(0), _emit(node) {
+    Wallet(Node& node, std::string walletFile = "", std::string dataDir = "") : CCryptoKeyStore(node.blockChain().chain().networkId()), _blockChain(node.blockChain()), nTransactionFee(0), _emit(node), _resend_timer(node.get_io_service()) {
         if(walletFile == "NOTFILEBACKED")
             fFileBacked = false;
         else {
@@ -93,12 +85,14 @@ public:
         node.subscribe(TransactionFilter::listener_ptr(new TransactionListener(*this)));
         node.subscribe(BlockFilter::listener_ptr(new BlockListener(*this)));
         
-        // install a callback to pull for possible reposts of transactions
-        node.subscribe(TransactionFilter::reminder_ptr(new TransactionReminder(*this)));
-        
         bool firstRun = false;
         LoadWallet(firstRun);
         if(firstRun) printf("Created a new wallet!");
+        
+        // Do this infrequently and randomly to avoid giving away
+        // that these are our transactions.
+        _resend_timer.expires_from_now(boost::posix_time::seconds(GetRand(30 * 60)));
+        _resend_timer.async_wait(boost::bind(&Wallet::resend, this));
     }
 
     const Chain& chain() const { return _blockChain.chain(); }
@@ -156,7 +150,7 @@ public:
     void WalletUpdateSpent(const Transaction& prevout);
     int ScanForWalletTransactions(const CBlockIndex* pindexStart = NULL, bool fUpdate = false);
     void ReacceptWalletTransactions();
-    void ResendWalletTransactions(std::set<uint256>& hashes);
+    void resend();
     int64 GetBalance(bool confirmed = true) const;
     bool CreateTransaction(const std::vector<std::pair<Script, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
     bool CreateTransaction(Script scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
@@ -292,6 +286,7 @@ public:
 private:
     const BlockChain& _blockChain;
     TransactionEmitter _emit;
+    boost::asio::deadline_timer _resend_timer;
 };
 
 class CReserveKey

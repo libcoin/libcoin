@@ -94,10 +94,10 @@ public:
     const BlockChain& blockChain() const { return _blockChain; }
 
     /// Post a Transaction to the Node. (Note that we use dispatch - no need to post if we are already in the same thread)
-    void post(const Transaction& tx) { _io_service.dispatch(boost::bind(&BlockChain::acceptTransaction, &_blockChain, tx)); }
+    void post(const Transaction& tx) { _io_service.dispatch(boost::bind(&TransactionFilter::process, static_cast<TransactionFilter*>(_transactionFilter.get()), tx, _peerManager.getAllPeers())); }
     
-    /// Post a Transaction to the Node. (Note that we use dispatch - no need to post if we are already in the same thread)
-    void post(const Block& block) { _io_service.dispatch(boost::bind(&BlockChain::acceptBlock, &_blockChain, block)); }
+    /// Post a Block to the Node. (Note that we use dispatch - no need to post if we are already in the same thread)
+    void post(const Block& block) { _io_service.dispatch(boost::bind(&BlockFilter::process, static_cast<BlockFilter*>(_blockFilter.get()), block, _peerManager.getAllPeers())); }
         
     /// Subscribe to Transaction accept notifications
     void subscribe(TransactionFilter::listener_ptr listener) { static_cast<TransactionFilter*>(_transactionFilter.get())->subscribe(listener); }
@@ -107,6 +107,9 @@ public:
     
     /// Subscribe to Block accept notifications
     void subscribe(BlockFilter::listener_ptr listener) { static_cast<BlockFilter*>(_blockFilter.get())->subscribe(listener); }
+    
+    /// Get a handle to the io_service.
+    boost::asio::io_service& get_io_service() { return _io_service; }
     
 private:
     /// Initiate an asynchronous accept operation.

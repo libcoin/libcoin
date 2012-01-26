@@ -5,6 +5,7 @@
 #include "Filter.h"
 
 #include "btc/uint256.h"
+#include "btcNode/PeerManager.h"
 
 #include <string>
 #include <map>
@@ -40,9 +41,11 @@ public:
         return c;
     }
 
+    /// Call process to get a hook into the block processing, e.g. if for injecting mining generated blocks
+    bool process(const Block& block, Peers peers);
+    
 private:
     uint256 getOrphanRoot(const Block* pblock);
-    bool processBlock(Peer* origin, Block& block);
     
     bool alreadyHave(const Inventory& inv);
 

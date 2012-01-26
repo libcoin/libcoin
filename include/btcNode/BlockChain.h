@@ -210,7 +210,7 @@ public:
     bool haveBlock(uint256 hash) const;
     
     /// Accept a block (Note: this could lead to a reorganization of the block that is often quite time consuming).
-    bool acceptBlock(Block& block);
+    bool acceptBlock(const Block& block);
     
     /// Locate blocks in the block chain
     //CBlockLocator blockLocator(uint256 hashBlock);
@@ -276,13 +276,13 @@ protected:
         return (bi->pnext || bi == _bestIndex);
     }    
     
-    bool disconnectInputs(Transaction& tx);    
+    bool disconnectInputs(const Transaction& tx);    
     
     /// Block stuff
-    bool disconnectBlock(Block& block, CBlockIndex* pindex);
-    bool connectBlock(Block& block, CBlockIndex* pindex);
-    bool setBestChain(Block& block, CBlockIndex* pindexNew);
-    bool addToBlockIndex(Block& block, unsigned int nFile, unsigned int nBlockPos);
+    bool disconnectBlock(const Block& block, CBlockIndex* pindex);
+    bool connectBlock(const Block& block, CBlockIndex* pindex);
+    bool setBestChain(const Block& block, CBlockIndex* pindexNew);
+    bool addToBlockIndex(const Block& block, unsigned int nFile, unsigned int nBlockPos);
 
     bool ReadTxIndex(uint256 hash, TxIndex& txindex) const;
     bool UpdateTxIndex(uint256 hash, const TxIndex& txindex);
@@ -305,7 +305,7 @@ protected:
     
     void InvalidChainFound(CBlockIndex* pindexNew);
     
-    bool reorganize(Block& block, CBlockIndex* pindexNew);
+    bool reorganize(const Block& block, CBlockIndex* pindexNew);
     
     int getTotalBlocksEstimate() const { return _chain.totalBlocksEstimate(); }
     
@@ -314,7 +314,7 @@ protected:
 
     bool AcceptToMemoryPool(const Transaction& tx, bool fCheckInputs=true, bool* pfMissingInputs=NULL);
     bool AddToMemoryPoolUnchecked(const Transaction& tx);
-    bool RemoveFromMemoryPool(Transaction& tx);
+    bool RemoveFromMemoryPool(const Transaction& tx);
 
 private:
     const Chain& _chain;

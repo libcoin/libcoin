@@ -14,7 +14,6 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
         throw OriginNotReady();
     }    
     if (msg.command() == "tx") {        
-        vector<uint256> workQueue;
         CDataStream data(msg.payload());
         CDataStream payload(msg.payload());
         Transaction tx;
@@ -23,44 +22,7 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
         Inventory inv(MSG_TX, tx.getHash());
         origin->AddInventoryKnown(inv);
         
-        bool fMissingInputs = false;
-        if (_blockChain.acceptTransaction(tx, fMissingInputs)) {
-            for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
-                (*listener->get())(tx);
-            relayMessage(origin->getAllPeers(), inv, payload);
-            _alreadyAskedFor.erase(inv);
-            workQueue.push_back(inv.getHash());
-            
-            // Recursively process any orphan transactions that depended on this one
-            for (int i = 0; i < workQueue.size(); i++) {
-                uint256 hashPrev = workQueue[i];
-                for (multimap<uint256, CDataStream*>::iterator mi = _orphanTransactionsByPrev.lower_bound(hashPrev);
-                     mi != _orphanTransactionsByPrev.upper_bound(hashPrev);
-                     ++mi) {
-                    const CDataStream& payload = *((*mi).second);
-                    Transaction tx;
-                    CDataStream(payload) >> tx;
-                    Inventory inv(MSG_TX, tx.getHash());
-                    
-                    if (_blockChain.acceptTransaction(tx)){
-                        for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
-                            (*listener->get())(tx);
-                        printf("   accepted orphan tx %s\n", inv.getHash().toString().substr(0,10).c_str());
-                        //                        SyncWithWallets(tx, NULL, true);
-                        relayMessage(origin->getAllPeers(), inv, payload);
-                        _alreadyAskedFor.erase(inv);
-                        workQueue.push_back(inv.getHash());
-                    }
-                }
-            }
-            
-            BOOST_FOREACH(uint256 hash, workQueue)
-                eraseOrphanTx(hash);
-        }
-        else if (fMissingInputs) {
-            printf("storing orphan tx %s\n", inv.getHash().toString().substr(0,10).c_str());
-            addOrphanTx(payload);
-        }
+        process(tx, origin->getAllPeers());
     }
     else if (msg.command() == "getdata") {
         vector<Inventory> vInv;
@@ -113,12 +75,57 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
     return true;
 }
 
+void TransactionFilter::process(Transaction& tx, Peers peers) {
+    vector<uint256> workQueue;
+    Inventory inv(MSG_TX, tx.getHash());
+    CDataStream payload;
+    payload << tx;
+    bool fMissingInputs = false;
+    if (_blockChain.acceptTransaction(tx, fMissingInputs)) {
+        for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
+            (*listener->get())(tx);
+        relayMessage(peers, inv, payload);
+        _alreadyAskedFor.erase(inv);
+        workQueue.push_back(inv.getHash());
+        
+        // Recursively process any orphan transactions that depended on this one
+        for (int i = 0; i < workQueue.size(); i++) {
+            uint256 hashPrev = workQueue[i];
+            for (multimap<uint256, CDataStream*>::iterator mi = _orphanTransactionsByPrev.lower_bound(hashPrev);
+                 mi != _orphanTransactionsByPrev.upper_bound(hashPrev);
+                 ++mi) {
+                const CDataStream& payload = *((*mi).second);
+                Transaction tx;
+                CDataStream(payload) >> tx;
+                Inventory inv(MSG_TX, tx.getHash());
+                
+                if (_blockChain.acceptTransaction(tx)){
+                    for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
+                        (*listener->get())(tx);
+                    printf("   accepted orphan tx %s\n", inv.getHash().toString().substr(0,10).c_str());
+                    //                        SyncWithWallets(tx, NULL, true);
+                    relayMessage(peers, inv, payload);
+                    _alreadyAskedFor.erase(inv);
+                    workQueue.push_back(inv.getHash());
+                }
+            }
+        }
+        
+        BOOST_FOREACH(uint256 hash, workQueue)
+        eraseOrphanTx(hash);
+    }
+    else if (fMissingInputs) {
+        printf("storing orphan tx %s\n", inv.getHash().toString().substr(0,10).c_str());
+        addOrphanTx(tx);
+    }
+}
+                  
 
 // Private methods
-void TransactionFilter::addOrphanTx(const CDataStream& payload) {
-    Transaction tx;
-    CDataStream(payload) >> tx;
+void TransactionFilter::addOrphanTx(const Transaction& tx) {
     uint256 hash = tx.getHash();
+    CDataStream payload;
+    payload << tx;
     if (_orphanTransactions.count(hash))
         return;
     CDataStream* p = _orphanTransactions[hash] = new CDataStream(payload);
