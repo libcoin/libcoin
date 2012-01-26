@@ -10,6 +10,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/asio/ssl.hpp>
 
 /// The top-level class of the HTTP server.
 class Server : private boost::noncopyable
@@ -18,6 +19,13 @@ public:
     /// Construct the server to listen on the specified TCP address and port, and
     /// serve up files from the given directory.
     explicit Server(const std::string address = boost::asio::ip::address_v4::loopback().to_string(), const std::string port = "8333", const std::string doc_root = boost::filesystem::initial_path().string());
+
+    /// Set the server credentials - this will also make the server secure.
+    void setCredentials(const std::string dataDir, const std::string cert = "hostcert.pem", const std::string key = "hostkey.pem");
+    
+    bool isSecure() const {
+        return _secure;
+    }
     
     /// Run the server's io_service loop.
     void run();
@@ -42,9 +50,9 @@ public:
     /// Get a handle to the io_service used by the Server
     boost::asio::io_service& get_io_service() { return _io_service; }
     
-private:
+protected:
     /// Initiate an asynchronous accept operation.
-    void start_accept();
+    virtual void start_accept();
     
     /// Handle completion of an asynchronous accept operation.
     void handle_accept(const boost::system::error_code& e);
@@ -55,6 +63,12 @@ private:
     /// The io_service used to perform asynchronous operations.
     boost::asio::io_service _io_service;
     
+    /// The TLS context. - we only use this if we run the server using ssl.
+    boost::asio::ssl::context _context;
+    
+    /// Setting to determine if we want to be secure or not
+    bool _secure;
+
     /// The signal_set is used to register for process termination notifications.
     boost::asio::signal_set _signals;
     

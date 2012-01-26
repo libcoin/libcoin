@@ -31,7 +31,8 @@ int main(int argc, char* argv[])
         strings rpc_params;
         strings connect_peers;
         strings add_peers;
-        bool gen;
+        bool gen, ssl;
+        string certchain, privkey;
 
         // Commandline options
         options_description generic("Generic options");
@@ -57,6 +58,9 @@ int main(int argc, char* argv[])
             ("keypool", value<unsigned short>(), "Set key pool size to <arg>")
             ("rescan", "Rescan the block chain for missing wallet transactions")
             ("gen", value<bool>(&gen)->default_value(false), "Generate coins")
+            ("rpcssl", value<bool>(&ssl)->default_value(false), "Use OpenSSL (https) for JSON-RPC connections")
+            ("rpcsslcertificatechainfile", value<string>(&certchain)->default_value("server.cert"), "Server certificate file")
+            ("rpcsslprivatekeyfile", value<string>(&privkey)->default_value("server.pem"), "Server private key")
         ;
         
         options_description hidden("Hidden options");
@@ -103,7 +107,7 @@ int main(int argc, char* argv[])
             notify(args);
         }
 
-        Auth auth(rpc_user, rpc_pass); // if rpc_user and rpc_pass are not set all authenticated methods becomes disallowed.
+        Auth auth(rpc_user, rpc_pass); // if rpc_user and rpc_pass are not set, all authenticated methods becomes disallowed.
         
         // If we have params on the cmdline we run as a command line client contacting a server
         if (args.count("params")) {
@@ -111,6 +115,7 @@ int main(int argc, char* argv[])
             rpc_params.erase(rpc_params.begin());
             // create URL
             string url = "http://" + rpc_connect + ":" + lexical_cast<string>(rpc_port);
+            if(ssl) url = "https://" + rpc_connect + ":" + lexical_cast<string>(rpc_port); 
             Client client;
             // this is a blocking post!
             Reply reply = client.post(url, RPC::content(rpc_method, rpc_params), auth.headers());
@@ -168,6 +173,7 @@ int main(int argc, char* argv[])
         thread miningThread(&Miner::run, &miner);
         
         Server server(rpc_bind, lexical_cast<string>(rpc_port), filesystem::initial_path().string());
+        if(ssl) server.setCredentials(data_dir, certchain, privkey);
         
         // Register Server methods.
         server.registerMethod(method_ptr(new Stop(server)), auth);
@@ -211,7 +217,11 @@ int main(int argc, char* argv[])
         server.registerMethod(method_ptr(new GetGenerate(miner)), auth);    
         server.registerMethod(method_ptr(new GetHashesPerSec(miner)), auth);    
         
-        server.run();
+        try { // we keep the server in its own exception scope as we want the other threads to shut down properly if the server exits
+            server.run();    
+        } catch(std::exception& e) { 
+            cerr << "Error: " << e.what() << endl; 
+        }
 
         printf("Server exitted, shutting down Node and Miner...\n");
         // getting here means that we have exited from the server (e.g. by the quit method)

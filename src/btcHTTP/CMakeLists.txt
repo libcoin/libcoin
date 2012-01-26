@@ -36,6 +36,9 @@ SET(TARGET_H
 )
 
 SET(TARGET_SRC
+    ${HEADER_PATH}/json/json_spirit_reader.cpp
+    ${HEADER_PATH}/json/json_spirit_value.cpp
+    ${HEADER_PATH}/json/json_spirit_writer.cpp
     Client.cpp
     ConnectionManager.cpp
     Connection.cpp
@@ -46,9 +49,6 @@ SET(TARGET_SRC
     Server.cpp
     RPC.cpp
     Method.cpp
-    ${HEADER_PATH}/json/json_spirit_reader.cpp
-    ${HEADER_PATH}/json/json_spirit_value.cpp
-    ${HEADER_PATH}/json/json_spirit_writer.cpp
     ${BITCOIN_VERSIONINFO_RC}
 )
 

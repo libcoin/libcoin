@@ -8,6 +8,7 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <boost/asio/ssl.hpp>
 
 class ClientCompletionHandler {
 public:
@@ -20,6 +21,9 @@ public:
     Client();
     Client(boost::asio::io_service& io_service);
 
+    void setSecure(bool secure) { _secure = secure; }
+    bool isSecure() const { return _secure; }
+    
     virtual void operator()(const boost::system::error_code& err) { _error = err; }
     
     /// Blocking post.
@@ -50,6 +54,7 @@ public:
 private:
     void handle_resolve(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
     void handle_connect(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
+    void handle_handshake(const boost::system::error_code& error);
     void handle_write_request(const boost::system::error_code& err);
     void handle_read_status_line(const boost::system::error_code& err);
     void handle_read_headers(const boost::system::error_code& err);
@@ -57,8 +62,11 @@ private:
 
 private:
     boost::asio::io_service _io_service;
+    boost::asio::ssl::context _context;
+    bool _secure;
     boost::asio::ip::tcp::resolver _resolver;
     boost::asio::ip::tcp::socket _socket;
+    boost::asio::ssl::stream<boost::asio::ip::tcp::socket> _ssl_socket;
     boost::asio::streambuf _request;
     boost::asio::streambuf _response;
     Reply _reply;

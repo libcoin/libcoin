@@ -7,7 +7,7 @@ using namespace std;
 using namespace boost;
 using namespace asio;
 
-Server::Server(const string address, const string port, const string doc_root) : _io_service(), _signals(_io_service), _acceptor(_io_service), _connectionManager(), _new_connection(), _requestHandler(doc_root) {
+Server::Server(const string address, const string port, const string doc_root) : _io_service(), _context(boost::asio::ssl::context::sslv23), _signals(_io_service), _acceptor(_io_service), _connectionManager(), _new_connection(), _requestHandler(doc_root), _secure(false) {
     // Register to handle the signals that indicate when the server should exit.
     // It is safe to register for the same signal multiple times in a program,
     // provided all registration for the specified signal is made through Asio.
@@ -25,9 +25,27 @@ Server::Server(const string address, const string port, const string doc_root) :
     _acceptor.open(endpoint.protocol());
     _acceptor.set_option(ip::tcp::acceptor::reuse_address(true));
     _acceptor.bind(endpoint);
-    _acceptor.listen();
+    _acceptor.listen();    
+}
+
+void Server::setCredentials(const std::string dataDir, const std::string cert, const std::string key) {
+    _context.set_options(boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::no_sslv2);
+    filesystem::path certfile = cert;
+    if (!certfile.is_complete())
+        certfile = filesystem::path(dataDir) / certfile;
+    if (filesystem::exists(certfile))
+        _context.use_certificate_chain_file(certfile.string().c_str());
+    else
+        throw runtime_error(("SecureServer ERROR: missing server certificate file " + certfile.string()).c_str());
     
-    start_accept();
+    filesystem::path keyfile = key;
+    if (!keyfile.is_complete())
+        keyfile = filesystem::path(dataDir) / keyfile;
+    if (filesystem::exists(keyfile))
+        _context.use_private_key_file(keyfile.string().c_str(), ssl::context::pem);
+    else
+        throw runtime_error(("SecureServer ERROR: missing server private key file " + keyfile.string()).c_str());
+    _secure = true;
 }
 
 void Server::run() {
@@ -35,6 +53,7 @@ void Server::run() {
     // have finished. While the server is running, there is always at least one
     // asynchronous operation outstanding: the asynchronous accept call waiting
     // for new incoming connections.
+    start_accept();
     _io_service.run();
 }
 
@@ -43,7 +62,11 @@ void Server::shutdown(){
 }
 
 void Server::start_accept() {
-    _new_connection.reset(new Connection(_io_service, _connectionManager, _requestHandler));
+    if(isSecure())
+        _new_connection.reset(new Connection(_io_service, _context, _connectionManager, _requestHandler));
+    else
+        _new_connection.reset(new Connection(_io_service, _connectionManager, _requestHandler));
+        
     _acceptor.async_accept(_new_connection->socket(), bind(&Server::handle_accept, this, placeholders::error));
 }
 

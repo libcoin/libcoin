@@ -17,9 +17,15 @@ using namespace boost;
 using namespace boost::asio;
 using namespace boost::asio::ip;
 
-Client::Client() : _resolver(_io_service), _socket(_io_service), _completion_handler(*this) {}
+Client::Client() : _context(ssl::context::sslv23), _resolver(_io_service), _socket(_io_service), _ssl_socket(_io_service, _context), _completion_handler(*this) {
+    _context.set_options(ssl::context::no_sslv2);
+    _ssl_socket.set_verify_mode(ssl::verify_none);
+}
 
-Client::Client(io_service& io_service) : _resolver(io_service), _socket(io_service), _completion_handler(*this) { }
+Client::Client(io_service& io_service) : _context(ssl::context::sslv23), _resolver(io_service), _socket(io_service), _ssl_socket(io_service, _context), _completion_handler(*this) {
+    _context.set_options(ssl::context::no_sslv2);
+    _ssl_socket.set_verify_mode(ssl::verify_none);
+}
 
 void Client::async_post(std::string url, std::string content, ClientCompletionHandler& handler, Headers headers) {
     // Form the request. We specify the "Connection: close" header so that the
@@ -28,18 +34,27 @@ void Client::async_post(std::string url, std::string content, ClientCompletionHa
     // find protocol
     size_t proto_sep = url.find("://");
     string protocol = "http";
+    if(isSecure()) protocol = "https";
     if (proto_sep != string::npos) {
         protocol = url.substr(0, proto_sep);
         url = url.substr(proto_sep + 3); // remove the protocol from the url
     }
-    if (protocol != "http")
-        throw string("Error: Only the HTTP protocol is suppored!");
+    unsigned short port;
+    if (protocol == "http") {
+        setSecure(false);
+        port = 80;
+    }
+    else if (protocol == "https") {
+        setSecure(true);
+        port = 443;
+    }
+    else
+        throw string("Error: Only the HTTP and HTTPS protocols are suppored!");
     
     size_t slash = url.find("/");
     string server = url.substr(0, slash); // this will be the entire url if no slash is present
     size_t colon = server.find(":");
     string host = server.substr(0, colon);
-    unsigned short port = 80;
     if (colon != string::npos)
         port = lexical_cast<unsigned short>(server.substr(colon + 1));
     string path = "/";
@@ -72,18 +87,27 @@ void Client::async_get(std::string url, ClientCompletionHandler& handler, Header
     // find protocol
     size_t proto_sep = url.find("://");
     string protocol = "http";
+    if(isSecure()) protocol = "https";
     if (proto_sep != string::npos) {
         protocol = url.substr(0, proto_sep);
         url = url.substr(proto_sep + 3); // remove the protocol from the url
     }
-    if (protocol != "http")
-        throw string("Error: Only the HTTP protocol is suppored!");
+    unsigned short port;
+    if (protocol == "http") {
+        setSecure(false);
+        port = 80;
+    }
+    else if (protocol == "https") {
+        setSecure(true);
+        port = 443;
+    }
+    else
+        throw string("Error: Only the HTTP and HTTPS protocols are suppored!");
     
     size_t slash = url.find("/");
     string server = url.substr(0, slash); // this will be the entire url if no slash is present
     size_t colon = server.find(":");
     string host = server.substr(0, colon);
-    unsigned short port = 80;
     if (colon != string::npos)
         port = lexical_cast<unsigned short>(server.substr(colon + 1));
     string path = "/";
@@ -109,7 +133,10 @@ void Client::handle_resolve(const system::error_code& err, tcp::resolver::iterat
         // Attempt a connection to the first endpoint in the list. Each endpoint
         // will be tried until we successfully establish a connection.
         tcp::endpoint endpoint = *endpoint_iterator;
-        _socket.async_connect(endpoint, bind(&Client::handle_connect, this, placeholders::error, ++endpoint_iterator));
+        if(isSecure())
+            _ssl_socket.lowest_layer().async_connect(endpoint, bind(&Client::handle_connect, this, placeholders::error, ++endpoint_iterator));
+        else
+            _socket.async_connect(endpoint, bind(&Client::handle_connect, this, placeholders::error, ++endpoint_iterator));
     }
     else {
         _completion_handler(err);
@@ -118,8 +145,11 @@ void Client::handle_resolve(const system::error_code& err, tcp::resolver::iterat
 
 void Client::handle_connect(const system::error_code& err, tcp::resolver::iterator endpoint_iterator) {
     if (!err) {
-        // The connection was successful. Send the request.
-        boost::asio::async_write(_socket, _request, bind(&Client::handle_write_request, this, placeholders::error));
+        // The connection was successful. Send the handshake or request.
+        if(isSecure())
+            _ssl_socket.async_handshake(ssl::stream_base::client, bind(&Client::handle_handshake, this, placeholders::error));
+        else
+            boost::asio::async_write(_socket, _request, bind(&Client::handle_write_request, this, placeholders::error));
     }
     else if (endpoint_iterator != tcp::resolver::iterator()) {
         // The connection failed. Try the next endpoint in the list.
@@ -132,12 +162,30 @@ void Client::handle_connect(const system::error_code& err, tcp::resolver::iterat
     }
 }
 
+void Client::handle_handshake(const boost::system::error_code& err) {
+    if (!err) {
+        // The connection was successful. Send the request.
+        if(isSecure())
+            boost::asio::async_write(_ssl_socket, _request, bind(&Client::handle_write_request, this, placeholders::error));
+        else
+            boost::asio::async_write(_socket, _request, bind(&Client::handle_write_request, this, placeholders::error));
+    }
+    else {
+        std::cout << "Handshake failed: " << err.message() << "\n";
+
+        _completion_handler(err);
+    }    
+}
+
 void Client::handle_write_request(const system::error_code& err) {
     if (!err) {
         // Read the response status line. The response_ streambuf will
         // automatically grow to accommodate the entire line. The growth may be
         // limited by passing a maximum size to the streambuf constructor.
-        async_read_until(_socket, _response, "\r\n", bind(&Client::handle_read_status_line, this, placeholders::error));
+        if(isSecure())
+            async_read_until(_ssl_socket, _response, "\r\n", bind(&Client::handle_read_status_line, this, placeholders::error));
+        else
+            async_read_until(_socket, _response, "\r\n", bind(&Client::handle_read_status_line, this, placeholders::error));
     }
     else {
         _completion_handler(err);
@@ -166,7 +214,10 @@ void Client::handle_read_status_line(const system::error_code& err) {
         //        }
         
         // Read the response headers, which are terminated by a blank line.
-        async_read_until(_socket, _response, "\r\n\r\n", bind(&Client::handle_read_headers, this, placeholders::error));
+        if(isSecure())
+            async_read_until(_ssl_socket, _response, "\r\n\r\n", bind(&Client::handle_read_headers, this, placeholders::error));
+        else
+            async_read_until(_socket, _response, "\r\n\r\n", bind(&Client::handle_read_headers, this, placeholders::error));
     }
     else {
         _completion_handler(err);
@@ -193,7 +244,10 @@ void Client::handle_read_headers(const system::error_code& err) {
         _reply.content += ss.str();
         
         // Start reading remaining data until EOF.
-        async_read(_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error));
+        if(isSecure())
+            async_read(_ssl_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error));
+        else
+            async_read(_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error));
     }
     else {
         _completion_handler(err);
@@ -208,7 +262,10 @@ void Client::handle_read_content(const boost::system::error_code& err) {
         _reply.content += ss.str();
         
         // Continue reading remaining data until EOF.
-        async_read(_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error));
+        if(isSecure())
+            async_read(_ssl_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error));
+        else
+            async_read(_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error));
     }
     else {
         _completion_handler(err);

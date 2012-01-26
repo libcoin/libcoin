@@ -7,6 +7,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/asio/ssl.hpp>
 #include "btcHTTP/Reply.h"
 #include "btcHTTP/Request.h"
 #include "btcHTTP/RequestHandler.h"
@@ -14,12 +15,17 @@
 
 class ConnectionManager;
 
+typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> ssl_socket;
+
 /// Represents a single connection from a client.
 class Connection : public boost::enable_shared_from_this<Connection>, private boost::noncopyable
 {
 public:
     /// Construct a connection with the given io_service.
     explicit Connection(boost::asio::io_service& io_service, ConnectionManager& manager, RequestHandler& handler);
+    
+    /// Construct a secure connection with the given io_service and ssl context.
+    explicit Connection(boost::asio::io_service& io_service, boost::asio::ssl::context& context, ConnectionManager& manager, RequestHandler& handler);
     
     /// Get the socket associated with the connection.
     boost::asio::ip::tcp::socket& socket();
@@ -31,16 +37,28 @@ public:
     void stop();
     
 private:
+    /// Secure connectiontions need to perform a handshake first.
+    virtual void handle_handshake(const boost::system::error_code& error);
+    
     /// Handle completion of a read operation.
     void handle_read(const boost::system::error_code& e,
-                     std::size_t bytes_transferred);
+                             std::size_t bytes_transferred);
     
     /// Handle completion of a write operation.
     void handle_write(const boost::system::error_code& e);
     
-    /// Socket for the connection.
-    boost::asio::ip::tcp::socket _socket;
+    /// Dummy context to enable initialization of ghost ssl socket
+    boost::asio::ssl::context _ctx;
     
+    /// Socket for the connection.
+    boost::asio::ip::tcp::socket _socket;    
+    
+    /// Socket for the connection.
+    ssl_socket _ssl_socket;
+    
+    /// Flag to determine if we are running secure
+    bool _secure;
+
     /// The manager for this connection.
     ConnectionManager& _connectionManager;
     

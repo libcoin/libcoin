@@ -50,18 +50,35 @@ private:
     MessageStart _messageStart;
 };
 
-PonziChain::PonziChain() : _genesis("0x000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f") {
+PonziChain::PonziChain() {
     _messageStart[0] = 0xbe; _messageStart[1] = 0xf9; _messageStart[2] = 0xd9; _messageStart[3] = 0xb4;
     const char* pszTimestamp = "If five-spots were snowflakes, Ponzi would be a three day blizzard";
     Transaction txNew;
     
-    Script signature = Script() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
+    // 0x1d00ffff is difficulty 1 corresponding to a hex target of: 
+    // 0x00000000FFFF0000000000000000000000000000000000000000000000000000
+    // The formula is: target = b * 2^(8*(a-3)), where a = d/0x1000000 and b = d%0x1000000. 
+    // So for the example above a=0x1d and b=0xffff. Note that b is signed and hence the largest b is 0x7fffff.
+    // For ponzi we want a roughly 100kHash machine to use one minute for a hash. This is roughly 6*16^5 hashes pr minute so the target should be roughly 0x000006... or a bits of: b=6, a=0x20 or d=0x20000006
+    Script signature = Script() << 0x20000006 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
     txNew.addInput(Input(Coin(), signature)); 
-    Script script = Script() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
+    Script script = Script() << OP_DUP << OP_HASH160 << ParseHex("5e5bd04fad1beadbc1dddb1f41c34dc3df527cd6") << OP_EQUALVERIFY << OP_CHECKSIG;
     txNew.addOutput(Output(50 * COIN, script)); 
-    _genesisBlock = Block(1, 0, 0, 1234336533, 0x1d00ffff, 31451401);
+    int Jan25th2012atnoon = 1327492800;
+    _genesisBlock = Block(1, 0, 0, Jan25th2012atnoon, 0x20000006, 3600743);
     _genesisBlock.addTransaction(txNew);
     _genesisBlock.updateMerkleTree(); // genesisBlock
+
+    CBigNum target;
+    target.SetCompact(0x20000006);
+    uint256 t = target.getuint256();
+
+    // poor mans hasher - we do however already know the right nonce.
+    while (_genesisBlock.getHash() > t) {
+        _genesisBlock.setNonce(_genesisBlock.getNonce()+1);
+    }
+    
+    _genesis = _genesisBlock.getHash();
     //    assert(_genesisBlock.getHash() == _genesis);
 }
 
@@ -154,13 +171,14 @@ int main(int argc, char* argv[])
         strings rpc_params;
         strings connect_peers;
         strings add_peers;
+        bool gen;
         
         // Commandline options
         options_description generic("Generic options");
         generic.add_options()
             ("help,?", "Show help messages")
             ("version,v", "print version string")
-            ("conf,c", value<string>(&config_file)->default_value("bitcoin.conf"), "Specify configuration file")
+            ("conf,c", value<string>(&config_file)->default_value("ponzi.conf"), "Specify configuration file")
             ("datadir", "Specify non default data directory")
             ;
             
@@ -177,8 +195,8 @@ int main(int argc, char* argv[])
             ("rpcconnect", value<string>(&rpc_connect)->default_value(asio::ip::address_v4::loopback().to_string()), "Send commands to node running on <arg>")
             ("keypool", value<unsigned short>(), "Set key pool size to <arg>")
             ("rescan", "Rescan the block chain for missing wallet transactions")
-            ("gen", "Generate coins")
-        ;
+            ("gen", value<bool>(&gen)->default_value(false), "Generate coins")
+       ;
         
         options_description hidden("Hidden options");
         hidden.add_options()("params", value<strings>(&rpc_params), "Run JSON RPC command");
@@ -278,7 +296,7 @@ int main(int argc, char* argv[])
         CReserveKey reservekey(&wallet);
         
         Miner miner(node, reservekey);
-        miner.setGenerate(args.count("gen"));
+        miner.setGenerate(gen);
         thread miningThread(&Miner::run, &miner);
         
         Server server(rpc_bind, lexical_cast<string>(rpc_port), filesystem::initial_path().string());

@@ -8,6 +8,8 @@
 
 #include "btc/script.h"
 
+#include <boost/lexical_cast.hpp>
+
 using namespace std;
 using namespace boost;
 
@@ -847,7 +849,7 @@ bool BlockChain::LoadBlockIndex()
                 _genesisBlockIndex = pindexNew;
             
             if (!pindexNew->checkIndex(_chain.proofOfWorkLimit()))
-                return error("LoadBlockIndex() : CheckIndex failed at %d", pindexNew->nHeight);
+                throw runtime_error(("LoadBlockIndex() : CheckIndex failed at " + lexical_cast<string>(pindexNew->nHeight)).c_str());
             //            if (!pindexNew->CheckIndex())
             //                return error("LoadBlockIndex() : CheckIndex failed at %d", pindexNew->nHeight);
         }

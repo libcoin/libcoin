@@ -112,6 +112,8 @@ void Node::start_connect() {
         ep = getCandidate(not_in);
     else
         ep = _endpointPool.getCandidate(not_in, 0);
+    if(!ep.isValid())
+        return; // this will cause the Node to wait for inbound connections only - alternatively we should add a timer
     // TODO: we should check for validity of the candidate - if not valid we could retry later, give up or wait for a new Peer before we try a new connect. 
     stringstream ss;
     ss << ep;
