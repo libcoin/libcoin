@@ -10,17 +10,17 @@ SET(LIB_NAME coin)
 
 SET(HEADER_PATH ${PROJECT_SOURCE_DIR}/include/${LIB_NAME})
 SET(TARGET_H
-    ${HEADER_PATH}/bignum.h
     ${HEADER_PATH}/serialize.h
     ${HEADER_PATH}/uint256.h
     ${HEADER_PATH}/util.h
     
-    ${HEADER_PATH}/asset.h
+    ${HEADER_PATH}/Asset.h
     ${HEADER_PATH}/Address.h
+    ${HEADER_PATH}/BigNum.h
     ${HEADER_PATH}/Block.h
-    ${HEADER_PATH}/key.h
-    ${HEADER_PATH}/keystore.h
-    ${HEADER_PATH}/script.h
+    ${HEADER_PATH}/Key.h
+    ${HEADER_PATH}/KeyStore.h
+    ${HEADER_PATH}/Script.h
     ${HEADER_PATH}/Transaction.h
     ${LIBCOIN_CONFIG_HEADER}
 )
@@ -32,11 +32,11 @@ SET(TARGET_SRC
     util.cpp
     
     Address.cpp
-    asset.cpp
+    Asset.cpp
     Block.cpp
-    keystore.cpp
+    KeyStore.cpp
     Transaction.cpp
-    script.cpp
+    Script.cpp
     ${LIBCOIN_VERSIONINFO_RC}
 )
 SET(TARGET_LIBRARIES )

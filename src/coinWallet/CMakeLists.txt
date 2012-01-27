@@ -13,10 +13,10 @@ SET(TARGET_H
     ${HEADER_PATH}/Crypter.h
     ${HEADER_PATH}/CryptoKeyStore.h
     ${HEADER_PATH}/MerkleTx.h
-    ${HEADER_PATH}/wallet.h
-    ${HEADER_PATH}/walletdb.h
+    ${HEADER_PATH}/Wallet.h
+    ${HEADER_PATH}/WalletDB.h
     ${HEADER_PATH}/WalletTx.h
-    ${HEADER_PATH}/walletrpc.h
+    ${HEADER_PATH}/WalletRPC.h
     ${LIBCOIN_CONFIG_HEADER}
 )
 
@@ -27,10 +27,10 @@ SET(TARGET_SRC
     Crypter.cpp
     CryptoKeyStore.cpp
     MerkleTx.cpp
-    wallet.cpp
-    walletdb.cpp
+    Wallet.cpp
+    WalletDB.cpp
     WalletTx.cpp
-    walletrpc.cpp
+    WalletRPC.cpp
     ${LIBCOIN_VERSIONINFO_RC}
 )
 SET(TARGET_LIBRARIES coin coinChain coinHTTP)
