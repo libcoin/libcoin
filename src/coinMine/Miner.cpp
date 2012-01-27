@@ -1,7 +1,7 @@
 
-#include "btcMine/Miner.h"
-#include "btcNode/Node.h"
-#include "btcMine/CPUHasher.h"
+#include "coinMine/Miner.h"
+#include "coinChain/Node.h"
+#include "coinMine/CPUHasher.h"
 
 using namespace std;
 using namespace boost;

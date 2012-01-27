@@ -4,9 +4,9 @@
 
 #include <boost/asio.hpp>
 #include <string>
-#include "btcHTTP/Connection.h"
-#include "btcHTTP/ConnectionManager.h"
-#include "btcHTTP/RequestHandler.h"
+#include "coinHTTP/Connection.h"
+#include "coinHTTP/ConnectionManager.h"
+#include "coinHTTP/RequestHandler.h"
 
 #include <boost/noncopyable.hpp>
 #include <boost/filesystem.hpp>

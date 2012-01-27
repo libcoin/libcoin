@@ -5,7 +5,7 @@
 #ifndef BITCOIN_UINT256_H
 #define BITCOIN_UINT256_H
 
-#include "btc/serialize.h"
+#include "coin/serialize.h"
 
 #include <limits.h>
 #include <string>

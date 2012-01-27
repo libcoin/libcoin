@@ -1,15 +1,15 @@
 
-#include "btcNode/Node.h"
-#include "btcNode/NodeRPC.h"
+#include "coinChain/Node.h"
+#include "coinChain/NodeRPC.h"
 
-#include "btcHTTP/Server.h"
-#include "btcHTTP/Client.h"
+#include "coinHTTP/Server.h"
+#include "coinHTTP/Client.h"
 
-#include "btcWallet/wallet.h"
-#include "btcWallet/walletrpc.h"
+#include "coinWallet/wallet.h"
+#include "coinWallet/walletrpc.h"
 
-#include "btcMine/Miner.h"
-#include "btcMine/MinerRPC.h"
+#include "coinMine/Miner.h"
+#include "coinMine/MinerRPC.h"
 
 #include <boost/thread.hpp>
 #include <boost/program_options.hpp>

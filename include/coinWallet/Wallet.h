@@ -5,15 +5,15 @@
 #ifndef BITCOIN_WALLET_H
 #define BITCOIN_WALLET_H
 
-#include "btc/bignum.h"
-#include "btc/key.h"
-#include "btc/script.h"
+#include "coin/BigNum.h"
+#include "coin/Key.h"
+#include "coin/Script.h"
 
-#include "btc/Block.h"
-#include "btcNode/Node.h"
+#include "coin/Block.h"
+#include "coinChain/Node.h"
 
-#include "btcWallet/CryptoKeyStore.h"
-#include "btcWallet/WalletTx.h"
+#include "coinWallet/CryptoKeyStore.h"
+#include "coinWallet/WalletTx.h"
 
 #include <boost/bind.hpp>
 

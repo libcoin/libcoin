@@ -5,15 +5,15 @@
 #include <boost/asio.hpp>
 #include <string>
 #include <boost/noncopyable.hpp>
-#include "btcNode/Peer.h"
-#include "btcNode/PeerManager.h"
-#include "btcNode/MessageHandler.h"
-#include "btcNode/BlockChain.h"
-#include "btcNode/EndpointPool.h"
-#include "btcNode/ChatClient.h"
-#include "btcNode/Chain.h"
-#include "btcNode/TransactionFilter.h"
-#include "btcNode/BlockFilter.h"
+#include "coinChain/Peer.h"
+#include "coinChain/PeerManager.h"
+#include "coinChain/MessageHandler.h"
+#include "coinChain/BlockChain.h"
+#include "coinChain/EndpointPool.h"
+#include "coinChain/ChatClient.h"
+#include "coinChain/Chain.h"
+#include "coinChain/TransactionFilter.h"
+#include "coinChain/BlockFilter.h"
 
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <fstream>

@@ -4,7 +4,7 @@
 
 #include <set>
 #include <boost/noncopyable.hpp>
-#include "btcHTTP/Connection.h"
+#include "coinHTTP/Connection.h"
 
 /// Manages open connections so that they may be cleanly stopped when the server
 /// needs to shut down.

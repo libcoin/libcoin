@@ -2,12 +2,12 @@
 #ifndef BLOCKINDEX_H
 #define BLOCKINDEX_H
 
-#include "btc/bignum.h"
-#include "btc/key.h"
-#include "btc/script.h"
-#include "btc/Transaction.h"
+#include "coin/BigNum.h"
+#include "coin/Key.h"
+#include "coin/Script.h"
+#include "coin/Transaction.h"
 
-//#include "btc/Block.h"
+//#include "coin/Block.h"
 
 #include <list>
 

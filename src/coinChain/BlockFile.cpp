@@ -1,10 +1,10 @@
 
-#include "btcNode/BlockFile.h"
+#include "coinChain/BlockFile.h"
 
-#include "btc/Block.h"
-#include "btcNode/BlockIndex.h"
-#include "btcNode/BlockChain.h"
-#include "btcNode/MessageHeader.h"
+#include "coin/Block.h"
+#include "coinChain/BlockIndex.h"
+#include "coinChain/BlockChain.h"
+#include "coinChain/MessageHeader.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>

@@ -1,8 +1,8 @@
 #ifndef _MINERPC_H_
 #define _MINERPC_H_
 
-#include "btcMine/Miner.h"
-#include "btcHTTP/Method.h"
+#include "coinMine/Miner.h"
+#include "coinHTTP/Method.h"
 
 /// Base class for all Mining rpc methods - they all need a handle to the Miner.
 class MineMethod : public Method {

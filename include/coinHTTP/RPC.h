@@ -4,8 +4,8 @@
 
 #include <string>
 #include <boost/lexical_cast.hpp>
-#include "btcHTTP/Method.h"
-#include "btcHTTP/Reply.h"
+#include "coinHTTP/Method.h"
+#include "coinHTTP/Reply.h"
 
 #include "json/json_spirit.h"
 

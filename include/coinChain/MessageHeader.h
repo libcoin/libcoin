@@ -2,9 +2,9 @@
 #ifndef MESSAGE_HEADER_H
 #define MESSAGE_HEADER_H
 
-#include "btc/uint256.h"
-#include "btc/serialize.h"
-#include "btcNode/Chain.h"
+#include "coin/uint256.h"
+#include "coin/serialize.h"
+#include "coinChain/Chain.h"
 
 #include <string>
 

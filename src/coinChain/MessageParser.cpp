@@ -1,10 +1,10 @@
 
 #include <sstream>
-#include "btcNode/Filter.h"
-#include "btcNode/MessageParser.h"
-#include "btcNode/MessageHeader.h"
+#include "coinChain/Filter.h"
+#include "coinChain/MessageParser.h"
+#include "coinChain/MessageHeader.h"
 
-#include "btc/util.h"
+#include "coin/util.h"
 
 using namespace std;
 using namespace boost;

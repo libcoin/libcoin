@@ -1,9 +1,9 @@
 
-#include "btcNode/Peer.h"
+#include "coinChain/Peer.h"
 #include <vector>
 #include <boost/bind.hpp>
-#include "btcHTTP/ConnectionManager.h"
-#include "btcHTTP/RequestHandler.h"
+#include "coinHTTP/ConnectionManager.h"
+#include "coinHTTP/RequestHandler.h"
 
 using namespace std;
 using namespace boost;

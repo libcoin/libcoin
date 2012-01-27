@@ -1,8 +1,8 @@
-#include "btcNode/Chain.h"
+#include "coinChain/Chain.h"
 
-#include "btc/Block.h"
-#include "btcNode/BlockIndex.h"
-#include "btc/Transaction.h"
+#include "coin/Block.h"
+#include "coinChain/BlockIndex.h"
+#include "coin/Transaction.h"
 
 using namespace std;
 using namespace boost;

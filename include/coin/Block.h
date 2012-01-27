@@ -2,8 +2,8 @@
 #ifndef BLOCK_H
 #define BLOCK_H
 
-#include "btc/Transaction.h"
-#include "btc/uint256.h"
+#include "coin/Transaction.h"
+#include "coin/uint256.h"
 
 #include <vector>
 

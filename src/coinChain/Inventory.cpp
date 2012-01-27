@@ -3,8 +3,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "btcNode/Inventory.h"
-#include "btc/util.h"
+#include "coinChain/Inventory.h"
+#include "coin/util.h"
 
 static const char* ppszTypeName[] =
 {

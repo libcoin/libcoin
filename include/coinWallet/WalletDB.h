@@ -5,10 +5,10 @@
 #ifndef BITCOIN_WALLETDB_H
 #define BITCOIN_WALLETDB_H
 
-#include "btcWallet/wallet.h"
-#include "btcNode/db.h"
+#include "coinWallet/wallet.h"
+#include "coinChain/db.h"
 
-#include "btcWallet/WalletTx.h"
+#include "coinWallet/WalletTx.h"
 
 extern unsigned int nWalletDBUpdated;
 

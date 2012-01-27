@@ -1,4 +1,4 @@
-#include "btcHTTP/ConnectionManager.h"
+#include "coinHTTP/ConnectionManager.h"
 #include <algorithm>
 #include <boost/bind.hpp>
 

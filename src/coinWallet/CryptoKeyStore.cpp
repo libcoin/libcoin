@@ -1,5 +1,5 @@
-#include "btc/keystore.h"
-#include "btcWallet/CryptoKeyStore.h"
+#include "coin/KeyStore.h"
+#include "coinWallet/CryptoKeyStore.h"
 
 #include <boost/foreach.hpp>
 

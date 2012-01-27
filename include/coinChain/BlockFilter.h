@@ -4,8 +4,8 @@
 
 #include "Filter.h"
 
-#include "btc/uint256.h"
-#include "btcNode/PeerManager.h"
+#include "coin/uint256.h"
+#include "coinChain/PeerManager.h"
 
 #include <string>
 #include <map>

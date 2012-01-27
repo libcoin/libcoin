@@ -3,12 +3,12 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "btcWallet/wallet.h"
-#include "btcWallet/walletdb.h"
-#include "btcWallet/WalletTx.h"
-//#include "btcNode/db.h"
-#include "btcWallet/Crypter.h"
-#include "btcWallet/CryptoKeyStore.h"
+#include "coinWallet/wallet.h"
+#include "coinWallet/walletdb.h"
+#include "coinWallet/WalletTx.h"
+//#include "coinChain/db.h"
+#include "coinWallet/Crypter.h"
+#include "coinWallet/CryptoKeyStore.h"
 
 #include <openssl/rand.h>
 

@@ -5,7 +5,7 @@
 #ifndef BITCOIN_UTIL_H
 #define BITCOIN_UTIL_H
 
-#include "btc/uint256.h"
+#include "coin/uint256.h"
 
 #ifndef _WIN32
 #include <sys/types.h>

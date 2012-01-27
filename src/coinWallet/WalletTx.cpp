@@ -3,11 +3,11 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "btcWallet/MerkleTx.h"
-#include "btcWallet/WalletTx.h"
-#include "btcWallet/wallet.h"
+#include "coinWallet/MerkleTx.h"
+#include "coinWallet/WalletTx.h"
+#include "coinWallet/wallet.h"
 
-#include "btcWallet/Crypter.h"
+#include "coinWallet/Crypter.h"
 
 #include <openssl/rand.h>
 

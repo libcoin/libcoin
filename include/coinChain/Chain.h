@@ -2,7 +2,7 @@
 #ifndef CHAIN_H
 #define CHAIN_H
 
-#include "btc/Block.h"
+#include "coin/Block.h"
 
 #include <boost/noncopyable.hpp>
 #include <boost/array.hpp>

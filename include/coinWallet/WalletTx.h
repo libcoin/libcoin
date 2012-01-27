@@ -5,14 +5,14 @@
 #ifndef WALLETTX_H
 #define WALLETTX_H
 
-#include "btc/bignum.h"
-#include "btc/key.h"
-#include "btc/script.h"
+#include "coin/BigNum.h"
+#include "coin/Key.h"
+#include "coin/Script.h"
 
-#include "btc/Block.h"
-#include "btcNode/BlockChain.h"
+#include "coin/Block.h"
+#include "coinChain/BlockChain.h"
 
-#include "btcWallet/MerkleTx.h"
+#include "coinWallet/MerkleTx.h"
 
 #include <boost/bind.hpp>
 

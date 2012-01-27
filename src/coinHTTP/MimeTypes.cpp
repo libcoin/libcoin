@@ -1,5 +1,5 @@
 
-#include "btcHTTP/MimeTypes.h"
+#include "coinHTTP/MimeTypes.h"
 
 namespace MimeTypes {
     

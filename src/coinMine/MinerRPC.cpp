@@ -1,5 +1,5 @@
-#include "btcMine/MinerRPC.h"
-#include "btcHTTP/RPC.h"
+#include "coinMine/MinerRPC.h"
+#include "coinHTTP/RPC.h"
 
 using namespace std;
 using namespace boost;

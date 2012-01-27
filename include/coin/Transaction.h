@@ -2,9 +2,9 @@
 #ifndef BITCOIN_TX_H
 #define BITCOIN_TX_H
 
-#include "btc/bignum.h"
-#include "btc/key.h"
-#include "btc/script.h"
+#include "coin/BigNum.h"
+#include "coin/Key.h"
+#include "coin/Script.h"
 
 static const unsigned int MAX_BLOCK_SIZE = 1000000;
 static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;

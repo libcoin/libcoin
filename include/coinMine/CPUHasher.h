@@ -2,7 +2,7 @@
 #ifndef _CPUHASHER_H_
 #define _CPUHASHER_H_
 
-#include "btcMine/Miner.h"
+#include "coinMine/Miner.h"
 
 class CPUHasher : public Miner::Hasher {
 public:

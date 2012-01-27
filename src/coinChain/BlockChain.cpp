@@ -1,12 +1,12 @@
-#include "btcNode/BlockChain.h"
+#include "coinChain/BlockChain.h"
 
-#include "btc/Block.h"
-#include "btcNode/BlockIndex.h"
-#include "btcNode/MessageHeader.h"
+#include "coin/Block.h"
+#include "coinChain/BlockIndex.h"
+#include "coinChain/MessageHeader.h"
 
-#include "btcNode/Peer.h"
+#include "coinChain/Peer.h"
 
-#include "btc/script.h"
+#include "coin/Script.h"
 
 #include <boost/lexical_cast.hpp>
 

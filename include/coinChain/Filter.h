@@ -2,7 +2,7 @@
 #ifndef FILTER_H
 #define FILTER_H
 
-#include "btcNode/MessageHeader.h"
+#include "coinChain/MessageHeader.h"
 
 #include <string>
 #include <vector>

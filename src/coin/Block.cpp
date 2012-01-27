@@ -1,5 +1,5 @@
 
-#include "btc/Block.h"
+#include "coin/Block.h"
 
 using namespace std;
 using namespace boost;

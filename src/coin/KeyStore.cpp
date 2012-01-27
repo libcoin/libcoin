@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include "btc/keystore.h"
+#include "coin/KeyStore.h"
 
 PubKey CKeyStore::GenerateNewKey()
 {

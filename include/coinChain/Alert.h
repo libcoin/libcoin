@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
-#include "btc/serialize.h"
-#include "btc/uint256.h"
-#include "btc/util.h"
+#include "coin/serialize.h"
+#include "coin/uint256.h"
+#include "coin/util.h"
 
 /// Alerts are for notifying old versions if they become too obsolete and
 /// need to upgrade.  The message is displayed in the status bar.

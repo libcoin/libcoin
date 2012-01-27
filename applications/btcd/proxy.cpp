@@ -2,12 +2,12 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "btcNode/BlockChain.h"
-#include "btcNode/Peer.h"
+#include "coinChain/BlockChain.h"
+#include "coinChain/Peer.h"
 
-#include "btc/asset.h"
+#include "coin/Asset.h"
 
-#include "btcHTTP/RPC.h"
+#include "coinHTTP/RPC.h"
 
 #include "proxy.h"
 

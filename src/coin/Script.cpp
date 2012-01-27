@@ -7,8 +7,8 @@
 #include <vector>
 #include <boost/foreach.hpp>
 
-#include "btc/bignum.h"
-#include "btc/Transaction.h"
+#include "coin/BigNum.h"
+#include "coin/Transaction.h"
 
 using namespace std;
 using namespace boost;

@@ -2,11 +2,11 @@
 #ifndef TRANSACTIONFILTER_H
 #define TRANSACTIONFILTER_H
 
-#include "btcNode/PeerManager.h"
-#include "btcNode/Filter.h"
+#include "coinChain/PeerManager.h"
+#include "coinChain/Filter.h"
 
-#include "btc/serialize.h" // for CDataStream
-#include "btc/util.h" // for CCriticalSection definition
+#include "coin/serialize.h" // for CDataStream
+#include "coin/util.h" // for CCriticalSection definition
 
 #include <string>
 #include <map>

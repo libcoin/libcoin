@@ -4,7 +4,7 @@
 
 #include <string>
 #include <boost/asio.hpp>
-#include "btcHTTP/Header.h"
+#include "coinHTTP/Header.h"
 
 /// A reply to be sent to a client.
 struct Reply

@@ -3,10 +3,10 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "btcWallet/walletdb.h"
-#include "btcWallet/Crypter.h"
+#include "coinWallet/walletdb.h"
+#include "coinWallet/Crypter.h"
 
-#include "btc/util.h"
+#include "coin/util.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>

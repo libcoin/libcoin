@@ -5,7 +5,7 @@
 #ifndef _BITCOIN_PROXY_H_
 #define _BITCOIN_PROXY_H_
 
-#include "btcHTTP/Server.h"
+#include "coinHTTP/Server.h"
 
 //json_spirit::Value gettxmaturity(const json_spirit::Array& params, bool fHelp);
 //json_spirit::Value gettxdetails(const json_spirit::Array& params, bool fHelp);

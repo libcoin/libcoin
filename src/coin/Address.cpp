@@ -1,6 +1,6 @@
 
-#include "btc/Address.h"
-#include "btc/key.h"
+#include "coin/Address.h"
+#include "coin/Key.h"
 
 using namespace std;
 

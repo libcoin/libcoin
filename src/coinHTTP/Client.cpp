@@ -1,5 +1,5 @@
 
-#include "btcHTTP/Client.h"
+#include "coinHTTP/Client.h"
 
 #include <iostream>
 #include <istream>

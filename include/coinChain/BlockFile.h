@@ -2,10 +2,10 @@
 #ifndef BLOCKFILE_H
 #define BLOCKFILE_H
 
-#include "btc/bignum.h"
-#include "btc/key.h"
-#include "btc/script.h"
-#include "btc/Transaction.h"
+#include "coin/BigNum.h"
+#include "coin/Key.h"
+#include "coin/Script.h"
+#include "coin/Transaction.h"
 
 #include <boost/noncopyable.hpp>
 #include <list>

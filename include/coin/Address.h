@@ -5,7 +5,7 @@
 
 #include <string>
 #include <vector>
-#include "btc/bignum.h"
+#include "coin/BigNum.h"
 
 // Why base-58 instead of standard base-64 encoding?
 // - Don't want 0OIl characters that look the same in some fonts and

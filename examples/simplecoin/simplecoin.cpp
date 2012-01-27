@@ -1,11 +1,11 @@
 
-#include "btcNode/Node.h"
-#include "btcNode/NodeRPC.h"
+#include "coinChain/Node.h"
+#include "coinChain/NodeRPC.h"
 
-#include "btcHTTP/Server.h"
+#include "coinHTTP/Server.h"
 
-#include "btcWallet/wallet.h"
-#include "btcWallet/walletrpc.h"
+#include "coinWallet/wallet.h"
+#include "coinWallet/walletrpc.h"
 
 #include <boost/thread.hpp>
 

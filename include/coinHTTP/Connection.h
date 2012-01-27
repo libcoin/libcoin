@@ -8,10 +8,10 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio/ssl.hpp>
-#include "btcHTTP/Reply.h"
-#include "btcHTTP/Request.h"
-#include "btcHTTP/RequestHandler.h"
-#include "btcHTTP/RequestParser.h"
+#include "coinHTTP/Reply.h"
+#include "coinHTTP/Request.h"
+#include "coinHTTP/RequestHandler.h"
+#include "coinHTTP/RequestParser.h"
 
 class ConnectionManager;
 

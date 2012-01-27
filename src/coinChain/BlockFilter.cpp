@@ -1,9 +1,9 @@
 
-#include "btcNode/BlockFilter.h"
-#include "btcNode/BlockChain.h"
-#include "btc/Block.h"
-#include "btcNode/Peer.h"
-#include "btcNode/Inventory.h"
+#include "coinChain/BlockFilter.h"
+#include "coinChain/BlockChain.h"
+#include "coin/Block.h"
+#include "coinChain/Peer.h"
+#include "coinChain/Inventory.h"
 
 using namespace std;
 using namespace boost;

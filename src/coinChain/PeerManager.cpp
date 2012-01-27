@@ -1,7 +1,7 @@
 
-#include "btcNode/PeerManager.h"
-#include "btcNode/Peer.h"
-#include "btcNode/Node.h"
+#include "coinChain/PeerManager.h"
+#include "coinChain/Peer.h"
+#include "coinChain/Node.h"
 
 #include <algorithm>
 #include <boost/bind.hpp>

@@ -3,7 +3,7 @@
 #define HTTP_REQUEST_H
 
 #include <string>
-#include "btcHTTP/Header.h"
+#include "coinHTTP/Header.h"
 
 /// A request received from a client.
 struct Request {

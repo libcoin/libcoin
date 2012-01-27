@@ -1,9 +1,9 @@
 
-#include "btcHTTP/Connection.h"
+#include "coinHTTP/Connection.h"
 #include <vector>
 #include <boost/bind.hpp>
-#include "btcHTTP/ConnectionManager.h"
-#include "btcHTTP/RequestHandler.h"
+#include "coinHTTP/ConnectionManager.h"
+#include "coinHTTP/RequestHandler.h"
 
 using namespace boost;
 using namespace asio;

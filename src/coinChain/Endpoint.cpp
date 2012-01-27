@@ -3,8 +3,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "btcNode/Endpoint.h"
-#include "btc/util.h"
+#include "coinChain/Endpoint.h"
+#include "coin/util.h"
 
 #include <boost/lexical_cast.hpp>
 

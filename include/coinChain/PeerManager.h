@@ -2,7 +2,7 @@
 #ifndef PEER_MANAGER_H
 #define PEER_MANAGER_H
 
-//#include "btcNode/Node.h"
+//#include "coinChain/Node.h"
 
 #include <set>
 #include <boost/noncopyable.hpp>

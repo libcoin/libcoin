@@ -5,8 +5,8 @@
 #ifndef H_BITCOIN_SCRIPT
 #define H_BITCOIN_SCRIPT
 
-#include "btc/Address.h"
-#include "btc/keystore.h"
+#include "coin/Address.h"
+#include "coin/KeyStore.h"
 
 #include <string>
 #include <vector>

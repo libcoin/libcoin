@@ -3,8 +3,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 //#include "headers.h"
-#include "btc/util.h"
-#include "btc/Transaction.h"
+#include "coin/util.h"
+#include "coin/Transaction.h"
 
 #include <boost/program_options/parsers.hpp>
 #include <boost/filesystem.hpp>

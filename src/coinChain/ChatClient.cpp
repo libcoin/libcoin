@@ -1,10 +1,10 @@
 
-#include "btcNode/ChatClient.h"
-#include "btcNode/EndpointPool.h"
+#include "coinChain/ChatClient.h"
+#include "coinChain/EndpointPool.h"
 
-#include "btc/Address.h"
-#include "btc/util.h"
-//#include "btcNode/Peer.h"
+#include "coin/Address.h"
+#include "coin/util.h"
+//#include "coinChain/Peer.h"
 
 #include <iostream>
 #include <istream>

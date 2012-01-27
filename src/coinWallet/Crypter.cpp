@@ -11,9 +11,9 @@
 #include <windows.h>
 #endif
 
-#include "btcWallet/crypter.h"
-#include "btc/Transaction.h"
-#include "btc/util.h"
+#include "coinWallet/crypter.h"
+#include "coin/Transaction.h"
+#include "coin/util.h"
 
 bool CCrypter::SetKeyFromPassphrase(const std::string& strKeyData, const std::vector<unsigned char>& chSalt, const unsigned int nRounds, const unsigned int nDerivationMethod)
 {

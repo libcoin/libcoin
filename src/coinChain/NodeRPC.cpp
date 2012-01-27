@@ -1,6 +1,6 @@
 
-#include "btcNode/NodeRPC.h"
-#include "btcHTTP/RPC.h"
+#include "coinChain/NodeRPC.h"
+#include "coinHTTP/RPC.h"
 
 using namespace std;
 using namespace boost;

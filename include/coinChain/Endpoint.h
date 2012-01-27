@@ -5,8 +5,8 @@
 #include <string>
 #include <boost/asio.hpp>
 
-#include "btc/uint256.h"
-#include "btc/serialize.h"
+#include "coin/uint256.h"
+#include "coin/serialize.h"
 
 enum
 {

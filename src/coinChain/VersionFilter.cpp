@@ -1,9 +1,9 @@
 
-#include "btcNode/VersionFilter.h"
-#include "btcNode/Alert.h"
+#include "coinChain/VersionFilter.h"
+#include "coinChain/Alert.h"
 
-#include "btc/util.h"
-#include "btcNode/Peer.h"
+#include "coin/util.h"
+#include "coinChain/Peer.h"
 
 using namespace std;
 using namespace boost;

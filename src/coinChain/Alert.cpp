@@ -1,11 +1,11 @@
 
-#include "btcNode/Alert.h"
+#include "coinChain/Alert.h"
 
-#include "btc/Block.h"
-#include "btcNode/BlockIndex.h"
-#include "btcNode/Peer.h"
+#include "coin/Block.h"
+#include "coinChain/BlockIndex.h"
+#include "coinChain/Peer.h"
 
-#include "btc/key.h"
+#include "coin/Key.h"
 
 #include "boost/foreach.hpp"
 

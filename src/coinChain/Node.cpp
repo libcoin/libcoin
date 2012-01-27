@@ -1,11 +1,11 @@
 
-#include "btcNode/Node.h"
-#include "btcNode/PeerManager.h"
-#include "btcNode/VersionFilter.h"
-#include "btcNode/EndpointFilter.h"
-#include "btcNode/BlockFilter.h"
-#include "btcNode/TransactionFilter.h"
-#include "btcNode/AlertFilter.h"
+#include "coinChain/Node.h"
+#include "coinChain/PeerManager.h"
+#include "coinChain/VersionFilter.h"
+#include "coinChain/EndpointFilter.h"
+#include "coinChain/BlockFilter.h"
+#include "coinChain/TransactionFilter.h"
+#include "coinChain/AlertFilter.h"
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>

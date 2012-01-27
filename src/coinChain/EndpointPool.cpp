@@ -1,10 +1,10 @@
 
-#include "btcNode/EndpointPool.h"
-#include "btcNode/db.h"
-//#include "btcNode/irc.h"
-//#include "btcNode/Peer.h"
+#include "coinChain/EndpointPool.h"
+#include "coinChain/db.h"
+//#include "coinChain/irc.h"
+//#include "coinChain/Peer.h"
 
-#include "btc/util.h"
+#include "coin/util.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>

@@ -1,10 +1,10 @@
 
-#include "btcHTTP/RequestHandler.h"
-#include "btcHTTP/MimeTypes.h"
-#include "btcHTTP/Reply.h"
-#include "btcHTTP/Request.h"
-#include "btcHTTP/Method.h"
-#include "btcHTTP/RPC.h"
+#include "coinHTTP/RequestHandler.h"
+#include "coinHTTP/MimeTypes.h"
+#include "coinHTTP/Reply.h"
+#include "coinHTTP/Request.h"
+#include "coinHTTP/Method.h"
+#include "coinHTTP/RPC.h"
 
 #include <fstream>
 #include <sstream>

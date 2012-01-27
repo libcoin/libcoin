@@ -1,7 +1,7 @@
 
-#include "btcHTTP/Method.h"
-#include "btcHTTP/RPC.h"
-#include "btcHTTP/Server.h"
+#include "coinHTTP/Method.h"
+#include "coinHTTP/RPC.h"
+#include "coinHTTP/Server.h"
 
 #include <string>
 #include <algorithm>

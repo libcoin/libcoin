@@ -15,7 +15,7 @@ IF(ANDROID)
 ELSE(ANDROID)
 
 IF(DYNAMIC_LIBCOIN)
-    ADD_SUBDIRECTORY(coinsimple)
+    ADD_SUBDIRECTORY(simplecoin)
     ADD_SUBDIRECTORY(ponzicoin)
 #    ADD_SUBDIRECTORY(coinexplorer)
 #    ADD_SUBDIRECTORY(coinonline)

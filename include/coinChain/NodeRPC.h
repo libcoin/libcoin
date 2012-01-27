@@ -1,8 +1,8 @@
 #ifndef _NODERPC_H_
 #define _NODERPC_H_
 
-#include "btcNode/Node.h"
-#include "btcHTTP/Method.h"
+#include "coinChain/Node.h"
+#include "coinHTTP/Method.h"
 
 /// Base class for all Node rpc methods - they all need a handle to the node.
 class NodeMethod : public Method {

@@ -1,5 +1,5 @@
 
-#include "btcHTTP/Reply.h"
+#include "coinHTTP/Reply.h"
 #include <string>
 #include <boost/lexical_cast.hpp>
 

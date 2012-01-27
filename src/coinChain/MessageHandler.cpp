@@ -1,6 +1,6 @@
 
-#include "btcNode/MessageHandler.h"
-#include "btc/serialize.h"
+#include "coinChain/MessageHandler.h"
+#include "coin/serialize.h"
 
 #include <string>
 

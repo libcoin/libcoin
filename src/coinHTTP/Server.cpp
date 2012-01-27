@@ -1,5 +1,5 @@
 
-#include "btcHTTP/Server.h"
+#include "coinHTTP/Server.h"
 #include <boost/bind.hpp>
 #include <signal.h>
 

@@ -3,7 +3,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "btcWallet/MerkleTx.h"
+#include "coinWallet/MerkleTx.h"
 
 using namespace std;
 

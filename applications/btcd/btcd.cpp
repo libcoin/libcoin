@@ -1,7 +1,7 @@
 
-#include "btcNode/Node.h"
+#include "coinChain/Node.h"
 
-#include "btcHTTP/Server.h"
+#include "coinHTTP/Server.h"
 
 #include "proxy.h"
 

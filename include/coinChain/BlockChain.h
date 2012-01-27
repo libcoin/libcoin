@@ -2,16 +2,16 @@
 #ifndef BLOCKCHAIN_H
 #define BLOCKCHAIN_H
 
-#include "btc/bignum.h"
-#include "btc/key.h"
-#include "btc/script.h"
-#include "btc/Transaction.h"
+#include "coin/BigNum.h"
+#include "coin/Key.h"
+#include "coin/Script.h"
+#include "coin/Transaction.h"
 
-#include "btcNode/db.h"
+#include "coinChain/db.h"
 
-#include "btcNode/BlockIndex.h"
-#include "btcNode/BlockFile.h"
-#include "btcNode/Chain.h"
+#include "coinChain/BlockIndex.h"
+#include "coinChain/BlockFile.h"
+#include "coinChain/Chain.h"
 
 #include <boost/noncopyable.hpp>
 #include <list>

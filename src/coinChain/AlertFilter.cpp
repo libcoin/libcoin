@@ -1,8 +1,8 @@
 
-#include "btcNode/AlertFilter.h"
-#include "btcNode/Alert.h"
+#include "coinChain/AlertFilter.h"
+#include "coinChain/Alert.h"
 
-#include "btcNode/Peer.h"
+#include "coinChain/Peer.h"
 
 using namespace std;
 using namespace boost;

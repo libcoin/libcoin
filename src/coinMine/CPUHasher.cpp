@@ -1,7 +1,7 @@
 
-#include "btcMine/CPUHasher.h"
+#include "coinMine/CPUHasher.h"
 
-#include "btc/Block.h"
+#include "coin/Block.h"
 
 /// We choose to insert only the parts of Crypto++ that we need here - no need to compile the entire lib...
 

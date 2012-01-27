@@ -1,7 +1,7 @@
 
-#include "btcNode/EndpointFilter.h"
-#include "btcNode/EndpointPool.h"
-#include "btcNode/Peer.h"
+#include "coinChain/EndpointFilter.h"
+#include "coinChain/EndpointPool.h"
+#include "coinChain/Peer.h"
 
 #include <string>
 

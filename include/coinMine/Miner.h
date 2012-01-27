@@ -5,10 +5,10 @@
 #include <boost/asio.hpp>
 
 
-#include "btc/Address.h"
-#include "btc/key.h"
+#include "coin/Address.h"
+#include "coin/Key.h"
 
-#include "btcWallet/wallet.h"
+#include "coinWallet/wallet.h"
 
 /// The Miner class is mining for new blocks by babysitting the registered block hashers.
 /// It updates the block candidate according to: https://en.bitcoin.it/wiki/Block_hashing_algorithm

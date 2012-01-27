@@ -1,6 +1,6 @@
 
-#include "btcHTTP/RPC.h"
-#include "btcHTTP/Method.h"
+#include "coinHTTP/RPC.h"
+#include "coinHTTP/Method.h"
 
 #include <sstream>
 #include <string>
@@ -8,7 +8,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/join.hpp>
 
-#include "btcHTTP/json/json_spirit.h"
+#include "coinHTTP/json/json_spirit.h"
 
 using namespace std;
 using namespace boost;

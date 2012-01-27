@@ -5,7 +5,7 @@
 #ifndef _BITCOIN_ASSET_H_
 #define _BITCOIN_ASSET_H_
 
-#include "btc/Transaction.h"
+#include "coin/Transaction.h"
 
 //typedef std::pair<uint256, unsigned int> Coin;
 typedef std::set<Coin> Coins;
