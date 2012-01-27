@@ -8,8 +8,6 @@
 
 #include <vector>
 
-#include <boost/foreach.hpp>
-
 #include "btc/keystore.h"
 
 PubKey CKeyStore::GenerateNewKey()
@@ -33,8 +31,8 @@ bool CKeyStore::GetPubKey(const ChainAddress &address, PubKey &vchPubKeyOut) con
 
 bool CBasicKeyStore::AddKey(const CKey& key)
 {
-    CRITICAL_BLOCK(cs_KeyStore)
-        mapKeys[key.GetAddress(_id)] = key.GetSecret();
+    //    CRITICAL_BLOCK(cs_KeyStore)
+    mapKeys[key.GetAddress(_id)] = key.GetSecret();
     return true;
 }
 

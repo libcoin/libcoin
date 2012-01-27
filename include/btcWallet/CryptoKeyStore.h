@@ -73,6 +73,9 @@ public:
     }
     bool GetKey(const ChainAddress &address, CKey& keyOut) const;
     virtual bool GetPubKey(const ChainAddress &address, std::vector<unsigned char>& vchPubKeyOut) const;
+
+protected:
+    mutable CCriticalSection cs_KeyStore;
 };
 
 #endif // _CRYPTOKEYSTORE_H_

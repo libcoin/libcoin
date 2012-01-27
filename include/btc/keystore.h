@@ -10,9 +10,6 @@
 
 class CKeyStore
 {
-protected:
-    mutable CCriticalSection cs_KeyStore;
-
 public:
     virtual bool AddKey(const CKey& key) =0;
     virtual bool HaveKey(const ChainAddress &address) const =0;
@@ -38,24 +35,21 @@ public:
     virtual unsigned char getId() const { return _id; }
     
     bool AddKey(const CKey& key);
-    bool HaveKey(const ChainAddress &address) const
-    {
+    bool HaveKey(const ChainAddress &address) const {
         bool result;
-        CRITICAL_BLOCK(cs_KeyStore)
-            result = (mapKeys.count(address) > 0);
+    //        CRITICAL_BLOCK(cs_KeyStore) - method is const - why do we want a mutex?
+        result = (mapKeys.count(address) > 0);
         return result;
     }
-    bool GetKey(const ChainAddress &address, CKey& keyOut) const
-    {
-        CRITICAL_BLOCK(cs_KeyStore)
-        {
-            KeyMap::const_iterator mi = mapKeys.find(address);
-            if (mi != mapKeys.end())
-            {
-                keyOut.SetSecret((*mi).second);
-                return true;
-            }
+    bool GetKey(const ChainAddress &address, CKey& keyOut) const {
+        //        CRITICAL_BLOCK(cs_KeyStore) - method is const - why do we want a mutex?
+        //        {
+        KeyMap::const_iterator mi = mapKeys.find(address);
+        if (mi != mapKeys.end()) {
+            keyOut.SetSecret((*mi).second);
+            return true;
         }
+        //        }
         return false;
     }
     virtual bool HaveKey(const uint160 &asset) const { return HaveKey(ChainAddress(_id, asset)); }

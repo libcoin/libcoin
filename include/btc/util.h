@@ -122,16 +122,16 @@ bool error(const char* format, ...);
 void LogException(std::exception* pex, const char* pszThread);
 void PrintException(std::exception* pex, const char* pszThread);
 void PrintExceptionContinue(std::exception* pex, const char* pszThread);
-void ParseString(const std::string& str, char c, std::vector<std::string>& v);
+//void ParseString(const std::string& str, char c, std::vector<std::string>& v);
 std::string FormatMoney(int64 n, bool fPlus=false);
-bool ParseMoney(const std::string& str, int64& nRet);
-bool ParseMoney(const char* pszIn, int64& nRet);
+//bool ParseMoney(const std::string& str, int64& nRet);
+//bool ParseMoney(const char* pszIn, int64& nRet);
 std::vector<unsigned char> ParseHex(const char* psz);
 std::vector<unsigned char> ParseHex(const std::string& str);
 //void ParseParameters(int argc, char* argv[]);
 const char* wxGetTranslation(const char* psz);
-bool WildcardMatch(const char* psz, const char* mask);
-bool WildcardMatch(const std::string& str, const std::string& mask);
+//bool WildcardMatch(const char* psz, const char* mask);
+//bool WildcardMatch(const std::string& str, const std::string& mask);
 int GetFilesize(FILE* file);
 //void GetDataDir(char* pszDirRet);
 //std::string GetConfigFile();
@@ -546,7 +546,7 @@ uint256 SerializeHash(const T& obj, int nType=SER_GETHASH, int nVersion=VERSION)
 
 
 
-
+/*
 // Note: It turns out we might have been able to use boost::thread
 // by using TerminateThread(boost::thread.native_handle(), 0);
 #ifdef _WIN32
@@ -648,5 +648,5 @@ inline bool AffinityBugWorkaround(void(*pfn)(void*))
 #endif
     return false;
 }
-
+*/
 #endif

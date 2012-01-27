@@ -302,7 +302,7 @@ bool error(const char* format, ...)
     return false;
 }
 
-
+/*
 void ParseString(const string& str, char c, vector<string>& v)
 {
     if (str.empty())
@@ -321,7 +321,7 @@ void ParseString(const string& str, char c, vector<string>& v)
         i1 = i2+1;
     }
 }
-
+*/
 
 string FormatMoney(int64 n, bool fPlus)
 {
@@ -351,7 +351,7 @@ bool ParseMoney(const string& str, int64& nRet)
 {
     return ParseMoney(str.c_str(), nRet);
 }
-
+/*
 bool ParseMoney(const char* pszIn, int64& nRet)
 {
     string strWhole;
@@ -392,7 +392,7 @@ bool ParseMoney(const char* pszIn, int64& nRet)
     return true;
 }
 
-
+*/
 vector<unsigned char> ParseHex(const char* psz)
 {
     static char phexdigit[256] =
@@ -437,7 +437,7 @@ vector<unsigned char> ParseHex(const string& str)
     return ParseHex(str.c_str());
 }
 
-
+/*
 bool WildcardMatch(const char* psz, const char* mask)
 {
     loop
@@ -466,7 +466,7 @@ bool WildcardMatch(const string& str, const string& mask)
 {
     return WildcardMatch(str.c_str(), mask.c_str());
 }
-
+*/
 void FormatException(char* pszMessage, std::exception* pex, const char* pszThread)
 {
 #ifdef _WIN32
@@ -504,7 +504,7 @@ void PrintException(std::exception* pex, const char* pszThread)
 #endif
     throw;
 }
-
+/*
 void ThreadOneMessageBox(string strMessage)
 {
     // Skip message boxes if one is already open
@@ -515,7 +515,7 @@ void ThreadOneMessageBox(string strMessage)
 //    ThreadSafeMessageBox(strMessage, "Bitcoin", wxOK | wxICON_EXCLAMATION);
     fMessageBoxOpen = false;
 }
-
+*/
 void PrintExceptionContinue(std::exception* pex, const char* pszThread)
 {
     char pszMessage[10000];
