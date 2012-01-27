@@ -1,5 +1,5 @@
-SET(TARGET_SRC btcsimple.cpp)
+SET(TARGET_SRC coinsimple.cpp)
 
-SET(TARGET_ADDED_LIBRARIES btcWallet)
+SET(TARGET_ADDED_LIBRARIES coinWallet)
 
-SETUP_EXAMPLE(btcsimple)
+SETUP_EXAMPLE(coinsimple)

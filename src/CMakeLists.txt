@@ -1,5 +1,5 @@
 IF(ANDROID)
-    SET(MODULE_USER_STATIC_OR_DYNAMIC ${BITCOIN_USER_DEFINED_DYNAMIC_OR_STATIC})
+    SET(MODULE_USER_STATIC_OR_DYNAMIC ${LIBCOIN_USER_DEFINED_DYNAMIC_OR_STATIC})
 ENDIF(ANDROID)
 
 IF(MSVC80 OR MSVC90)
@@ -8,11 +8,11 @@ ENDIF()
 
 #the old construct SUBDIRS( was substituded by ADD_SUBDIRECTORY that is to be preferred according on CMake docs.
 FOREACH( mylibfolder 
-        btc
-        btcNode 
-        btcHTTP
-        btcWallet 
-        btcMine 
+        coin
+        coinChain 
+        coinHTTP
+        coinWallet 
+        coinMine 
     )
 
     ADD_SUBDIRECTORY(${mylibfolder})
@@ -20,10 +20,10 @@ FOREACH( mylibfolder
 ENDFOREACH()
 
 IF (QT4_FOUND AND NOT ANDROID)
-    ADD_SUBDIRECTORY(btcQt)
+    ADD_SUBDIRECTORY(coinQt)
 ENDIF()
 
 IF(ANDROID)
-    configure_file("${OSG_ANDROID_TEMPLATES}/Android.mk.src.in" "${CMAKE_CURRENT_BINARY_DIR}/Android.mk")
+    configure_file("${LIBCOIN_ANDROID_TEMPLATES}/Android.mk.src.in" "${CMAKE_CURRENT_BINARY_DIR}/Android.mk")
 ENDIF()
 

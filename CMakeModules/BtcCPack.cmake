@@ -6,7 +6,7 @@
 # A target for making all of the abaove packages is generated (package_ALL)
 #
 # package filenames are created on the form <package>-<platform>-<arch>[-<compiler>]-<build_type>[-static].tar.gz
-# ...where compiler optionally set using a cmake gui (BTC_CPACK_COMPILER). This script tries to guess compiler version for msvc generators
+# ...where compiler optionally set using a cmake gui (LIBCOIN_CPACK_COMPILER). This script tries to guess compiler version for msvc generators
 # ...build_type matches CMAKE_BUILD_TYPE for all generators but the msvc ones
 
 # resolve architecture. The reason i "change" i686 to i386 is that debian packages
@@ -31,17 +31,17 @@ IF(MSVC)
     ENDIF()
 ENDIF()
 # Guess the compiler (is this desired for other platforms than windows?)
-IF(NOT DEFINED BTC_CPACK_COMPILER)
+IF(NOT DEFINED LIBCOIN_CPACK_COMPILER)
     INCLUDE(OsgDetermineCompiler)
 ENDIF()
 
 # expose the compiler setting to the user
-SET(BTC_CPACK_COMPILER "${BTC_COMPILER}" CACHE STRING "This ia short string (vc90, vc80sp1, gcc-4.3, ...) describing your compiler. The string is used for creating package filenames")
+SET(LIBCOIN_CPACK_COMPILER "${LIBCOIN_COMPILER}" CACHE STRING "This ia short string (vc90, vc80sp1, gcc-4.3, ...) describing your compiler. The string is used for creating package filenames")
 
-IF(BTC_CPACK_COMPILER)
-  SET(BTC_CPACK_SYSTEM_SPEC_STRING ${SYSTEM_NAME}-${SYSTEM_ARCH}-${BTC_CPACK_COMPILER})
+IF(LIBCOIN_CPACK_COMPILER)
+  SET(LIBCOIN_CPACK_SYSTEM_SPEC_STRING ${SYSTEM_NAME}-${SYSTEM_ARCH}-${LIBCOIN_CPACK_COMPILER})
 ELSE()
-  SET(BTC_CPACK_SYSTEM_SPEC_STRING ${SYSTEM_NAME}-${SYSTEM_ARCH})
+  SET(LIBCOIN_CPACK_SYSTEM_SPEC_STRING ${SYSTEM_NAME}-${SYSTEM_ARCH})
 ENDIF()
 
 
@@ -59,14 +59,14 @@ SET(CPACK_SOURCE_GENERATOR "TGZ")
 
 # for ms visual studio we use it's internally defined variable to get the configuration (debug,release, ...) 
 IF(MSVC_IDE)
-    SET(BTC_CPACK_CONFIGURATION "$(OutDir)")
+    SET(LIBCOIN_CPACK_CONFIGURATION "$(OutDir)")
     SET(PACKAGE_TARGET_PREFIX "Package ")
 ELSE()
     # on un*x an empty CMAKE_BUILD_TYPE means release
     IF(CMAKE_BUILD_TYPE)
-        SET(BTC_CPACK_CONFIGURATION ${CMAKE_BUILD_TYPE})
+        SET(LIBCOIN_CPACK_CONFIGURATION ${CMAKE_BUILD_TYPE})
     ELSE()
-        SET(BTC_CPACK_CONFIGURATION "Release")
+        SET(LIBCOIN_CPACK_CONFIGURATION "Release")
     ENDIF()
     SET(PACKAGE_TARGET_PREFIX "package_")
 ENDIF()
@@ -89,15 +89,15 @@ MACRO(GENERATE_PACKAGING_TARGET package_name)
 
     # the doc packages don't need a system-arch specification
     IF(${package} MATCHES -doc)
-        SET(BTC_PACKAGE_FILE_NAME ${package_name}-${OPENSCENEGRAPH_VERSION})
+        SET(LIBCOIN_PACKAGE_FILE_NAME ${package_name}-${OPENSCENEGRAPH_VERSION})
     ELSE()
-        SET(BTC_PACKAGE_FILE_NAME ${package_name}-${OPENSCENEGRAPH_VERSION}-${BTC_CPACK_SYSTEM_SPEC_STRING}-${BTC_CPACK_CONFIGURATION})
+        SET(LIBCOIN_PACKAGE_FILE_NAME ${package_name}-${OPENSCENEGRAPH_VERSION}-${LIBCOIN_CPACK_SYSTEM_SPEC_STRING}-${LIBCOIN_CPACK_CONFIGURATION})
         IF(NOT DYNAMIC_OPENSCENEGRAPH)
-            SET(BTC_PACKAGE_FILE_NAME ${BTC_PACKAGE_FILE_NAME}-static)
+            SET(LIBCOIN_PACKAGE_FILE_NAME ${LIBCOIN_PACKAGE_FILE_NAME}-static)
         ENDIF()
     ENDIF()
 
-    CONFIGURE_FILE("${BITCOIN_SOURCE_DIR}/CMakeModules/OsgCPackConfig.cmake.in" "${BITCOIN_BINARY_DIR}/CPackConfig-${package_name}.cmake" IMMEDIATE)
+    CONFIGURE_FILE("${LIBCOIN_SOURCE_DIR}/CMakeModules/OsgCPackConfig.cmake.in" "${LIBCOIN_BINARY_DIR}/CPackConfig-${package_name}.cmake" IMMEDIATE)
 
     SET(PACKAGE_TARGETNAME "${PACKAGE_TARGET_PREFIX}${package_name}")
 
@@ -121,24 +121,24 @@ MACRO(GENERATE_PACKAGING_TARGET package_name)
     SET_TARGET_PROPERTIES(${PACKAGE_TARGETNAME} PROPERTIES FOLDER "Packaging")
 
     ADD_CUSTOM_COMMAND(TARGET ${PACKAGE_TARGETNAME}
-        COMMAND ${CMAKE_CPACK_COMMAND} -C ${BTC_CPACK_CONFIGURATION} --config ${BITCOIN_BINARY_DIR}/CPackConfig-${package_name}.cmake
+        COMMAND ${CMAKE_CPACK_COMMAND} -C ${LIBCOIN_CPACK_CONFIGURATION} --config ${LIBCOIN_BINARY_DIR}/CPackConfig-${package_name}.cmake
         COMMENT "Run CPack packaging for ${package_name}..."
     )
     # Add the exact same custom command to the all package generating target. 
     # I can't use add_dependencies to do this because it would allow parallell building of packages so am going brute here
     ADD_CUSTOM_COMMAND(TARGET ${PACKAGE_ALL_TARGETNAME}
-        COMMAND ${CMAKE_CPACK_COMMAND} -C ${BTC_CPACK_CONFIGURATION} --config ${BITCOIN_BINARY_DIR}/CPackConfig-${package_name}.cmake
+        COMMAND ${CMAKE_CPACK_COMMAND} -C ${LIBCOIN_CPACK_CONFIGURATION} --config ${LIBCOIN_BINARY_DIR}/CPackConfig-${package_name}.cmake
     )
     SET_TARGET_PROPERTIES(${PACKAGE_ALL_TARGETNAME} PROPERTIES FOLDER "Packaging")
 
 ENDMACRO(GENERATE_PACKAGING_TARGET)
 
 # Create configs and targets for a package including all components
-SET(BTC_CPACK_COMPONENT ALL)
+SET(LIBCOIN_CPACK_COMPONENT ALL)
 GENERATE_PACKAGING_TARGET(bitcoin-all)
 
 # Create configs and targets for each component
 FOREACH(package ${CPACK_COMPONENTS_ALL})
-    SET(BTC_CPACK_COMPONENT ${package})
+    SET(LIBCOIN_CPACK_COMPONENT ${package})
     GENERATE_PACKAGING_TARGET(${package})
 ENDFOREACH()

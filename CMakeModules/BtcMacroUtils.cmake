@@ -55,16 +55,16 @@ MACRO(LINK_INTERNAL TRGTNAME)
         TARGET_LINK_LIBRARIES(${TRGTNAME} ${ARGN})
     ELSE(NOT CMAKE24)
         FOREACH(LINKLIB ${ARGN})
-            IF(MSVC AND BTC_MSVC_VERSIONED_DLL)
+            IF(MSVC AND LIBCOIN_MSVC_VERSIONED_DLL)
                 #when using versioned names, the .dll name differ from .lib name, there is a problem with that:
                 #CMake 2.4.7, at least seem to use PREFIX instead of IMPORT_PREFIX  for computing linkage info to use into projects,
                 # so we full path name to specify linkage, this prevent automatic inferencing of dependencies, so we add explicit depemdencies
                 #to library targets used
                 TARGET_LINK_LIBRARIES(${TRGTNAME} optimized "${OUTPUT_LIBDIR}/${LINKLIB}${CMAKE_RELEASE_POSTFIX}.lib" debug "${OUTPUT_LIBDIR}/${LINKLIB}${CMAKE_DEBUG_POSTFIX}.lib")
                 ADD_DEPENDENCIES(${TRGTNAME} ${LINKLIB})
-            ELSE(MSVC AND BTC_MSVC_VERSIONED_DLL)
+            ELSE(MSVC AND LIBCOIN_MSVC_VERSIONED_DLL)
                 TARGET_LINK_LIBRARIES(${TRGTNAME} optimized "${LINKLIB}${CMAKE_RELEASE_POSTFIX}" debug "${LINKLIB}${CMAKE_DEBUG_POSTFIX}")
-            ENDIF(MSVC AND BTC_MSVC_VERSIONED_DLL)
+            ENDIF(MSVC AND LIBCOIN_MSVC_VERSIONED_DLL)
         ENDFOREACH(LINKLIB)
     ENDIF(NOT CMAKE24)
 ENDMACRO(LINK_INTERNAL TRGTNAME)
@@ -83,7 +83,7 @@ ENDMACRO(LINK_EXTERNAL TRGTNAME)
 MACRO(LINK_CORELIB_DEFAULT CORELIB_NAME)
     #SET(ALL_GL_LIBRARIES ${OPENGL_LIBRARIES})
     SET(ALL_GL_LIBRARIES ${OPENGL_gl_LIBRARY})
-    IF (BTC_GLES1_AVAILABLE OR BTC_GLES2_AVAILABLE)
+    IF (LIBCOIN_GLES1_AVAILABLE OR LIBCOIN_GLES2_AVAILABLE)
         SET(ALL_GL_LIBRARIES ${ALL_GL_LIBRARIES} ${OPENGL_egl_LIBRARY})
     ENDIF()
 
@@ -134,7 +134,7 @@ MACRO(SETUP_LINK_LIBRARIES)
 
     #SET(ALL_GL_LIBRARIES ${OPENGL_LIBRARIES})
     SET(ALL_GL_LIBRARIES ${OPENGL_gl_LIBRARY})
-    IF (BTC_GLES1_AVAILABLE OR BTC_GLES2_AVAILABLE)
+    IF (LIBCOIN_GLES1_AVAILABLE OR LIBCOIN_GLES2_AVAILABLE)
         SET(ALL_GL_LIBRARIES ${ALL_GL_LIBRARIES} ${OPENGL_egl_LIBRARY})
     ENDIF()
 
@@ -149,10 +149,10 @@ MACRO(SETUP_LINK_LIBRARIES)
         IF(TARGET_LIBRARIES_VARS)
             LINK_WITH_VARIABLES(${TARGET_TARGETNAME} ${TARGET_LIBRARIES_VARS})
         ENDIF(TARGET_LIBRARIES_VARS)
-    IF(MSVC  AND BTC_MSVC_VERSIONED_DLL)
+    IF(MSVC  AND LIBCOIN_MSVC_VERSIONED_DLL)
         #when using full path name to specify linkage, it seems that already linked libs must be specified
             LINK_EXTERNAL(${TARGET_TARGETNAME} ${ALL_GL_LIBRARIES}) 
-    ENDIF(MSVC AND BTC_MSVC_VERSIONED_DLL)
+    ENDIF(MSVC AND LIBCOIN_MSVC_VERSIONED_DLL)
 
 ENDMACRO(SETUP_LINK_LIBRARIES)
 
@@ -223,7 +223,7 @@ MACRO(SETUP_LIBRARY LIB_NAME)
             ${TARGET_H_NO_MODULE_INSTALL}
             ${TARGET_SRC}
         )
-        SET_TARGET_PROPERTIES(${LIB_NAME} PROPERTIES FOLDER "BTC Core")
+        SET_TARGET_PROPERTIES(${LIB_NAME} PROPERTIES FOLDER "libcoin Core")
         IF(TARGET_LABEL)
             SET_TARGET_PROPERTIES(${TARGET_TARGETNAME} PROPERTIES PROJECT_LABEL "${TARGET_LABEL}")
         ENDIF(TARGET_LABEL)
@@ -286,31 +286,31 @@ MACRO(SETUP_PLUGIN PLUGIN_NAME)
         ENDIF(NOT UNIX)
     ELSE(NOT MSVC)
         IF(NOT CMAKE24)
-            SET_OUTPUT_DIR_PROPERTY_260(${TARGET_TARGETNAME} "${BTC_PLUGINS}")        # Sets the ouput to be /btcPlugin-X.X.X ; also ensures the /Debug /Release are removed
+            SET_OUTPUT_DIR_PROPERTY_260(${TARGET_TARGETNAME} "${LIBCOIN_PLUGINS}")        # Sets the ouput to be /btcPlugin-X.X.X ; also ensures the /Debug /Release are removed
         ELSE(NOT CMAKE24)
 
-            IF(BTC_MSVC_VERSIONED_DLL) 
+            IF(LIBCOIN_MSVC_VERSIONED_DLL) 
 
                 #this is a hack... the build place is set to lib/<debug or release> by LIBARARY_OUTPUT_PATH equal to OUTPUT_LIBDIR
                 #the .lib will be crated in ../ so going straight in lib by the IMPORT_PREFIX property
                 #because we want dll placed in OUTPUT_BINDIR ie the bin folder sibling of lib, we can use ../../bin to go there,
                 #it is hardcoded, we should compute OUTPUT_BINDIR position relative to OUTPUT_LIBDIR ... to be implemented
                 #changing bin to something else breaks this hack
-                #the dll are placed in bin/${BTC_PLUGINS} 
+                #the dll are placed in bin/${LIBCOIN_PLUGINS} 
 
                 IF(NOT MSVC_IDE)
-                    SET_TARGET_PROPERTIES(${TARGET_TARGETNAME} PROPERTIES PREFIX "../bin/${BTC_PLUGINS}/")                     
+                    SET_TARGET_PROPERTIES(${TARGET_TARGETNAME} PROPERTIES PREFIX "../bin/${LIBCOIN_PLUGINS}/")                     
                 ELSE(NOT MSVC_IDE)
-                    SET_TARGET_PROPERTIES(${TARGET_TARGETNAME} PROPERTIES PREFIX "../../bin/${BTC_PLUGINS}/" IMPORT_PREFIX "../")
+                    SET_TARGET_PROPERTIES(${TARGET_TARGETNAME} PROPERTIES PREFIX "../../bin/${LIBCOIN_PLUGINS}/" IMPORT_PREFIX "../")
                 ENDIF(NOT MSVC_IDE)
 
-            ELSE(BTC_MSVC_VERSIONED_DLL)
+            ELSE(LIBCOIN_MSVC_VERSIONED_DLL)
 
-                #in standard mode (unversioned) the .lib and .dll are placed in lib/<debug or release>/${BTC_PLUGINS}.
-                #here the PREFIX property has been used, the same result would be accomplidhe by prepending ${BTC_PLUGINS}/ to OUTPUT_NAME target property
+                #in standard mode (unversioned) the .lib and .dll are placed in lib/<debug or release>/${LIBCOIN_PLUGINS}.
+                #here the PREFIX property has been used, the same result would be accomplidhe by prepending ${LIBCOIN_PLUGINS}/ to OUTPUT_NAME target property
 
-                SET_TARGET_PROPERTIES(${TARGET_TARGETNAME} PROPERTIES PREFIX "${BTC_PLUGINS}/")
-            ENDIF(BTC_MSVC_VERSIONED_DLL)
+                SET_TARGET_PROPERTIES(${TARGET_TARGETNAME} PROPERTIES PREFIX "${LIBCOIN_PLUGINS}/")
+            ENDIF(LIBCOIN_MSVC_VERSIONED_DLL)
 
         ENDIF(NOT CMAKE24)
     ENDIF(NOT MSVC)
@@ -320,17 +320,17 @@ MACRO(SETUP_PLUGIN PLUGIN_NAME)
 
     SETUP_LINK_LIBRARIES()
 
-#the installation path are differentiated for win32 that install in bib versus other architecture that install in lib${LIB_POSTFIX}/${BTC_PLUGINS}
+#the installation path are differentiated for win32 that install in bib versus other architecture that install in lib${LIB_POSTFIX}/${LIBCOIN_PLUGINS}
     IF(WIN32)
         INSTALL(TARGETS ${TARGET_TARGETNAME} 
             RUNTIME DESTINATION bin COMPONENT ${PACKAGE_COMPONENT}
-            ARCHIVE DESTINATION lib/${BTC_PLUGINS} COMPONENT libopenscenegraph-dev
-            LIBRARY DESTINATION bin/${BTC_PLUGINS} COMPONENT ${PACKAGE_COMPONENT})
+            ARCHIVE DESTINATION lib/${LIBCOIN_PLUGINS} COMPONENT libopenscenegraph-dev
+            LIBRARY DESTINATION bin/${LIBCOIN_PLUGINS} COMPONENT ${PACKAGE_COMPONENT})
     ELSE(WIN32)
         INSTALL(TARGETS ${TARGET_TARGETNAME}
             RUNTIME DESTINATION bin COMPONENT ${PACKAGE_COMPONENT}
-            ARCHIVE DESTINATION lib${LIB_POSTFIX}/${BTC_PLUGINS} COMPONENT libopenscenegraph-dev
-            LIBRARY DESTINATION lib${LIB_POSTFIX}/${BTC_PLUGINS} COMPONENT ${PACKAGE_COMPONENT})
+            ARCHIVE DESTINATION lib${LIB_POSTFIX}/${LIBCOIN_PLUGINS} COMPONENT libopenscenegraph-dev
+            LIBRARY DESTINATION lib${LIB_POSTFIX}/${LIBCOIN_PLUGINS} COMPONENT ${PACKAGE_COMPONENT})
     ENDIF(WIN32)
     ENDIF()
 ENDMACRO(SETUP_PLUGIN)
@@ -376,9 +376,9 @@ MACRO(SETUP_EXE IS_COMMANDLINE_APP)
         ENDIF(WIN32)
 
         IF(APPLE)
-            IF(BTC_BUILD_APPLICATION_BUNDLES)
+            IF(LIBCOIN_BUILD_APPLICATION_BUNDLES)
                 SET(PLATFORM_SPECIFIC_CONTROL MACOSX_BUNDLE)
-            ENDIF(BTC_BUILD_APPLICATION_BUNDLES)
+            ENDIF(LIBCOIN_BUILD_APPLICATION_BUNDLES)
         ENDIF(APPLE)
 
         ADD_EXECUTABLE(${TARGET_TARGETNAME} ${PLATFORM_SPECIFIC_CONTROL} ${TARGET_SRC} ${TARGET_H})
@@ -392,9 +392,9 @@ MACRO(SETUP_EXE IS_COMMANDLINE_APP)
     SET_TARGET_PROPERTIES(${TARGET_TARGETNAME} PROPERTIES RELWITHDEBINFO_OUTPUT_NAME "${TARGET_NAME}${CMAKE_RELWITHDEBINFO_POSTFIX}")
     SET_TARGET_PROPERTIES(${TARGET_TARGETNAME} PROPERTIES MINSIZEREL_OUTPUT_NAME "${TARGET_NAME}${CMAKE_MINSIZEREL_POSTFIX}")
 
-    IF(MSVC_IDE AND BTC_MSVC_VERSIONED_DLL)
+    IF(MSVC_IDE AND LIBCOIN_MSVC_VERSIONED_DLL)
         SET_OUTPUT_DIR_PROPERTY_260(${TARGET_TARGETNAME} "")        # Ensure the /Debug /Release are removed
-    ENDIF(MSVC_IDE AND BTC_MSVC_VERSIONED_DLL)
+    ENDIF(MSVC_IDE AND LIBCOIN_MSVC_VERSIONED_DLL)
 
     SETUP_LINK_LIBRARIES()    
 
@@ -475,7 +475,7 @@ MACRO(HANDLE_MSVC_DLL)
                 SET(LIB_PREFIX btc)
         ENDIF(${ARGC} GREATER 0)
 
-        # LIB_SOVERSION: use BTC's soversion by default, else whatever we've been given
+        # LIB_SOVERSION: use LIBCOIN's soversion by default, else whatever we've been given
         IF(${ARGC} GREATER 1)
                 SET(LIB_SOVERSION ${ARGV1})
         ELSE(${ARGC} GREATER 1)

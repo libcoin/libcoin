@@ -27,63 +27,63 @@ if(COMMAND cmake_policy)
     endif()
 endif()
 
-PROJECT(btc)
+PROJECT(libcoin)
 
-SET(BITCOIN_MAJOR_VERSION 0)
-SET(BITCOIN_MINOR_VERSION 4)
-SET(BITCOIN_PATCH_VERSION 1)
-SET(BITCOIN_SOVERSION 1)
+SET(LIBCOIN_MAJOR_VERSION 0)
+SET(LIBCOIN_MINOR_VERSION 4)
+SET(LIBCOIN_PATCH_VERSION 1)
+SET(LIBCOIN_SOVERSION 1)
 
 # set to 0 when not a release candidate, non zero means that any generated 
 # svn tags will be treated as release candidates of given number
-SET(BITCOIN_RELEASE_CANDIDATE 0)
+SET(LIBCOIN_RELEASE_CANDIDATE 0)
 
-SET(BITCOIN_VERSION ${BITCOIN_MAJOR_VERSION}.${BITCOIN_MINOR_VERSION}.${BITCOIN_PATCH_VERSION})
+SET(LIBCOIN_VERSION ${LIBCOIN_MAJOR_VERSION}.${LIBCOIN_MINOR_VERSION}.${LIBCOIN_PATCH_VERSION})
 
-SET(BTC_PLUGINS btcPlugins-${BITCOIN_VERSION})
+SET(LIBCOIN_PLUGINS coinPlugins-${LIBCOIN_VERSION})
 
-SET(BTC_PLUGIN_PREFIX "")
+SET(LIBCOIN_PLUGIN_PREFIX "")
 
 IF (CYGWIN)
-    SET(BTC_PLUGIN_PREFIX "cygwin_")
+    SET(LIBCOIN_PLUGIN_PREFIX "cygwin_")
 ENDIF()
 
 IF(MINGW)
-    SET(BTC_PLUGIN_PREFIX "mingw_")
+    SET(LIBCOIN_PLUGIN_PREFIX "mingw_")
 ENDIF()
 
 
 # We want to build SONAMES shared librariess
-SET(BITCOIN_SONAMES TRUE)
+SET(LIBCOIN_SONAMES TRUE)
 
 # We have some custom .cmake scripts not in the official distribution.
 # Maybe this can be used override existing behavior if needed?
 SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 
 ## Option to enable Android build using AndroidNDK
-OPTION(BTC_BUILD_PLATFORM_ANDROID OFF)
-IF(BTC_BUILD_PLATFORM_ANDROID)
+OPTION(LIBCOIN_BUILD_PLATFORM_ANDROID OFF)
+IF(LIBCOIN_BUILD_PLATFORM_ANDROID)
 
     CMAKE_MINIMUM_REQUIRED(VERSION 2.8.0 FATAL_ERROR)
 
-    INCLUDE(BtcAndroidMacroUtils)
+    INCLUDE(LibCoinAndroidMacroUtils)
     SET(ANDROID TRUE)
     SET(ANDROID_PLATFORM 5)
     FIND_PACKAGE(AndroidNDK REQUIRED)    
 
-    SET(BTC_ANDROID_TEMPLATES "${CMAKE_SOURCE_DIR}/PlatformSpecifics/Android")
+    SET(LIBCOIN_ANDROID_TEMPLATES "${CMAKE_SOURCE_DIR}/PlatformSpecifics/Android")
     
     SET(J  "4" CACHE STRING "how many processes for make -j <J>")
 
     ADD_CUSTOM_COMMAND(
-        OUTPUT    Android-btc
+        OUTPUT    Android-libcoin
         DEPENDS   ${CMAKE_BINARY_DIR}/Android.mk
         COMMAND   "${ANDROID_NDK}/ndk-build" 
         ARGS      --directory=${CMAKE_BINARY_DIR} NDK_APPLICATION_MK=Application.mk -j${J} NDK_LOG=1
     )
 
     ADD_CUSTOM_TARGET(ndk ALL echo
-          DEPENDS Android-btc
+          DEPENDS Android-libcoin
     )
     install(DIRECTORY include/ DESTINATION include/
         PATTERN ".svn" EXCLUDE
@@ -120,72 +120,15 @@ IF(CMAKE_SYSTEM MATCHES IRIX)
     SET(CMAKE_THREAD_LIBS_INIT "" CACHE INTERNAL "")
 ENDIF()
 
-OPTION(BTC_MAINTAINER "Enable btc maintainer build methods, such as making svn branches, tags, updating ChangeLog." OFF)
-IF (BTC_MAINTAINER)
-
-    #SET(BITCOIN_SVN "trunk")
-    SET(BITCOIN_SVN "branches")
-    SET(BITCOIN_BRANCH btc-${BITCOIN_MAJOR_VERSION}.${BITCOIN_MINOR_VERSION})
-
-    #
-    # Provide target for tagging a release
-    #
-    SET(SVNCOMMAND svn)
-    SET(SVNTRUNKDIR     http://www.bitcoin.org/svn/btc/btc/trunk)
-    SET(SVNTAGDIR       http://www.bitcoin.org/svn/btc/btc/tags)
-    SET(SVNBRANCHDIR    http://www.bitcoin.org/svn/btc/btc/branches)
-
-    IF   (BITCOIN_SVN STREQUAL "trunk")
-        SET(SVNSOURCEDIR ${SVNTRUNKDIR})
-    ELSE()
-        SET(SVNSOURCEDIR ${SVNBRANCHDIR}/${BITCOIN_BRANCH})
-    ENDIF()
-
-
-    IF   (BITCOIN_RELEASE_CANDIDATE EQUAL 0)
-        SET(RELEASE_NAME btc-${BITCOIN_VERSION})
-    ELSE()
-        SET(RELEASE_NAME btc-${BITCOIN_VERSION}-rc${BITCOIN_RELEASE_CANDIDATE})
-    ENDIF()
-
-
-    ADD_CUSTOM_TARGET(tag-test
-        COMMAND echo ${SVNCOMMAND} copy ${SVNSOURCEDIR} ${SVNTAGDIR}/${RELEASE_NAME} -m "Release ${RELEASE_NAME}"
-    )
-
-    ADD_CUSTOM_TARGET(tag-run
-        COMMAND ${SVNCOMMAND} copy ${SVNSOURCEDIR} ${SVNTAGDIR}/${RELEASE_NAME} -m "Release ${RELEASE_NAME}"
-    )
-
-    ADD_CUSTOM_TARGET(branch-test
-        COMMAND echo ${SVNCOMMAND} copy ${SVNSOURCEDIR} ${SVNBRANCHDIR}/${BITCOIN_BRANCH} -m "Branch ${BITCOIN_BRANCH}"
-    )
-
-    ADD_CUSTOM_TARGET(branch-run
-        COMMAND ${SVNCOMMAND} copy ${SVNSOURCEDIR} ${SVNBRANCHDIR}/${BITCOIN_BRANCH} -m "Branch ${BITCOIN_BRANCH}"
-    )
-
-    #
-    # Provide target for generating ChangeLog
-    #
-    SET(GENERATELOGS svn2cl)
-
-    ADD_CUSTOM_TARGET(ChangeLog
-        COMMAND ${SVNCOMMAND} update
-        COMMAND ${GENERATELOGS} ${SVNSOURCEDIR}
-    )
-    
-ENDIF(BTC_MAINTAINER)
-
 IF(NOT ANDROID)
 IF(APPLE)
     # Trying to get CMake to generate an XCode IPhone project, current efforts are to get iphoneos sdk 3.1 working
     # Added option which needs manually setting to select the IPhone SDK for building. We can only have one of the below
-    # set to true. Should realy have an BTC_BUILD_PLATFORM variable that we set to our desired platform
-    OPTION(BTC_BUILD_PLATFORM_IPHONE "Enable IPhoneSDK Device support" OFF)
-    OPTION(BTC_BUILD_PLATFORM_IPHONE_SIMULATOR "Enable IPhoneSDK Simulator support" OFF)
+    # set to true. Should realy have an LIBCOIN_BUILD_PLATFORM variable that we set to our desired platform
+    OPTION(LIBCOIN_BUILD_PLATFORM_IPHONE "Enable IPhoneSDK Device support" OFF)
+    OPTION(LIBCOIN_BUILD_PLATFORM_IPHONE_SIMULATOR "Enable IPhoneSDK Simulator support" OFF)
 
-    IF(BTC_BUILD_PLATFORM_IPHONE OR BTC_BUILD_PLATFORM_IPHONE_SIMULATOR)
+    IF(LIBCOIN_BUILD_PLATFORM_IPHONE OR LIBCOIN_BUILD_PLATFORM_IPHONE_SIMULATOR)
 
         #you need to manually set the default sdk version here
         SET (IPHONE_SDKVER "3.2")
@@ -198,7 +141,7 @@ IF(APPLE)
         SET(GCC_THUMB_SUPPORT NO)
 
         #set either the device sdk or the simulator sdk. Can't find away to separate these in the same project
-        IF(BTC_BUILD_PLATFORM_IPHONE)
+        IF(LIBCOIN_BUILD_PLATFORM_IPHONE)
             SET (IPHONE_DEVROOT "/Developer/Platforms/iPhoneOS.platform/Developer")
             SET (IPHONE_SDKROOT "${IPHONE_DEVROOT}/SDKs/iPhoneOS${IPHONE_SDKVER}.sdk")
         ELSE()
@@ -212,8 +155,8 @@ IF(APPLE)
 
     ENDIF ()
 
-    OPTION(BTC_COMPILE_FRAMEWORKS "compile frameworks instead of dylibs (experimental)" OFF)
-    SET(BTC_COMPILE_FRAMEWORKS_INSTALL_NAME_DIR "@executable_path/../Frameworks" CACHE STRING "install name dir for compiled frameworks")
+    OPTION(LIBCOIN_COMPILE_FRAMEWORKS "compile frameworks instead of dylibs (experimental)" OFF)
+    SET(LIBCOIN_COMPILE_FRAMEWORKS_INSTALL_NAME_DIR "@executable_path/../Frameworks" CACHE STRING "install name dir for compiled frameworks")
 ELSE()
 ENDIF()
 ENDIF()
@@ -259,7 +202,7 @@ IF(WIN32 AND NOT ANDROID)
 
     IF(MSVC)
         # This option is to enable the /MP switch for Visual Studio 2005 and above compilers
-        OPTION(WIN32_USE_MP "Set to ON to build btc with the /MP option (Visual Studio 2005 and above)." OFF)
+        OPTION(WIN32_USE_MP "Set to ON to build libcoin with the /MP option (Visual Studio 2005 and above)." OFF)
         MARK_AS_ADVANCED(WIN32_USE_MP)
         IF(WIN32_USE_MP)
             SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
@@ -273,7 +216,7 @@ IF(WIN32 AND NOT ANDROID)
         # This option is to enable the /DYNAMICBASE switch
         # It is used to workaround a bug in Windows 7 when linking in release, which results in corrupt
         # binaries. See this page for details: http://www.wintellect.com/CS/blogs/jrobbins/archive/2009/01/24/the-case-of-the-corrupt-pe-binaries.aspx
-        OPTION(WIN32_USE_DYNAMICBASE "Set to ON to build btc with the /DYNAMICBASE option to work around a bug when linking release executables on Windows 7." OFF)
+        OPTION(WIN32_USE_DYNAMICBASE "Set to ON to build libcoin with the /DYNAMICBASE option to work around a bug when linking release executables on Windows 7." OFF)
         MARK_AS_ADVANCED(WIN32_USE_DYNAMICBASE)
         IF(WIN32_USE_DYNAMICBASE)
             SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DYNAMICBASE")
@@ -300,7 +243,7 @@ IF(WIN32 AND NOT ANDROID)
     ENDIF()
 
     #needed for net plugin
-    SET (BTC_SOCKET_LIBS wsock32)
+    SET (LIBCOIN_SOCKET_LIBS wsock32)
     # Both Cygwin and Msys need -DNOMINMAX ???
     IF(UNIX)
         ADD_DEFINITIONS(-DNOMINMAX)
@@ -308,9 +251,9 @@ IF(WIN32 AND NOT ANDROID)
 
 ########################################################################################################
 # the following options are MSVC specific,
-# the first BTC_MSVC_VERSIONED_DLL activate a custom build-time layout that should allow to run examples and application
+# the first LIBCOIN_MSVC_VERSIONED_DLL activate a custom build-time layout that should allow to run examples and application
 # fron bin folder without requiring installation step.
-# it also prepend "btc${BITCOIN_SOVERSION}-" to only .dll files, leaving .lib files untouched in lib
+# it also prepend "libcoin${LIBCOIN_SOVERSION}-" to only .dll files, leaving .lib files untouched in lib
 # it also use a hack to get rid of Debug and Release folder in MSVC projects
 # all the .dll and .pdb are in bin and all the .lib and .exp are in lib
 #
@@ -320,18 +263,18 @@ IF(WIN32 AND NOT ANDROID)
     IF(MSVC)
         IF(${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} EQUAL 4 AND ${CMAKE_PATCH_VERSION} LESS 7)
             MESSAGE("Warning:  disabling versioned options 2.4.6 exibits inconsintencies in .pdb naming, at least under MSVC, suggested upgrading at least to 2.4.7")
-            SET(BTC_MSVC_VERSIONED_DLL OFF)
-            SET(BTC_MSVC_DEBUG_INCREMENTAL_LINK ON)
+            SET(LIBCOIN_MSVC_VERSIONED_DLL OFF)
+            SET(LIBCOIN_MSVC_DEBUG_INCREMENTAL_LINK ON)
         ELSE()
-            OPTION(BTC_MSVC_VERSIONED_DLL "Set to ON to build btc with versioned dll names" ON)
-            MARK_AS_ADVANCED(BTC_MSVC_VERSIONED_DLL)
-            OPTION(BTC_MSVC_DEBUG_INCREMENTAL_LINK "Set to OFF to build btc without incremental linking in debug (release is off by default)" ON)
-            MARK_AS_ADVANCED(BTC_MSVC_DEBUG_INCREMENTAL_LINK)
-            IF(NOT BTC_MSVC_DEBUG_INCREMENTAL_LINK)
+            OPTION(LIBCOIN_MSVC_VERSIONED_DLL "Set to ON to build libcoin with versioned dll names" ON)
+            MARK_AS_ADVANCED(LIBCOIN_MSVC_VERSIONED_DLL)
+            OPTION(LIBCOIN_MSVC_DEBUG_INCREMENTAL_LINK "Set to OFF to build libcoin without incremental linking in debug (release is off by default)" ON)
+            MARK_AS_ADVANCED(LIBCOIN_MSVC_DEBUG_INCREMENTAL_LINK)
+            IF(NOT LIBCOIN_MSVC_DEBUG_INCREMENTAL_LINK)
                 SET(CMAKE_MODULE_LINKER_FLAGS_DEBUG "/debug /INCREMENTAL:NO")
                 SET(CMAKE_SHARED_LINKER_FLAGS_DEBUG "/debug /INCREMENTAL:NO")
                 SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "/debug /INCREMENTAL:NO")
-            ENDIF(NOT BTC_MSVC_DEBUG_INCREMENTAL_LINK)
+            ENDIF(NOT LIBCOIN_MSVC_DEBUG_INCREMENTAL_LINK)
         ENDIF()
     ENDIF(MSVC)
 ENDIF(WIN32 AND NOT ANDROID)
@@ -356,48 +299,48 @@ ENDIF(WIN32 AND NOT ANDROID)
 ########################################################################################################
 
 IF (WIN32)
-    OPTION(BTC_USE_UTF8_FILENAME "Set to ON to use a UTF8 locale for filenames instead of the default locale." OFF)
-    MARK_AS_ADVANCED(BTC_USE_UTF8_FILENAME)
+    OPTION(LIBCOIN_USE_UTF8_FILENAME "Set to ON to use a UTF8 locale for filenames instead of the default locale." OFF)
+    MARK_AS_ADVANCED(LIBCOIN_USE_UTF8_FILENAME)
 ENDIF()
 
-OPTION(BTC_DISABLE_MSVC_WARNINGS "Set to OFF to not disable MSVC warnings generated by BTC headers." ON)
-MARK_AS_ADVANCED(BTC_DISABLE_MSVC_WARNINGS)
+OPTION(LIBCOIN_DISABLE_MSVC_WARNINGS "Set to OFF to not disable MSVC warnings generated by libcoin headers." ON)
+MARK_AS_ADVANCED(LIBCOIN_DISABLE_MSVC_WARNINGS)
 
-OPTION(BTC_USE_REF_PTR_IMPLICIT_OUTPUT_CONVERSION "Set to ON to use the ref_ptr<> T* operator() output conversion. " ON)
+OPTION(LIBCOIN_USE_REF_PTR_IMPLICIT_OUTPUT_CONVERSION "Set to ON to use the ref_ptr<> T* operator() output conversion. " ON)
 
-OPTION(BTC_CPP_EXCEPTIONS_AVAILABLE "Set to OFF to disable compile of BTC components that use C++ exceptions." ON)
+OPTION(LIBCOIN_CPP_EXCEPTIONS_AVAILABLE "Set to OFF to disable compile of libcoin components that use C++ exceptions." ON)
 
 ################################################################################
 # Set Config file
 
-SET(BITCOIN_CONFIG_HEADER "${PROJECT_BINARY_DIR}/include/btc/config.h")
-CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/btc/config.in"
-               "${BITCOIN_CONFIG_HEADER}")
+SET(LIBCOIN_CONFIG_HEADER "${PROJECT_BINARY_DIR}/include/libcoin/config.h")
+CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/libcoin/config.in"
+               "${LIBCOIN_CONFIG_HEADER}")
 
-SET(BITCOIN_VERSION_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/btc/version.h")
-CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/btc/version.in"
-               "${BITCOIN_VERSION_HEADER}")
+SET(LIBCOIN_VERSION_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/libcoin/version.h")
+CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/libcoin/version.in"
+               "${LIBCOIN_VERSION_HEADER}")
 
-# INSTALL_FILES(/include/btc/ FILES "${BITCOIN_CONFIG_HEADER}")
+# INSTALL_FILES(/include/libcoin/ FILES "${LIBCOIN_CONFIG_HEADER}")
 
 
 ################################################################################
 # Set Version Info resource file
 
 IF(MSVC)
-    SET(BITCOIN_VERSIONINFO_RC "${PROJECT_BINARY_DIR}/PlatformSpecifics/Windows/btcVersionInfo.rc")
-    CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/PlatformSpecifics/Windows/btcVersionInfo.rc.in"
-                   "${BITCOIN_VERSIONINFO_RC}")
+    SET(LIBCOIN_VERSIONINFO_RC "${PROJECT_BINARY_DIR}/PlatformSpecifics/Windows/libcoinVersionInfo.rc")
+    CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/PlatformSpecifics/Windows/libcoinVersionInfo.rc.in"
+                   "${LIBCOIN_VERSIONINFO_RC}")
 ENDIF()
 
 ################################################################################
 # Optional build components
 
-# BTC Applications
-OPTION(BUILD_BTC_APPLICATIONS "Enable to build BTC Applications (e.g. btcd)" ON)
+# libcoin Applications
+OPTION(BUILD_LIBCOIN_APPLICATIONS "Enable to build libcoin Applications (e.g. bitcoind)" ON)
 
-# BTC Examples
-OPTION(BUILD_BTC_EXAMPLES "Enable to build BTC Examples" OFF)
+# libcoin Examples
+OPTION(BUILD_LIBCOIN_EXAMPLES "Enable to build libcoin Examples" OFF)
 
 ################################################################################
 # 3rd Party Dependency Stuff
@@ -424,7 +367,7 @@ ELSE()
 ENDIF()
 
 # Include macro utilities here
-INCLUDE(BtcMacroUtils)
+INCLUDE(LibCoinMacroUtils)
 
 IF(NOT ANDROID)
 # To select a specific version of QT define DESIRED_QT_VERSION
@@ -448,19 +391,19 @@ IF(NOT ANDROID)
     ENDIF()
 ENDIF(NOT ANDROID)
 #optional example related dependencies
-IF   (BUILD_BTC_EXAMPLES AND NOT ANDROID)
+IF   (BUILD_LIBCOIN_EXAMPLES AND NOT ANDROID)
 
     SET(wxWidgets_USE_LIBS base core gl net)
     FIND_PACKAGE(wxWidgets)
 
-ENDIF(BUILD_BTC_EXAMPLES AND NOT ANDROID)
+ENDIF(BUILD_LIBCOIN_EXAMPLES AND NOT ANDROID)
 
 
 ################################################################################
 # Create bin and lib directories if required
 
 IF("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
-   FILE(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin ${CMAKE_BINARY_DIR}/lib ${CMAKE_BINARY_DIR}/lib/${BTC_PLUGINS})
+   FILE(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin ${CMAKE_BINARY_DIR}/lib ${CMAKE_BINARY_DIR}/lib/${LIBCOIN_PLUGINS})
 ENDIF()
 
 
@@ -512,14 +455,14 @@ ENDIF()
 SET(OUTPUT_BINDIR ${PROJECT_BINARY_DIR}/bin)
 MAKE_DIRECTORY(${OUTPUT_BINDIR})
 IF(MSVC AND NOT MSVC_IDE)
-    MAKE_DIRECTORY(${OUTPUT_BINDIR}/${BTC_PLUGINS})
+    MAKE_DIRECTORY(${OUTPUT_BINDIR}/${LIBCOIN_PLUGINS})
 ENDIF(MSVC AND NOT MSVC_IDE)
 
 #SET(OUTPUT_LIBDIR ${PROJECT_BINARY_DIR}/lib/${CMAKE_SYSTEM_NAME})
 SET(OUTPUT_LIBDIR ${PROJECT_BINARY_DIR}/lib)
 MAKE_DIRECTORY(${OUTPUT_LIBDIR})
 IF(NOT MSVC OR MSVC_IDE)
-    MAKE_DIRECTORY(${OUTPUT_LIBDIR}/${BTC_PLUGINS})
+    MAKE_DIRECTORY(${OUTPUT_LIBDIR}/${LIBCOIN_PLUGINS})
 ENDIF(NOT MSVC OR MSVC_IDE)
 
 # On CMake 2.4.x use EXECUTABLE_OUTPUT_PATH and LIBRARY_OUTPUT_PATH and later
@@ -562,10 +505,10 @@ ELSE()
     ENDIF(VALID_BUILDER_VERSION)
 ENDIF()
 
-#SET(INSTALL_BINDIR btc/bin)
-#SET(INSTALL_INCDIR btc/include)
-#SET(INSTALL_LIBDIR btc/lib)
-#SET(INSTALL_DOCDIR btc/doc)
+#SET(INSTALL_BINDIR libcoin/bin)
+#SET(INSTALL_INCDIR libcoin/include)
+#SET(INSTALL_LIBDIR libcoin/lib)
+#SET(INSTALL_DOCDIR libcoin/doc)
 
 ################################################################################
 # User Options
@@ -597,7 +540,7 @@ SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} CACHE STRING "(EXPERIMENTAL) You may 
 IF(CMAKE_COMPILER_IS_GNUCXX)
     # To be complete, we might also do GNUCC flags,
     # but everything here is C++ code.
-    # -Wshadow and -Woverloaded-virtual are also interesting flags, but BTC
+    # -Wshadow and -Woverloaded-virtual are also interesting flags, but libcoin
     # returns too many hits.
     # FYI, if we do implement GNUCC, then -Wmissing-prototypes in another
     # interesting C-specific flag.
@@ -605,9 +548,9 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
     # errors instead of warnings for certain issues, including superfluous
     # semicolons and commas, and the use of long long. -fpermissive seems
     # to be the workaround.
-    SET(BTC_AGGRESSIVE_WARNING_FLAGS -Wall -Wparentheses -Wno-long-long -Wno-import -pedantic -Wreturn-type -Wmissing-braces -Wunknown-pragmas -Wunused -fpermissive)
+    SET(LIBCOIN_AGGRESSIVE_WARNING_FLAGS -Wall -Wparentheses -Wno-long-long -Wno-import -pedantic -Wreturn-type -Wmissing-braces -Wunknown-pragmas -Wunused -fpermissive)
 
-    # Previous included -Wformat=2 in BTC_AGGRESSIVE_WARNING_FLAGS but had to remove it due to standard library errors
+    # Previous included -Wformat=2 in LIBCOIN_AGGRESSIVE_WARNING_FLAGS but had to remove it due to standard library errors
 
 
 ELSE()
@@ -615,19 +558,19 @@ ELSE()
         # FIXME: What are good aggressive warning flags for Visual Studio?
         # And do we need to further subcase this for different versions of VS?
         # CMake variables: MSVC60, MSVC70, MSVC71, MSVC80, CMAKE_COMPILER_2005
-        SET(BTC_AGGRESSIVE_WARNING_FLAGS /W4 /wd4706 /wd4127 /wd4100)
+        SET(LIBCOIN_AGGRESSIVE_WARNING_FLAGS /W4 /wd4706 /wd4127 /wd4100)
 
 
     ELSE()
         # CMake lacks an elseif, so other non-gcc, non-VS compilers need
-        # to be listed below. If unhandled, BTC_AGGRESSIVE_WARNING_FLAGS should
+        # to be listed below. If unhandled, LIBCOIN_AGGRESSIVE_WARNING_FLAGS should
         # remain unset.
     ENDIF()
 ENDIF()
 
 # This part is for the CMake menu option to toggle the warnings on/off.
-# This will only be made available if we set values for BTC_AGGRESSIVE_WARNING_FLAGS.
-IF(BTC_AGGRESSIVE_WARNING_FLAGS)
+# This will only be made available if we set values for LIBCOIN_AGGRESSIVE_WARNING_FLAGS.
+IF(LIBCOIN_AGGRESSIVE_WARNING_FLAGS)
 
     IF (APPLE)
         SET(DEFAULT_USE_AGGRESSIVE_WARNINGS OFF)
@@ -635,19 +578,19 @@ IF(BTC_AGGRESSIVE_WARNING_FLAGS)
         SET(DEFAULT_USE_AGGRESSIVE_WARNINGS ON)
     ENDIF()
 
-    OPTION(BTC_USE_AGGRESSIVE_WARNINGS "Enable to activate aggressive warnings" ${DEFAULT_USE_AGGRESSIVE_WARNINGS})
-    MARK_AS_ADVANCED(BTC_USE_AGGRESSIVE_WARNINGS)
+    OPTION(LIBCOIN_USE_AGGRESSIVE_WARNINGS "Enable to activate aggressive warnings" ${DEFAULT_USE_AGGRESSIVE_WARNINGS})
+    MARK_AS_ADVANCED(LIBCOIN_USE_AGGRESSIVE_WARNINGS)
 
-    IF(BTC_USE_AGGRESSIVE_WARNINGS)
-        # Add flags defined by BTC_AGGRESSIVE_WARNING_FLAGS if they aren't already there
-        FOREACH(flag ${BTC_AGGRESSIVE_WARNING_FLAGS})
+    IF(LIBCOIN_USE_AGGRESSIVE_WARNINGS)
+        # Add flags defined by LIBCOIN_AGGRESSIVE_WARNING_FLAGS if they aren't already there
+        FOREACH(flag ${LIBCOIN_AGGRESSIVE_WARNING_FLAGS})
             IF(NOT CMAKE_CXX_FLAGS MATCHES "${flag}")
                 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}")
             ENDIF()
         ENDFOREACH()
     ELSE()
         # Remove all flags considered aggresive
-        FOREACH(flag ${BTC_AGGRESSIVE_WARNING_FLAGS})
+        FOREACH(flag ${LIBCOIN_AGGRESSIVE_WARNING_FLAGS})
             STRING(REGEX REPLACE "${flag}" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
         ENDFOREACH()
     ENDIF()
@@ -655,22 +598,22 @@ ENDIF()
 
 
 # Dynamic vs Static Linking
-OPTION(DYNAMIC_BITCOIN "Set to ON to build btc for dynamic linking.  Use OFF for static." ON)
-IF   (DYNAMIC_BITCOIN)
-    SET(BITCOIN_USER_DEFINED_DYNAMIC_OR_STATIC "SHARED")
+OPTION(DYNAMIC_LIBCOIN "Set to ON to build libcoin for dynamic linking.  Use OFF for static." ON)
+IF   (DYNAMIC_LIBCOIN)
+    SET(LIBCOIN_USER_DEFINED_DYNAMIC_OR_STATIC "SHARED")
 ELSE ()
-    SET(BITCOIN_USER_DEFINED_DYNAMIC_OR_STATIC "STATIC")
+    SET(LIBCOIN_USER_DEFINED_DYNAMIC_OR_STATIC "STATIC")
 ENDIF()
 
 
-# BTC Core
+# libcoin Core
 ADD_SUBDIRECTORY(src)
 
-IF   (BUILD_BTC_APPLICATIONS AND NOT ANDROID)
+IF   (BUILD_LIBCOIN_APPLICATIONS AND NOT ANDROID)
     ADD_SUBDIRECTORY(applications)
 ENDIF()
 
-IF   (BUILD_BTC_EXAMPLES)
+IF   (BUILD_LIBCOIN_EXAMPLES)
     ADD_SUBDIRECTORY(examples)
 ENDIF()
 
@@ -678,10 +621,10 @@ ENDIF()
 IF(APPLE)
 
         #Here we check if the user specified IPhone SDK
-    IF(BTC_BUILD_PLATFORM_IPHONE OR BTC_BUILD_PLATFORM_IPHONE_SIMULATOR)
+    IF(LIBCOIN_BUILD_PLATFORM_IPHONE OR LIBCOIN_BUILD_PLATFORM_IPHONE_SIMULATOR)
 
         #set iphone arch and flags taken from http://sites.google.com/site/michaelsafyan/coding/resources/how-to-guides/cross-compile-for-the-iphone/how-to-cross-compile-for-the-iphone-using-cmake
-        IF(BTC_BUILD_PLATFORM_IPHONE)
+        IF(LIBCOIN_BUILD_PLATFORM_IPHONE)
             SET(CMAKE_OSX_ARCHITECTURES "armv6;armv7" CACHE STRING "Build architectures for iOS" FORCE)
             SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -miphoneos-version-min=3.1 -mno-thumb -arch armv6 -pipe -no-cpp-precomp" CACHE STRING "Flags used by the compiler during all build types." FORCE)
         ELSE()
@@ -697,11 +640,11 @@ IF(APPLE)
 #        set(CMAKE_EXE_LINKER_FLAGS "-framework Foundation -framework OpenGLES")
 
         #use the IPhone windowing system
-        SET(BTC_WINDOWING_SYSTEM "IOS" CACHE STRING "Forced IPhone windowing system on iOS"  FORCE)
-        SET(BTC_DEFAULT_IMAGE_PLUGIN_FOR_OSX "imageio" CACHE STRING "Forced imageio default image plugin for iOS" FORCE)
+        SET(LIBCOIN_WINDOWING_SYSTEM "IOS" CACHE STRING "Forced IPhone windowing system on iOS"  FORCE)
+        SET(LIBCOIN_DEFAULT_IMAGE_PLUGIN_FOR_OSX "imageio" CACHE STRING "Forced imageio default image plugin for iOS" FORCE)
 
         #I think this or similar will be required for IPhone apps
-        OPTION(BTC_BUILD_APPLICATION_BUNDLES "Enable the building of applications and examples as OSX Bundles" ON)
+        OPTION(LIBCOIN_BUILD_APPLICATION_BUNDLES "Enable the building of applications and examples as OSX Bundles" ON)
 
     ELSE()
 
@@ -714,14 +657,14 @@ IF(APPLE)
         # will overwrite any changes the user sets.
         # FORCE is used because the options are not reflected in the UI otherwise.
         # Seems like a good place to add version specific compiler flags too.
-        IF(NOT BTC_CONFIG_HAS_BEEN_RUN_BEFORE)
+        IF(NOT LIBCOIN_CONFIG_HAS_BEEN_RUN_BEFORE)
             # This is really fragile, but CMake doesn't provide the OS system
             # version information we need. (Darwin versions can be changed
             # independently of OS X versions.)
             # It does look like CMake handles the CMAKE_OSX_SYSROOT automatically.
             IF(EXISTS /Developer/SDKs/MacOSX10.5.sdk)
                 # 64-bit compiles are not supported with Carbon. We should enable 
-                # 64-bit compilation by default once btcviewer has been 
+                # 64-bit compilation by default once bitcoind has been 
                 # rewritten with Cocoa.
                 #SET(CMAKE_OSX_ARCHITECTURES "ppc;i386;ppc64;x86_64" CACHE STRING "Build architectures for OSX" FORCE)
                 SET(CMAKE_OSX_ARCHITECTURES "ppc;i386" CACHE STRING "Build architectures for OSX" FORCE)
@@ -734,9 +677,9 @@ IF(APPLE)
                 # Should break down further to set the -mmacosx-version-min,
                 # but the SDK detection is too unreliable here.
             ENDIF()
-        ENDIF(NOT BTC_CONFIG_HAS_BEEN_RUN_BEFORE)
+        ENDIF(NOT LIBCOIN_CONFIG_HAS_BEEN_RUN_BEFORE)
 
-        OPTION(BTC_BUILD_APPLICATION_BUNDLES "Enable the building of applications and examples as OSX Bundles" OFF)
+        OPTION(LIBCOIN_BUILD_APPLICATION_BUNDLES "Enable the building of applications and examples as OSX Bundles" OFF)
 
     ENDIF()
 
@@ -745,7 +688,7 @@ ENDIF(APPLE)
 
 # For Doxygen
 INCLUDE(${CMAKE_ROOT}/Modules/Documentation.cmake OPTIONAL)
-OPTION(BUILD_DOCUMENTATION "Build btc reference documentation using doxygen (use: make DoxygenDoc)" OFF)
+OPTION(BUILD_DOCUMENTATION "Build libcoin reference documentation using doxygen (use: make DoxygenDoc)" OFF)
 MARK_AS_ADVANCED(CLEAR BUILD_DOCUMENTATION)
 # To build the documention, you will have to enable it
 # and then do the equivalent of "make DoxygenDoc".
@@ -758,9 +701,9 @@ IF(BUILD_DOCUMENTATION)
         SET(SEARCHENGINE NO)
     ENDIF()
 
-    OPTION(BUILD_REF_DOCS_TAGFILE "Generate a tag file named btc.tag on the documentation web server" OFF)
+    OPTION(BUILD_REF_DOCS_TAGFILE "Generate a tag file named libcoin.tag on the documentation web server" OFF)
     IF(BUILD_REF_DOCS_TAGFILE)
-        SET(GENERATE_TAGFILE "${BITCOIN_BINARY_DIR}/doc/btcReferenceDocs/btc.tag")
+        SET(GENERATE_TAGFILE "${LIBCOIN_BINARY_DIR}/doc/libcoinReferenceDocs/libcoin.tag")
     ELSE()
         SET(GENERATE_TAGFILE "")
     ENDIF()
@@ -786,16 +729,16 @@ IF(BUILD_DOCUMENTATION)
     # This processes our doxyfile.cmake and substitutes paths to generate
     # a final Doxyfile
     CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/doc/Doxyfiles/doxyfile.cmake
-        ${PROJECT_BINARY_DIR}/doc/btc.doxyfile
+        ${PROJECT_BINARY_DIR}/doc/libcoin.doxyfile
     )
-    # copy the btc logo to documentations target folder
-    CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/PlatformSpecifics/Windows/icons/src/btc32-32.png
-        ${PROJECT_BINARY_DIR}/doc/btcReferenceDocs/btc32-32.png COPYONLY
+    # copy the libcoin logo to documentations target folder
+    CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/PlatformSpecifics/Windows/icons/src/libcoin32-32.png
+        ${PROJECT_BINARY_DIR}/doc/libcoinReferenceDocs/libcoin32-32.png COPYONLY
     )
-    #INSTALL(FILES ${PROJECT_BINARY_DIR}/doc/${PROJECT_NAME}ReferenceDocs-${BITCOIN_VERSION}.chm DESTINATION doc OPTIONAL COMPONENT btc-doc)
-    INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/btcReferenceDocs DESTINATION doc COMPONENT btc-doc)
+    #INSTALL(FILES ${PROJECT_BINARY_DIR}/doc/${PROJECT_NAME}ReferenceDocs-${LIBCOIN_VERSION}.chm DESTINATION doc OPTIONAL COMPONENT libcoin-doc)
+    INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/libcoinReferenceDocs DESTINATION doc COMPONENT libcoin-doc)
 
-    #INSTALL(FILES ${PROJECT_BINARY_DIR}/doc/${PROJECT_NAME}ReferenceDocs-${BITCOIN_VERSION}.chm DESTINATION doc OPTIONAL COMPONENT btc-doc)
+    #INSTALL(FILES ${PROJECT_BINARY_DIR}/doc/${PROJECT_NAME}ReferenceDocs-${LIBCOIN_VERSION}.chm DESTINATION doc OPTIONAL COMPONENT libcoin-doc)
 
     # Process our other doxyfiles but don't create targets for these
     CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/doc/Doxyfiles/all_Doxyfile
@@ -811,41 +754,41 @@ IF(BUILD_DOCUMENTATION)
     # (called by FindDocumentation.cmake).
     # It runs the final generated Doxyfile against it.
     # The DOT_PATH is substituted into the Doxyfile.
-    ADD_CUSTOM_TARGET(doc_bitcoin ${DOXYGEN}
-        ${PROJECT_BINARY_DIR}/doc/btc.doxyfile
+    ADD_CUSTOM_TARGET(doc_libcoin ${DOXYGEN}
+        ${PROJECT_BINARY_DIR}/doc/libcoin.doxyfile
     )
-    SET_TARGET_PROPERTIES(doc_bitcoin PROPERTIES FOLDER "Documentation")
+    SET_TARGET_PROPERTIES(doc_libcoin PROPERTIES FOLDER "Documentation")
     
 ENDIF(BUILD_DOCUMENTATION)
 
-OPTION(BUILD_DASHBOARD_REPORTS "Set to ON to activate reporting of btc builds here http://www.cdash.org/CDashPublic/index.php?project=btc" OFF)
+OPTION(BUILD_DASHBOARD_REPORTS "Set to ON to activate reporting of libcoin builds here http://www.cdash.org/CDashPublic/index.php?project=libcoin" OFF)
 IF(BUILD_DASHBOARD_REPORTS)
 # The following are required to uses Dart and the Cdash dashboard
-# viewable here : http://www.cdash.org/CDashPublic/index.php?project=btc
+# viewable here : http://www.cdash.org/CDashPublic/index.php?project=libcoin
     INCLUDE(Dart)
 ENDIF()
 
 # present the packaging option only if we have the cpack command defined (effectively >= 2.6.0)
 IF(CMAKE_CPACK_COMMAND)
-    OPTION(BUILD_BTC_PACKAGES "Set to ON to generate CPack configuration files and packaging targets" OFF)
-    IF(BUILD_BTC_PACKAGES)
-      INCLUDE(BtcCPack)
+    OPTION(BUILD_LIBCOIN_PACKAGES "Set to ON to generate CPack configuration files and packaging targets" OFF)
+    IF(BUILD_LIBCOIN_PACKAGES)
+      INCLUDE(LibCoinCPack)
     ENDIF()
 ENDIF()
 
 # Generate pkg-config configuration files
 
 SET(PKGCONFIG_FILES
-#  btc
-#  btc-btc
-#  btc-btcNode
-#  btc-btcRPC
-#  btc-btcWallet
-#  btc-btcMine
+#  libcoin
+#  libcoin-coin
+#  libcoin-coinHTTP
+#  libcoin-coinChain
+#  libcoin-coinWallet
+#  libcoin-coinMine
 )
 
 IF(QT4_FOUND)
-  SET(PKGCONFIG_FILES ${PKGCONFIG_FILES} btc-btcQt)
+  SET(PKGCONFIG_FILES ${PKGCONFIG_FILES} libcoin-coinQt)
 ENDIF(QT4_FOUND)
 
 FOREACH(PKGCONFIG_FILE ${PKGCONFIG_FILES})
@@ -853,7 +796,7 @@ FOREACH(PKGCONFIG_FILE ${PKGCONFIG_FILES})
     ${PROJECT_BINARY_DIR}/packaging/pkgconfig/${PKGCONFIG_FILE}.pc
     @ONLY
     )
-  INSTALL(FILES ${PROJECT_BINARY_DIR}/packaging/pkgconfig/${PKGCONFIG_FILE}.pc DESTINATION lib${LIB_POSTFIX}/pkgconfig COMPONENT libbitcoin-dev)
+  INSTALL(FILES ${PROJECT_BINARY_DIR}/packaging/pkgconfig/${PKGCONFIG_FILE}.pc DESTINATION lib${LIB_POSTFIX}/pkgconfig COMPONENT libcoin-dev)
 ENDFOREACH(PKGCONFIG_FILE)
 
 
@@ -863,8 +806,8 @@ IF (NOT DEFINED REQUIRES_LIBPATH_MESSAGE AND ${CMAKE_INSTALL_PREFIX} STREQUAL "/
 ENDIF()
 
 IF(REQUIRES_LIBPATH_MESSAGE)
-    IF (NOT BTC_LIBPATH_MESSAGE_HAS_BEEN_RUN_BEFORE)
-        SET(BTC_LIBPATH_MESSAGE_HAS_BEEN_RUN_BEFORE 1 CACHE INTERNAL "Flag to track whether the libpath message has been reported before")
+    IF (NOT LIBCOIN_LIBPATH_MESSAGE_HAS_BEEN_RUN_BEFORE)
+        SET(LIBCOIN_LIBPATH_MESSAGE_HAS_BEEN_RUN_BEFORE 1 CACHE INTERNAL "Flag to track whether the libpath message has been reported before")
 
         MESSAGE("\nThe build system is configured to install libraries to ${CMAKE_INSTALL_PREFIX}/lib${LIB_POSTFIX}\n"
             "Your applications may not be able to find your installed libraries unless you:\n"
@@ -872,22 +815,22 @@ IF(REQUIRES_LIBPATH_MESSAGE)
             "    update your ld.so configuration (system wide)")
         IF(IS_DIRECTORY /etc/ld.so.conf.d)
             MESSAGE("You have an ld.so.conf.d directory on your system, so if you wish to ensure that\n"
-                "applications find the installed btc libraries, system wide, you could install an\n"
-                "btc specific ld.so configuration with:\n"
+                "applications find the installed libcoin libraries, system wide, you could install an\n"
+                "libcoin specific ld.so configuration with:\n"
                 "    sudo make install_ld_conf\n")
-            CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/packaging/ld.so.conf.d/btc.conf.in
-                ${PROJECT_BINARY_DIR}/packaging/ld.so.conf.d/btc.conf
+            CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/packaging/ld.so.conf.d/libcoin.conf.in
+                ${PROJECT_BINARY_DIR}/packaging/ld.so.conf.d/libcoin.conf
             )
             ADD_CUSTOM_TARGET(install_ld_conf ${CMAKE_COMMAND} -E copy_if_different 
-                ${PROJECT_BINARY_DIR}/packaging/ld.so.conf.d/btc.conf
-                /etc/ld.so.conf.d/btc.conf
+                ${PROJECT_BINARY_DIR}/packaging/ld.so.conf.d/libcoin.conf
+                /etc/ld.so.conf.d/libcoin.conf
                 COMMAND ldconfig
-                COMMENT "Copying btc.conf to /etc/ld.so.conf.d and running ldconfig"
+                COMMENT "Copying libcoin.conf to /etc/ld.so.conf.d and running ldconfig"
             )
         ELSE()
             IF(EXISTS /etc/ld.so.conf)
                 MESSAGE("You have an ld.so.conf file in /etc, if you wish to ensure \n"
-                "that applications find the installed btc libraries, system wide, you\n"
+                "that applications find the installed libcoin libraries, system wide, you\n"
                 "could add ${CMAKE_INSTALL_PREFIX}/lib${LIB_POSTFIX} to it.")
             ENDIF()
         ENDIF()
@@ -895,17 +838,17 @@ IF(REQUIRES_LIBPATH_MESSAGE)
         # emit a message during installation.
         INSTALL(CODE "MESSAGE(\"Libraries were installed to ${CMAKE_INSTALL_PREFIX}lib${LIB_POSTFIX}.\\nYou may need to update your ld.so configuration. \")")
 
-    ENDIF(NOT BTC_LIBPATH_MESSAGE_HAS_BEEN_RUN_BEFORE)
+    ENDIF(NOT LIBCOIN_LIBPATH_MESSAGE_HAS_BEEN_RUN_BEFORE)
 
 ELSE()
-    SET(BTC_LIBPATH_MESSAGE_HAS_BEEN_RUN_BEFORE 0 CACHE INTERNAL "Flag to track whether the libpath message has been reported before")
+    SET(LIBCOIN_LIBPATH_MESSAGE_HAS_BEEN_RUN_BEFORE 0 CACHE INTERNAL "Flag to track whether the libpath message has been reported before")
 ENDIF()
 
 
 # This needs to be run very last so other parts of the scripts can take
 # advantage of this.
-IF(NOT BTC_CONFIG_HAS_BEEN_RUN_BEFORE)
-    SET(BTC_CONFIG_HAS_BEEN_RUN_BEFORE 1 CACHE INTERNAL "Flag to track whether this is the first time running CMake or if CMake has been configured before")
+IF(NOT LIBCOIN_CONFIG_HAS_BEEN_RUN_BEFORE)
+    SET(LIBCOIN_CONFIG_HAS_BEEN_RUN_BEFORE 1 CACHE INTERNAL "Flag to track whether this is the first time running CMake or if CMake has been configured before")
 ENDIF()
 
 #-----------------------------------------------------------------------------
@@ -921,8 +864,8 @@ ADD_CUSTOM_TARGET(uninstall
 #
 IF(ANDROID)
     message(STATUS "Creating Android Makefile Master files" )
-    configure_file("${BTC_ANDROID_TEMPLATES}/Android.mk.master.in" "${CMAKE_BINARY_DIR}/Android.mk")
-    configure_file("${BTC_ANDROID_TEMPLATES}/Application.mk.master.in" "${CMAKE_BINARY_DIR}/Application.mk")
-    configure_file("${BTC_ANDROID_TEMPLATES}/AndroidManifest.xml.master.in" "${CMAKE_BINARY_DIR}/AndroidManifest.xml")
+    configure_file("${LIBCOIN_ANDROID_TEMPLATES}/Android.mk.master.in" "${CMAKE_BINARY_DIR}/Android.mk")
+    configure_file("${LIBCOIN_ANDROID_TEMPLATES}/Application.mk.master.in" "${CMAKE_BINARY_DIR}/Application.mk")
+    configure_file("${LIBCOIN_ANDROID_TEMPLATES}/AndroidManifest.xml.master.in" "${CMAKE_BINARY_DIR}/AndroidManifest.xml")
 ENDIF(ANDROID)
 

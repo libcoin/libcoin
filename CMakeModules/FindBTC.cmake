@@ -1,45 +1,45 @@
 # Locate gdal
 # This module defines
-# BTC_LIBRARY
-# BTC_FOUND, if false, do not try to link to gdal 
-# BTC_INCLUDE_DIR, where to find the headers
+# LIBCOIN_LIBRARY
+# LIBCOIN_FOUND, if false, do not try to link to gdal 
+# LIBCOIN_INCLUDE_DIR, where to find the headers
 #
-# $BTC_DIR is an environment variable that would
-# correspond to the ./configure --prefix=$BTC_DIR
+# $LIBCOIN_DIR is an environment variable that would
+# correspond to the ./configure --prefix=$LIBCOIN_DIR
 #
-# Created by Robert Osfield. 
+# Created by Robert Osfield. Adapted to libcoin by Michael Gronager
 
-FIND_PATH(BTC_INCLUDE_DIR btc/uint256.h
-    ${BTC_DIR}/include
-    $ENV{BTC_DIR}/include
-    $ENV{BTC_DIR}
-    $ENV{BTCDIR}/include
-    $ENV{BTCDIR}
-    $ENV{BTC_ROOT}/include
+FIND_PATH(LIBCOIN_INCLUDE_DIR coin/uint256.h
+    ${LIBCOIN_DIR}/include
+    $ENV{LIBCOIN_DIR}/include
+    $ENV{LIBCOIN_DIR}
+    $ENV{LIBCOINDIR}/include
+    $ENV{LIBCOINDIR}
+    $ENV{LIBCOIN_ROOT}/include
     NO_DEFAULT_PATH
 )
 
-FIND_PATH(BTC_INCLUDE_DIR btc/uint256.h)
+FIND_PATH(LIBCOIN_INCLUDE_DIR coin/uint256.h)
 
-MACRO(FIND_BTC_LIBRARY MYLIBRARY MYLIBRARYNAME)
+MACRO(FIND_LIBCOIN_LIBRARY MYLIBRARY MYLIBRARYNAME)
 
     FIND_LIBRARY("${MYLIBRARY}_DEBUG"
         NAMES "${MYLIBRARYNAME}${CMAKE_DEBUG_POSTFIX}"
         PATHS
-        ${BTC_DIR}/lib/Debug
-        ${BTC_DIR}/lib64/Debug
-        ${BTC_DIR}/lib
-        ${BTC_DIR}/lib64
-        $ENV{BTC_DIR}/lib/debug
-        $ENV{BTC_DIR}/lib64/debug
-        $ENV{BTC_DIR}/lib
-        $ENV{BTC_DIR}/lib64
-        $ENV{BTC_DIR}
-        $ENV{BTCDIR}/lib
-        $ENV{BTCDIR}/lib64
-        $ENV{BTCDIR}
-        $ENV{BTC_ROOT}/lib
-        $ENV{BTC_ROOT}/lib64
+        ${LIBCOIN_DIR}/lib/Debug
+        ${LIBCOIN_DIR}/lib64/Debug
+        ${LIBCOIN_DIR}/lib
+        ${LIBCOIN_DIR}/lib64
+        $ENV{LIBCOIN_DIR}/lib/debug
+        $ENV{LIBCOIN_DIR}/lib64/debug
+        $ENV{LIBCOIN_DIR}/lib
+        $ENV{LIBCOIN_DIR}/lib64
+        $ENV{LIBCOIN_DIR}
+        $ENV{LIBCOINDIR}/lib
+        $ENV{LIBCOINDIR}/lib64
+        $ENV{LIBCOINDIR}
+        $ENV{LIBCOIN_ROOT}/lib
+        $ENV{LIBCOIN_ROOT}/lib64
         NO_DEFAULT_PATH
     )
 
@@ -56,27 +56,27 @@ MACRO(FIND_BTC_LIBRARY MYLIBRARY MYLIBRARYNAME)
         /opt/local/lib
         /opt/csw/lib
         /opt/lib
-        [HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session\ Manager\\Environment;BTC_ROOT]/lib
+        [HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session\ Manager\\Environment;LIBCOIN_ROOT]/lib
         /usr/freeware/lib64
     )
     
     FIND_LIBRARY(${MYLIBRARY}
         NAMES "${MYLIBRARYNAME}${CMAKE_RELEASE_POSTFIX}"
         PATHS
-        ${BTC_DIR}/lib/Release
-        ${BTC_DIR}/lib64/Release
-        ${BTC_DIR}/lib
-        ${BTC_DIR}/lib64
-        $ENV{BTC_DIR}/lib/Release
-        $ENV{BTC_DIR}/lib64/Release
-        $ENV{BTC_DIR}/lib
-        $ENV{BTC_DIR}/lib64
-        $ENV{BTC_DIR}
-        $ENV{BTCDIR}/lib
-        $ENV{BTCDIR}/lib64
-        $ENV{BTCDIR}
-        $ENV{BTC_ROOT}/lib
-        $ENV{BTC_ROOT}/lib64
+        ${LIBCOIN_DIR}/lib/Release
+        ${LIBCOIN_DIR}/lib64/Release
+        ${LIBCOIN_DIR}/lib
+        ${LIBCOIN_DIR}/lib64
+        $ENV{LIBCOIN_DIR}/lib/Release
+        $ENV{LIBCOIN_DIR}/lib64/Release
+        $ENV{LIBCOIN_DIR}/lib
+        $ENV{LIBCOIN_DIR}/lib64
+        $ENV{LIBCOIN_DIR}
+        $ENV{LIBCOINDIR}/lib
+        $ENV{LIBCOINDIR}/lib64
+        $ENV{LIBCOINDIR}
+        $ENV{LIBCOIN_ROOT}/lib
+        $ENV{LIBCOIN_ROOT}/lib64
         NO_DEFAULT_PATH
     )
 
@@ -93,7 +93,7 @@ MACRO(FIND_BTC_LIBRARY MYLIBRARY MYLIBRARYNAME)
         /opt/local/lib
         /opt/csw/lib
         /opt/lib
-        [HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session\ Manager\\Environment;BTC_ROOT]/lib
+        [HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session\ Manager\\Environment;LIBCOIN_ROOT]/lib
         /usr/freeware/lib64
     )
     
@@ -103,15 +103,15 @@ MACRO(FIND_BTC_LIBRARY MYLIBRARY MYLIBRARYNAME)
          ENDIF(MYLIBRARY)
     ENDIF( NOT ${MYLIBRARY}_DEBUG)
            
-ENDMACRO(FIND_BTC_LIBRARY LIBRARY LIBRARYNAME)
+ENDMACRO(FIND_LIBCOIN_LIBRARY LIBRARY LIBRARYNAME)
 
-FIND_BTC_LIBRARY(BTC_LIBRARY btc)
-FIND_BTC_LIBRARY(BTCNODE_LIBRARY btcNode)
-FIND_BTC_LIBRARY(BTCRPC_LIBRARY btcRPC)
-FIND_BTC_LIBRARY(BTCWALLET_LIBRARY btcWallet)
-FIND_BTC_LIBRARY(BTCMINE_LIBRARY btcMine)
+FIND_LIBCOIN_LIBRARY(COIN_LIBRARY coin)
+FIND_LIBCOIN_LIBRARY(COINCHAIN_LIBRARY coinChain)
+FIND_LIBCOIN_LIBRARY(COINHTTP_LIBRARY coinHTTP)
+FIND_LIBCOIN_LIBRARY(COINWALLET_LIBRARY coinWallet)
+FIND_LIBCOIN_LIBRARY(COINMINE_LIBRARY coinMine)
 
-SET(BTC_FOUND "NO")
-IF(BTC_LIBRARY AND BTC_INCLUDE_DIR)
-    SET(BTC_FOUND "YES")
-ENDIF(BTC_LIBRARY AND BTC_INCLUDE_DIR)
+SET(LIBCOIN_FOUND "NO")
+IF(LIBCOIN_LIBRARY AND LIBCOIN_INCLUDE_DIR)
+    SET(LIBCOIN_FOUND "YES")
+ENDIF(LIBCOIN_LIBRARY AND LIBCOIN_INCLUDE_DIR)

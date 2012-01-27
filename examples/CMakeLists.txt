@@ -5,31 +5,31 @@ SET(TARGET_DEFAULT_PREFIX "example_")
 SET(TARGET_DEFAULT_LABEL_PREFIX "Examples")
 
 SET(TARGET_COMMON_LIBRARIES 
-    btc
-    btcHTTP
-    btcNode
+    coin
+    coinHTTP
+    coinChain
 )
 
 IF(ANDROID)
-    # ADD_SUBDIRECTORY(btcandroidsimple)
+    # ADD_SUBDIRECTORY(coinandroidsimple)
 ELSE(ANDROID)
 
-IF(DYNAMIC_BITCOIN)
-    ADD_SUBDIRECTORY(btcsimple)
+IF(DYNAMIC_LIBCOIN)
+    ADD_SUBDIRECTORY(coinsimple)
     ADD_SUBDIRECTORY(ponzicoin)
-#    ADD_SUBDIRECTORY(btcexplorer)
-#    ADD_SUBDIRECTORY(btconline)
+#    ADD_SUBDIRECTORY(coinexplorer)
+#    ADD_SUBDIRECTORY(coinonline)
 
     IF   (wxWidgets_FOUND)
 #        ADD_SUBDIRECTORY(bitsimpleWX)
     ENDIF(wxWidgets_FOUND)
 
 
-ELSE(DYNAMIC_BITCOIN)
+ELSE(DYNAMIC_LIBCOIN)
     #needed on win32 or the linker get confused by _declspec declarations
-    ADD_DEFINITIONS(-DBTC_LIBRARY_STATIC)
+    ADD_DEFINITIONS(-DLIBCOIN_LIBRARY_STATIC)
     
-ENDIF(DYNAMIC_BITCOIN)
+ENDIF(DYNAMIC_LIBCOIN)
 
 ENDIF(ANDROID)
 

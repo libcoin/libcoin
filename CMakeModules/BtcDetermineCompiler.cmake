@@ -1,8 +1,8 @@
-# - If Visual Studio is being used, this script sets the variable BTC_COMPILER
+# - If Visual Studio is being used, this script sets the variable LIBCOIN_COMPILER
 # The principal reason for this is due to MSVC 8.0 SP0 vs SP1 builds.
 #
 # Variable:
-#   BTC_COMPILER
+#   LIBCOIN_COMPILER
 # 
 
 # Not currently used...
@@ -15,15 +15,15 @@
 #    #MESSAGE("GCC Version: ${gcc_compiler_version}")
 
 IF(MSVC60)
-    SET(BTC_COMPILER "vc60")
+    SET(LIBCOIN_COMPILER "vc60")
 ELSEIF(MSVC70)
-    SET(BTC_COMPILER "vc70")
+    SET(LIBCOIN_COMPILER "vc70")
 ELSEIF(MSVC71)
-    SET(BTC_COMPILER "vc71")
+    SET(LIBCOIN_COMPILER "vc71")
 ELSEIF(MSVC80)
-    SET(BTC_COMPILER "vc80")
+    SET(LIBCOIN_COMPILER "vc80")
 ELSEIF(MSVC90)
-    SET(BTC_COMPILER "vc90")
+    SET(LIBCOIN_COMPILER "vc90")
 ENDIF()
 
 
@@ -53,9 +53,9 @@ IF(MSVC80)
         # Standard vc80 is 14.00.50727.42, sp1 14.00.50727.762, sp2?
         # Standard vc90 is 9.0.30729.1, sp1 ?
         IF(CL_EXTRA_VERSION EQUAL 762)
-            SET(BTC_COMPILER "vc80sp1")
+            SET(LIBCOIN_COMPILER "vc80sp1")
         ELSE(CL_EXTRA_VERSION EQUAL 762)
-            SET(BTC_COMPILER "vc80")
+            SET(LIBCOIN_COMPILER "vc80")
         ENDIF(CL_EXTRA_VERSION EQUAL 762)
 
         # parse for exact visual studio version
