@@ -18,7 +18,7 @@ class Server : private boost::noncopyable
 public:
     /// Construct the server to listen on the specified TCP address and port, and
     /// serve up files from the given directory.
-    explicit Server(const std::string address = boost::asio::ip::address_v4::loopback().to_string(), const std::string port = "8333", const std::string doc_root = boost::filesystem::initial_path().string());
+    explicit Server(const std::string address = boost::asio::ip::address_v4::loopback().to_string(), const std::string port = "8333", const std::string doc_root = "");
 
     /// Set the server credentials - this will also make the server secure.
     void setCredentials(const std::string dataDir, const std::string cert = "hostcert.pem", const std::string key = "hostkey.pem");

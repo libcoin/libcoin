@@ -537,6 +537,7 @@ void PrintExceptionContinue(std::exception* pex, const char* pszThread)
 
 
 #ifdef _WIN32
+/*
 typedef WINSHELLAPI BOOL (WINAPI *PSHGETSPECIALFOLDERPATHA)(HWND hwndOwner, LPSTR lpszPath, int nFolder, BOOL fCreate);
 
 string MyGetSpecialFolderPath(int nFolder, bool fCreate)
@@ -570,6 +571,7 @@ string MyGetSpecialFolderPath(int nFolder, bool fCreate)
 
     return pszPath;
 }
+*/
 #endif
 
 /*

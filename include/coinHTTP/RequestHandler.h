@@ -55,6 +55,9 @@ public:
     /// Construct with a directory containing files to be served.
     explicit RequestHandler(const std::string& doc_root);
     
+	/// Set the doc root after initialization.
+	void setDocRoot(const std::string& doc_root) { _doc_root = doc_root; }
+
     /// Register an application handler, e.g. for RPC or CGI
     void registerMethod(method_ptr method) {
         Auth none;

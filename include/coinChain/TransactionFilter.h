@@ -4,6 +4,7 @@
 
 #include "coinChain/PeerManager.h"
 #include "coinChain/Filter.h"
+#include "coinChain/Inventory.h"
 
 #include "coin/serialize.h" // for CDataStream
 #include "coin/util.h" // for CCriticalSection definition

@@ -11,6 +11,7 @@ Server::Server(const string address, const string port, const string doc_root) :
     // Register to handle the signals that indicate when the server should exit.
     // It is safe to register for the same signal multiple times in a program,
     // provided all registration for the specified signal is made through Asio.
+	if(doc_root == "") _requestHandler.setDocRoot(filesystem::initial_path().string());
     _signals.add(SIGINT);
     _signals.add(SIGTERM);
 #if defined(SIGQUIT)
