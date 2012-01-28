@@ -5,7 +5,7 @@
 #ifndef BITCOIN_WALLETDB_H
 #define BITCOIN_WALLETDB_H
 
-#include "coinWallet/wallet.h"
+#include "coinWallet/Wallet.h"
 #include "coinChain/db.h"
 
 #include "coinWallet/WalletTx.h"

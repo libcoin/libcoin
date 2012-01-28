@@ -5,7 +5,7 @@
 
 #include "coinWallet/MerkleTx.h"
 #include "coinWallet/WalletTx.h"
-#include "coinWallet/wallet.h"
+#include "coinWallet/Wallet.h"
 
 #include "coinWallet/Crypter.h"
 
@@ -15,7 +15,7 @@ using namespace std;
 
 int64 CWalletTx::GetDebit() const
 {
-    if (_inputs.empty())
+    if (getInputs().empty())
         return 0;
     if (fDebitCached)
         return nDebitCached;
@@ -217,7 +217,7 @@ void CWalletTx::AddSupportingTransactions(const BlockChain& blockChain)
     //    if (setMerkleBranch(block, blockChain) < COPY_DEPTH)
     //{
     vector<uint256> vWorkQueue;
-    BOOST_FOREACH(const Input& txin, _inputs)
+    BOOST_FOREACH(const Input& txin, getInputs())
     vWorkQueue.push_back(txin.prevout().hash);
     
     // This critsect is OK because txdb is already open
@@ -255,7 +255,7 @@ void CWalletTx::AddSupportingTransactions(const BlockChain& blockChain)
             vtxPrev.push_back(tx);
             
             if (nDepth < COPY_DEPTH)
-                BOOST_FOREACH(const Input& txin, tx._inputs)
+                BOOST_FOREACH(const Input& txin, tx.getInputs())
                 vWorkQueue.push_back(txin.prevout().hash);
         }
     }

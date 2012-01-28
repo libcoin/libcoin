@@ -8,10 +8,10 @@
 using namespace boost;
 using namespace asio;
 
-Connection::Connection(io_service& io_service, ConnectionManager& manager, RequestHandler& handler) : _ctx(ssl::context::sslv2), _socket(io_service), _ssl_socket(io_service, _ctx), _secure(false), _connectionManager(manager), _requestHandler(handler) {
+Connection::Connection(io_service& io_service, ConnectionManager& manager, RequestHandler& handler) : _ctx(ssl::context::sslv23), _socket(io_service), _ssl_socket(io_service, _ctx), _secure(false), _connectionManager(manager), _requestHandler(handler) {
 }
 
-Connection::Connection(io_service& io_service, ssl::context& context, ConnectionManager& manager, RequestHandler& handler) : _ctx(ssl::context::sslv2), _socket(io_service), _ssl_socket(io_service, context), _secure(true), _connectionManager(manager), _requestHandler(handler) {
+Connection::Connection(io_service& io_service, ssl::context& context, ConnectionManager& manager, RequestHandler& handler) : _ctx(ssl::context::sslv23), _socket(io_service), _ssl_socket(io_service, context), _secure(true), _connectionManager(manager), _requestHandler(handler) {
 }
 
 

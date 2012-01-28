@@ -8,7 +8,7 @@
 #include "coin/Address.h"
 #include "coin/Key.h"
 
-#include "coinWallet/wallet.h"
+#include "coinWallet/Wallet.h"
 
 /// The Miner class is mining for new blocks by babysitting the registered block hashers.
 /// It updates the block candidate according to: https://en.bitcoin.it/wiki/Block_hashing_algorithm

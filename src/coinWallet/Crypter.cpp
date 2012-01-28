@@ -11,7 +11,7 @@
 #include <windows.h>
 #endif
 
-#include "coinWallet/crypter.h"
+#include "coinWallet/Crypter.h"
 #include "coin/Transaction.h"
 #include "coin/util.h"
 

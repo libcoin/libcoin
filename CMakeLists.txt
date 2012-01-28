@@ -340,7 +340,7 @@ ENDIF()
 OPTION(BUILD_LIBCOIN_APPLICATIONS "Enable to build libcoin Applications (e.g. bitcoind)" ON)
 
 # libcoin Examples
-OPTION(BUILD_LIBCOIN_EXAMPLES "Enable to build libcoin Examples" OFF)
+OPTION(BUILD_LIBCOIN_EXAMPLES "Enable to build libcoin Examples" ON)
 
 ################################################################################
 # 3rd Party Dependency Stuff

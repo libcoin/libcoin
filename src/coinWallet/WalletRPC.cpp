@@ -2,9 +2,9 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "coinWallet/walletrpc.h"
-#include "coinWallet/wallet.h"
-#include "coinWallet/walletdb.h"
+#include "coinWallet/WalletRPC.h"
+#include "coinWallet/Wallet.h"
+#include "coinWallet/WalletDB.h"
 
 using namespace std;
 using namespace boost;

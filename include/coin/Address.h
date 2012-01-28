@@ -15,8 +15,8 @@
 // - Doubleclicking selects the whole number as one word if it's all alphanumeric.
 
 /// Utility functions
-inline std::string EncodeBase58Check(const std::vector<unsigned char>& vchIn);
-inline bool DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vchRet);
+std::string EncodeBase58Check(const std::vector<unsigned char>& vchIn);
+bool DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vchRet);
 
 // This is the raw Address - the BitcoinAddress or more correctly the ChainAddress includes the netword Id and is hence better suited for communicating with the outside. For backwards compatability we do, however, need to use the ChainAddress in e.g. the wallet. 
 
