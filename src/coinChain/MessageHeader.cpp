@@ -1,7 +1,18 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2011 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file license.txt or http://www.opensource.org/licenses/mit-license.php.
+/* -*-c++-*- libcoin - Copyright (C) 2012 Michael Gronager
+ *
+ * libcoin is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * libcoin is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "coinChain/MessageHeader.h"
 #include "coin/util.h"
@@ -17,7 +28,6 @@ static const char* ppszTypeName[] =
     "tx",
     "block",
 };
-//unsigned char pchMessageStart[4] = { 0xf9, 0xbe, 0xb4, 0xd9 };
 
 MessageHeader::MessageHeader()
 {
@@ -27,23 +37,7 @@ MessageHeader::MessageHeader()
     nMessageSize = -1;
     nChecksum = 0;
 }
-/*
-MessageHeader::MessageHeader(const Chain& chain) : _messageStart(chain.messageStart())
-{
-    //    memcpy(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart));
-    memset(pchCommand, 0, sizeof(pchCommand));
-    pchCommand[1] = 1;
-    nMessageSize = -1;
-    nChecksum = 0;
-}
 
-MessageHeader::MessageHeader(const char* pszCommand, unsigned int nMessageSizeIn) {
-    memset(_messageStart.elems, 0, sizeof(_messageStart.elems));
-    strncpy(pchCommand, pszCommand, COMMAND_SIZE);
-    nMessageSize = nMessageSizeIn;
-    nChecksum = 0;
-}
-*/
 MessageHeader::MessageHeader(const Chain& chain, const char* pszCommand, unsigned int nMessageSizeIn) : _messageStart(chain.messageStart())
 {
     //    memcpy(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart));

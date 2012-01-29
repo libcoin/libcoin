@@ -118,7 +118,6 @@ extern bool fPrintToConsole;
 extern bool fPrintToDebugger;
 extern std::string logfile;
 extern char pszSetDataDir[MAX_PATH];
-extern bool fShutdown;
 extern bool fDaemon;
 extern std::string strMiscWarning;
 

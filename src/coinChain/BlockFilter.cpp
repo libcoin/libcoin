@@ -1,3 +1,18 @@
+/* -*-c++-*- libcoin - Copyright (C) 2012 Michael Gronager
+ *
+ * libcoin is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * libcoin is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "coinChain/BlockFilter.h"
 #include "coinChain/BlockChain.h"
@@ -123,8 +138,6 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
             return error("message getdata size() = %d", vInv.size());
         
         BOOST_FOREACH(const Inventory& inv, vInv) {
-            if (fShutdown)
-                return true;
             printf("received getdata for: %s\n", inv.toString().c_str());
             
             if (inv.getType() == MSG_BLOCK) {
@@ -158,9 +171,6 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
             return error("message inv size() = %d", inventories.size());
         
         BOOST_FOREACH(const Inventory& inv, inventories) {
-            if (fShutdown)
-                return true;
-            
             if (inv.getType() == MSG_BLOCK) {                
                 origin->AddInventoryKnown(inv);
                 

@@ -1,3 +1,18 @@
+/* -*-c++-*- libcoin - Copyright (C) 2012 Michael Gronager
+ *
+ * libcoin is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * libcoin is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "coinChain/BlockFile.h"
 
@@ -132,12 +147,10 @@ bool BlockFile::checkDiskSpace(uint64 nAdditionalBytes)
 
     // Check for 15MB because database could create another 10MB log file at any time
     if (nFreeBytesAvailable < (uint64)15000000 + nAdditionalBytes) {
-        fShutdown = true;
         string strMessage = "Warning: Disk space is low  ";
         strMiscWarning = strMessage;
         printf("*** %s\n", strMessage.c_str());
-//        ThreadSafeMessageBox(strMessage, "Bitcoin", wxOK | wxICON_EXCLAMATION);
-//        abort();
+        throw runtime_error(strMessage);
         return false;
     }
     return true;

@@ -1,3 +1,18 @@
+/* -*-c++-*- libcoin - Copyright (C) 2012 Michael Gronager
+ *
+ * libcoin is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * libcoin is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef NODE_H
 #define NODE_H
@@ -16,6 +31,7 @@
 #include "coinChain/BlockFilter.h"
 
 #include <boost/interprocess/sync/file_lock.hpp>
+#include <boost/filesystem.hpp>
 #include <fstream>
 
 
@@ -27,6 +43,7 @@ public:
     public:
         /// Touch is like Posix touch - it touches the file to ensure it exists.
         Touch(std::string lock_file_name) {
+            boost::filesystem::create_directories(boost::filesystem::path(lock_file_name).parent_path());
             std::fstream f(lock_file_name.c_str(), std::ios_base::app | std::ios_base::in | std::ios_base::out);
             if(!f.is_open())
                 throw std::runtime_error(("Cannot open the lockfile ( " + lock_file_name + " ) - do you have permissions?").c_str());

@@ -354,7 +354,7 @@ bool BackupWallet(const Wallet& wallet, const string& strDest)
 {
     if (!wallet.fFileBacked)
         return false;
-    while (!fShutdown)
+    while (true)
     {
         CRITICAL_BLOCK(cs_db)
         {

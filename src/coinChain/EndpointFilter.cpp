@@ -1,3 +1,18 @@
+/* -*-c++-*- libcoin - Copyright (C) 2012 Michael Gronager
+ *
+ * libcoin is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * libcoin is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "coinChain/EndpointFilter.h"
 #include "coinChain/EndpointPool.h"
@@ -31,8 +46,6 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
         int64 now = GetAdjustedTime();
         int64 since = now - 10 * 60;
         BOOST_FOREACH(Endpoint& ep, endpoints) {
-            if (fShutdown)
-                return true;
             // ignore IPv6 for now, since it isn't implemented anyway
             if (!ep.isIPv4())
                 continue;

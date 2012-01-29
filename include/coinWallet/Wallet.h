@@ -304,8 +304,7 @@ public:
 
     ~CReserveKey()
     {
-        if (!fShutdown)
-            ReturnKey();
+        ReturnKey();
     }
 
     void ReturnKey();

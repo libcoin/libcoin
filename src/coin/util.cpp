@@ -27,7 +27,6 @@ bool fPrintToConsole = false;
 bool fPrintToDebugger = false;
 string logfile("");
 char pszSetDataDir[MAX_PATH] = "";
-bool fShutdown = false;
 bool fDaemon = false;
 string strMiscWarning;
 
