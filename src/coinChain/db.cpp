@@ -251,7 +251,7 @@ bool CBrokerDB::EraseTx(const Transaction& tx)
 bool CBrokerDB::LoadTxes(map<uint256, Transaction>& txes)
 {
     // Get cursor
-    Dbc* pcursor = GetCursor();
+    Dbc* pcursor = CDB::GetCursor();
     if (!pcursor)
         return false;
     

@@ -671,7 +671,7 @@ bool BlockChain::ReadOwnerTxes(uint160 hash160, int nMinHeight, vector<Transacti
     vtx.clear();
     
     // Get cursor
-    Dbc* pcursor = GetCursor();
+    Dbc* pcursor = CDB::GetCursor();
     if (!pcursor)
         return false;
     
@@ -821,7 +821,7 @@ CBlockIndex* BlockChain::InsertBlockIndex(uint256 hash)
 bool BlockChain::LoadBlockIndex()
 {
     // Get database cursor
-    Dbc* pcursor = GetCursor();
+    Dbc* pcursor = CDB::GetCursor();
     if (!pcursor)
         return false;
     

@@ -219,7 +219,7 @@ bool EndpointPool::loadEndpoints(const string dataDir)
     }
     
     // Get cursor
-    Dbc* pcursor = GetCursor();
+    Dbc* pcursor = CDB::GetCursor();
     if (!pcursor)
         return false;
     

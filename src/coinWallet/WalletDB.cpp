@@ -73,7 +73,7 @@ void CWalletDB::ListAccountCreditDebit(const string& strAccount, list<CAccountin
 {
     bool fAllAccounts = (strAccount == "*");
 
-    Dbc* pcursor = GetCursor();
+    Dbc* pcursor = CDB::GetCursor();
     if (!pcursor)
         throw runtime_error("CWalletDB::ListAccountCreditDebit() : cannot create DB cursor");
     unsigned int fFlags = DB_SET_RANGE;
@@ -122,7 +122,7 @@ int CWalletDB::LoadWallet(Wallet* pwallet)
     CRITICAL_BLOCK(pwallet->cs_wallet)
     {
         // Get cursor
-        Dbc* pcursor = GetCursor();
+        Dbc* pcursor = CDB::GetCursor();
         if (!pcursor)
             return DB_CORRUPT;
 
