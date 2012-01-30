@@ -43,6 +43,7 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     _chatClient(_io_service, irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy),
     _proxy(proxy) {
     
+    _endpointPool.loadEndpoints(dataDir);
     _transactionFilter = filter_ptr(new TransactionFilter(_blockChain));
     _blockFilter = filter_ptr(new BlockFilter(_blockChain));
     

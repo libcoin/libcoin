@@ -31,7 +31,7 @@ typedef std::map<std::vector<unsigned char>, Endpoint> EndpointMap;
 class EndpointPool : protected CDB
 {
 public:
-    EndpointPool(short defaultPort, const std::string dataDir, const char* pszMode="cr+") : CDB(dataDir, "addr.dat", pszMode) , _defaultPort(defaultPort), _localhost("0.0.0.0", defaultPort, false, NODE_NETWORK), _lastPurgeTime(0) { loadEndpoints(dataDir); }
+    EndpointPool(short defaultPort, const std::string dataDir, const char* pszMode="cr+") : CDB(dataDir, "addr.dat", pszMode) , _defaultPort(defaultPort), _localhost("0.0.0.0", defaultPort, false, NODE_NETWORK), _lastPurgeTime(0) { }
     
     /// Purge old addresses - meant to be called periodically to awoid to much work
     void purge();
@@ -61,6 +61,8 @@ public:
     /// Set the external endpoint of the local host (this is done by e.g. the Chat Client
     void setLocal(Endpoint ep) { _localhost = ep; if(_localhost.port() == 0) _localhost.port(_defaultPort); }
     
+    /// Load the endpoints from the database.
+    bool loadEndpoints(const std::string dataDir);
 private:
     EndpointPool(const EndpointPool&);
     void operator=(const EndpointPool&);
@@ -68,7 +70,6 @@ private:
 private:
     bool writeEndpoint(const Endpoint& endpoint);
     bool eraseEndpoint(const Endpoint& endpoint);
-    bool loadEndpoints(const std::string dataDir);
     
 private:
     EndpointMap _endpoints;
