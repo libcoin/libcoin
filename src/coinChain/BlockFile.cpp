@@ -24,6 +24,10 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
+#ifdef _WIN32
+#include <io.h>
+#endif
+
 using namespace std;
 using namespace boost;
 

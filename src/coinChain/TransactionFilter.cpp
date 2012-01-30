@@ -175,7 +175,7 @@ bool TransactionFilter::alreadyHave(const Inventory& inv) {
 
 inline void TransactionFilter::relayInventory(const Peers& peers, const Inventory& inv) {
     // Put on lists to offer to the other nodes
-    for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
+    for(Peers::const_iterator peer = peers.begin(); peer != peers.end(); ++peer)
         (*peer)->PushInventory(inv);
 }
 
