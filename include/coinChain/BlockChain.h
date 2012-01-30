@@ -278,6 +278,8 @@ public:
     
     bool connectInputs(const Transaction& tx, std::map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx, const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee = 0) const;
     
+    void outputPerformanceTimings() const;
+    
 protected:
     /// Read a Transaction from Disk.
     bool readDrIndex(uint160 hash160, std::set<Coin>& debit) const;
@@ -352,6 +354,12 @@ private:
     typedef std::map<Coin, CoinRef> TransactionConnections;
     TransactionConnections _transactionConnections;
     unsigned int _transactionsUpdated;
+
+    mutable int64 _acceptBlockTimer;
+    mutable int64 _connectInputsTimer;
+    mutable int64 _verifySignatureTimer;
+    mutable int64 _setBestChainTimer;
+    mutable int64 _addToBlockIndexTimer;
 };
 
 

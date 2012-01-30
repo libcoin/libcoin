@@ -35,8 +35,16 @@ using namespace boost;
 
 BlockChain::BlockChain(const Chain& chain, const string dataDir, const char* pszMode) : CDB(dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir, "blkindex.dat", pszMode), _chain(chain), _blockFile(dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir), _genesisBlockIndex(NULL), _bestChainWork(0), _bestInvalidWork(0), _bestChain(0), _bestIndex(NULL), _bestReceivedTime(0), _transactionsUpdated(0) {
     load();
+    _acceptBlockTimer = 0;
+    _connectInputsTimer = 0;
+    _verifySignatureTimer = 0;
+    _setBestChainTimer = 0;
+    _addToBlockIndexTimer = 0;
 }
 
+void BlockChain::outputPerformanceTimings() const {
+    printf("Performance timings: accept %d, addTo %.2f%%, setBest %.2f%%, connect %.2f%%, verify %.2f%%", _acceptBlockTimer/1000000, 100.*_addToBlockIndexTimer/_acceptBlockTimer, 100.*_setBestChainTimer/_acceptBlockTimer, 100.*_connectInputsTimer/_acceptBlockTimer, 100.*_verifySignatureTimer/_acceptBlockTimer );
+}
 
 bool BlockChain::load(bool allowNew)
 {    
@@ -274,6 +282,8 @@ CBlockIndex* BlockChain::getHashStopIndex(uint256 hashStop)
 bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx,
                    const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee) const
 {
+    int64 t0 = GetTimeMicros();
+
     // Take over previous transactions' spent pointers
     if (!tx.isCoinBase()) {
         int64 nValueIn = 0;
@@ -321,8 +331,12 @@ bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& map
                         return error("ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
             
             // Verify signature
+            int64 t1 = GetTimeMicros();
+
             if (!VerifySignature(txPrev, tx, i))
                 return error("ConnectInputs() : %s VerifySignature failed", tx.getHash().toString().substr(0,10).c_str());
+            
+            _verifySignatureTimer += GetTimeMicros() - t1;
             
             // Check for conflicts
             if (!txindex.getSpent(prevout.index).isNull())
@@ -364,7 +378,8 @@ bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& map
         // Add transaction to test pool
         mapTestPool[tx.getHash()] = TxIndex(DiskTxPos(1,1,1), tx.getNumOutputs());
     }
-    
+    _connectInputsTimer += GetTimeMicros() - t0;
+
     return true;
 }
 
@@ -1101,6 +1116,8 @@ void BlockChain::InvalidChainFound(CBlockIndex* pindexNew)
 
 bool BlockChain::setBestChain(const Block& block, CBlockIndex* pindexNew)
 {
+    int64 t0 = GetTimeMicros();
+
     uint256 hash = block.getHash();
     
     uint256 oldBestChain = _bestChain;
@@ -1158,13 +1175,15 @@ bool BlockChain::setBestChain(const Block& block, CBlockIndex* pindexNew)
     _bestReceivedTime = GetTime();
     _transactionsUpdated++;
     printf("SetBestChain: new best=%s  height=%d  work=%s\n", _bestChain.toString().substr(0,20).c_str(), getBestHeight(), _bestChainWork.toString().c_str());
-    
+    _setBestChainTimer += GetTimeMicros() - t0;
+
     return true;
 }
 
 
 bool BlockChain::addToBlockIndex(const Block& block, unsigned int nFile, unsigned int nBlockPos)
 {
+    int64 t0 = GetTimeMicros();
     // Check for duplicate
     uint256 hash = block.getHash();
     if (_blockChainIndex.count(hash))
@@ -1200,11 +1219,13 @@ bool BlockChain::addToBlockIndex(const Block& block, unsigned int nFile, unsigne
         hashPrevBestCoinBase = block.getTransaction(0).getHash();
     }
     
+    _addToBlockIndexTimer += GetTimeMicros() - t0;
     return true;
 }
 
 bool BlockChain::acceptBlock(const Block& block)
 {
+    int64 t0 = GetTimeMicros();
     // Check for duplicate
     uint256 hash = block.getHash();
     if (_blockChainIndex.count(hash))
@@ -1246,7 +1267,8 @@ bool BlockChain::acceptBlock(const Block& block)
         return error("AcceptBlock() : WriteToDisk failed");
     if (!addToBlockIndex(block, nFile, nBlockPos))
         return error("AcceptBlock() : AddToBlockIndex failed");
-    
+
+    _acceptBlockTimer += GetTimeMicros()-t0;
     return true;
 }
 
@@ -1424,7 +1446,7 @@ bool BlockChain::RemoveFromMemoryPool(const Transaction& tx)
     // Remove transaction from memory pool
     
     uint256 hash = tx.getHash();
-    
+    /*
     typedef pair<uint160, unsigned int> AssetPair;
     vector<AssetPair> debits;
     vector<AssetPair> credits;
@@ -1456,7 +1478,7 @@ bool BlockChain::RemoveFromMemoryPool(const Transaction& tx)
         if(_creditIndex[assetpair->first].size() == 0)
             _creditIndex.erase(assetpair->first); 
     }
-    
+    */
     BOOST_FOREACH(const Input& txin, tx.getInputs())
     _transactionConnections.erase(txin.prevout());
     _transactionIndex.erase(tx.getHash());

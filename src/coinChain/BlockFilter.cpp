@@ -255,7 +255,7 @@ bool BlockFilter::process(const Block& block, Peers peers) {
         }
         _orphanBlocksByPrev.erase(hashPrev);
     }
-    
+    _blockChain.outputPerformanceTimings();
     printf("ProcessBlock: ACCEPTED\n");
     return true;
 }

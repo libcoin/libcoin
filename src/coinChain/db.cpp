@@ -96,6 +96,7 @@ CDB::CDB(const std::string dataDir, const char* pszFile, const char* pszMode) : 
             string strErrorFile = strDataDir + "/db.log";
             printf("dbenv.open strLogDir=%s strErrorFile=%s\n", strLogDir.c_str(), strErrorFile.c_str());
 
+            dbenv.set_alloc(&malloc, &realloc, &free); // WIN32 fix to force the same alloc/realloc and free routines in db and outside 
             dbenv.set_lg_dir(strLogDir.c_str());
             dbenv.set_lg_max(10000000);
             dbenv.set_lk_max_locks(100000);

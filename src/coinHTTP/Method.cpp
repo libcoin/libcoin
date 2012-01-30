@@ -31,6 +31,10 @@ const string Method::name() const {
     while (n.find_first_of("0123456789") == 0)
         n.erase(0, 1);
     transform(n.begin(), n.end(), n.begin(), ::tolower);
+	// now remove a possible "class "
+	if (n.find(" ") != string::npos) {
+		n.erase(0, n.find(" ")+1);
+	}
     return n;
 };
 
