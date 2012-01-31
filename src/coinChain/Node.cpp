@@ -40,7 +40,7 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     _messageHandler(),
     _endpointPool(chain.defaultPort(), _dataDir),
     _blockChain(chain, _dataDir),
-    _chatClient(_io_service, irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy),
+    _chatClient(_io_service, bind(&Node::accept_or_connect, this), irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy),
     _proxy(proxy) {
     
     _endpointPool.loadEndpoints(dataDir);
@@ -66,8 +66,8 @@ void Node::run() {
     // asynchronous operation outstanding: the asynchronous accept call waiting
     // for new incoming connections.
     
-    if(_acceptor.is_open()) start_accept();
-    start_connect();
+    //    if(_acceptor.is_open()) start_accept();
+    //    start_connect();
     
     // Install filters for teh messages. First inserted filters are executed first.
     _messageHandler.installFilter(filter_ptr(new VersionFilter));

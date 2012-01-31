@@ -26,10 +26,16 @@
 class Endpoint;
 class EndpointPool;
 
+/// The Chatclient handles the communication with the IRC server <server>. It connect to the channel <channel>,
+/// if <channels> is more than one, one is picked at random. ChatClient resides in the same run loop as the Node,
+/// and notifies Node through the notify function. The first notification is send once the public IP is known.
+/// The next follows every time a new address is added. This facilittates the bootstrap of the Node if started 
+/// with no known addresses. 
+
 class ChatClient
 {
 public:
-    ChatClient(boost::asio::io_service& io_service, const std::string& server, EndpointPool& endpointPool, std::string channel, unsigned int channles, const bool proxy = false);
+    ChatClient(boost::asio::io_service& io_service, boost::function<void (void)> new_endpoint_notifier, const std::string& server, EndpointPool& endpointPool, std::string channel, unsigned int channles, const bool proxy = false);
     
 private:
     void handle_resolve(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
@@ -52,6 +58,7 @@ private:
     boost::asio::ip::tcp::socket _socket;
     boost::asio::streambuf _send;
     boost::asio::streambuf _recv;
+    boost::function<void (void)> _notifier;
     
     enum {
         wait_for_notice,

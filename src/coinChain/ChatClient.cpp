@@ -34,7 +34,7 @@ using namespace boost;
 using namespace boost::asio;
 using namespace boost::asio::ip;
 
-ChatClient::ChatClient(boost::asio::io_service& io_service, const std::string& server, EndpointPool& endpointPool, string channel, unsigned int channels, const bool proxy) : _resolver(io_service), _socket(io_service), _name_in_use(false), _server(server), _endpointPool(endpointPool), _channel(channel), _channels(channels), _proxy(proxy) {
+ChatClient::ChatClient(boost::asio::io_service& io_service, function<void (void)> new_endpoint_notifier, const std::string& server, EndpointPool& endpointPool, string channel, unsigned int channels, const bool proxy) : _resolver(io_service), _socket(io_service), _notifier(new_endpoint_notifier), _name_in_use(false), _server(server), _endpointPool(endpointPool), _channel(channel), _channels(channels), _proxy(proxy) {
     
     // Start an asynchronous resolve to translate the server and service names
     // into a list of endpoints.
@@ -159,6 +159,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                                 if (endpoint.isValid()) {
                                     _endpointPool.setLocal(endpoint);
                                     _my_name = encodeAddress(endpoint);
+                                    _notifier(); // this will start the Node...
                                     // re nick
                                     txstream << "NICK " << _my_name << "\r";
                                 }
@@ -224,8 +225,10 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                     Endpoint endpoint;
                     if (decodeAddress(name, endpoint)) {
                         endpoint.setTime(GetAdjustedTime());
-                        if (_endpointPool.addEndpoint(endpoint, 51 * 60))
+                        if (_endpointPool.addEndpoint(endpoint, 51 * 60)) {
                             printf("IRC got new address: %s\n", endpoint.toString().c_str());
+                            _notifier();
+                        }
                         //                        nGotIREndpointes++;
                     }
                     else {
