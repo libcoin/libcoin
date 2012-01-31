@@ -105,8 +105,8 @@ CDB::CDB(const std::string dataDir, const char* pszFile, const char* pszMode) : 
             dbenv.set_errfile(fopen(strErrorFile.c_str(), "a")); /// debug
             dbenv.log_set_config(DB_LOG_AUTO_REMOVE, 1);
             dbenv.set_flags(DB_AUTO_COMMIT, 1);
-            dbenv.set_flags(DB_TXN_WRITE_NOSYNC, 1);
-            dbenv.set_flags(DB_TXN_NOSYNC, 1);
+        //            dbenv.set_flags(DB_TXN_WRITE_NOSYNC, 1);
+        //            dbenv.set_flags(DB_TXN_NOSYNC, 1);
             ret = dbenv.open(strDataDir.c_str(),
                              DB_CREATE     |
                              DB_INIT_LOCK  |

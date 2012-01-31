@@ -29,6 +29,8 @@ ELSE(DYNAMIC_LIBCOIN)
     #needed on win32 or the linker get confused by _declspec declarations
     ADD_DEFINITIONS(-DLIBCOIN_LIBRARY_STATIC)
     
+    ADD_SUBDIRECTORY(simplecoin)
+    ADD_SUBDIRECTORY(ponzicoin)
 ENDIF(DYNAMIC_LIBCOIN)
 
 ENDIF(ANDROID)

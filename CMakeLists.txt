@@ -354,21 +354,26 @@ IF(BDB_FOUND)
 ENDIF(BDB_FOUND)
 
 #Note: We need as a minimum Boost 1.47 to support the signal_set used in Node
+SET(Boost_NO_BOOST_CMAKE ON)
 SET(Boost_ADDITIONAL_VERSIONS "1.47" "1.47.0" "1.48" "1.48.0")
 SET(Boost_USE_STATIC_LIBS        ON)
 SET(Boost_USE_MULTITHREADED      ON)
 SET(Boost_USE_STATIC_RUNTIME    OFF)
 #   find_package( Boost 1.36.0 COMPONENTS date_time filesystem system ... )
 
-FIND_PACKAGE( Boost 1.48.0 COMPONENTS date_time regex filesystem system program_options threads )
+FIND_PACKAGE( Boost 1.48.0 COMPONENTS date_time regex filesystem system program_options thread )
 IF(Boost_FOUND)
 	include_directories(${Boost_INCLUDE_DIR})
 ENDIF(Boost_FOUND)
+
+SET(Boost_LIBRARIES ${Boost_DATE_TIME_LIBRARY} ${Boost_REGEX_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY}) 
 
 FIND_PACKAGE(OpenSSL)
 IF(OpenSSL_FOUND)
 	include_directories(${OpenSSL_INCLUDE_DIR})
 ENDIF(OpenSSL_FOUND)
+
+SET(OpenSSL_LIBRARIES ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
 
 #FIND_PACKAGE(BOOST)
 #IF(BOOST_FOUND)
@@ -615,7 +620,7 @@ ENDIF()
 
 
 # Dynamic vs Static Linking
-OPTION(DYNAMIC_LIBCOIN "Set to ON to build libcoin for dynamic linking.  Use OFF for static." ON)
+OPTION(DYNAMIC_LIBCOIN "Set to ON to build libcoin for dynamic linking.  Use OFF for static." OFF)
 IF   (DYNAMIC_LIBCOIN)
     SET(LIBCOIN_USER_DEFINED_DYNAMIC_OR_STATIC "SHARED")
 ELSE ()
