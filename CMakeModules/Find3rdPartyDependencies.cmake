@@ -58,8 +58,16 @@ ENDMACRO(FIND_DEPENDENCY DEPNAME INCLUDEFILE LIBRARY_NAMES_BASE SEARCHPATHLIST D
 ################################################################################################
 
 MACRO(SEARCH_3RDPARTY LIBCOIN_3RDPARTY_BIN)
-        FIND_DEPENDENCY(BOOST boost/foreach.h "libboost_date_time-vc90-mt-1_48.lib;libboost_filesystem-vc90-mt-1_48.lib;libboost_program_options-vc90-mt-1_48.lib;libboost_regex-vc90-mt-1_48.lib;libboost_system-vc90-mt-1_48.lib;libboost_thread-vc90-mt-1_48.lib" ${LIBCOIN_3RDPARTY_BIN} "D" "")
-        FIND_DEPENDENCY(OPENSSL openssl/ecdsa.h "libeay32.lib;ssleay32.lib" ${LIBCOIN_3RDPARTY_BIN} "D" "")
+        FIND_DEPENDENCY(BOOST_DATE_TIME boost/foreach.h libboost_date_time-vc90-mt-1_48.lib ${LIBCOIN_3RDPARTY_BIN} "D" "")
+        FIND_DEPENDENCY(BOOST_REGEX boost/foreach.h libboost_regex-vc90-mt-1_48.lib ${LIBCOIN_3RDPARTY_BIN} "D" "")
+        FIND_DEPENDENCY(BOOST_FILESYSTEM boost/foreach.h libboost_filesystem-vc90-mt-1_48.lib ${LIBCOIN_3RDPARTY_BIN} "D" "")
+        FIND_DEPENDENCY(BOOST_PROGRAM_OPTIONS boost/foreach.h libboost_program_options-vc90-mt-1_48.lib ${LIBCOIN_3RDPARTY_BIN} "D" "")
+        FIND_DEPENDENCY(BOOST_SYSTEM boost/foreach.h libboost_system-vc90-mt-1_48.lib ${LIBCOIN_3RDPARTY_BIN} "D" "")
+        FIND_DEPENDENCY(BOOST_THREAD boost/foreach.h libboost_thread-vc90-mt-1_48.lib ${LIBCOIN_3RDPARTY_BIN} "D" "")
+        
+        FIND_DEPENDENCY(CRYPTO openssl/ecdsa.h "libeay32.lib" ${LIBCOIN_3RDPARTY_BIN} "D" "")
+        FIND_DEPENDENCY(SSL openssl/ecdsa.h "ssleay32.lib" ${LIBCOIN_3RDPARTY_BIN} "D" "")
+        
         FIND_DEPENDENCY(BDB db_cxx.h "libdb53.lib" ${LIBCOIN_3RDPARTY_BIN} "D" "")
 ENDMACRO(SEARCH_3RDPARTY LIBCOIN_3RDPARTY_BIN)
 
