@@ -37,7 +37,7 @@
 
 // Make sure only a single bitcoin process is using the data directory.
 // lock the lock file or else throw an exception
-class LockFile : boost::noncopyable {
+class FileLock : boost::noncopyable {
 public:
     class Touch : boost::noncopyable {
     public:
@@ -49,7 +49,7 @@ public:
                 throw std::runtime_error(("Cannot open the lockfile ( " + lock_file_name + " ) - do you have permissions?").c_str());
         }
     };
-    LockFile(std::string lockfile) : 
+    FileLock(std::string lockfile) : 
     _touch(lockfile), 
     _file_lock(lockfile.c_str()) {
         if( !_file_lock.try_lock())
@@ -157,7 +157,7 @@ private:
     std::string _dataDir;
     
     /// The lock file
-    LockFile _fileLock;
+    FileLock _fileLock;
     
     /// The io_service used to perform asynchronous operations.
     boost::asio::io_service _io_service;
