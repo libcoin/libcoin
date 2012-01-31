@@ -355,8 +355,12 @@ ENDIF(BDB_FOUND)
 
 #Note: We need as a minimum Boost 1.47 to support the signal_set used in Node
 SET(Boost_ADDITIONAL_VERSIONS "1.47" "1.47.0" "1.48" "1.48.0")
+SET(Boost_USE_STATIC_LIBS        ON)
+SET(Boost_USE_MULTITHREADED      ON)
+SET(Boost_USE_STATIC_RUNTIME    OFF)
+#   find_package( Boost 1.36.0 COMPONENTS date_time filesystem system ... )
 
-FIND_PACKAGE(Boost)
+FIND_PACKAGE( Boost 1.48.0 COMPONENTS date_time regex filesystem system program_options threads )
 IF(Boost_FOUND)
 	include_directories(${Boost_INCLUDE_DIR})
 ENDIF(Boost_FOUND)
