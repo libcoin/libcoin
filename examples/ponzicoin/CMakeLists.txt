@@ -2,4 +2,13 @@ SET(TARGET_SRC ponzicoin.cpp)
 
 SET(TARGET_ADDED_LIBRARIES coinWallet coinMine)
 
+SET(TARGET_EXTERNAL_LIBRARIES
+    ${CMAKE_THREAD_LIBS_INIT}    
+    ${MATH_LIBRARY} 
+    ${OPENSSL_LIBRARIES} 
+    ${Boost_LIBRARIES} 
+    ${BDB_LIBRARY} 
+    ${DL_LIBRARY}
+)
+
 SETUP_EXAMPLE(ponzicoin)

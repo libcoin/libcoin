@@ -536,13 +536,12 @@ void PrintExceptionContinue(std::exception* pex, const char* pszThread)
 
 
 #ifdef _WIN32
-/*
-typedef WINSHELLAPI BOOL (WINAPI *PSHGETSPECIALFOLDERPATHA)(HWND hwndOwner, LPSTR lpszPath, int nFolder, BOOL fCreate);
+//typedef WINSHELLAPI BOOL (WINAPI *PSHGETSPECIALFOLDERPATHA)(HWND hwndOwner, LPSTR lpszPath, int nFolder, BOOL fCreate);
 
 string MyGetSpecialFolderPath(int nFolder, bool fCreate)
 {
     char pszPath[MAX_PATH+100] = "";
-
+/*
     // SHGetSpecialFolderPath isn't always available on old Windows versions
     HMODULE hShell32 = LoadLibraryA("shell32.dll");
     if (hShell32)
@@ -553,7 +552,7 @@ string MyGetSpecialFolderPath(int nFolder, bool fCreate)
             (*pSHGetSpecialFolderPath)(NULL, pszPath, nFolder, fCreate);
         FreeModule(hShell32);
     }
-
+*/
     // Backup option
     if (pszPath[0] == '\0')
     {
@@ -570,7 +569,7 @@ string MyGetSpecialFolderPath(int nFolder, bool fCreate)
 
     return pszPath;
 }
-*/
+
 #endif
 
 /*
