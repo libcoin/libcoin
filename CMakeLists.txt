@@ -177,9 +177,9 @@ IF(UNIX AND NOT ANDROID)
         FIND_LIBRARY( RT_LIBRARY rt )
     ENDIF( CMAKE_SYSTEM MATCHES "Linux" )
 
-    FIND_LIBRARY(SSL_LIBRARY ssl)
+#    FIND_LIBRARY(SSL_LIBRARY ssl)
 
-    FIND_LIBRARY(CRYPTO_LIBRARY crypto)
+#    FIND_LIBRARY(CRYPTO_LIBRARY crypto)
 
 ENDIF()
 
@@ -353,10 +353,23 @@ IF(BDB_FOUND)
 	include_directories(${BDB_INCLUDE_DIR})
 ENDIF(BDB_FOUND)
 
-FIND_PACKAGE(BOOST)
-IF(BOOST_FOUND)
-	include_directories(${BOOST_INCLUDE_DIR})
-ENDIF(BOOST_FOUND)
+#Note: We need as a minimum Boost 1.47 to support the signal_set used in Node
+SET(Boost_ADDITIONAL_VERSIONS "1.47" "1.47.0" "1.48" "1.48.0")
+
+FIND_PACKAGE(Boost)
+IF(Boost_FOUND)
+	include_directories(${Boost_INCLUDE_DIR})
+ENDIF(Boost_FOUND)
+
+FIND_PACKAGE(OpenSSL)
+IF(OpenSSL_FOUND)
+	include_directories(${OpenSSL_INCLUDE_DIR})
+ENDIF(OpenSSL_FOUND)
+
+#FIND_PACKAGE(BOOST)
+#IF(BOOST_FOUND)
+#	include_directories(${BOOST_INCLUDE_DIR})
+#ENDIF(BOOST_FOUND)
 
 IF(ANDROID)
     ANDROID_3RD_PARTY()
