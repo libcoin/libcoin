@@ -128,15 +128,15 @@ public:
     /// Get a handle to the io_service.
     boost::asio::io_service& get_io_service() { return _io_service; }
     
-    /// Accept or connect depending on the number and type of the connected peers.
-    void accept_or_connect();
-    
 private:
     /// Initiate an asynchronous accept operation.
     void start_accept();
     
     /// Initiate an asynchronous connect operation.
     void start_connect();
+    
+    /// Accept or connect depending on the number and type of the connected peers.
+    void accept_or_connect();
     
     /// Check the deadline timer and give up
     void check_deadline(const boost::system::error_code& e);

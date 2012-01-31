@@ -140,9 +140,9 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                 break;
             }
             case wait_for_ip: {
-                _mode = in_chat_room;
-                std::ostream txstream(&_send);                
                 if (rx.find(" 302 ") != string::npos) {
+                    _mode = in_chat_room;
+                    std::ostream txstream(&_send);                
                     // set my IP:
                     vector<string> words;
                     split(words, rx, is_any_of(" "));
@@ -162,25 +162,25 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                                     _notifier(); // this will start the Node...
                                     // re nick
                                     txstream << "NICK " << _my_name << "\r";
+                                    // now join the chat room 
+                                    if (_channels > 1) {
+                                        // randomly join e.g. #bitcoin00-#bitcoin99
+                                        int channel_number = GetRandInt(_channels);
+                                        txstream << setfill('0') << setw(2);
+                                        txstream << "JOIN #" << _channel << channel_number << "\r";
+                                        txstream <<  "WHO #" << _channel << channel_number <<  "\r";
+                                    }
+                                    else {
+                                        txstream << "JOIN #" << _channel << "\r";
+                                        txstream <<  "WHO #" << _channel << "\r";
+                                    }                
+                                    async_write(_socket, _send, boost::bind(&ChatClient::handle_write_request, this, placeholders::error));
+                                    break;
                                 }
                             }
                         }
                     }
                 }
-                // now join the chat room 
-                if (_channels > 1) {
-                    // randomly join e.g. #bitcoin00-#bitcoin99
-                    int channel_number = GetRandInt(_channels);
-                    txstream << setfill('0') << setw(2);
-                    txstream << "JOIN #" << _channel << channel_number << "\r";
-                    txstream <<  "WHO #" << _channel << channel_number <<  "\r";
-                }
-                else {
-                    txstream << "JOIN #" << _channel << "\r";
-                    txstream <<  "WHO #" << _channel << "\r";
-                }                
-                async_write(_socket, _send, boost::bind(&ChatClient::handle_write_request, this, placeholders::error));
-                break;
             }    
             case in_chat_room: {
                 if (rx.empty() || rx.size() > 900)

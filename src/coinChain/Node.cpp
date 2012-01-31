@@ -40,7 +40,7 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     _messageHandler(),
     _endpointPool(chain.defaultPort(), _dataDir),
     _blockChain(chain, _dataDir),
-    _chatClient(_io_service, bind(&Node::accept_or_connect, this), irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy),
+    _chatClient(_io_service, bind(&Node::post_accept_or_connect, this), irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy),
     _proxy(proxy) {
     
     _endpointPool.loadEndpoints(dataDir);
