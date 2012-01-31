@@ -350,7 +350,7 @@ bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& map
             // Mark outpoints as spent
             txindex.setSpent(prevout.index, posThisTx);
             
-            // Write back
+            // Write back - we add all changes to the testpool and leave it to the caller to update the db (as this method is const)
             if (fBlock || fMiner) {
                 mapTestPool[prevout.hash] = txindex;
             }
@@ -1405,7 +1405,7 @@ bool BlockChain::AddToMemoryPoolUnchecked(const Transaction& tx)
     // call AcceptToMemoryPool to properly check the transaction first.
     
     uint256 hash = tx.getHash();
-    
+    /*
     typedef pair<uint160, unsigned int> AssetPair;
     vector<AssetPair> debits;
     vector<AssetPair> credits;
@@ -1431,7 +1431,7 @@ bool BlockChain::AddToMemoryPoolUnchecked(const Transaction& tx)
     
     for(vector<AssetPair>::iterator assetpair = credits.begin(); assetpair != credits.end(); ++assetpair)
         _creditIndex[assetpair->first].insert(Coin(hash, assetpair->second));
-    
+    */
     _transactionIndex[hash] = tx;
     for (int i = 0; i < tx.getNumInputs(); i++)
         _transactionConnections[tx.getInput(i).prevout()] = CoinRef(&_transactionIndex[hash], i);
@@ -1445,8 +1445,9 @@ bool BlockChain::RemoveFromMemoryPool(const Transaction& tx)
 {
     // Remove transaction from memory pool
     
-    uint256 hash = tx.getHash();
     /*
+    uint256 hash = tx.getHash();
+     
     typedef pair<uint160, unsigned int> AssetPair;
     vector<AssetPair> debits;
     vector<AssetPair> credits;

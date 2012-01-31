@@ -54,12 +54,14 @@ ENDMACRO(FIND_DEPENDENCY DEPNAME INCLUDEFILE LIBRARY_NAMES_BASE SEARCHPATHLIST D
 
 
 ################################################################################################
-# this Macro is tailored to Mike dependencies
+# this Macro is tailored to 3rdparty binary dependencies distribution
 ################################################################################################
 
-MACRO(SEARCH_3RDPARTY BTC_3RDPARTY_BIN)
-        FIND_DEPENDENCY(CURL curl/curl.h "libcurl;curllib" ${BTC_3RDPARTY_BIN} "D" "")
-ENDMACRO(SEARCH_3RDPARTY BTC_3RDPARTY_BIN)
+MACRO(SEARCH_3RDPARTY LIBCOIN_3RDPARTY_BIN)
+        FIND_DEPENDENCY(BOOST boost/foreach.h "libboost_date_time-vc90-mt-1_48.lib;libboost_filesystem-vc90-mt-1_48.lib;libboost_program_options-vc90-mt-1_48.lib;libboost_regex-vc90-mt-1_48.lib;libboost_system-vc90-mt-1_48.lib;libboost_thread-vc90-mt-1_48.lib" ${LIBCOIN_3RDPARTY_BIN} "D" "")
+        FIND_DEPENDENCY(OPENSSL openssl/ecdsa.h "libeay32.lib;ssleay32.lib" ${LIBCOIN_3RDPARTY_BIN} "D" "")
+        FIND_DEPENDENCY(BDB db_cxx.h "libdb53.lib" ${LIBCOIN_3RDPARTY_BIN} "D" "")
+ENDMACRO(SEARCH_3RDPARTY LIBCOIN_3RDPARTY_BIN)
 
 
 
@@ -68,7 +70,7 @@ ENDMACRO(SEARCH_3RDPARTY BTC_3RDPARTY_BIN)
 # this is code for handling optional 3RDPARTY usage
 ################################################################################################
 
-OPTION(USE_3RDPARTY_BIN "Set to ON to use Mike prebuilt dependencies situated side of bitcoin source.  Use OFF for avoiding." ON)
+OPTION(USE_3RDPARTY_BIN "Set to ON to use the prebuilt dependencies situated side of libcoin source.  Use OFF for avoiding." ON)
 IF(USE_3RDPARTY_BIN)
 
     # Check Architecture
@@ -84,7 +86,7 @@ IF(USE_3RDPARTY_BIN)
     GET_FILENAME_COMPONENT(PARENT_DIR ${PROJECT_SOURCE_DIR} PATH)
     SET(TEST_3RDPARTY_DIR "${PARENT_DIR}/3rdparty")
     IF(NOT EXISTS ${TEST_3RDPARTY_DIR})
-        SET(3RDPARTY_DIR_BY_ENV $ENV{BTC_3RDPARTY_DIR})
+        SET(3RDPARTY_DIR_BY_ENV $ENV{LIBCOIN_3RDPARTY_DIR})
         IF(3RDPARTY_DIR_BY_ENV)
             MESSAGE( STATUS "3rdParty-Package ENV variable found:${3RDPARTY_DIR_BY_ENV}/${DESTINATION_ARCH}" )
             SET(TEST_3RDPARTY_DIR "${3RDPARTY_DIR_BY_ENV}/${DESTINATION_ARCH}")

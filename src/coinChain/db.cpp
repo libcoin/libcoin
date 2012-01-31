@@ -101,10 +101,12 @@ CDB::CDB(const std::string dataDir, const char* pszFile, const char* pszMode) : 
             dbenv.set_lg_max(10000000);
             dbenv.set_lk_max_locks(100000);
             dbenv.set_lk_max_objects(100000);
-//            dbenv.set_cachesize(4, 0, 1); // DB cache of 1GB
+            dbenv.set_cachesize(1, 0, 1); // DB cache of 1GB
             dbenv.set_errfile(fopen(strErrorFile.c_str(), "a")); /// debug
             dbenv.log_set_config(DB_LOG_AUTO_REMOVE, 1);
             dbenv.set_flags(DB_AUTO_COMMIT, 1);
+            dbenv.set_flags(DB_TXN_WRITE_NOSYNC, 1);
+            dbenv.set_flags(DB_TXN_NOSYNC, 1);
             ret = dbenv.open(strDataDir.c_str(),
                              DB_CREATE     |
                              DB_INIT_LOCK  |
