@@ -19,8 +19,8 @@
 
 #include "coinHTTP/Server.h"
 
-#include "coinWallet/wallet.h"
-#include "coinWallet/walletrpc.h"
+#include "coinWallet/Wallet.h"
+#include "coinWallet/WalletRPC.h"
 
 #include <boost/thread.hpp>
 

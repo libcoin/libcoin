@@ -20,8 +20,8 @@
 #include "coinHTTP/Server.h"
 #include "coinHTTP/Client.h"
 
-#include "coinWallet/wallet.h"
-#include "coinWallet/walletrpc.h"
+#include "coinWallet/Wallet.h"
+#include "coinWallet/WalletRPC.h"
 
 #include "coinMine/Miner.h"
 #include "coinMine/MinerRPC.h"
