@@ -46,7 +46,7 @@ string CDB::dataDir(string suffix) {
     // Windows: C:\Documents and Settings\username\Application Data\Bitcoin
     // Mac: ~/Library/Application Support/Bitcoin
     // Unix: ~/.bitcoin
-#if (defined _WIN32 || defined _NOMAC___MACH__) // convert first letter to upper case
+#if (defined _WIN32 || defined __MACH__) // convert first letter to upper case
     transform(suffix.begin(), suffix.begin()+1, suffix.begin(), ::toupper);
 #else // prepend a "."
     suffix = "." + suffix;
@@ -62,7 +62,7 @@ string CDB::dataDir(string suffix) {
     string strHome = pszHome;
     if (strHome[strHome.size()-1] != '/')
         strHome += '/';
-#ifdef _NOMAC___MACH__
+#ifdef __MACH__
     // Mac
     strHome += "Library/Application Support/";
     filesystem::create_directory(strHome.c_str());

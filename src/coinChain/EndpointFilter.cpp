@@ -30,6 +30,7 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
     if (msg.command() == "addr") {
         vector<Endpoint> endpoints;
         CDataStream data(msg.payload());
+        
         data >> endpoints;
         
         // Don't want addr from older versions unless seeding
