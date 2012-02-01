@@ -62,7 +62,7 @@ class CAutoFile;
 static const unsigned int MAX_SIZE = 0x02000000;
 
 static const int VERSION = 40001;
-static const char* pszSubVer = "libbtc Satoshi release";
+static const char* pszSubVer = "libcoin Satoshi release";
 static const bool VERSION_IS_BETA = true;
 
 // Used to bypass the rule against non-const reference to temporary
