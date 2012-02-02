@@ -26,16 +26,25 @@
 class Method
 {
 public:
+    /// Default constructor. Setup the name as the class name using c++ typeinfo
+    Method();
+    
     /// The actual function call - you need to overload this to implement a method
     virtual json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp) = 0;
     
     /// Get the name of the method. Default implemented by lowercase typeid name. - REQUIRED
-    virtual const std::string name() const; 
+    virtual const std::string name() const { return _name; }
     
     virtual const std::string summary() const { return ""; } // OPTIONAL
     virtual const std::string help() const { return ""; } // OPTIONAL
     virtual const std::string params() const  { return ""; } // OPTIONAL
     virtual const std::string ret() const { return ""; } // OPTIONAL
+    
+    /// setName is to be able easily to overwrite the name of a Method.
+    /// Nice for registering several of the same RPC calls in the same Server.
+    virtual void setName(std::string name) { _name = name; }
+private:
+    std::string _name;
 };
 
 typedef boost::shared_ptr<Method> method_ptr;

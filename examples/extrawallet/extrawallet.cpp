@@ -27,18 +27,6 @@
 using namespace std;
 using namespace boost;
 
-// The derived classes below are only to get other class names (using the auto rpc name feature)
-// I will put adding a "setName" method to the Method class on the todo. 
-class ExtraGetBalance : public GetBalance {
-public:
-    ExtraGetBalance(Wallet& wallet) : GetBalance(wallet) {}
-};
-
-class ExtraSendToAddress : public GetBalance {
-public:
-    ExtraSendToAddress(Wallet& wallet) : GetBalance(wallet) {}
-};
-
 /// extrawallet shows how to create a client with two wallets. 
 /// Once running, you can access your extra wallet using the RPC interface:
 ///     ./extrawallet extragetbalance
@@ -71,8 +59,15 @@ int main(int argc, char* argv[])
     // Register Wallet methods. - note that we don't have any auth, so anyone (on localhost) can read your balance!
     server.registerMethod(method_ptr(new GetBalance(wallet)));
     server.registerMethod(method_ptr(new SendToAddress(wallet)), Auth("username","password"));
-    server.registerMethod(method_ptr(new ExtraGetBalance(wallet)));
-    server.registerMethod(method_ptr(new ExtraSendToAddress(wallet)), Auth("username","password"));
+    
+    GetBalance* extragetbalance = new GetBalance(extra_wallet);
+    extragetbalance->setName("extragetbalance");
+    server.registerMethod(method_ptr(extragetbalance));
+    
+    SendToAddress* extrasendtoaddress = new SendToAddress(extra_wallet);
+    extrasendtoaddress->setName("extrasendtoaddress");
+    server.registerMethod(method_ptr(extrasendtoaddress), Auth("username","password"));
+    
     server.run();
 
     node.shutdown();

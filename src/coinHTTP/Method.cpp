@@ -25,7 +25,7 @@ using namespace std;
 using namespace boost;
 using namespace json_spirit;
 
-const string Method::name() const {
+Method::Method() {
     string n = typeid(*this).name();
     // remove trailing numbers from the typeid
     while (n.find_first_of("0123456789") == 0)
@@ -35,7 +35,7 @@ const string Method::name() const {
 	if (n.find(" ") != string::npos) {
 		n.erase(0, n.find(" ")+1);
 	}
-    return n;
+    _name = n;
 };
 
 Value Stop::operator()(const Array& params, bool fHelp) {
