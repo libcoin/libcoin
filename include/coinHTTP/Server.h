@@ -27,6 +27,52 @@
 #include <boost/filesystem.hpp>
 #include <boost/asio/ssl.hpp>
 
+// This is a backup solution for boost prior to 1.47
+// We only use the signal_set in Server, and hence it can be done in this simple and more "ugly" way.
+// If you e.g. need to start multiple Servers, please upgrade your boost installation !
+#ifndef BOOST_ASIO_SIGNAL_SET_HPP
+#include <csignal>
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
+class boost__asio__signal_set;
+extern boost__asio__signal_set* __signal_set;
+class boost__asio__signal_set {
+public:
+    static void handler(int sig) {
+        if(__signal_set)
+            __signal_set->handle(sig);
+    }
+    boost__asio__signal_set(boost::asio::io_service& io_service) : _io_service(io_service) {
+        __signal_set = this;
+    }
+    void add(const int sig) {
+        typedef void (*h)(int);
+        h ret = std::signal(sig, &handler);
+        if (ret == SIG_ERR) {
+            //            printf("signal_set: registered signal unsuccessfull\n");
+        }
+        //        printf("signal_set: registered signal: %d \n", sig);
+    }
+    void handle(int sig) {
+        //        printf("signal_set: received signal: %d \n", sig);
+        _io_service.post(_signal_handler);
+    }
+    void async_wait(boost::function<void (void)> signal_handler) {
+        //        printf("signal_set: added handler (async_wait)");
+        _signal_handler = signal_handler;
+    }
+private:
+    boost::asio::io_service& _io_service;
+    boost::function<void (void)> _signal_handler;
+};
+
+#else
+
+typedef boost::asio::signal_set boost__asio__signal_set;
+
+#endif
+
+
 /// The top-level class of the HTTP server.
 class Server : private boost::noncopyable
 {
@@ -85,7 +131,7 @@ protected:
     bool _secure;
 
     /// The signal_set is used to register for process termination notifications.
-    boost::asio::signal_set _signals;
+    boost__asio__signal_set _signals;
     
     /// Acceptor used to listen for incoming connections.
     boost::asio::ip::tcp::acceptor _acceptor;

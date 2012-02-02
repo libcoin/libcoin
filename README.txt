@@ -12,7 +12,7 @@ If you would like to tweak the installation, run the configure part manually by 
 * cmake . or ccmake .
 with the preferred generator. E.g. on Mac OS X building with Xcode can be accomplished by:
 * cmake -GXcode .
-Then open libbtc.xcodeproj using Xcode and build libcoin from here.
+Then open libcore.xcodeproj using Xcode and build libcoin from here.
 
 On windows separate building instructions can be found online:
 http://github.com/ceptacle/libcoin/wiki/Windows-build

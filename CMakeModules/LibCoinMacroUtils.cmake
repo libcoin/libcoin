@@ -252,7 +252,7 @@ MACRO(SETUP_PLUGIN PLUGIN_NAME)
 
     #MESSAGE("in -->SETUP_PLUGIN<-- ${TARGET_NAME}-->${TARGET_SRC} <--> ${TARGET_H}<--")
 
-    ## we have set up the target label and targetname by taking into account global prfix (btcdb_)
+    ## we have set up the target label and targetname by taking into account global prfix (coindb_)
 
     IF(NOT TARGET_TARGETNAME)
             SET(TARGET_TARGETNAME "${TARGET_DEFAULT_PREFIX}${TARGET_NAME}")
@@ -286,7 +286,7 @@ MACRO(SETUP_PLUGIN PLUGIN_NAME)
         ENDIF(NOT UNIX)
     ELSE(NOT MSVC)
         IF(NOT CMAKE24)
-            SET_OUTPUT_DIR_PROPERTY_260(${TARGET_TARGETNAME} "${LIBCOIN_PLUGINS}")        # Sets the ouput to be /btcPlugin-X.X.X ; also ensures the /Debug /Release are removed
+            SET_OUTPUT_DIR_PROPERTY_260(${TARGET_TARGETNAME} "${LIBCOIN_PLUGINS}")        # Sets the ouput to be /coinPlugin-X.X.X ; also ensures the /Debug /Release are removed
         ELSE(NOT CMAKE24)
 
             IF(LIBCOIN_MSVC_VERSIONED_DLL) 
@@ -459,20 +459,20 @@ MACRO(SETUP_COMMANDLINE_EXAMPLE EXAMPLE_NAME)
 
 ENDMACRO(SETUP_COMMANDLINE_EXAMPLE)
 
-# Takes two optional arguments -- btc prefix and btc version
+# Takes two optional arguments -- coin prefix and coin version
 MACRO(HANDLE_MSVC_DLL)
         #this is a hack... the build place is set to lib/<debug or release> by LIBARARY_OUTPUT_PATH equal to OUTPUT_LIBDIR
         #the .lib will be crated in ../ so going straight in lib by the IMPORT_PREFIX property
         #because we want dll placed in OUTPUT_BINDIR ie the bin folder sibling of lib, we can use ../../bin to go there,
         #it is hardcoded, we should compute OUTPUT_BINDIR position relative to OUTPUT_LIBDIR ... to be implemented
         #changing bin to something else breaks this hack
-        #the dll are versioned by prefixing the name with btc${LIBCOIN_SOVERSION}-
+        #the dll are versioned by prefixing the name with coin${LIBCOIN_SOVERSION}-
 
-        # LIB_PREFIX: use "btc" by default, else whatever we've been given.
+        # LIB_PREFIX: use "coin" by default, else whatever we've been given.
         IF(${ARGC} GREATER 0)
                 SET(LIB_PREFIX ${ARGV0})
         ELSE(${ARGC} GREATER 0)
-                SET(LIB_PREFIX btc)
+                SET(LIB_PREFIX coin)
         ENDIF(${ARGC} GREATER 0)
 
         # LIB_SOVERSION: use LIBCOIN's soversion by default, else whatever we've been given
@@ -518,6 +518,6 @@ MACRO(HANDLE_MSVC_DLL)
             ENDIF (NOT CMAKE24)
         ENDIF(NOT MSVC_IDE) 
 
-#     SET_TARGET_PROPERTIES(${LIB_NAME} PROPERTIES PREFIX "../../bin/btc${LIBCOIN_SOVERSION}-")
+#     SET_TARGET_PROPERTIES(${LIB_NAME} PROPERTIES PREFIX "../../bin/coin${LIBCOIN_SOVERSION}-")
 #     SET_TARGET_PROPERTIES(${LIB_NAME} PROPERTIES IMPORT_PREFIX "../")
 ENDMACRO(HANDLE_MSVC_DLL)

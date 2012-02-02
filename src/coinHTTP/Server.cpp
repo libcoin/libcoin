@@ -22,7 +22,19 @@ using namespace std;
 using namespace boost;
 using namespace asio;
 
-Server::Server(const string address, const string port, const string doc_root) : _io_service(), _context(boost::asio::ssl::context::sslv23), _signals(_io_service), _acceptor(_io_service), _connectionManager(), _new_connection(), _requestHandler(doc_root), _secure(false) {
+#ifndef BOOST_ASIO_SIGNAL_SET_HPP // this is a backup solution for boost prior to 1.47
+boost__asio__signal_set* __signal_set = NULL;
+#endif
+
+Server::Server(const string address, const string port, const string doc_root) : 
+_io_service(),
+_context(boost::asio::ssl::context::sslv23),
+_secure(false),
+_signals(_io_service),
+_acceptor(_io_service),
+_connectionManager(),
+_new_connection(),
+_requestHandler(doc_root) {
     // Register to handle the signals that indicate when the server should exit.
     // It is safe to register for the same signal multiple times in a program,
     // provided all registration for the specified signal is made through Asio.

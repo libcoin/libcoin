@@ -309,11 +309,11 @@ OPTION(LIBCOIN_CPP_EXCEPTIONS_AVAILABLE "Set to OFF to disable compile of libcoi
 ################################################################################
 # Set Config file
 
-SET(LIBCOIN_CONFIG_HEADER "${PROJECT_BINARY_DIR}/include/libcoin/config.h")
+SET(LIBCOIN_CONFIG_HEADER "${PROJECT_BINARY_DIR}/include/coin/config.h")
 CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/coin/config.in"
                "${LIBCOIN_CONFIG_HEADER}")
 
-SET(LIBCOIN_VERSION_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/libcoin/version.h")
+SET(LIBCOIN_VERSION_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/coin/version.h")
 CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/coin/version.in"
                "${LIBCOIN_VERSION_HEADER}")
 
@@ -349,14 +349,14 @@ IF(BDB_FOUND)
 	include_directories(${BDB_INCLUDE_DIR})
 ENDIF(BDB_FOUND)
 
-#Note: We need as a minimum Boost 1.47 to support the signal_set used in Node
+#Note: We need as a minimum Boost 1.47 to support the signal_set used in Server. A backup signal_set has been created, though.
 SET(Boost_NO_BOOST_CMAKE ON)
 SET(Boost_ADDITIONAL_VERSIONS "1.47" "1.47.0" "1.48" "1.48.0")
 SET(Boost_USE_STATIC_LIBS        ON)
 SET(Boost_USE_MULTITHREADED      ON)
 SET(Boost_USE_STATIC_RUNTIME    OFF)
 
-FIND_PACKAGE( Boost 1.48.0 COMPONENTS date_time regex filesystem system program_options thread )
+FIND_PACKAGE( Boost 1.42 COMPONENTS date_time regex filesystem system program_options thread )
 IF(Boost_FOUND)
 	include_directories(${Boost_INCLUDE_DIR})
 ENDIF(Boost_FOUND)
