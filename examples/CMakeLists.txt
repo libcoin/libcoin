@@ -15,23 +15,20 @@ IF(ANDROID)
 ELSE(ANDROID)
 
 IF(DYNAMIC_LIBCOIN)
-    ADD_SUBDIRECTORY(simplecoin)
-    ADD_SUBDIRECTORY(ponzicoin)
-#    ADD_SUBDIRECTORY(coinexplorer)
-#    ADD_SUBDIRECTORY(coinonline)
-
-    IF   (wxWidgets_FOUND)
-#        ADD_SUBDIRECTORY(bitsimpleWX)
-    ENDIF(wxWidgets_FOUND)
-
 
 ELSE(DYNAMIC_LIBCOIN)
     #needed on win32 or the linker get confused by _declspec declarations
     ADD_DEFINITIONS(-DLIBCOIN_LIBRARY_STATIC)
-    
-    ADD_SUBDIRECTORY(simplecoin)
-    ADD_SUBDIRECTORY(ponzicoin)
 ENDIF(DYNAMIC_LIBCOIN)
+
+    
+ADD_SUBDIRECTORY(simplecoin)
+ADD_SUBDIRECTORY(ponzicoin)
+ADD_SUBDIRECTORY(extrawallet)
+
+#    IF   (wxWidgets_FOUND)
+#        ADD_SUBDIRECTORY(bitsimpleWX)
+#    ENDIF(wxWidgets_FOUND)
 
 ENDIF(ANDROID)
 
