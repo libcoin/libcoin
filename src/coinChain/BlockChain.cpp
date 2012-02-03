@@ -165,19 +165,19 @@ CBlockLocator BlockChain::getBestLocator() const {
     return l;
 }
 
-bool BlockChain::isInitialBlockDownload()
+bool BlockChain::isInitialBlockDownload() const
 {
     const int initialBlockThreshold = 120; // Regard blocks up until N-threshold as "initial download"
 
     if (_bestIndex == NULL || getBestHeight() < (getTotalBlocksEstimate()-initialBlockThreshold))
         return true;
+    
     static int64 nLastUpdate;
     static CBlockIndex* pindexLastBest;
-    if (_bestIndex != pindexLastBest)
-        {
+    if (_bestIndex != pindexLastBest) {
         pindexLastBest = _bestIndex;
         nLastUpdate = GetTime();
-        }
+    }
     return (GetTime() - nLastUpdate < 10 &&
             _bestIndex->GetBlockTime() < GetTime() - 24 * 60 * 60);
 }
@@ -330,14 +330,15 @@ bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& map
                     if (pindex->nBlockPos == txindex.getPos().getBlockPos() && pindex->nFile == txindex.getPos().getFile())
                         return error("ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
             
-            // Verify signature
-            int64 t1 = GetTimeMicros();
+            // Verify signature only if not downloading initial chain
+            if (!(fBlock && (isInitialBlockDownload()))) {
+                int64 t1 = GetTimeMicros();
 
-            if (!VerifySignature(txPrev, tx, i))
-                return error("ConnectInputs() : %s VerifySignature failed", tx.getHash().toString().substr(0,10).c_str());
+                if (!VerifySignature(txPrev, tx, i))
+                    return error("ConnectInputs() : %s VerifySignature failed", tx.getHash().toString().substr(0,10).c_str());
             
-            _verifySignatureTimer += GetTimeMicros() - t1;
-            
+                _verifySignatureTimer += GetTimeMicros() - t1;
+            }
             // Check for conflicts
             if (!txindex.getSpent(prevout.index).isNull())
                 return fMiner ? false : error("ConnectInputs() : %s prev tx already used at %s", tx.getHash().toString().substr(0,10).c_str(), txindex.getSpent(prevout.index).toString().c_str());

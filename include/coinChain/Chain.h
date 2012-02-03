@@ -66,7 +66,7 @@ public:
     virtual unsigned int nextWorkRequired(const CBlockIndex* pindexLast) const ;
     //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const;
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
-    virtual unsigned int totalBlocksEstimate() const { return 150000; }
+    virtual unsigned int totalBlocksEstimate() const { return 140700; }
 
     virtual const std::string dataDirSuffix() const { return "bitcoin"; }
     

@@ -265,7 +265,7 @@ public:
     /// Get the locator for the best index
     CBlockLocator getBestLocator() const;
     
-    bool isInitialBlockDownload();
+    bool isInitialBlockDownload() const;
     
     const uint256& getGenesisHash() const { return _chain.genesisHash(); }
     const CBlockIndex* getBestIndex() const { return _bestIndex; }
@@ -279,6 +279,8 @@ public:
     bool connectInputs(const Transaction& tx, std::map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx, const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee = 0) const;
     
     void outputPerformanceTimings() const;
+
+    int getTotalBlocksEstimate() const { return _chain.totalBlocksEstimate(); }    
     
 protected:
     /// Read a Transaction from Disk.
@@ -323,8 +325,6 @@ protected:
     void InvalidChainFound(CBlockIndex* pindexNew);
     
     bool reorganize(const Block& block, CBlockIndex* pindexNew);
-    
-    int getTotalBlocksEstimate() const { return _chain.totalBlocksEstimate(); }
     
     bool CheckForMemoryPool(const Transaction& tx) const { Transaction* ptxOld = NULL; return CheckForMemoryPool(tx, ptxOld); }
     bool CheckForMemoryPool(const Transaction& tx, Transaction*& ptxOld, bool fCheckInputs=true, bool* pfMissingInputs=NULL) const;
