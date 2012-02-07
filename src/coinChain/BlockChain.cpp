@@ -79,14 +79,11 @@ void BlockChain::print()
 {
     // precompute tree structure
     map<CBlockIndex*, vector<CBlockIndex*> > mapNext;
-    for (BlockChainIndex::iterator mi = _blockChainIndex.begin(); mi != _blockChainIndex.end(); ++mi)
-        {
+
+    for (BlockChainIndex::const_iterator mi = _blockChainIndex.begin(); mi != _blockChainIndex.end(); ++mi) {
         CBlockIndex* pindex = (*mi).second;
         mapNext[pindex->pprev].push_back(pindex);
-        // test
-        //while (rand() % 3 == 0)
-        //    mapNext[pindex->pprev].push_back(pindex);
-        }
+    }
     
     vector<pair<int, CBlockIndex*> > vStack;
     vStack.push_back(make_pair(0, _genesisBlockIndex));
@@ -148,6 +145,9 @@ void BlockChain::print()
 }
 
 CBlockLocator BlockChain::getBestLocator() const {
+    // lock the pool and chain for reading
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+
     CBlockLocator l;
     const CBlockIndex* pindex = getBestIndex();
     l.vHave.clear();
@@ -167,6 +167,8 @@ CBlockLocator BlockChain::getBestLocator() const {
 
 bool BlockChain::isInitialBlockDownload() const
 {
+    // lock the pool and chain for reading
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
     const int initialBlockThreshold = 120; // Regard blocks up until N-threshold as "initial download"
 
     if (_bestIndex == NULL || getBestHeight() < (getTotalBlocksEstimate()-initialBlockThreshold))
@@ -182,19 +184,10 @@ bool BlockChain::isInitialBlockDownload() const
             _bestIndex->GetBlockTime() < GetTime() - 24 * 60 * 60);
 }
 
-// BlockLocator interface
-/*
-CBlockLocator BlockChain::blockLocator(uint256 hashBlock)
-{
-    CBlockLocator locator;
-    BlockChainIndex::iterator mi = _blockChainIndex.find(hashBlock);
-    if (mi != _blockChainIndex.end())
-        locator.Set((*mi).second);
-    return locator;
-}
-*/
 int BlockChain::getDistanceBack(const CBlockLocator& locator) const
 {
+    // lock the pool and chain for reading
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
     // Retrace how far back it was in the sender's branch
     int nDistance = 0;
     int nStep = 1;
@@ -214,6 +207,8 @@ int BlockChain::getDistanceBack(const CBlockLocator& locator) const
 
 void BlockChain::getBlock(const uint256 hash, Block& block) const
 {
+    // lock the pool and chain for reading
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
     block.setNull();
     BlockChainIndex::const_iterator index = _blockChainIndex.find(hash);
     if (index != _blockChainIndex.end()) {
@@ -227,6 +222,8 @@ void BlockChain::getBlock(const uint256 hash, Block& block) const
 }
 
 void BlockChain::getBlock(const CBlockIndex* index, Block& block) const {
+    // lock the pool and chain for reading
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
     _blockFile.readFromDisk(block, index);
 }
 
@@ -234,6 +231,8 @@ void BlockChain::getBlock(const CBlockIndex* index, Block& block) const {
 
 const CBlockIndex* BlockChain::getBlockIndex(const CBlockLocator& locator) const
 {
+    // lock the pool and chain for reading
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
     // Find the first block the caller has in the main chain
     BOOST_FOREACH(const uint256& hash, locator.vHave) {
         BlockChainIndex::const_iterator mi = _blockChainIndex.find(hash);
@@ -248,6 +247,8 @@ const CBlockIndex* BlockChain::getBlockIndex(const CBlockLocator& locator) const
 
 const CBlockIndex* BlockChain::getBlockIndex(const uint256 hash) const
 {
+    // lock the pool and chain for reading
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
     BlockChainIndex::const_iterator index = _blockChainIndex.find(hash);
     if (index != _blockChainIndex.end())
         return index->second;
@@ -258,9 +259,11 @@ const CBlockIndex* BlockChain::getBlockIndex(const uint256 hash) const
 
 uint256 BlockChain::getBlockHash(const CBlockLocator& locator)
 {
+    // lock the pool and chain for reading
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
     // Find the first block the caller has in the main chain
     BOOST_FOREACH(const uint256& hash, locator.vHave) {
-    BlockChainIndex::iterator mi = _blockChainIndex.find(hash);
+    BlockChainIndex::const_iterator mi = _blockChainIndex.find(hash);
     if (mi != _blockChainIndex.end())
         {
         CBlockIndex* pindex = (*mi).second;
@@ -271,9 +274,12 @@ uint256 BlockChain::getBlockHash(const CBlockLocator& locator)
     return getGenesisHash();
 }
 
-CBlockIndex* BlockChain::getHashStopIndex(uint256 hashStop)
+CBlockIndex* BlockChain::getHashStopIndex(uint256 hashStop) const 
 {
-    BlockChainIndex::iterator mi = _blockChainIndex.find(hashStop);
+    // lock the pool and chain for reading
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+
+    BlockChainIndex::const_iterator mi = _blockChainIndex.find(hashStop);
     if (mi == _blockChainIndex.end())
         return NULL;
     return (*mi).second;
@@ -281,7 +287,10 @@ CBlockIndex* BlockChain::getHashStopIndex(uint256 hashStop)
 
 bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx,
                    const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee) const
-{
+{    
+    // lock the pool and chain for reading
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+
     int64 t0 = GetTimeMicros();
 
     // Take over previous transactions' spent pointers
@@ -416,12 +425,18 @@ bool BlockChain::disconnectInputs(const Transaction& tx)
 }
 
 bool BlockChain::isInMainChain(const uint256 hash) const {
+    // lock the pool and chain for reading
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+
     BlockChainIndex::const_iterator i = _blockChainIndex.find(hash);
     return i != _blockChainIndex.end();
 }
 
 int BlockChain::getHeight(const uint256 hash) const
 {
+    // lock the pool and chain for reading
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+
     // first check if this is a block hash
     BlockChainIndex::const_iterator i = _blockChainIndex.find(hash);
     if (i != _blockChainIndex.end()) {
@@ -820,7 +835,7 @@ CBlockIndex* BlockChain::InsertBlockIndex(uint256 hash)
         return NULL;
     
     // Return existing
-    BlockChainIndex::iterator mi = _blockChainIndex.find(hash);
+    BlockChainIndex::const_iterator mi = _blockChainIndex.find(hash);
     if (mi != _blockChainIndex.end())
         return (*mi).second;
     
@@ -894,11 +909,12 @@ bool BlockChain::LoadBlockIndex()
     // Calculate bnChainWork
     vector<pair<int, CBlockIndex*> > vSortedByHeight;
     vSortedByHeight.reserve(_blockChainIndex.size());
-    BOOST_FOREACH(const PAIRTYPE(uint256, CBlockIndex*)& item, _blockChainIndex)
+    for(BlockChainIndex::const_iterator item = _blockChainIndex.begin(); item != _blockChainIndex.end(); ++item)
     {
-    CBlockIndex* pindex = item.second;
+    CBlockIndex* pindex = item->second;
     vSortedByHeight.push_back(make_pair(pindex->nHeight, pindex));
     }
+
     sort(vSortedByHeight.begin(), vSortedByHeight.end());
     BOOST_FOREACH(const PAIRTYPE(int, CBlockIndex*)& item, vSortedByHeight)
     {
@@ -1041,6 +1057,8 @@ bool BlockChain::reorganize(const Block& block, CBlockIndex* pindexNew)
         vConnect.push_back(pindex);
     reverse(vConnect.begin(), vConnect.end());
     
+    // here we simply issue a call to commit(blocks, blocks)
+    
     // Disconnect shorter branch
     vector<Transaction> vResurrect;
     BOOST_FOREACH(CBlockIndex* pindex, vDisconnect)
@@ -1074,9 +1092,14 @@ bool BlockChain::reorganize(const Block& block, CBlockIndex* pindexNew)
         BOOST_FOREACH(const Transaction& tx, block.getTransactions())
         vDelete.push_back(tx);
     }
+    // At this point we have finalized building the transaction and are ready to commit it and 
+    // update the transaction pool. We hence lock the chain and pool mutex:
+    
+    boost::unique_lock< boost::shared_mutex > lock(_chain_and_pool_access);
     _bestChain = pindexNew->GetBlockHash();
     if (!WriteHashBestChain())
         return error("Reorganize() : WriteHashBestChain failed");
+    
     
     // Make sure it's successfully written to disk before changing memory structure
     if (!TxnCommit())
@@ -1140,6 +1163,11 @@ bool BlockChain::setBestChain(const Block& block, CBlockIndex* pindexNew)
             InvalidChainFound(pindexNew);
             return error("SetBestChain() : ConnectBlock failed");
         }
+        
+        // We are now ready to commit the changes to the DB and update the transaction pool
+        // Hence we lock the mutex.
+        boost::unique_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+
         if (!TxnCommit()) {
             _bestChain = oldBestChain;
             return error("SetBestChain() : TxnCommit failed");
@@ -1190,13 +1218,14 @@ bool BlockChain::addToBlockIndex(const Block& block, unsigned int nFile, unsigne
     if (_blockChainIndex.count(hash))
         return error("AddToBlockIndex() : %s already exists", hash.toString().substr(0,20).c_str());
     
+    // --- BEGIN addBlock
     // Construct new block index object
     CBlockIndex* pindexNew = new CBlockIndex(nFile, nBlockPos, block);
     if (!pindexNew)
         return error("AddToBlockIndex() : new CBlockIndex failed");
-    BlockChainIndex::iterator mi = _blockChainIndex.insert(make_pair(hash, pindexNew)).first;
+    BlockChainIndex::const_iterator mi = _blockChainIndex.insert(make_pair(hash, pindexNew)).first;
     pindexNew->phashBlock = &((*mi).first);
-    BlockChainIndex::iterator miPrev = _blockChainIndex.find(block.getPrevBlock());
+    BlockChainIndex::const_iterator miPrev = _blockChainIndex.find(block.getPrevBlock());
     if (miPrev != _blockChainIndex.end()) {
         pindexNew->pprev = (*miPrev).second;
         pindexNew->nHeight = pindexNew->pprev->nHeight + 1;
@@ -1207,6 +1236,8 @@ bool BlockChain::addToBlockIndex(const Block& block, unsigned int nFile, unsigne
     WriteBlockIndex(CDiskBlockIndex(pindexNew));
     if (!TxnCommit())
         return false;
+    
+    // --- END addBlock
     
     // New best
     if (pindexNew->bnChainWork > _bestChainWork)
@@ -1233,7 +1264,7 @@ bool BlockChain::acceptBlock(const Block& block)
         return error("AcceptBlock() : block already in _blockChainIndex");
     
     // Get prev block index
-    BlockChainIndex::iterator mi = _blockChainIndex.find(block.getPrevBlock());
+    BlockChainIndex::const_iterator mi = _blockChainIndex.find(block.getPrevBlock());
     if (mi == _blockChainIndex.end())
         return error("AcceptBlock() : prev block not found");
     CBlockIndex* pindexPrev = (*mi).second;
@@ -1378,9 +1409,12 @@ bool BlockChain::CheckForMemoryPool(const Transaction& tx, Transaction*& ptxOld,
     return true;
 }
 
-bool BlockChain::AcceptToMemoryPool(const Transaction& tx, bool fCheckInputs, bool* pfMissingInputs) {
+// This AcceptToMemoryPool has no locks as it is only called from the block acceptor that does the locking.
+bool BlockChain::AcceptToMemoryPool(const Transaction& tx, bool fCheckInputs) {
     Transaction* ptxOld = NULL;
-    if(CheckForMemoryPool(tx, ptxOld, fCheckInputs, pfMissingInputs)) {
+    bool fMissingInputs;
+    if(CheckForMemoryPool(tx, ptxOld, fCheckInputs, &fMissingInputs)) {
+        
         // Store transaction in memory
         if (ptxOld) {
             printf("AcceptToMemoryPool() : replacing tx %s with new version\n", ptxOld->getHash().toString().c_str());
@@ -1400,11 +1434,36 @@ bool BlockChain::AcceptToMemoryPool(const Transaction& tx, bool fCheckInputs, bo
        return false;
 }
 
+// This AcceptToMemoryPool has locks as it is only called from the Transaction acceptor.
+bool BlockChain::AcceptToMemoryPool(const Transaction& tx, bool fCheckInputs, bool* pfMissingInputs) {
+    Transaction* ptxOld = NULL;
+    if(CheckForMemoryPool(tx, ptxOld, fCheckInputs, pfMissingInputs)) {
+        // The pool will be updated, so lock the chain and pool mutex.
+        boost::unique_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+        // Store transaction in memory
+        if (ptxOld) {
+            printf("AcceptToMemoryPool() : replacing tx %s with new version\n", ptxOld->getHash().toString().c_str());
+            RemoveFromMemoryPool(*ptxOld);
+        }
+        AddToMemoryPoolUnchecked(tx);
+        
+        ///// are we sure this is ok when loading transactions or restoring block txes
+        // If updated, erase old tx from wallet
+        //    if (ptxOld)
+        //        EraseFromWallets(ptxOld->GetHash());
+        
+        printf("AcceptToMemoryPool(): accepted %s\n", tx.getHash().toString().substr(0,10).c_str());
+        return true;
+    }
+    else
+        return false;
+}
+
 bool BlockChain::AddToMemoryPoolUnchecked(const Transaction& tx)
 {
     // Add to memory pool without checking anything.  Don't call this directly,
     // call AcceptToMemoryPool to properly check the transaction first.
-    
+   
     uint256 hash = tx.getHash();
     /*
     typedef pair<uint160, unsigned int> AssetPair;
@@ -1507,6 +1566,8 @@ void BlockChain::getDebit(const uint160& btc, Coins& coins) const
 
 void BlockChain::getTransaction(const uint256& hash, Transaction& tx) const
 {
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+
     tx.setNull();
     if(!readDiskTx(hash, tx)) {
         TransactionIndex::const_iterator hashtx = _transactionIndex.find(hash);
@@ -1517,6 +1578,8 @@ void BlockChain::getTransaction(const uint256& hash, Transaction& tx) const
 
 void BlockChain::getTransaction(const uint256& hash, Transaction& tx, int64& height, int64& time) const
 {
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+
     tx.setNull();
     height = -1;
     time = -1;
@@ -1528,6 +1591,8 @@ void BlockChain::getTransaction(const uint256& hash, Transaction& tx, int64& hei
 }
 
 bool BlockChain::isSpent(Coin coin) const {
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+
     TxIndex index;
     if(ReadTxIndex(coin.hash, index))
         return !index.getSpent(coin.index).isNull();
@@ -1536,6 +1601,8 @@ bool BlockChain::isSpent(Coin coin) const {
 }
 
 int BlockChain::getNumSpent(uint256 hash) const {
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+
     TxIndex index;
     if(ReadTxIndex(hash, index))
         return index.getNumSpents();
@@ -1544,6 +1611,8 @@ int BlockChain::getNumSpent(uint256 hash) const {
 }
 
 uint256 BlockChain::spentIn(Coin coin) const {
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+
     TxIndex index;
     if(ReadTxIndex(coin.hash, index)) {
         const DiskTxPos& diskpos = index.getSpent(coin.index);

@@ -29,6 +29,8 @@
 #include "coinChain/Chain.h"
 
 #include <boost/noncopyable.hpp>
+#include <boost/thread/shared_mutex.hpp>
+#include <boost/thread/locks.hpp>
 #include <list>
 
 class Transaction;
@@ -153,6 +155,7 @@ typedef std::map<uint256, CBlockIndex*> BlockChainIndex;
 typedef std::map<uint256, Transaction> TransactionIndex;
 typedef std::map<uint160, Coins> AssetIndex;
 typedef std::vector<Transaction> Transactions;
+typedef std::vector<Block> Blocks;
 
 class BlockChain : private CDB
 {
@@ -178,6 +181,9 @@ public:
     
     /// Get all unconfirmed transactions.
     Transactions unconfirmedTransactions() const {
+        // lock the pool and chain for reading
+        boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+
         Transactions txes;
         for(TransactionIndex::const_iterator i = _transactionIndex.begin(); i != _transactionIndex.end(); ++i)
             txes.push_back(i->second);
@@ -192,6 +198,7 @@ public:
     
     /// Dry run version of the acceptTransaction method. Hence it is const. For probing transaction before they are scheduled for submission to the chain network.
     bool checkTransaction(const Transaction& tx) const {
+        boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
         return CheckForMemoryPool(tx);
     }
     
@@ -241,7 +248,7 @@ public:
     
     void getBlock(const CBlockIndex* index, Block& block) const;
 
-    CBlockIndex* getHashStopIndex(uint256 hashStop);
+    CBlockIndex* getHashStopIndex(uint256 hashStop) const;
 
     /// Get height of block of transaction by its hash
     int getHeight(const uint256 hash) const;
@@ -260,7 +267,12 @@ public:
     bool isInMainChain(const uint256 hash) const;
     
     /// Get the best height
-    int getBestHeight() const { return _bestIndex->nHeight; }
+    int getBestHeight() const
+    { 
+        // lock the pool and chain for reading
+        boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+        return _bestIndex->nHeight;
+    }
     
     /// Get the locator for the best index
     CBlockLocator getBestLocator() const;
@@ -272,7 +284,7 @@ public:
     const uint256& getBestChain() const { return _bestChain; }
     const int64& getBestReceivedTime() const { return _bestReceivedTime; }
 
-    const size_t getBlockChainIndexSize() const { return _blockChainIndex.size(); }
+    size_t getBlockChainIndexSize() const { return _blockChainIndex.size(); }
     
     const Chain& chain() const { return _chain; }
     
@@ -282,7 +294,8 @@ public:
 
     int getTotalBlocksEstimate() const { return _chain.totalBlocksEstimate(); }    
     
-protected:
+protected:        
+
     /// Read a Transaction from Disk.
     bool readDrIndex(uint160 hash160, std::set<Coin>& debit) const;
     bool readCrIndex(uint160 hash160, std::set<Coin>& credit) const;
@@ -329,7 +342,16 @@ protected:
     bool CheckForMemoryPool(const Transaction& tx) const { Transaction* ptxOld = NULL; return CheckForMemoryPool(tx, ptxOld); }
     bool CheckForMemoryPool(const Transaction& tx, Transaction*& ptxOld, bool fCheckInputs=true, bool* pfMissingInputs=NULL) const;
 
-    bool AcceptToMemoryPool(const Transaction& tx, bool fCheckInputs=true, bool* pfMissingInputs=NULL);
+    /// This is to accept 
+    bool AcceptToMemoryPool(const Transaction& tx) {
+        bool mi;
+        return AcceptToMemoryPool(tx, true, &mi);
+    }
+
+    /// This is to accept transactions from blocks (no checks)
+    bool AcceptToMemoryPool(const Transaction& tx, bool fCheckInputs);
+    bool AcceptToMemoryPool(const Transaction& tx, bool fCheckInputs, bool* pfMissingInputs);
+
     bool AddToMemoryPoolUnchecked(const Transaction& tx);
     bool RemoveFromMemoryPool(const Transaction& tx);
 
@@ -348,12 +370,15 @@ private:
     CBlockIndex* _bestIndex;
     int64 _bestReceivedTime;
 
-    TransactionIndex _transactionIndex;
+    TransactionIndex _transactionIndex;    
+    
     AssetIndex _creditIndex;
     AssetIndex _debitIndex;
     typedef std::map<Coin, CoinRef> TransactionConnections;
     TransactionConnections _transactionConnections;
     unsigned int _transactionsUpdated;
+    
+    mutable boost::shared_mutex _chain_and_pool_access;
 
     mutable int64 _acceptBlockTimer;
     mutable int64 _connectInputsTimer;

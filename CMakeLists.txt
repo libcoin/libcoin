@@ -804,9 +804,10 @@ SET(PKGCONFIG_FILES
 #  libcoin-coinMine
 )
 
-IF(QT4_FOUND)
-  SET(PKGCONFIG_FILES ${PKGCONFIG_FILES} libcoin-coinQt)
-ENDIF(QT4_FOUND)
+#This generates an error on machines with Qt installed!
+#IF(QT4_FOUND)
+#  SET(PKGCONFIG_FILES ${PKGCONFIG_FILES} libcoin-coinQt)
+#ENDIF(QT4_FOUND)
 
 FOREACH(PKGCONFIG_FILE ${PKGCONFIG_FILES})
   CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/packaging/pkgconfig/${PKGCONFIG_FILE}.pc.in
