@@ -25,15 +25,17 @@
 /// The base class for Method functors - The definitions follow the JSON_RPC 2.0 definition and strives at introspection support.
 class Method
 {
-public:
-    /// Default constructor. Setup the name as the class name using c++ typeinfo
-    Method();
-    
+public:    
     /// The actual function call - you need to overload this to implement a method
     virtual json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp) = 0;
     
     /// Get the name of the method. Default implemented by lowercase typeid name. - REQUIRED
-    virtual const std::string name() const { return _name; }
+    virtual const std::string name() const { 
+        if (_name.empty())
+            return extractName();
+        else
+            return _name;
+    }
     
     virtual const std::string summary() const { return ""; } // OPTIONAL
     virtual const std::string help() const { return ""; } // OPTIONAL
@@ -43,6 +45,9 @@ public:
     /// setName is to be able easily to overwrite the name of a Method.
     /// Nice for registering several of the same RPC calls in the same Server.
     virtual void setName(std::string name) { _name = name; }
+    
+    virtual const std::string extractName() const;
+
 private:
     std::string _name;
 };

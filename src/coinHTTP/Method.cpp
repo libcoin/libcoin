@@ -25,19 +25,6 @@ using namespace std;
 using namespace boost;
 using namespace json_spirit;
 
-Method::Method() {
-    string n = typeid(*this).name();
-    // remove trailing numbers from the typeid
-    while (n.find_first_of("0123456789") == 0)
-        n.erase(0, 1);
-    transform(n.begin(), n.end(), n.begin(), ::tolower);
-	// now remove a possible "class "
-	if (n.find(" ") != string::npos) {
-		n.erase(0, n.find(" ")+1);
-	}
-    _name = n;
-};
-
 Value Stop::operator()(const Array& params, bool fHelp) {
     if (fHelp || params.size() != 0)
         throw RPC::error(RPC::invalid_params, "stop\n"
@@ -47,3 +34,15 @@ Value Stop::operator()(const Array& params, bool fHelp) {
     return "Node and Server is stopping";
 }    
 
+const std::string Method::extractName() const {
+    string n = typeid(*this).name();
+    // remove trailing numbers from the typeid
+    while (n.find_first_of("0123456789") == 0)
+        n.erase(0, 1);
+    transform(n.begin(), n.end(), n.begin(), ::tolower);
+	// now remove a possible "class "
+	if (n.find(" ") != string::npos) {
+		n.erase(0, n.find(" ")+1);
+	}
+    return n;
+}
