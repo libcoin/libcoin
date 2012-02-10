@@ -18,7 +18,7 @@
 #define HTTP_REQUEST_H
 
 #include <string>
-#include "coinHTTP/Header.h"
+#include <coinHTTP/Header.h>
 
 /// A request received from a client.
 struct Request {

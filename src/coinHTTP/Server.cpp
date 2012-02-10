@@ -14,7 +14,7 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinHTTP/Server.h"
+#include <coinHTTP/Server.h>
 #include <boost/bind.hpp>
 #include <signal.h>
 

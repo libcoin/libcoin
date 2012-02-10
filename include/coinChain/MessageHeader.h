@@ -17,9 +17,9 @@
 #ifndef MESSAGE_HEADER_H
 #define MESSAGE_HEADER_H
 
-#include "coin/uint256.h"
-#include "coin/serialize.h"
-#include "coinChain/Chain.h"
+#include <coin/uint256.h>
+#include <coin/serialize.h>
+#include <coinChain/Chain.h>
 
 #include <string>
 

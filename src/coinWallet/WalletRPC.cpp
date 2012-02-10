@@ -14,9 +14,9 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinWallet/WalletRPC.h"
-#include "coinWallet/Wallet.h"
-#include "coinWallet/WalletDB.h"
+#include <coinWallet/WalletRPC.h>
+#include <coinWallet/Wallet.h>
+#include <coinWallet/WalletDB.h>
 
 using namespace std;
 using namespace boost;

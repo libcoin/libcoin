@@ -17,12 +17,12 @@
 #ifndef TRANSACTIONFILTER_H
 #define TRANSACTIONFILTER_H
 
-#include "coinChain/PeerManager.h"
-#include "coinChain/Filter.h"
-#include "coinChain/Inventory.h"
+#include <coinChain/PeerManager.h>
+#include <coinChain/Filter.h>
+#include <coinChain/Inventory.h>
 
-#include "coin/serialize.h" // for CDataStream
-#include "coin/util.h" // for CCriticalSection definition
+#include <coin/serialize.h> // for CDataStream
+#include <coin/util.h> // for CCriticalSection definition
 
 #include <string>
 #include <map>

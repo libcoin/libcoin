@@ -19,8 +19,8 @@
 
 #include <string>
 
-#include "coin/uint256.h"
-#include "coin/serialize.h"
+#include <coin/uint256.h>
+#include <coin/serialize.h>
 
 enum
 {

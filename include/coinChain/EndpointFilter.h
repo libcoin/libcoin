@@ -17,7 +17,7 @@
 #ifndef ENDPOINTFILTER_H
 #define ENDPOINTFILTER_H
 
-#include "Filter.h"
+#include <coinChain/Filter.h>
 
 #include <string>
 

@@ -2,13 +2,13 @@
 // Copyright (c) 2011 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
-//#include "headers.h"
+//#include "headers.h>
 
 #include <vector>
 #include <boost/foreach.hpp>
 
-#include "coin/BigNum.h"
-#include "coin/Transaction.h"
+#include <coin/BigNum.h>
+#include <coin/Transaction.h>
 
 using namespace std;
 using namespace boost;

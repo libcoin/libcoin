@@ -5,9 +5,9 @@
 #ifndef BITCOIN_DB_H
 #define BITCOIN_DB_H
 
-#include "coin/Key.h"
-#include "coin/Transaction.h"
-#include "coin/Asset.h"
+#include <coin/Key.h>
+#include <coin/Transaction.h>
+#include <coin/Asset.h>
 
 #include <map>
 #include <string>

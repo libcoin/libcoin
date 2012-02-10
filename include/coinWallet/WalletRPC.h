@@ -5,8 +5,8 @@
 #ifndef _WALLETRPC_H_
 #define _WALLETRPC_H_
 
-#include "coinHTTP/RPC.h"
-#include "coin/util.h"
+#include <coinHTTP/RPC.h>
+#include <coin/util.h>
 
 class Wallet;
 class CWalletDB;

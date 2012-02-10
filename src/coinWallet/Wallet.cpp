@@ -3,12 +3,12 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include "coinWallet/Wallet.h"
-#include "coinWallet/WalletDB.h"
-#include "coinWallet/WalletTx.h"
-//#include "coinChain/db.h"
-#include "coinWallet/Crypter.h"
-#include "coinWallet/CryptoKeyStore.h"
+#include <coinWallet/Wallet.h>
+#include <coinWallet/WalletDB.h>
+#include <coinWallet/WalletTx.h>
+//#include <coinChain/db.h>
+#include <coinWallet/Crypter.h>
+#include <coinWallet/CryptoKeyStore.h>
 
 #include <openssl/rand.h>
 

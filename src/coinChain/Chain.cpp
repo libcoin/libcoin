@@ -14,11 +14,11 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinChain/Chain.h"
+#include <coinChain/Chain.h>
 
-#include "coin/Block.h"
-#include "coinChain/BlockIndex.h"
-#include "coin/Transaction.h"
+#include <coin/Block.h>
+#include <coinChain/BlockIndex.h>
+#include <coin/Transaction.h>
 
 using namespace std;
 using namespace boost;

@@ -15,7 +15,7 @@
  */
 
 
-#include "coinStat/Explorer.h"
+#include <coinStat/Explorer.h>
 
 #include <fstream>
   

@@ -14,9 +14,9 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinMine/Miner.h"
-#include "coinChain/Node.h"
-#include "coinMine/CPUHasher.h"
+#include <coinMine/Miner.h>
+#include <coinChain/Node.h>
+#include <coinMine/CPUHasher.h>
 
 using namespace std;
 using namespace boost;

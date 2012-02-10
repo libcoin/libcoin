@@ -12,9 +12,9 @@
 #include <openssl/ecdsa.h>
 #include <openssl/obj_mac.h>
 
-#include "coin/serialize.h"
-#include "coin/uint256.h"
-#include "coin/Address.h"
+#include <coin/serialize.h>
+#include <coin/uint256.h>
+#include <coin/Address.h>
 
 // secp160k1
 // const unsigned int PRIVATE_KEY_SIZE = 192;

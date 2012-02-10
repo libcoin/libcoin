@@ -14,13 +14,13 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinChain/Node.h"
-#include "coinChain/NodeRPC.h"
+#include <coinChain/Node.h>
+#include <coinChain/NodeRPC.h>
 
-#include "coinHTTP/Server.h"
+#include <coinHTTP/Server.h>
 
-#include "coinWallet/Wallet.h"
-#include "coinWallet/WalletRPC.h"
+#include <coinWallet/Wallet.h>
+#include <coinWallet/WalletRPC.h>
 
 #include <boost/thread.hpp>
 

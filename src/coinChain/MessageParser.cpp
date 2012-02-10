@@ -15,11 +15,11 @@
  */
 
 #include <sstream>
-#include "coinChain/Filter.h"
-#include "coinChain/MessageParser.h"
-#include "coinChain/MessageHeader.h"
+#include <coinChain/Filter.h>
+#include <coinChain/MessageParser.h>
+#include <coinChain/MessageHeader.h>
 
-#include "coin/util.h"
+#include <coin/util.h>
 
 using namespace std;
 using namespace boost;

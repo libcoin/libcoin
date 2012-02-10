@@ -17,16 +17,16 @@
 #ifndef BLOCKCHAIN_H
 #define BLOCKCHAIN_H
 
-#include "coin/BigNum.h"
-#include "coin/Key.h"
-#include "coin/Script.h"
-#include "coin/Transaction.h"
+#include <coin/BigNum.h>
+#include <coin/Key.h>
+#include <coin/Script.h>
+#include <coin/Transaction.h>
 
-#include "coinChain/db.h"
+#include <coinChain/db.h>
 
-#include "coinChain/BlockIndex.h"
-#include "coinChain/BlockFile.h"
-#include "coinChain/Chain.h"
+#include <coinChain/BlockIndex.h>
+#include <coinChain/BlockFile.h>
+#include <coinChain/Chain.h>
 
 #include <boost/noncopyable.hpp>
 #include <boost/thread/shared_mutex.hpp>

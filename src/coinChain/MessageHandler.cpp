@@ -14,8 +14,8 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinChain/MessageHandler.h"
-#include "coin/serialize.h"
+#include <coinChain/MessageHandler.h>
+#include <coin/serialize.h>
 
 #include <string>
 

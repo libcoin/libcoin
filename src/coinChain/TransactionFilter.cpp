@@ -14,12 +14,12 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinChain/TransactionFilter.h"
-#include "coinChain/BlockChain.h"
-#include "coinChain/Peer.h"
-#include "coinChain/Inventory.h"
+#include <coinChain/TransactionFilter.h>
+#include <coinChain/BlockChain.h>
+#include <coinChain/Peer.h>
+#include <coinChain/Inventory.h>
 
-#include "coin/Transaction.h"
+#include <coin/Transaction.h>
 
 using namespace std;
 using namespace boost;

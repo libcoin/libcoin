@@ -14,7 +14,7 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinHTTP/Client.h"
+#include <coinHTTP/Client.h>
 
 #include <iostream>
 #include <istream>

@@ -14,8 +14,8 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinChain/NodeRPC.h"
-#include "coinHTTP/RPC.h"
+#include <coinChain/NodeRPC.h>
+#include <coinHTTP/RPC.h>
 
 using namespace std;
 using namespace boost;

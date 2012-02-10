@@ -7,7 +7,7 @@
 
 #define NOMINMAX
 
-#include "coin/uint256.h"
+#include <coin/uint256.h>
 
 #ifndef _WIN32
 #include <sys/types.h>

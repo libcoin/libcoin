@@ -20,8 +20,8 @@
 #include <string>
 #include <boost/asio.hpp>
 
-#include "coin/uint256.h"
-#include "coin/serialize.h"
+#include <coin/uint256.h>
+#include <coin/serialize.h>
 
 enum
 {

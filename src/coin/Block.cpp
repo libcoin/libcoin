@@ -14,7 +14,7 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coin/Block.h"
+#include <coin/Block.h>
 
 using namespace std;
 using namespace boost;

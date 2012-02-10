@@ -14,13 +14,13 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinChain/Alert.h"
+#include <coinChain/Alert.h>
 
-#include "coin/Block.h"
-#include "coinChain/BlockIndex.h"
-#include "coinChain/Peer.h"
+#include <coin/Block.h>
+#include <coinChain/BlockIndex.h>
+#include <coinChain/Peer.h>
 
-#include "coin/Key.h"
+#include <coin/Key.h>
 
 #include "boost/foreach.hpp"
 

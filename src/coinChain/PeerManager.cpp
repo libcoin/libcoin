@@ -14,9 +14,9 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinChain/PeerManager.h"
-#include "coinChain/Peer.h"
-#include "coinChain/Node.h"
+#include <coinChain/PeerManager.h>
+#include <coinChain/Peer.h>
+#include <coinChain/Node.h>
 
 #include <algorithm>
 #include <boost/bind.hpp>

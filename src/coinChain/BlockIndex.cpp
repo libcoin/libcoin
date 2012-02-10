@@ -14,8 +14,8 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coin/Block.h"
-#include "coinChain/BlockIndex.h"
+#include <coin/Block.h>
+#include <coinChain/BlockIndex.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>

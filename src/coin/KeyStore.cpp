@@ -3,12 +3,12 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-//#include "headers.h"
-//#include "db.h"
+//#include "headers.h>
+//#include "db.h>
 
 #include <vector>
 
-#include "coin/KeyStore.h"
+#include <coin/KeyStore.h>
 
 PubKey CKeyStore::GenerateNewKey()
 {

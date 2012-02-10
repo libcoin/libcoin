@@ -17,12 +17,12 @@
 #ifndef PEER_H
 #define PEER_H
 
-#include "coinChain/PeerManager.h"
-#include "coinChain/MessageHandler.h"
-#include "coinChain/Endpoint.h"
-#include "coinChain/MessageParser.h"
-#include "coinChain/BlockIndex.h"
-#include "coinChain/Inventory.h"
+#include <coinChain/PeerManager.h>
+#include <coinChain/MessageHandler.h>
+#include <coinChain/Endpoint.h>
+#include <coinChain/MessageParser.h>
+#include <coinChain/BlockIndex.h>
+#include <coinChain/Inventory.h>
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>

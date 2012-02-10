@@ -14,8 +14,8 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coin/Address.h"
-#include "coin/Key.h"
+#include <coin/Address.h>
+#include <coin/Key.h>
 
 using namespace std;
 

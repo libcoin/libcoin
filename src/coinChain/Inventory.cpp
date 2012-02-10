@@ -14,8 +14,8 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinChain/Inventory.h"
-#include "coin/util.h"
+#include <coinChain/Inventory.h>
+#include <coin/util.h>
 
 static const char* ppszTypeName[] =
 {

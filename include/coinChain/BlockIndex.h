@@ -17,12 +17,12 @@
 #ifndef BLOCKINDEX_H
 #define BLOCKINDEX_H
 
-#include "coin/BigNum.h"
-#include "coin/Key.h"
-#include "coin/Script.h"
-#include "coin/Transaction.h"
+#include <coin/BigNum.h>
+#include <coin/Key.h>
+#include <coin/Script.h>
+#include <coin/Transaction.h>
 
-//#include "coin/Block.h"
+//#include <coin/Block.h>
 
 #include <list>
 

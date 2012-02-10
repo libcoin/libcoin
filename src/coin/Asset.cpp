@@ -14,9 +14,9 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coin/Asset.h"
+#include <coin/Asset.h>
 
-#include "coinChain/db.h"
+#include <coinChain/db.h>
 
 using namespace std;
 using namespace boost;

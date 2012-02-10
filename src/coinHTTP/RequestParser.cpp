@@ -15,8 +15,8 @@
  */
 
 #include <sstream>
-#include "coinHTTP/RequestParser.h"
-#include "coinHTTP/Request.h"
+#include <coinHTTP/RequestParser.h>
+#include <coinHTTP/Request.h>
 
 using namespace std;
 using namespace boost;

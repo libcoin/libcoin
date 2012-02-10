@@ -4,8 +4,8 @@
 #ifndef _CRYPTOKEYSTORE_H_
 #define _CRYPTOKEYSTORE_H_
 
-#include "coin/KeyStore.h"
-#include "coinWallet/Crypter.h"
+#include <coin/KeyStore.h>
+#include <coinWallet/Crypter.h>
 
 typedef std::map<ChainAddress, std::pair<std::vector<unsigned char>, std::vector<unsigned char> > > CryptedKeyMap;
 

@@ -14,8 +14,8 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinChain/MessageHeader.h"
-#include "coin/util.h"
+#include <coinChain/MessageHeader.h>
+#include <coin/util.h>
 
 #ifndef _WIN32
 # include <arpa/inet.h>

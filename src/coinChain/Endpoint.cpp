@@ -14,8 +14,8 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinChain/Endpoint.h"
-#include "coin/util.h"
+#include <coinChain/Endpoint.h>
+#include <coin/util.h>
 
 #include <boost/lexical_cast.hpp>
 

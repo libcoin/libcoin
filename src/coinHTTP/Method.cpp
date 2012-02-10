@@ -14,9 +14,9 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinHTTP/Method.h"
-#include "coinHTTP/RPC.h"
-#include "coinHTTP/Server.h"
+#include <coinHTTP/Method.h>
+#include <coinHTTP/RPC.h>
+#include <coinHTTP/Server.h>
 
 #include <string>
 #include <algorithm>

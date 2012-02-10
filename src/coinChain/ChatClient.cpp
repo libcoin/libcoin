@@ -14,12 +14,12 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinChain/ChatClient.h"
-#include "coinChain/EndpointPool.h"
+#include <coinChain/ChatClient.h>
+#include <coinChain/EndpointPool.h>
 
-#include "coin/Address.h"
-#include "coin/util.h"
-//#include "coinChain/Peer.h"
+#include <coin/Address.h>
+#include <coin/util.h>
+//#include <coinChain/Peer.h>
 
 #include <iostream>
 #include <istream>

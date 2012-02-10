@@ -20,9 +20,9 @@
 #include <string>
 #include <vector>
 
-#include "coin/serialize.h"
-#include "coin/uint256.h"
-#include "coin/util.h"
+#include <coin/serialize.h>
+#include <coin/uint256.h>
+#include <coin/util.h>
 
 /// Alerts are for notifying old versions if they become too obsolete and
 /// need to upgrade.  The message is displayed in the status bar.

@@ -14,7 +14,7 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinHTTP/ConnectionManager.h"
+#include <coinHTTP/ConnectionManager.h>
 #include <algorithm>
 #include <boost/bind.hpp>
 

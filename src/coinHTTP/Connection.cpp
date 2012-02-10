@@ -14,11 +14,11 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinHTTP/Connection.h"
+#include <coinHTTP/Connection.h>
 #include <vector>
 #include <boost/bind.hpp>
-#include "coinHTTP/ConnectionManager.h"
-#include "coinHTTP/RequestHandler.h"
+#include <coinHTTP/ConnectionManager.h>
+#include <coinHTTP/RequestHandler.h>
 
 using namespace boost;
 using namespace asio;

@@ -14,9 +14,9 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinMine/CPUHasher.h"
+#include <coinMine/CPUHasher.h>
 
-#include "coin/Block.h"
+#include <coin/Block.h>
 
 /// We choose to insert only the parts of Crypto++ that we need here - no need to compile the entire lib...
 

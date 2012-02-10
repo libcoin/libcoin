@@ -14,11 +14,11 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinChain/VersionFilter.h"
-#include "coinChain/Alert.h"
+#include <coinChain/VersionFilter.h>
+#include <coinChain/Alert.h>
 
-#include "coin/util.h"
-#include "coinChain/Peer.h"
+#include <coin/util.h>
+#include <coinChain/Peer.h>
 
 using namespace std;
 using namespace boost;

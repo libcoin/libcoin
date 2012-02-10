@@ -17,9 +17,9 @@
 #ifndef ENDPOINTPOOL_H
 #define ENDPOINTPOOL_H
 
-#include "coinChain/db.h"
+#include <coinChain/db.h>
 
-#include "coinChain/Endpoint.h"
+#include <coinChain/Endpoint.h>
 
 #include <map>
 #include <string>

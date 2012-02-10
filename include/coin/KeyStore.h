@@ -5,8 +5,8 @@
 #ifndef BITCOIN_KEYSTORE_H
 #define BITCOIN_KEYSTORE_H
 
-#include "coin/Address.h"
-#include "coin/Key.h"
+#include <coin/Address.h>
+#include <coin/Key.h>
 
 class CKeyStore
 {

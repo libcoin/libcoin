@@ -14,10 +14,10 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinChain/EndpointPool.h"
-#include "coinChain/db.h"
+#include <coinChain/EndpointPool.h>
+#include <coinChain/db.h>
 
-#include "coin/util.h"
+#include <coin/util.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>

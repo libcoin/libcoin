@@ -24,10 +24,10 @@
 
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio/ssl.hpp>
-#include "coinHTTP/Reply.h"
-#include "coinHTTP/Request.h"
-#include "coinHTTP/RequestHandler.h"
-#include "coinHTTP/RequestParser.h"
+#include <coinHTTP/Reply.h>
+#include <coinHTTP/Request.h>
+#include <coinHTTP/RequestHandler.h>
+#include <coinHTTP/RequestParser.h>
 
 class ConnectionManager;
 

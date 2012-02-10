@@ -20,15 +20,15 @@
 #include <boost/asio.hpp>
 #include <string>
 #include <boost/noncopyable.hpp>
-#include "coinChain/Peer.h"
-#include "coinChain/PeerManager.h"
-#include "coinChain/MessageHandler.h"
-#include "coinChain/BlockChain.h"
-#include "coinChain/EndpointPool.h"
-#include "coinChain/ChatClient.h"
-#include "coinChain/Chain.h"
-#include "coinChain/TransactionFilter.h"
-#include "coinChain/BlockFilter.h"
+#include <coinChain/Peer.h>
+#include <coinChain/PeerManager.h>
+#include <coinChain/MessageHandler.h>
+#include <coinChain/BlockChain.h>
+#include <coinChain/EndpointPool.h>
+#include <coinChain/ChatClient.h>
+#include <coinChain/Chain.h>
+#include <coinChain/TransactionFilter.h>
+#include <coinChain/BlockFilter.h>
 
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/filesystem.hpp>

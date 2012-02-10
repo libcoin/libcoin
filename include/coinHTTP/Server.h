@@ -19,9 +19,9 @@
 
 #include <boost/asio.hpp>
 #include <string>
-#include "coinHTTP/Connection.h"
-#include "coinHTTP/ConnectionManager.h"
-#include "coinHTTP/RequestHandler.h"
+#include <coinHTTP/Connection.h>
+#include <coinHTTP/ConnectionManager.h>
+#include <coinHTTP/RequestHandler.h>
 
 #include <boost/noncopyable.hpp>
 #include <boost/filesystem.hpp>

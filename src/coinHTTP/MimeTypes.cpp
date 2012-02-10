@@ -14,7 +14,7 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinHTTP/MimeTypes.h"
+#include <coinHTTP/MimeTypes.h>
 
 namespace MimeTypes {
     

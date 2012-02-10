@@ -6,14 +6,14 @@
 #include <openssl/evp.h>
 #include <vector>
 #include <string>
-//#include "headers.h"
+//#include "headers.h>
 #ifdef _WIN32
 #include <windows.h>
 #endif
 
-#include "coinWallet/Crypter.h"
-#include "coin/Transaction.h"
-#include "coin/util.h"
+#include <coinWallet/Crypter.h>
+#include <coin/Transaction.h>
+#include <coin/util.h>
 
 bool CCrypter::SetKeyFromPassphrase(const std::string& strKeyData, const std::vector<unsigned char>& chSalt, const unsigned int nRounds, const unsigned int nDerivationMethod)
 {

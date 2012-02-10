@@ -14,13 +14,13 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinChain/Node.h"
-#include "coinChain/PeerManager.h"
-#include "coinChain/VersionFilter.h"
-#include "coinChain/EndpointFilter.h"
-#include "coinChain/BlockFilter.h"
-#include "coinChain/TransactionFilter.h"
-#include "coinChain/AlertFilter.h"
+#include <coinChain/Node.h>
+#include <coinChain/PeerManager.h>
+#include <coinChain/VersionFilter.h>
+#include <coinChain/EndpointFilter.h>
+#include <coinChain/BlockFilter.h>
+#include <coinChain/TransactionFilter.h>
+#include <coinChain/AlertFilter.h>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>

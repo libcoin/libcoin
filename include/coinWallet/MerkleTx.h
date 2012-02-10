@@ -5,13 +5,13 @@
 #ifndef MERKLETX_H
 #define MERKLETX_H
 
-#include "coin/Transaction.h"
-#include "coin/BigNum.h"
-#include "coin/Key.h"
-#include "coin/Script.h"
+#include <coin/Transaction.h>
+#include <coin/BigNum.h>
+#include <coin/Key.h>
+#include <coin/Script.h>
 
-#include "coin/Block.h"
-#include "coinChain/BlockChain.h"
+#include <coin/Block.h>
+#include <coinChain/BlockChain.h>
 
 /// A transaction with a merkle branch linking it to the block chain.
 class CMerkleTx : public Transaction

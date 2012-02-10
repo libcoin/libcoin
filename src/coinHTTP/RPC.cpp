@@ -14,8 +14,8 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinHTTP/RPC.h"
-#include "coinHTTP/Method.h"
+#include <coinHTTP/RPC.h>
+#include <coinHTTP/Method.h>
 
 #include <sstream>
 #include <string>
@@ -24,7 +24,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 
-#include "coinHTTP/json/json_spirit.h"
+#include <coinHTTP/json/json_spirit.h>
 
 using namespace std;
 using namespace boost;

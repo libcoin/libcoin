@@ -19,8 +19,8 @@
 
 #include <string>
 #include <boost/lexical_cast.hpp>
-#include "coinHTTP/Method.h"
-#include "coinHTTP/Reply.h"
+#include <coinHTTP/Method.h>
+#include <coinHTTP/Reply.h>
 
 #include "json/json_spirit.h"
 

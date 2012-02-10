@@ -17,7 +17,7 @@
 #ifndef VERSIONFILTER_H
 #define VERSIONFILTER_H
 
-#include "Filter.h"
+#include <coinChain/Filter.h>
 
 #include <string>
 

@@ -14,12 +14,12 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinHTTP/RequestHandler.h"
-#include "coinHTTP/MimeTypes.h"
-#include "coinHTTP/Reply.h"
-#include "coinHTTP/Request.h"
-#include "coinHTTP/Method.h"
-#include "coinHTTP/RPC.h"
+#include <coinHTTP/RequestHandler.h>
+#include <coinHTTP/MimeTypes.h>
+#include <coinHTTP/Reply.h>
+#include <coinHTTP/Request.h>
+#include <coinHTTP/Method.h>
+#include <coinHTTP/RPC.h>
 
 #include <fstream>
 #include <sstream>

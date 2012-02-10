@@ -14,8 +14,8 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coin/util.h"
-#include "coin/Transaction.h"
+#include <coin/util.h>
+#include <coin/Transaction.h>
 
 using namespace std;
 using namespace boost;

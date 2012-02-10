@@ -14,7 +14,7 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinHTTP/Reply.h"
+#include <coinHTTP/Reply.h>
 
 #include <iostream>
 #include <istream>

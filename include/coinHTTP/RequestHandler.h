@@ -17,8 +17,8 @@
 #ifndef HTTP_REQUEST_HANDLER_H
 #define HTTP_REQUEST_HANDLER_H
 
-#include "coinHTTP/Method.h"
-#include "coinHTTP/Header.h"
+#include <coinHTTP/Method.h>
+#include <coinHTTP/Header.h>
 
 #include <string>
 

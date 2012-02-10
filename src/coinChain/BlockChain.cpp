@@ -14,15 +14,15 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinChain/BlockChain.h"
+#include <coinChain/BlockChain.h>
 
-#include "coin/Block.h"
-#include "coinChain/BlockIndex.h"
-#include "coinChain/MessageHeader.h"
+#include <coin/Block.h>
+#include <coinChain/BlockIndex.h>
+#include <coinChain/MessageHeader.h>
 
-#include "coinChain/Peer.h"
+#include <coinChain/Peer.h>
 
-#include "coin/Script.h"
+#include <coin/Script.h>
 
 #include <boost/lexical_cast.hpp>
 

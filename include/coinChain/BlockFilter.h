@@ -17,10 +17,10 @@
 #ifndef BLOCKFILTER_H
 #define BLOCKFILTER_H
 
-#include "Filter.h"
+#include <coinChain/Filter.h>
 
-#include "coin/uint256.h"
-#include "coinChain/PeerManager.h"
+#include <coin/uint256.h>
+#include <coinChain/PeerManager.h>
 
 #include <string>
 #include <map>

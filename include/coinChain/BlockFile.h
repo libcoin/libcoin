@@ -17,10 +17,10 @@
 #ifndef BLOCKFILE_H
 #define BLOCKFILE_H
 
-#include "coin/BigNum.h"
-#include "coin/Key.h"
-#include "coin/Script.h"
-#include "coin/Transaction.h"
+#include <coin/BigNum.h>
+#include <coin/Key.h>
+#include <coin/Script.h>
+#include <coin/Transaction.h>
 
 #include <boost/noncopyable.hpp>
 #include <list>

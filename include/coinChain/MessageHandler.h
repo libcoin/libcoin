@@ -17,7 +17,7 @@
 #ifndef MESSAGE_HANDLER_H
 #define MESSAGE_HANDLER_H
 
-#include "Filter.h"
+#include <coinChain/Filter.h>
 
 #include "boost/noncopyable.hpp"
 

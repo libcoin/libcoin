@@ -17,7 +17,7 @@
 #ifndef EXPLORER_H
 #define EXPLORER_H
 
-#include "coinChain/Node.h"
+#include <coinChain/Node.h>
 
 #include <fstream>
 

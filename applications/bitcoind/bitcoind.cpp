@@ -15,17 +15,17 @@
  */
 
 
-#include "coinChain/Node.h"
-#include "coinChain/NodeRPC.h"
+#include <coinChain/Node.h>
+#include <coinChain/NodeRPC.h>
 
-#include "coinHTTP/Server.h"
-#include "coinHTTP/Client.h"
+#include <coinHTTP/Server.h>
+#include <coinHTTP/Client.h>
 
-#include "coinWallet/Wallet.h"
-#include "coinWallet/WalletRPC.h"
+#include <coinWallet/Wallet.h>
+#include <coinWallet/WalletRPC.h>
 
-#include "coinMine/Miner.h"
-#include "coinMine/MinerRPC.h"
+#include <coinMine/Miner.h>
+#include <coinMine/MinerRPC.h>
 
 #include <boost/thread.hpp>
 #include <boost/program_options.hpp>

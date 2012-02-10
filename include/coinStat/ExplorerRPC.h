@@ -17,13 +17,13 @@
 #ifndef EXPLORERRPC_H
 #define EXPLORERRPC_H
 
-#include "coinStat/Explorer.h"
+#include <coinStat/Explorer.h>
 
-#include "coinChain/Node.h"
-#include "coinChain/NodeRPC.h"
+#include <coinChain/Node.h>
+#include <coinChain/NodeRPC.h>
 
-#include "coinHTTP/Server.h"
-#include "coinHTTP/RPC.h"
+#include <coinHTTP/Server.h>
+#include <coinHTTP/RPC.h>
 
 /// Base class for all Node rpc methods - they all need a handle to the node.
 class ExplorerMethod : public Method {

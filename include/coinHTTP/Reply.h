@@ -19,7 +19,7 @@
 
 #include <string>
 #include <boost/asio.hpp>
-#include "coinHTTP/Header.h"
+#include <coinHTTP/Header.h>
 
 /// A reply to be sent to a client.
 struct Reply

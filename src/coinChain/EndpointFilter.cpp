@@ -14,9 +14,9 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "coinChain/EndpointFilter.h"
-#include "coinChain/EndpointPool.h"
-#include "coinChain/Peer.h"
+#include <coinChain/EndpointFilter.h>
+#include <coinChain/EndpointPool.h>
+#include <coinChain/Peer.h>
 
 #include <string>
 
