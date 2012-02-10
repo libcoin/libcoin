@@ -256,6 +256,28 @@ const CBlockIndex* BlockChain::getBlockIndex(const uint256 hash) const
         return NULL;
 }
 
+double BlockChain::getDifficulty(const CBlockIndex* pindex) const {
+    // Floating point number that is a multiple of the minimum difficulty,
+    // minimum difficulty = 1.0.
+    
+    if(pindex == NULL) pindex = getBestIndex();
+    
+    int nShift = (pindex->nBits >> 24) & 0xff;
+    
+    double dDiff =
+    (double)0x0000ffff / (double)(pindex->nBits & 0x00ffffff);
+    
+    while (nShift < 29) {
+        dDiff *= 256.0;
+        nShift++;
+    }
+    while (nShift > 29) {
+        dDiff /= 256.0;
+        nShift--;
+    }
+    
+    return dDiff;
+}
 
 uint256 BlockChain::getBlockHash(const CBlockLocator& locator)
 {
@@ -487,89 +509,6 @@ bool Solver(const Script& scriptPubKey, vector<pair<opcodetype, vector<unsigned 
 
 bool BlockChain::UpdateTxIndex(uint256 hash, const TxIndex& txindex)
 {
-    
-    //    cout << "update tx: " << hash.toString() << endl;    
-    /*
-    Transaction tx;
-    _blockFile.readFromDisk(tx, txindex.getPos());
-    
-    // gronager: hook to enable public key / hash160 lookups by a separate database
-    // first find the keys and hash160s that are referenced in this transaction
-    typedef pair<uint160, unsigned int> AssetPair;
-    vector<AssetPair> vDebit;
-    vector<AssetPair> vCredit;
-    
-    // for each tx out in the newly added tx check for a pubkey or a pubkeyhash in the script
-    for(unsigned int n = 0; n < tx.vout.size(); n++)
-        {
-        const Output& txout = tx.vout[n];
-        vector<pair<opcodetype, vector<unsigned char> > > vSolution;
-        if (!Solver(txout.scriptPubKey, vSolution))
-            break;
-        
-        BOOST_FOREACH(PAIRTYPE(opcodetype, vector<unsigned char>)& item, vSolution)
-            {
-            vector<unsigned char> vchPubKey;
-            if (item.first == OP_PUBKEY)
-                {
-                // encode the pubkey into a hash160
-                vDebit.push_back(AssetPair(toAddress(item.second), n));                
-                }
-            else if (item.first == OP_PUBKEYHASH)
-                {
-                vDebit.push_back(AssetPair(uint160(item.second), n));                
-                }
-            }
-        }
-    if(!tx.IsCoinBase())
-        {
-        for(unsigned int n = 0; n < tx.vin.size(); n++)
-            {
-            const Input& txin = tx.vin[n];
-            Transaction prevtx;
-            if(!ReadDiskTx(txin.prevout, prevtx))
-                continue; // OK ???
-            Output txout = prevtx.vout[txin.prevout.n];        
-            
-            vector<pair<opcodetype, vector<unsigned char> > > vSolution;
-            if (!Solver(txout.scriptPubKey, vSolution))
-                break;
-            
-            BOOST_FOREACH(PAIRTYPE(opcodetype, vector<unsigned char>)& item, vSolution)
-                {
-                vector<unsigned char> vchPubKey;
-                if (item.first == OP_PUBKEY)
-                    {
-                    // encode the pubkey into a hash160
-                    vCredit.push_back(pair<uint160, unsigned int>(toAddress(item.second), n));                
-                    }
-                else if (item.first == OP_PUBKEYHASH)
-                    {
-                    vCredit.push_back(pair<uint160, unsigned int>(uint160(item.second), n));                
-                    }
-                }
-            }
-        }
-    
-    for(vector<AssetPair>::iterator hashpair = vDebit.begin(); hashpair != vDebit.end(); ++hashpair)
-        {
-        set<Coin> txhashes;
-        Read(make_pair(string("dr"), ChainAddress(hashpair->first).toString()), txhashes);
-        //        cout << "\t debit: " << ChainAddress(hashpair->first).toString() << endl;    
-        txhashes.insert(Coin(hash, hashpair->second));
-        Write(make_pair(string("dr"), ChainAddress(hashpair->first).toString()), txhashes); // overwrite!
-        }
-    
-    for(vector<AssetPair>::iterator hashpair = vCredit.begin(); hashpair != vCredit.end(); ++hashpair)
-        {
-        set<Coin> txhashes;
-        Read(make_pair(string("cr"), ChainAddress(hashpair->first).toString()), txhashes);
-        //        cout << "\t credit: " << ChainAddress(hashpair->first).toString() << endl;    
-        txhashes.insert(Coin(hash, hashpair->second));
-        Write(make_pair(string("cr"), ChainAddress(hashpair->first).toString()), txhashes); // overwrite!
-        }
-    //    cout << "and write tx" << std::endl;
-     */
     return Write(make_pair(string("tx"), hash), txindex);
 }
 
@@ -587,81 +526,6 @@ bool BlockChain::AddTxIndex(const Transaction& tx, const DiskTxPos& pos, int nHe
 bool BlockChain::EraseTxIndex(const Transaction& tx)
 {
     uint256 hash = tx.getHash();
-/*    
-    // gronager: hook to enable public key / hash160 lookups by a separate database
-    // first find the keys and hash160s that are referenced in this transaction
-    typedef pair<uint160, unsigned int> AssetPair;
-    vector<AssetPair> vDebit;
-    vector<AssetPair> vCredit;
-    cout << "erase tx: " << hash.toString() << endl;    
-    // for each tx out in the newly added tx check for a pubkey or a pubkeyhash in the script
-    for(unsigned int n = 0; n < tx.vout.size(); n++)
-        {
-        const Output& txout = tx.vout[n];
-        vector<pair<opcodetype, vector<unsigned char> > > vSolution;
-        if (!Solver(txout.scriptPubKey, vSolution))
-            break;
-        
-        BOOST_FOREACH(PAIRTYPE(opcodetype, vector<unsigned char>)& item, vSolution)
-            {
-            vector<unsigned char> vchPubKey;
-            if (item.first == OP_PUBKEY)
-                {
-                // encode the pubkey into a hash160
-                vDebit.push_back(AssetPair(toAddress(item.second), n));                
-                }
-            else if (item.first == OP_PUBKEYHASH)
-                {
-                vDebit.push_back(AssetPair(uint160(item.second), n));                
-                }
-            }
-        }
-    if(!tx.IsCoinBase())
-        {
-        for(unsigned int n = 0; n < tx.vin.size(); n++)
-            {
-            const Input& txin = tx.vin[n];
-            Transaction prevtx;
-            if(!ReadDiskTx(txin.prevout, prevtx))
-                continue; // OK ???
-            Output txout = prevtx.vout[txin.prevout.n];        
-            
-            vector<pair<opcodetype, vector<unsigned char> > > vSolution;
-            if (!Solver(txout.scriptPubKey, vSolution))
-                break;
-            
-            BOOST_FOREACH(PAIRTYPE(opcodetype, vector<unsigned char>)& item, vSolution)
-                {
-                vector<unsigned char> vchPubKey;
-                if (item.first == OP_PUBKEY)
-                    {
-                    // encode the pubkey into a hash160
-                    vCredit.push_back(pair<uint160, unsigned int>(toAddress(item.second), n));                
-                    }
-                else if (item.first == OP_PUBKEYHASH)
-                    {
-                    vCredit.push_back(pair<uint160, unsigned int>(uint160(item.second), n));                
-                    }
-                }
-            }
-        }
-    
-    for(vector<AssetPair>::iterator hashpair = vDebit.begin(); hashpair != vDebit.end(); ++hashpair)
-        {
-        set<Coin> txhashes;
-        Read(make_pair(string("dr"), ChainAddress(hashpair->first).toString()), txhashes);
-        txhashes.erase(Coin(hash, hashpair->second));
-        Write(make_pair(string("dr"), ChainAddress(hashpair->first).toString()), txhashes); // overwrite!
-        }
-    
-    for(vector<AssetPair>::iterator hashpair = vCredit.begin(); hashpair != vCredit.end(); ++hashpair)
-        {
-        set<Coin> txhashes;
-        Read(make_pair(string("cr"), ChainAddress(hashpair->first).toString()), txhashes);
-        txhashes.erase(Coin(hash, hashpair->second));
-        Write(make_pair(string("cr"), ChainAddress(hashpair->first).toString()), txhashes); // overwrite!
-        }
-*/    
     return Erase(make_pair(string("tx"), hash));
 }
 
@@ -1465,33 +1329,6 @@ bool BlockChain::AddToMemoryPoolUnchecked(const Transaction& tx)
     // call AcceptToMemoryPool to properly check the transaction first.
    
     uint256 hash = tx.getHash();
-    /*
-    typedef pair<uint160, unsigned int> AssetPair;
-    vector<AssetPair> debits;
-    vector<AssetPair> credits;
-    
-    // for each tx out in the newly added tx check for a pubkey or a pubkeyhash in the script
-    for(unsigned int n = 0; n < tx.getNumOutputs(); n++)
-        debits.push_back(AssetPair(tx.getOutput(n).getAddress(), n));
-    
-    if(!tx.isCoinBase()) {
-        for(unsigned int n = 0; n < tx.getNumInputs(); n++) {
-            const Input& txin = tx.getInput(n);
-            Transaction prevtx;
-            if(!readDiskTx(txin.prevout().hash, prevtx))
-                continue; // OK ???
-            Output txout = prevtx.getOutput(txin.prevout().index);        
-            
-            credits.push_back(AssetPair(txout.getAddress(), n));
-        }
-    }
-    
-    for(vector<AssetPair>::iterator assetpair = debits.begin(); assetpair != debits.end(); ++assetpair)
-        _debitIndex[assetpair->first].insert(Coin(hash, assetpair->second));
-    
-    for(vector<AssetPair>::iterator assetpair = credits.begin(); assetpair != credits.end(); ++assetpair)
-        _creditIndex[assetpair->first].insert(Coin(hash, assetpair->second));
-    */
     _transactionIndex[hash] = tx;
     for (int i = 0; i < tx.getNumInputs(); i++)
         _transactionConnections[tx.getInput(i).prevout()] = CoinRef(&_transactionIndex[hash], i);
@@ -1505,63 +1342,12 @@ bool BlockChain::RemoveFromMemoryPool(const Transaction& tx)
 {
     // Remove transaction from memory pool
     
-    /*
-    uint256 hash = tx.getHash();
-     
-    typedef pair<uint160, unsigned int> AssetPair;
-    vector<AssetPair> debits;
-    vector<AssetPair> credits;
-    
-    // for each tx out in the newly added tx check for a pubkey or a pubkeyhash in the script
-    for(unsigned int n = 0; n < tx.getNumOutputs(); n++)
-        debits.push_back(AssetPair(tx.getOutput(n).getAddress(), n));
-    
-    if(!tx.isCoinBase()) {
-        for(unsigned int n = 0; n < tx.getNumInputs(); n++) {
-            const Input& txin = tx.getInput(n);
-            Transaction prevtx;
-            if(!readDiskTx(txin.prevout().hash, prevtx))
-                continue; // OK ???
-            Output txout = prevtx.getOutput(txin.prevout().index);        
-            
-            credits.push_back(AssetPair(txout.getAddress(), n));
-        }
-    }
-    
-    for(vector<AssetPair>::iterator assetpair = debits.begin(); assetpair != debits.end(); ++assetpair) {
-        _debitIndex[assetpair->first].erase(Coin(hash, assetpair->second));
-        if(_debitIndex[assetpair->first].size() == 0)
-            _debitIndex.erase(assetpair->first); 
-    }
-    
-    for(vector<AssetPair>::iterator assetpair = credits.begin(); assetpair != credits.end(); ++assetpair) {
-        _creditIndex[assetpair->first].erase(Coin(hash, assetpair->second));
-        if(_creditIndex[assetpair->first].size() == 0)
-            _creditIndex.erase(assetpair->first); 
-    }
-    */
     BOOST_FOREACH(const Input& txin, tx.getInputs())
     _transactionConnections.erase(txin.prevout());
     _transactionIndex.erase(tx.getHash());
     _transactionsUpdated++;
     
     return true;
-}
-
-void BlockChain::getCredit(const uint160& btc, Coins& coins) const
-{
-    readCrIndex(btc, coins);
-    AssetIndex::const_iterator credit = _creditIndex.find(btc);
-    if(credit != _creditIndex.end())
-        coins.insert(credit->second.begin(), credit->second.end());
-}
-
-void BlockChain::getDebit(const uint160& btc, Coins& coins) const
-{
-    readDrIndex(btc, coins);
-    AssetIndex::const_iterator debit = _debitIndex.find(btc);
-    if(debit != _debitIndex.end())
-        coins.insert(debit->second.begin(), debit->second.end());
 }
 
 void BlockChain::getTransaction(const uint256& hash, Transaction& tx) const
@@ -1624,46 +1410,13 @@ uint256 BlockChain::spentIn(Coin coin) const {
         return 0;    
 }
 
-
-//
-// CDBAssetSyncronizer
-//
-
-
-void CDBAssetSyncronizer::getCreditCoins(uint160 btc, Coins& coins)
-{
-    _blockChain.getCredit(btc, coins);
-}
-
-void CDBAssetSyncronizer::getDebitCoins(uint160 btc, Coins& coins)
-{
-    _blockChain.getDebit(btc, coins);    
-}
-
-void CDBAssetSyncronizer::getTransaction(const Coin& coin, Transaction& tx)
-{
-    _blockChain.getTransaction(coin.hash, tx);
-}
-
-void CDBAssetSyncronizer::getCoins(uint160 btc, Coins& coins)
-{
-    // read all relevant tx'es
-    Coins debit;
-    getDebitCoins(btc, debit);
-    Coins credit;
-    getCreditCoins(btc, credit);
-    
-    for(Coins::iterator coin = debit.begin(); coin != debit.end(); ++coin) {
-        Transaction tx;
-        getTransaction(*coin, tx);
-        coins.insert(*coin);
+int64 BlockChain::value(Coin coin) const {
+    // get the transaction, then get the Output of the prevout, then get the value
+    Transaction tx;
+    getTransaction(coin.hash, tx);
+    if (!tx.isNull() && coin.index < tx.getNumOutputs()) {
+        Output out = tx.getOutput(coin.index);
+        return out.value();
     }
-    for(Coins::iterator coin = credit.begin(); coin != credit.end(); ++coin) {
-        Transaction tx;
-        getTransaction(*coin, tx);
-        
-        Input in = tx.getInput(coin->index);
-        Coin spend(in.prevout().hash, in.prevout().index);
-        coins.erase(spend);
-    }
+    return 0;
 }

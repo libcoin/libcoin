@@ -22,13 +22,12 @@ SET(TARGET_COMMON_LIBRARIES
 	coinHTTP
 )
 
+ADD_SUBDIRECTORY(bitcoind)
+ADD_SUBDIRECTORY(coinexplorer)
+
 IF(DYNAMIC_LIBCOIN)
-#    ADD_SUBDIRECTORY(btcd)
-    ADD_SUBDIRECTORY(bitcoind)
-#    ADD_SUBDIRECTORY(btc)
 ELSE()
     # need to define this on win32 or linker cries about _declspecs
-    ADD_SUBDIRECTORY(bitcoind)
     ADD_DEFINITIONS(-DLIBCOIN_LIBRARY_STATIC)
 ENDIF()
 

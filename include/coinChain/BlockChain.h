@@ -167,12 +167,6 @@ public:
     /// The constructor - reference to a Chain definition i obligatory, if no dataDir is provided, the location for the db and the file is chosen from the Chain definition and the CDB::defaultDir method 
     BlockChain(const Chain& chain = bitcoin, const std::string dataDir = "", const char* pszMode="cr+");
     
-    /// A S S E T S
-    
-    /// Get asset pointers from db or memory.
-    void getCredit(const uint160& btc, Coins& coins) const;
-    void getDebit(const uint160& btc, Coins& coins) const;
-
     /// T R A N S A C T I O N S    
     
     /// Get transactions from db or memory.
@@ -219,6 +213,8 @@ public:
     bool isSpent(Coin coin) const;
     int getNumSpent(uint256 hash) const ;
     uint256 spentIn(Coin coin) const;
+
+    int64 value(Coin coin) const;
     
     /// B L O C K S
     
@@ -243,6 +239,8 @@ public:
 
     const CBlockIndex* getBlockIndex(const uint256 hash) const;
 
+    double getDifficulty(const CBlockIndex* pindex = NULL) const; 
+    
     /// getBlock will first try to locate the block by its hash through the block index, if this fails it will assume that the hash for a tx and check the database to get the disk pos and then return the block as read from the block file
     void getBlock(const uint256 hash, Block& block) const;
     
@@ -385,20 +383,6 @@ private:
     mutable int64 _verifySignatureTimer;
     mutable int64 _setBestChainTimer;
     mutable int64 _addToBlockIndexTimer;
-};
-
-
-class CDBAssetSyncronizer : public AssetSyncronizer
-{
-public:
-    CDBAssetSyncronizer(BlockChain& bc) : _blockChain(bc) {}
-    virtual void getCreditCoins(uint160 btc, Coins& coins);
-    virtual void getDebitCoins(uint160 btc, Coins& coins);
-    virtual void getCoins(uint160 btc, Coins& coins);
-    
-    virtual void getTransaction(const Coin& coin, Transaction&);
-private:
-    BlockChain& _blockChain;
 };
 
 #endif // BLOCKCHAIN_H

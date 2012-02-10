@@ -705,11 +705,47 @@ void Unserialize(Stream& is, std::map<K, T, Pred, A>& m, int nType, int nVersion
     unsigned int nSize = ReadCompactSize(is);
     typename std::map<K, T, Pred, A>::iterator mi = m.begin();
     for (unsigned int i = 0; i < nSize; i++)
-    {
+        {
         std::pair<K, T> item;
         Unserialize(is, item, nType, nVersion);
         mi = m.insert(mi, item);
-    }
+        }
+}
+
+
+
+//
+// multimap
+//
+template<typename K, typename T, typename Pred, typename A>
+unsigned int GetSerializeSize(const std::multimap<K, T, Pred, A>& m, int nType, int nVersion)
+{
+    unsigned int nSize = GetSizeOfCompactSize(m.size());
+    for (typename std::multimap<K, T, Pred, A>::const_iterator mi = m.begin(); mi != m.end(); ++mi)
+        nSize += GetSerializeSize((*mi), nType, nVersion);
+    return nSize;
+}
+
+template<typename Stream, typename K, typename T, typename Pred, typename A>
+void Serialize(Stream& os, const std::multimap<K, T, Pred, A>& m, int nType, int nVersion)
+{
+    WriteCompactSize(os, m.size());
+    for (typename std::multimap<K, T, Pred, A>::const_iterator mi = m.begin(); mi != m.end(); ++mi)
+        Serialize(os, (*mi), nType, nVersion);
+}
+
+template<typename Stream, typename K, typename T, typename Pred, typename A>
+void Unserialize(Stream& is, std::multimap<K, T, Pred, A>& m, int nType, int nVersion)
+{
+    m.clear();
+    unsigned int nSize = ReadCompactSize(is);
+    typename std::multimap<K, T, Pred, A>::iterator mi = m.begin();
+    for (unsigned int i = 0; i < nSize; i++)
+        {
+        std::pair<K, T> item;
+        Unserialize(is, item, nType, nVersion);
+        mi = m.insert(mi, item);
+        }
 }
 
 

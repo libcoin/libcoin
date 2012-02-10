@@ -28,6 +28,27 @@ protected:
     Node& _node;
 };
 
+
+class GetBlockHash : public NodeMethod {
+public:
+    GetBlockHash(Node& node) : NodeMethod(node) {}
+    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
+};
+
+class GetBlock : public NodeMethod {
+public:
+    GetBlock(Node& node) : NodeMethod(node) {}
+    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
+};
+
+json_spirit::Object tx2json(Transaction &tx, int64 timestamp = 0, int64 blockheight = 0);
+
+class GetTransaction : public NodeMethod {
+public:
+    GetTransaction(Node& node) : NodeMethod(node) {}
+    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
+};
+
 class GetBlockCount : public NodeMethod {
 public:
     GetBlockCount(Node& node) : NodeMethod(node) {}
@@ -44,13 +65,11 @@ class GetDifficulty : public NodeMethod {
 public:
     GetDifficulty(Node& node) : NodeMethod(node) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
-protected:
-    double getDifficulty();
 };
 
-class GetInfo : public GetDifficulty {
+class GetInfo : public NodeMethod {
 public:
-    GetInfo(Node& node) : GetDifficulty(node) {}
+    GetInfo(Node& node) : NodeMethod(node) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
 };
 

@@ -79,6 +79,7 @@ class Server : private boost::noncopyable
 public:
     /// Construct the server to listen on the specified TCP address and port, and
     /// serve up files from the given directory.
+    /// doc_root can alternatively be set to an in memory html document, then this is the only document that will be returned.
     explicit Server(const std::string address = boost::asio::ip::address_v4::loopback().to_string(), const std::string port = "8333", const std::string doc_root = "");
 
     /// Set the server credentials - this will also make the server secure.

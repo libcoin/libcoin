@@ -21,7 +21,8 @@
 #include <string>
 
 #include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/foreach.hpp>
 
 #include "coinHTTP/json/json_spirit.h"
 
@@ -106,6 +107,20 @@ void RPC::parse(string payload) {
         throw error(parse_error, "Params must be an array");        
 }
 
+void RPC::parse(std::string action, std::string payload) {
+    _method = action;
+    if (payload.find("params=") == 0) {
+        string param_line = payload.substr(7);
+        vector<string> params;
+        split(params, param_line, is_any_of("+ ")); // html forms use "+" instead of " " !
+        _params = Array();
+        BOOST_FOREACH(const string& param, params) {
+            _params.push_back(param);
+        }
+    }
+}
+
+
 /*
 void RPC::setContent(string& content) {
     // Generate JSON RPC 2.0 reply
@@ -126,6 +141,15 @@ string& RPC::getContent() {
     reply.push_back(Pair("error", _error));
     reply.push_back(Pair("id", _id));
     _content = write(Value(reply)) + "\n";
+    return _content;
+}
+
+string& RPC::getPlainContent() {
+    // Generate text/plain reply
+    if(_error.is_null())
+        _content = write_formatted(_result);
+    else
+        _content = write_formatted(_error);
     return _content;
 }
 

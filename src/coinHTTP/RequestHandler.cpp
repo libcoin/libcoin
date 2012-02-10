@@ -153,7 +153,11 @@ void RequestHandler::handleGET(const Request& req, Reply& rep) {
     
     // First check the cache.
     string& content = _doc_cache[request_path];
-    
+    // We support one simple alternative - if the _doc_root begins with a "<" we assume it is not a 
+    // path but a html document it selves - then we simple return this!
+    if (_doc_root.size() > 0 && _doc_root[0] == '<')
+        content = _doc_root;
+
     // Not cached - load and cache it
     if(content.size() == 0) {
         // Open the file to send back.
@@ -251,6 +255,59 @@ void RequestHandler::handlePOST(const Request& req, Reply& rep) {
             // rpc.setContent(rep.content);                    
             rep.headers["Content-Length"] = lexical_cast<string>(rep.content.size());
             rep.headers["Content-Type"] = "application/json";
+            rep.status = rpc.getStatus();
+            return;
+        }
+        else if(mime.find("text/plain") == 0) {
+            // This is a form POST - action is method, content is "params=<params>" 
+            
+            RPC rpc;
+            try {
+                size_t slash = req.uri.rfind("/");
+                string action; 
+                if (slash != string::npos) action = req.uri.substr(slash + 1);
+                
+                rpc.parse(action, req.payload);
+                
+                // Check if the method requires authorization
+                if(_auths.count(rpc.method())) {
+                    if(req.headers.count("Authorization") == 0)
+                        throw Reply::stock_reply(Reply::unauthorized);
+                    string basic_auth = req.headers.find("Authorization")->second;
+                    if (basic_auth.length() > 9 && basic_auth.substr(0,6) != "Basic ")
+                        throw Reply::stock_reply(Reply::unauthorized);
+                    if(!_auths[rpc.method()].valid(basic_auth.substr(6)))
+                        throw Reply::stock_reply(Reply::unauthorized);                    
+                }
+                
+                // Find method
+                Methods::iterator m = _methods.find(rpc.method());
+                if (m == _methods.end())
+                    throw RPC::error(RPC::method_not_found);
+                
+                try {
+                    // Execute - should set  CRITICAL_BLOCK(cs_main)                    
+                    rpc.execute(*(m->second));                    
+                }
+                catch (std::exception& e) {
+                    rpc.setError(RPC::error(RPC::unknown_error, e.what()));
+                }
+            }
+            catch (Object& err) {
+                rpc.setError(err);
+            }
+            catch (std::exception& e) {
+                rpc.setError(RPC::error(RPC::parse_error, e.what()));
+            }
+            catch (Reply err) {
+                rep = err;
+                return;
+            }
+            // Form reply header and content
+            rep.content = rpc.getPlainContent();
+            // rpc.setContent(rep.content);                    
+            rep.headers["Content-Length"] = lexical_cast<string>(rep.content.size());
+            rep.headers["Content-Type"] = "text/plain";
             rep.status = rpc.getStatus();
             return;
         }

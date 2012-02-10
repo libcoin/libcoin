@@ -44,11 +44,17 @@ public:
     
     RPC();
     
+    /// parse the content from a application/json - it is assumed that it is formatted according to the JSOC RPC 2.0 spec
     void parse(std::string payload);
 
-    //    void setContent(string& content);
-    
+    /// parse the content from a text/plain html form post - it is assumed that action = method, and payload is params=<params>
+    void parse(std::string action, std::string payload);
+
+    /// Get content envelope in application/json formmatted for JSON RPC 2.0
     std::string& getContent();
+    
+    /// Get content envelope for text/plain.
+    std::string& getPlainContent();
     
     void setError(const json_spirit::Value& error);
 

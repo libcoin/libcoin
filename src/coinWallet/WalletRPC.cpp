@@ -890,7 +890,7 @@ Value ListAccounts::operator()(const Array& params, bool fHelp)
     return ret;
 }
 
-Value GetTransaction::operator()(const Array& params, bool fHelp)
+Value GetWalletTransaction::operator()(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
         throw RPC::error(RPC::invalid_params, "gettransaction <txid>\n"

@@ -21,6 +21,133 @@ using namespace std;
 using namespace boost;
 using namespace json_spirit;
 
+Value GetBlockHash::operator()(const Array& params, bool fHelp) {
+    if (fHelp || params.size() != 1)
+        throw RPC::error(RPC::invalid_params, "getblockhash <index>\n"
+                            "Returns hash of block in best-block-chain at <index>.");
+    
+    int height = params[0].get_int();
+    if (height < 0 || height > _node.blockChain().getBestHeight())
+        throw RPC::error(RPC::invalid_request, "Block number out of range.");
+    
+    Block block;
+    const CBlockIndex* pblockindex = _node.blockChain().getBestIndex();
+    while (pblockindex->nHeight > height)
+        pblockindex = pblockindex->pprev;
+    
+    return pblockindex->phashBlock->GetHex();
+}        
+
+Value GetBlock::operator()(const Array& params, bool fHelp) {
+    if (fHelp || params.size() != 1)
+        throw RPC::error(RPC::invalid_params, "getblock <hash>\n"
+                            "Returns details of a block with given block-hash.");
+    
+    std::string strHash = params[0].get_str();
+    uint256 hash(strHash);
+    
+    Block block;
+    _node.blockChain().getBlock(hash, block);
+    
+    if (block.isNull())
+        throw RPC::error(RPC::invalid_request,  "Block not found");
+        
+    const CBlockIndex* blockindex = _node.blockChain().getBlockIndex(hash);
+
+    Object result;
+    result.push_back(Pair("hash", block.getHash().GetHex()));
+    result.push_back(Pair("blockcount", blockindex->nHeight));
+    result.push_back(Pair("version", block.getVersion()));
+    result.push_back(Pair("merkleroot", block.getMerkleRoot().GetHex()));
+    result.push_back(Pair("time", (boost::int64_t)block.getBlockTime()));
+    result.push_back(Pair("nonce", (boost::uint64_t)block.getNonce()));
+    result.push_back(Pair("difficulty", _node.blockChain().getDifficulty(blockindex)));
+    Array txhashes;
+    BOOST_FOREACH (const Transaction&tx, block.getTransactions())
+    txhashes.push_back(tx.getHash().GetHex());
+    
+    result.push_back(Pair("tx", txhashes));
+    
+    if (blockindex->pprev)
+        result.push_back(Pair("hashprevious", blockindex->pprev->GetBlockHash().GetHex()));
+    if (blockindex->pnext)
+        result.push_back(Pair("hashnext", blockindex->pnext->GetBlockHash().GetHex()));
+    
+    return result;
+}        
+
+Object tx2json(Transaction &tx, int64 timestamp, int64 blockheight)
+{
+    Object entry;
+    
+    // scheme follows the scheme of blockexplorer:
+    // "hash" : hash in hex
+    // "ver" : vernum
+    uint256 hash = tx.getHash();
+    entry.push_back(Pair("timestamp", timestamp));
+    entry.push_back(Pair("blockheight", blockheight));
+    entry.push_back(Pair("hash", hash.toString()));
+    entry.push_back(Pair("ver", (int)tx.version()));
+    entry.push_back(Pair("vin_sz", uint64_t(tx.getNumInputs())));
+    entry.push_back(Pair("vout_sz", uint64_t(tx.getNumOutputs())));
+    entry.push_back(Pair("lock_time", uint64_t(tx.lockTime())));
+    entry.push_back(Pair("size", uint64_t(::GetSerializeSize(tx, SER_NETWORK))));
+    
+    // now loop over the txins
+    Array txins;
+    BOOST_FOREACH(const Input& txin, tx.getInputs()) {
+        Object inentry;
+        inentry.clear();
+        Object prevout;
+        prevout.clear();
+        prevout.push_back(Pair("hash", txin.prevout().hash.toString()));
+        prevout.push_back(Pair("n", uint64_t(txin.prevout().index)));
+        inentry.push_back(Pair("prev_out", prevout));
+        if(tx.isCoinBase())            
+            inentry.push_back(Pair("coinbase", HexStr(txin.signature())));
+        else
+            inentry.push_back(Pair("scriptSig", txin.signature().toString()));
+        txins.push_back(inentry);
+    }
+    entry.push_back(Pair("in", txins));
+    
+    // now loop over the txouts
+    Array txouts;
+    BOOST_FOREACH(const Output& txout, tx.getOutputs()) {
+        Object outentry;
+        outentry.clear();
+        outentry.push_back(Pair("value", strprintf("%"PRI64d".%08"PRI64d"",txout.value()/COIN, txout.value()%COIN))); // format correctly
+        outentry.push_back(Pair("scriptPubKey", txout.script().toString()));
+        txouts.push_back(outentry);
+    }
+    entry.push_back(Pair("out", txouts));
+    
+    return entry;
+}
+
+Value GetTransaction::operator()(const Array& params, bool fHelp) {
+    
+    if (fHelp || params.size() != 1)
+        throw RPC::error(RPC::invalid_params, "gettxdetails <txhash>\n"
+                            "Get transaction details for transaction with hash <txhash>");
+    
+    uint256 hash;
+    hash.SetHex(params[0].get_str());
+    
+    int64 timestamp = 0;
+    int64 blockheight = 0;
+    
+    Transaction tx;
+    _node.blockChain().getTransaction(hash, tx, blockheight, timestamp);
+    if(tx.isNull())
+        throw RPC::error(RPC::invalid_params, "Invalid transaction id");        
+    
+    Object entry = tx2json(tx, timestamp, blockheight);
+    
+    return entry;    
+}        
+
+
 Value GetBlockCount::operator()(const Array& params, bool fHelp) {
     if (fHelp || params.size() != 0)
         throw RPC::error(RPC::invalid_params, "getblockcount\n"
@@ -44,33 +171,9 @@ Value GetDifficulty::operator()(const Array& params, bool fHelp) {
         throw RPC::error(RPC::invalid_params, "getdifficulty\n"
                          "Returns the proof-of-work difficulty as a multiple of the minimum difficulty.");
     
-    return getDifficulty();
+    return _node.blockChain().getDifficulty();
 }
 
-
-double GetDifficulty::getDifficulty() {
-    // Floating point number that is a multiple of the minimum difficulty,
-    // minimum difficulty = 1.0.
-    
-    const CBlockIndex* pindexBest = _node.blockChain().getBestIndex();
-    if (pindexBest == NULL)
-        return 1.0;
-    int nShift = (pindexBest->nBits >> 24) & 0xff;
-    
-    double dDiff =
-    (double)0x0000ffff / (double)(pindexBest->nBits & 0x00ffffff);
-    
-    while (nShift < 29) {
-        dDiff *= 256.0;
-        nShift++;
-    }
-    while (nShift > 29) {
-        dDiff /= 256.0;
-        nShift--;
-    }
-    
-    return dDiff;
-}
 
 Value GetInfo::operator()(const Array& params, bool fHelp) {
     if (fHelp || params.size() != 0)
@@ -85,7 +188,7 @@ Value GetInfo::operator()(const Array& params, bool fHelp) {
     //        obj.push_back(Pair("proxy",         (fUseProxy ? addrProxy.ToStringIPPort() : string())));
     //        obj.push_back(Pair("generate",      (bool)fGenerateBitcoins));
     //        obj.push_back(Pair("genproclimit",  (int)(fLimitProcessors ? nLimitProcessors : -1)));
-    obj.push_back(Pair("difficulty",    (double)getDifficulty()));
+    obj.push_back(Pair("difficulty",    (double)_node.blockChain().getDifficulty()));
     //        obj.push_back(Pair("hashespersec",  gethashespersec(params, false)));
     obj.push_back(Pair("testnet",       (&_node.blockChain().chain() == &testnet)));
     //        obj.push_back(Pair("keypoololdest", (boost::int64_t)pwalletMain->GetOldestKeyPoolTime()));

@@ -196,6 +196,8 @@ int main(int argc, char* argv[])
         server.registerMethod(method_ptr(new Stop(server)), auth);
         
         // Register Node methods.
+        server.registerMethod(method_ptr(new GetBlockHash(node)));
+        server.registerMethod(method_ptr(new GetBlock(node)));
         server.registerMethod(method_ptr(new GetBlockCount(node)));
         server.registerMethod(method_ptr(new GetConnectionCount(node)));
         server.registerMethod(method_ptr(new GetDifficulty(node)));
@@ -219,7 +221,7 @@ int main(int argc, char* argv[])
         server.registerMethod(method_ptr(new ListReceivedByAccount(wallet)), auth);
         server.registerMethod(method_ptr(new ListTransactions(wallet)), auth);
         server.registerMethod(method_ptr(new ListAccounts(wallet)), auth);
-        server.registerMethod(method_ptr(new GetTransaction(wallet)), auth);
+        server.registerMethod(method_ptr(new GetWalletTransaction(wallet)), auth);
         server.registerMethod(method_ptr(new BackupWallet(wallet)), auth);
         server.registerMethod(method_ptr(new KeypoolRefill(wallet)), auth);
         server.registerMethod(method_ptr(new WalletPassphraseChange(wallet)), auth);

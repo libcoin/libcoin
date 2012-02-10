@@ -164,9 +164,9 @@ public:
 };
 
 /// Get wallet transactions.
-class GetTransaction : public ListMethod {
+class GetWalletTransaction : public ListMethod {
 public:
-    GetTransaction(Wallet& wallet) : ListMethod(wallet) {}
+    GetWalletTransaction(Wallet& wallet) : ListMethod(wallet) { setName("gettransaction"); }
     virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
 };
 
