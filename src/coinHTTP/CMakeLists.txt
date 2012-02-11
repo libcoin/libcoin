@@ -21,6 +21,7 @@ SET(TARGET_H
     ${HEADER_PATH}/json/json_spirit_writer.h
     ${HEADER_PATH}/json/json_spirit.h
     ${HEADER_PATH}/Client.h
+    ${HEADER_PATH}/Export.h
     ${HEADER_PATH}/ConnectionManager.h
     ${HEADER_PATH}/Connection.h
     ${HEADER_PATH}/Header.h

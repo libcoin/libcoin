@@ -17,6 +17,7 @@
 #ifndef PEER_H
 #define PEER_H
 
+#include <coinChain/Export.h>
 #include <coinChain/PeerManager.h>
 #include <coinChain/MessageHandler.h>
 #include <coinChain/Endpoint.h>
@@ -32,7 +33,7 @@
 
 #include <openssl/rand.h>
 
-class CRequestTracker
+class COINCHAIN_EXPORT CRequestTracker
 {
 public:
     void (*fn)(void*, CDataStream&);
@@ -50,7 +51,7 @@ public:
     }
 };
 
-class Peer : public boost::enable_shared_from_this<Peer>, private boost::noncopyable
+class COINCHAIN_EXPORT Peer : public boost::enable_shared_from_this<Peer>, private boost::noncopyable
 {
 public:
     /// Construct a peer connection with the given io_service.

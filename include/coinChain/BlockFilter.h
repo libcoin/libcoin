@@ -17,6 +17,7 @@
 #ifndef BLOCKFILTER_H
 #define BLOCKFILTER_H
 
+#include <coinChain/Export.h>
 #include <coinChain/Filter.h>
 
 #include <coin/uint256.h>
@@ -29,7 +30,7 @@ class Block;
 class BlockChain;
 class Inventory;
 
-class BlockFilter : public Filter
+class COINCHAIN_EXPORT BlockFilter : public Filter
 {
 public:    
     BlockFilter(BlockChain& bc) : _blockChain(bc) {}

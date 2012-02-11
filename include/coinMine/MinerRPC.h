@@ -17,30 +17,32 @@
 #ifndef _MINERPC_H_
 #define _MINERPC_H_
 
+#include <coinMine/Export.h>
 #include <coinMine/Miner.h>
+
 #include <coinHTTP/Method.h>
 
 /// Base class for all Mining rpc methods - they all need a handle to the Miner.
-class MineMethod : public Method {
+class COINMINE_EXPORT MineMethod : public Method {
 public:
     MineMethod(Miner& miner) : _miner(miner) {}
 protected:
     Miner& _miner;
 };
 
-class SetGenerate : public MineMethod {
+class COINMINE_EXPORT SetGenerate : public MineMethod {
 public:
     SetGenerate(Miner& miner) : MineMethod(miner) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
 };
 
-class GetGenerate : public MineMethod {
+class COINMINE_EXPORT GetGenerate : public MineMethod {
 public:
     GetGenerate(Miner& miner) : MineMethod(miner) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
 };
 
-class GetHashesPerSec : public MineMethod {
+class COINMINE_EXPORT GetHashesPerSec : public MineMethod {
 public:
     GetHashesPerSec(Miner& miner) : MineMethod(miner) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);

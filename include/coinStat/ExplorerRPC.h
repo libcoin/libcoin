@@ -26,7 +26,7 @@
 #include <coinHTTP/RPC.h>
 
 /// Base class for all Node rpc methods - they all need a handle to the node.
-class ExplorerMethod : public Method {
+class COINSTAT_EXPORT ExplorerMethod : public Method {
 public:
     ExplorerMethod(Explorer& explorer) : _explorer(explorer) {}
 protected:
@@ -34,35 +34,35 @@ protected:
 };
 
 /// Get debit coins belonging to an Address 
-class GetDebit : public ExplorerMethod {
+class COINSTAT_EXPORT GetDebit : public ExplorerMethod {
 public:
     GetDebit(Explorer& explorer) : ExplorerMethod(explorer) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
 };
 
 /// Get credit coins belonging to an Address 
-class GetCredit : public ExplorerMethod {
+class COINSTAT_EXPORT GetCredit : public ExplorerMethod {
 public:
     GetCredit(Explorer& explorer) : ExplorerMethod(explorer) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
 };
 
 /// Get unspent coins belonging to an Address 
-class GetCoins : public ExplorerMethod {
+class COINSTAT_EXPORT GetCoins : public ExplorerMethod {
 public:
     GetCoins(Explorer& explorer) : ExplorerMethod(explorer) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
 };
 
 /// Get the balance based on the unspent coins of an Address 
-class GetAddressBalance : public ExplorerMethod {
+class COINSTAT_EXPORT GetAddressBalance : public ExplorerMethod {
 public:
     GetAddressBalance(Explorer& explorer) : ExplorerMethod(explorer) { setName("getbalance"); }
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
 };
 
 /// Do a search in the blockchain and in the explorer database.
-class Search : public ExplorerMethod {
+class COINSTAT_EXPORT Search : public ExplorerMethod {
 public:
     Search(Explorer& explorer) : ExplorerMethod(explorer) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    

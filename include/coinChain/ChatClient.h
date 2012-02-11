@@ -17,6 +17,7 @@
 #ifndef CHATCLIENT_H
 #define CHATCLIENT_H
 
+#include <coinChain/Export.h>
 
 #include <string>
 #include <boost/asio.hpp>
@@ -32,7 +33,7 @@ class EndpointPool;
 /// The next follows every time a new address is added. This facilittates the bootstrap of the Node if started 
 /// with no known addresses. 
 
-class ChatClient
+class COINCHAIN_EXPORT ChatClient
 {
 public:
     ChatClient(boost::asio::io_service& io_service, boost::function<void (void)> new_endpoint_notifier, const std::string& server, EndpointPool& endpointPool, std::string channel, unsigned int channles, const bool proxy = false);

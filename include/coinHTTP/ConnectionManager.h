@@ -17,13 +17,15 @@
 #ifndef HTTP_CONNECTION_MANAGER_H
 #define HTTP_CONNECTION_MANAGER_H
 
+#include <coinHTTP/Export.h>
+#include <coinHTTP/Connection.h>
+
 #include <set>
 #include <boost/noncopyable.hpp>
-#include <coinHTTP/Connection.h>
 
 /// Manages open connections so that they may be cleanly stopped when the server
 /// needs to shut down.
-class ConnectionManager : private boost::noncopyable
+class COINHTTP_EXPORT ConnectionManager : private boost::noncopyable
 {
 public:
     /// Add the specified connection to the manager and start it.

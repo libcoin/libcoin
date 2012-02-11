@@ -22,13 +22,15 @@
 #include <coin/uint256.h>
 #include <coin/serialize.h>
 
+#include <coinChain/Export.h>
+
 enum
 {
     MSG_TX = 1,
     MSG_BLOCK,
 };
 
-class Inventory
+class COINCHAIN_EXPORT Inventory
 {
 public:
     Inventory();

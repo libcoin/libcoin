@@ -20,6 +20,8 @@
 #include <boost/asio.hpp>
 #include <string>
 #include <boost/noncopyable.hpp>
+
+#include <coinChain/Export.h>
 #include <coinChain/Peer.h>
 #include <coinChain/PeerManager.h>
 #include <coinChain/MessageHandler.h>
@@ -37,7 +39,7 @@
 
 // Make sure only a single bitcoin process is using the data directory.
 // lock the lock file or else throw an exception
-class FileLock : boost::noncopyable {
+class COINCHAIN_EXPORT FileLock : boost::noncopyable {
 public:
     class Touch : boost::noncopyable {
     public:
@@ -70,7 +72,7 @@ private:
 
 /// NodeOptions... - like testnet etc...
 
-class Node : private boost::noncopyable
+class COINCHAIN_EXPORT Node : private boost::noncopyable
 {
 public:
     /// Construct the node to listen on the specified TCP address and port. Further, connect to IRC (irc.lfnet.org)

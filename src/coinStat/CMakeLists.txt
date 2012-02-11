@@ -12,6 +12,7 @@ SET(HEADER_PATH ${PROJECT_SOURCE_DIR}/include/${LIB_NAME})
 SET(TARGET_H
     ${HEADER_PATH}/Explorer.h
     ${HEADER_PATH}/ExplorerRPC.h
+    ${HEADER_PATH}/Export.h
     ${LIBCOIN_CONFIG_HEADER}
 )
 
@@ -19,8 +20,8 @@ SET(TARGET_H
 #    ${LIBCOIN_USER_DEFINED_DYNAMIC_OR_STATIC}
 #    ${LIB_PUBLIC_HEADERS}
 SET(TARGET_SRC
-    ExplorerRPC.cpp
     Explorer.cpp
+    ExplorerRPC.cpp
 
     ${LIBCOIN_VERSIONINFO_RC}
 )

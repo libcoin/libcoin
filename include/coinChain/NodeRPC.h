@@ -17,11 +17,13 @@
 #ifndef _NODERPC_H_
 #define _NODERPC_H_
 
+#include <coinChain/Export.h>
 #include <coinChain/Node.h>
+
 #include <coinHTTP/Method.h>
 
 /// Base class for all Node rpc methods - they all need a handle to the node.
-class NodeMethod : public Method {
+class COINCHAIN_EXPORT NodeMethod : public Method {
 public:
     NodeMethod(Node& node) : _node(node) {}
 protected:
@@ -29,45 +31,45 @@ protected:
 };
 
 
-class GetBlockHash : public NodeMethod {
+class COINCHAIN_EXPORT GetBlockHash : public NodeMethod {
 public:
     GetBlockHash(Node& node) : NodeMethod(node) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
 };
 
-class GetBlock : public NodeMethod {
+class COINCHAIN_EXPORT GetBlock : public NodeMethod {
 public:
     GetBlock(Node& node) : NodeMethod(node) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
 };
 
-json_spirit::Object tx2json(Transaction &tx, int64 timestamp = 0, int64 blockheight = 0);
+extern COINCHAIN_EXPORT json_spirit::Object tx2json(Transaction &tx, int64 timestamp = 0, int64 blockheight = 0);
 
-class GetTransaction : public NodeMethod {
+class COINCHAIN_EXPORT GetTransaction : public NodeMethod {
 public:
     GetTransaction(Node& node) : NodeMethod(node) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
 };
 
-class GetBlockCount : public NodeMethod {
+class COINCHAIN_EXPORT GetBlockCount : public NodeMethod {
 public:
     GetBlockCount(Node& node) : NodeMethod(node) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
 };
 
-class GetConnectionCount : public NodeMethod {
+class COINCHAIN_EXPORT GetConnectionCount : public NodeMethod {
 public:
     GetConnectionCount(Node& node) : NodeMethod(node) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
 };
 
-class GetDifficulty : public NodeMethod {
+class COINCHAIN_EXPORT GetDifficulty : public NodeMethod {
 public:
     GetDifficulty(Node& node) : NodeMethod(node) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
 };
 
-class GetInfo : public NodeMethod {
+class COINCHAIN_EXPORT GetInfo : public NodeMethod {
 public:
     GetInfo(Node& node) : NodeMethod(node) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);

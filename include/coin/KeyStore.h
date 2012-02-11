@@ -5,6 +5,7 @@
 #ifndef BITCOIN_KEYSTORE_H
 #define BITCOIN_KEYSTORE_H
 
+#include <coin/Export.h>
 #include <coin/Address.h>
 #include <coin/Key.h>
 
@@ -24,7 +25,7 @@ public:
 
 typedef std::map<ChainAddress, CSecret> KeyMap;
 
-class CBasicKeyStore : public CKeyStore
+class COIN_EXPORT CBasicKeyStore : public CKeyStore
 {
 protected:
     KeyMap mapKeys;

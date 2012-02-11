@@ -12,6 +12,7 @@ SET(HEADER_PATH ${PROJECT_SOURCE_DIR}/include/${LIB_NAME})
 SET(TARGET_H
     ${HEADER_PATH}/Crypter.h
     ${HEADER_PATH}/CryptoKeyStore.h
+    ${HEADER_PATH}/Export.h
     ${HEADER_PATH}/MerkleTx.h
     ${HEADER_PATH}/Wallet.h
     ${HEADER_PATH}/WalletDB.h

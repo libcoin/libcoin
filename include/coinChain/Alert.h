@@ -24,13 +24,15 @@
 #include <coin/uint256.h>
 #include <coin/util.h>
 
+#include <coinChain/Export.h>
+
 /// Alerts are for notifying old versions if they become too obsolete and
 /// need to upgrade.  The message is displayed in the status bar.
 /// Alert messages are broadcast as a vector of signed data.  Unserializing may
 /// not read the entire buffer if the alert is for a newer version, but older
 /// versions can still relay the original data.
 
-class UnsignedAlert
+class COINCHAIN_EXPORT UnsignedAlert
 {
 public:
     IMPLEMENT_SERIALIZE
@@ -107,7 +109,7 @@ extern std::map<uint256, Alert> mapAlerts;
 
 class Peer;
 
-class Alert : public UnsignedAlert
+class COINCHAIN_EXPORT Alert : public UnsignedAlert
 {
 public:
     Alert()

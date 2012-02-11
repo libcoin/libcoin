@@ -19,6 +19,7 @@
 
 #include <string>
 #include <vector>
+#include <coin/Export.h>
 #include <coin/BigNum.h>
 
 // Why base-58 instead of standard base-64 encoding?
@@ -39,7 +40,7 @@ typedef std::vector<unsigned char> PubKey;
 typedef uint160 Address;
 Address toAddress(const PubKey& pubkey);
 
-class ChainAddress
+class COIN_EXPORT ChainAddress
 {
 public:
     bool setHash160(unsigned char network_id, const Address& address) {

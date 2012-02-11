@@ -12,6 +12,7 @@
 #include <coin/Block.h>
 #include <coinChain/Node.h>
 
+#include <coinWallet/Export.h>
 #include <coinWallet/CryptoKeyStore.h>
 #include <coinWallet/WalletTx.h>
 
@@ -22,7 +23,7 @@ class CWalletDB;
 class CReserveKey;
 class CKeyPool;
 
-class TransactionListener : public TransactionFilter::Listener {
+class COINWALLET_EXPORT TransactionListener : public TransactionFilter::Listener {
 public:
     TransactionListener(Wallet& wallet) : _wallet(wallet) {}
     virtual void operator()(const Transaction& tx);
@@ -30,7 +31,7 @@ private:
     Wallet& _wallet;
 };
 
-class BlockListener : public BlockFilter::Listener {
+class COINWALLET_EXPORT BlockListener : public BlockFilter::Listener {
 public:
     BlockListener(Wallet& wallet) : _wallet(wallet) {}
     virtual void operator()(const Block& blk);
@@ -38,7 +39,7 @@ private:
     Wallet& _wallet;
 };
 
-class Wallet : public CCryptoKeyStore
+class COINWALLET_EXPORT Wallet : public CCryptoKeyStore
 {
 private:
     bool SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfTheirs, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet) const;
@@ -289,7 +290,7 @@ private:
     boost::asio::deadline_timer _resend_timer;
 };
 
-class CReserveKey
+class COINWALLET_EXPORT CReserveKey
 {
 protected:
     Wallet* pwallet;
@@ -316,7 +317,7 @@ public:
 //
 // Private key that includes an expiration date in case it never gets used.
 //
-class CWalletKey
+class COINWALLET_EXPORT CWalletKey
 {
 public:
     CPrivKey vchPrivKey;
@@ -352,7 +353,7 @@ public:
 // Account information.
 // Stored in wallet with key "acc"+string account name
 //
-class CAccount
+class COINWALLET_EXPORT CAccount
 {
 public:
     std::vector<unsigned char> vchPubKey;
@@ -381,7 +382,7 @@ public:
 // Internal transfers.
 // Database key is acentry<account><counter>
 //
-class CAccountingEntry
+class COINWALLET_EXPORT CAccountingEntry
 {
 public:
     std::string strAccount;

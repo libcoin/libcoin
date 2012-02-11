@@ -22,6 +22,7 @@ SET(TARGET_H
     ${HEADER_PATH}/Endpoint.h
     ${HEADER_PATH}/EndpointPool.h
     ${HEADER_PATH}/EndpointFilter.h
+    ${HEADER_PATH}/Export.h
     ${HEADER_PATH}/Filter.h
     ${HEADER_PATH}/Inventory.h    
     ${HEADER_PATH}/MessageHeader.h

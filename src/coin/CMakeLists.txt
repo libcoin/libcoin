@@ -18,6 +18,7 @@ SET(TARGET_H
     ${HEADER_PATH}/Address.h
     ${HEADER_PATH}/BigNum.h
     ${HEADER_PATH}/Block.h
+    ${HEADER_PATH}/Export.h
     ${HEADER_PATH}/Key.h
     ${HEADER_PATH}/KeyStore.h
     ${HEADER_PATH}/Script.h

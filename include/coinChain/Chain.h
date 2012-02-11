@@ -19,6 +19,8 @@
 
 #include <coin/Block.h>
 
+#include <coinChain/Export.h>
+
 #include <boost/noncopyable.hpp>
 #include <boost/array.hpp>
 
@@ -29,7 +31,7 @@ class Transaction;
 
 typedef boost::array<char, 4> MessageStart;
 
-class Chain : private boost::noncopyable
+class COINCHAIN_EXPORT Chain : private boost::noncopyable
 {
 public:
     virtual const Block& genesisBlock() const = 0;
@@ -54,7 +56,7 @@ public:
     virtual unsigned int ircChannels() const = 0; // number of groups to try (100 for bitcoin, 2 for litecoin)
 };
 
-class BitcoinChain : public Chain
+class COINCHAIN_EXPORT BitcoinChain : public Chain
 {
 public:
     BitcoinChain();
@@ -86,7 +88,7 @@ private:
 
 extern const BitcoinChain bitcoin;
 
-class TestNetChain : public Chain
+class COINCHAIN_EXPORT TestNetChain : public Chain
 {
 public:
     TestNetChain();

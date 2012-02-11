@@ -14,6 +14,7 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <coinHTTP/Export.h>
 #include <coinHTTP/Reply.h>
 
 #include <iostream>
@@ -25,12 +26,12 @@
 #include <boost/function.hpp>
 #include <boost/asio/ssl.hpp>
 
-class ClientCompletionHandler {
+class COINHTTP_EXPORT ClientCompletionHandler {
 public:
     virtual void operator()(const boost::system::error_code& err) = 0;
 };
 
-class Client : public ClientCompletionHandler
+class COINHTTP_EXPORT Client : public ClientCompletionHandler
 {
 public:
     Client();

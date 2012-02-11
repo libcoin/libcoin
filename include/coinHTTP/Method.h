@@ -17,13 +17,15 @@
 #ifndef METHOD_H
 #define METHOD_H
 
+#include <coinHTTP/Export.h>
+
 #include <string>
 #include <map>
 #include <boost/noncopyable.hpp>
 #include "json/json_spirit.h"
 
 /// The base class for Method functors - The definitions follow the JSON_RPC 2.0 definition and strives at introspection support.
-class Method
+class COINHTTP_EXPORT Method
 {
 public:    
     /// The actual function call - you need to overload this to implement a method
@@ -56,7 +58,7 @@ typedef boost::shared_ptr<Method> method_ptr;
 typedef std::map<std::string, method_ptr> Methods;
 
 class Server;
-class Stop : public Method {
+class COINHTTP_EXPORT Stop : public Method {
 public:
     Stop(Server& server) : _server(server) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);

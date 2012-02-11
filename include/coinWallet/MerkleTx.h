@@ -13,8 +13,10 @@
 #include <coin/Block.h>
 #include <coinChain/BlockChain.h>
 
+#include <coinWallet/Export.h>
+
 /// A transaction with a merkle branch linking it to the block chain.
-class CMerkleTx : public Transaction
+class COINWALLET_EXPORT CMerkleTx : public Transaction
 {
 public:
     uint256 _blockHash;

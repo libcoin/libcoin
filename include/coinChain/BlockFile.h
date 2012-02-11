@@ -22,6 +22,8 @@
 #include <coin/Script.h>
 #include <coin/Transaction.h>
 
+#include <coinChain/Export.h>
+
 #include <boost/noncopyable.hpp>
 #include <list>
 
@@ -33,7 +35,7 @@ class CBlockIndex;
 class Transaction;
 class DiskTxPos;
 
-class BlockFile : private boost::noncopyable
+class COINCHAIN_EXPORT BlockFile : private boost::noncopyable
 {
 public:
     BlockFile(const std::string dataDir) : _dataDir(dataDir), _currentBlockFile(1) {} /// load the block chain index from file

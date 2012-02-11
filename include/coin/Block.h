@@ -17,6 +17,7 @@
 #ifndef BLOCK_H
 #define BLOCK_H
 
+#include <coin/Export.h>
 #include <coin/Transaction.h>
 #include <coin/uint256.h>
 
@@ -36,7 +37,7 @@ class Block;
 typedef std::vector<Transaction> TransactionList;
 typedef std::vector<uint256> MerkleBranch;
 
-class Block
+class COIN_EXPORT Block
 {
 public:
     Block() {

@@ -22,6 +22,7 @@
 #include <coin/Script.h>
 #include <coin/Transaction.h>
 
+#include <coinChain/Export.h>
 #include <coinChain/db.h>
 
 #include <coinChain/BlockIndex.h>
@@ -35,7 +36,7 @@
 
 class Transaction;
 
-class DiskTxPos
+class COINCHAIN_EXPORT DiskTxPos
 {
 public:
     
@@ -89,7 +90,7 @@ private:
 /// locations of transactions that spend its outputs.  vSpent is really only
 /// used as a flag, but having the location is very helpful for debugging.
 
-class TxIndex
+class COINCHAIN_EXPORT TxIndex
 {
 public:
     
@@ -157,7 +158,7 @@ typedef std::map<uint160, Coins> AssetIndex;
 typedef std::vector<Transaction> Transactions;
 typedef std::vector<Block> Blocks;
 
-class BlockChain : private CDB
+class COINCHAIN_EXPORT BlockChain : private CDB
 {
 private: // noncopyable
     BlockChain(const BlockChain&);

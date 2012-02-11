@@ -22,7 +22,7 @@
 #include <coin/Script.h>
 #include <coin/Transaction.h>
 
-//#include <coin/Block.h>
+#include <coinChain/Export.h>
 
 #include <list>
 
@@ -36,7 +36,7 @@ class Block;
 // to it, but pnext will only point forward to the longest branch, or will
 // be null if the block is not part of the longest chain.
 //
-class CBlockIndex
+class COINCHAIN_EXPORT CBlockIndex
 {
 public:
     const uint256* phashBlock;
@@ -146,7 +146,7 @@ public:
 //
 // Used to marshal pointers into hashes for db storage.
 //
-class CDiskBlockIndex : public CBlockIndex
+class COINCHAIN_EXPORT CDiskBlockIndex : public CBlockIndex
 {
 public:
     uint256 hashPrev;
@@ -214,7 +214,7 @@ public:
 // other node doesn't have the same branch, it can find a recent common trunk.
 // The further back it is, the further before the fork it may be.
 //
-class CBlockLocator
+class COINCHAIN_EXPORT CBlockLocator
 {
 public:
     std::vector<uint256> vHave;

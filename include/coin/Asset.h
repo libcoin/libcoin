@@ -17,6 +17,7 @@
 #ifndef _BITCOIN_ASSET_H_
 #define _BITCOIN_ASSET_H_
 
+#include <coin/Export.h>
 #include <coin/Transaction.h>
 
 //typedef std::pair<uint256, unsigned int> Coin;
@@ -35,7 +36,7 @@ public:
 
 class Asset;
 
-class Asset : public CKeyStore
+class COIN_EXPORT Asset : public CKeyStore
 {
 public:
     //    typedef Coin Coin;

@@ -5,7 +5,9 @@
 #ifndef BITCOIN_WALLETDB_H
 #define BITCOIN_WALLETDB_H
 
+#include <coinWallet/Export.h>
 #include <coinWallet/Wallet.h>
+
 #include <coinChain/db.h>
 
 #include <coinWallet/WalletTx.h>
@@ -18,7 +20,7 @@ class Wallet;
 
 class CWalletTx;
 
-class CKeyPool
+class COINWALLET_EXPORT CKeyPool
 {
 public:
     int64 nTime;
@@ -47,7 +49,7 @@ public:
 class CMasterKey;
 
 // Changed the WalletDB to be thread safe - keep a static mutex that is locked on write
-class CWalletDB : public CDB
+class COINWALLET_EXPORT CWalletDB : public CDB
 {
 public:
     CWalletDB(const std::string dataDir, std::string strFilename, const char* pszMode="r+") : CDB(dataDir, strFilename.c_str(), pszMode)

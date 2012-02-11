@@ -11,6 +11,7 @@ SET(LIB_NAME coinMine)
 SET(HEADER_PATH ${PROJECT_SOURCE_DIR}/include/${LIB_NAME})
 SET(TARGET_H
     ${HEADER_PATH}/CPUHasher.h
+    ${HEADER_PATH}/Export.h
     ${HEADER_PATH}/Miner.h
     ${HEADER_PATH}/MinerRPC.h
     ${LIBCOIN_CONFIG_HEADER}

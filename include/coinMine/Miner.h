@@ -20,6 +20,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
 
+#include <coinMine/Export.h>
 
 #include <coin/Address.h>
 #include <coin/Key.h>
@@ -37,7 +38,7 @@
 class Node;
 class Block;
 
-class Miner : boost::noncopyable {
+class COINMINE_EXPORT Miner : boost::noncopyable {
 public:
     /// Construct the Miner using the a reserved wallet key. This will ensure a new key for each generated block.
     explicit Miner(Node& node, CReserveKey& reservekey);

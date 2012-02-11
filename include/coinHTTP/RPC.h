@@ -17,14 +17,17 @@
 #ifndef RPC_H
 #define RPC_H
 
-#include <string>
-#include <boost/lexical_cast.hpp>
+#include <coinHTTP/Export.h>
 #include <coinHTTP/Method.h>
 #include <coinHTTP/Reply.h>
 
 #include "json/json_spirit.h"
 
-class RPC
+#include <string>
+
+#include <boost/lexical_cast.hpp>
+
+class COINHTTP_EXPORT RPC
 {
 public:
     enum Error {

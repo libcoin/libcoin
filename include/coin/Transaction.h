@@ -17,6 +17,7 @@
 #ifndef BITCOIN_TX_H
 #define BITCOIN_TX_H
 
+#include <coin/Export.h>
 #include <coin/BigNum.h>
 #include <coin/Key.h>
 #include <coin/Script.h>
@@ -87,7 +88,7 @@ struct CoinRef // was CInPoint
 /// transaction's output that it claims and a signature that matches the
 /// output's public key.
 
-class Input // was CTxInput
+class COIN_EXPORT Input // was CTxInput
 {
 public:
     Input() {
@@ -166,7 +167,7 @@ typedef std::vector<Input> Inputs;
 /// An output of a transaction.  It contains the public key that the next input
 /// must be able to sign with to claim it.
 
-class Output // was CTxOut
+class COIN_EXPORT Output // was CTxOut
 {
 public:
     Output() {
@@ -233,7 +234,7 @@ typedef std::vector<Output> Outputs;
 // The basic transaction that is broadcasted on the network and contained in
 // blocks.  A transaction can contain multiple inputs and outputs.
 //
-class Transaction
+class COIN_EXPORT Transaction
 {
 public:
     Transaction() {

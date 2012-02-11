@@ -18,6 +18,9 @@
 #define ALERTFILTER_H
 
 #include <coinChain/Filter.h>
+
+#include <coinChain/Export.h>
+
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -26,14 +29,14 @@
 
 class Alert;
 
-class AlertHandler : boost::noncopyable
+class COINCHAIN_EXPORT AlertHandler : boost::noncopyable
 {
     virtual void operator()(const Alert& alert) = 0;
 };
 
 typedef boost::shared_ptr<AlertHandler> alerthandler_ptr;
 
-class AlertFilter : public Filter
+class COINCHAIN_EXPORT AlertFilter : public Filter
 {
 public:
     AlertFilter() {}

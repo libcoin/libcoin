@@ -17,6 +17,8 @@
 #ifndef PEER_MANAGER_H
 #define PEER_MANAGER_H
 
+#include <coinChain/Export.h>
+
 #include <set>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
@@ -29,7 +31,7 @@ typedef std::set<peer_ptr> Peers;
 
 /// Manages open connections to peers so that they may be cleanly stopped when the Nodes
 /// needs to shut down.
-class PeerManager : private boost::noncopyable
+class COINCHAIN_EXPORT PeerManager : private boost::noncopyable
 {
 public:
     /// Constructor - we register the Node as a delegate to enable spawning of new Peers when the old ones die

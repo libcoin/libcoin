@@ -309,11 +309,11 @@ OPTION(LIBCOIN_CPP_EXCEPTIONS_AVAILABLE "Set to OFF to disable compile of libcoi
 ################################################################################
 # Set Config file
 
-SET(LIBCOIN_CONFIG_HEADER "${PROJECT_BINARY_DIR}/include/coin/config.h")
+SET(LIBCOIN_CONFIG_HEADER "${PROJECT_BINARY_DIR}/include/coin/Config.h")
 CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/coin/config.in"
                "${LIBCOIN_CONFIG_HEADER}")
 
-SET(LIBCOIN_VERSION_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/coin/version.h")
+SET(LIBCOIN_VERSION_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/coin/Version.h")
 CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/coin/version.in"
                "${LIBCOIN_VERSION_HEADER}")
 

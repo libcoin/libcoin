@@ -17,12 +17,14 @@
 #ifndef HTTP_SERVER_H
 #define HTTP_SERVER_H
 
-#include <boost/asio.hpp>
-#include <string>
+#include <coinHTTP/Export.h>
 #include <coinHTTP/Connection.h>
 #include <coinHTTP/ConnectionManager.h>
 #include <coinHTTP/RequestHandler.h>
 
+#include <string>
+
+#include <boost/asio.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/asio/ssl.hpp>
@@ -74,7 +76,7 @@ typedef boost::asio::signal_set boost__asio__signal_set;
 
 
 /// The top-level class of the HTTP server.
-class Server : private boost::noncopyable
+class COINHTTP_EXPORT Server : private boost::noncopyable
 {
 public:
     /// Construct the server to listen on the specified TCP address and port, and

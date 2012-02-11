@@ -23,6 +23,8 @@
 #include <coin/uint256.h>
 #include <coin/serialize.h>
 
+#include <coinChain/Export.h>
+
 enum
 {
     NODE_NETWORK = (1 << 0),
@@ -32,7 +34,7 @@ enum
 /// The _services member is not used in any logic but seem to have indicated different node networks ? could be used for a esparate hashing scheme.
 /// The _ipv6 has been left as is for reader/writer compatability, but is actually a part of the boost endpoint class.
 
-class Endpoint : public boost::asio::ip::tcp::endpoint
+class COINCHAIN_EXPORT Endpoint : public boost::asio::ip::tcp::endpoint
 {
     public:
     typedef std::vector<unsigned char> Key;

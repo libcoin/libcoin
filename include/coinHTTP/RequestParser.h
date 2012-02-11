@@ -17,6 +17,8 @@
 #ifndef HTTP_REQUEST_PARSER_H
 #define HTTP_REQUEST_PARSER_H
 
+#include <coinHTTP/Export.h>
+
 #include <string>
 #include <boost/logic/tribool.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -24,7 +26,7 @@
 struct Request;
 
 /// Parser for incoming requests.
-class RequestParser
+class COINHTTP_EXPORT RequestParser
 {
 public:
     /// Construct ready to parse the request method.

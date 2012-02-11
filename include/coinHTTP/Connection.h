@@ -1,11 +1,3 @@
-
-#ifndef HTTP_CONNECTION_HPP
-#define HTTP_CONNECTION_HPP
-
-#include <boost/asio.hpp>
-#include <boost/array.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
 /* -*-c++-*- libcoin - Copyright (C) 2012 Michael Gronager
  *
  * libcoin is free software: you can redistribute it and/or modify
@@ -22,8 +14,18 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef HTTP_CONNECTION_HPP
+#define HTTP_CONNECTION_HPP
+
+#include <boost/asio.hpp>
+#include <boost/array.hpp>
+#include <boost/noncopyable.hpp>
+#include <boost/shared_ptr.hpp>
+
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio/ssl.hpp>
+
+#include <coinHTTP/Export.h>
 #include <coinHTTP/Reply.h>
 #include <coinHTTP/Request.h>
 #include <coinHTTP/RequestHandler.h>
@@ -34,7 +36,7 @@ class ConnectionManager;
 typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> ssl_socket;
 
 /// Represents a single connection from a client.
-class Connection : public boost::enable_shared_from_this<Connection>, private boost::noncopyable
+class COINHTTP_EXPORT Connection : public boost::enable_shared_from_this<Connection>, private boost::noncopyable
 {
 public:
     /// Construct a connection with the given io_service.

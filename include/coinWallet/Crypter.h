@@ -6,6 +6,8 @@
 
 #include <coin/Key.h>
 
+#include <coinWallet/Export.h>
+
 const unsigned int WALLET_CRYPTO_KEY_SIZE = 32;
 const unsigned int WALLET_CRYPTO_SALT_SIZE = 8;
 
@@ -24,7 +26,7 @@ with the double-sha256 of the private key as the IV, and the
 master key's key as the encryption key.
 */
 
-class CMasterKey
+class COINWALLET_EXPORT CMasterKey
 {
 public:
     std::vector<unsigned char> vchCryptedKey;
@@ -57,7 +59,7 @@ public:
 
 typedef std::vector<unsigned char, secure_allocator<unsigned char> > CKeyingMaterial;
 
-class CCrypter
+class COINWALLET_EXPORT CCrypter
 {
 private:
     unsigned char chKey[WALLET_CRYPTO_KEY_SIZE];
@@ -90,7 +92,7 @@ public:
     }
 };
 
-bool EncryptSecret(CKeyingMaterial& vMasterKey, const CSecret &vchPlaintext, const uint256& nIV, std::vector<unsigned char> &vchCiphertext);
-bool DecryptSecret(const CKeyingMaterial& vMasterKey, const std::vector<unsigned char> &vchCiphertext, const uint256& nIV, CSecret &vchPlaintext);
+extern COINWALLET_EXPORT bool EncryptSecret(CKeyingMaterial& vMasterKey, const CSecret &vchPlaintext, const uint256& nIV, std::vector<unsigned char> &vchCiphertext);
+extern COINWALLET_EXPORT bool DecryptSecret(const CKeyingMaterial& vMasterKey, const std::vector<unsigned char> &vchCiphertext, const uint256& nIV, CSecret &vchPlaintext);
 
 #endif

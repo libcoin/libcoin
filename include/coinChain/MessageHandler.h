@@ -17,6 +17,7 @@
 #ifndef MESSAGE_HANDLER_H
 #define MESSAGE_HANDLER_H
 
+#include <coinChain/Export.h>
 #include <coinChain/Filter.h>
 
 #include "boost/noncopyable.hpp"
@@ -28,7 +29,7 @@
 typedef std::vector<filter_ptr> Filters;
 
 /// The common handler for all incoming messages.
-class MessageHandler : private boost::noncopyable
+class COINCHAIN_EXPORT MessageHandler : private boost::noncopyable
 {
 public:
     /// Construct

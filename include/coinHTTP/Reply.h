@@ -17,12 +17,14 @@
 #ifndef HTTP_REPLY_HPP
 #define HTTP_REPLY_HPP
 
-#include <string>
-#include <boost/asio.hpp>
+#include <coinHTTP/Export.h>
 #include <coinHTTP/Header.h>
 
+#include <string>
+#include <boost/asio.hpp>
+
 /// A reply to be sent to a client.
-struct Reply
+struct COINHTTP_EXPORT Reply
 {
     /// The status of the reply.
     enum status_type {

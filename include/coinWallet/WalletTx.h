@@ -12,6 +12,7 @@
 #include <coin/Block.h>
 #include <coinChain/BlockChain.h>
 
+#include <coinWallet/Export.h>
 #include <coinWallet/MerkleTx.h>
 
 #include <boost/bind.hpp>
@@ -21,7 +22,7 @@ class Wallet;
 /// A transaction with a bunch of additional info that only the owner cares
 /// about.  It includes any unrecorded transactions needed to link it back
 /// to the block chain.
-class CWalletTx : public CMerkleTx
+class COINWALLET_EXPORT CWalletTx : public CMerkleTx
 {
 public:
     Wallet* pwallet;

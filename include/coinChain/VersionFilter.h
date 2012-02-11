@@ -17,11 +17,12 @@
 #ifndef VERSIONFILTER_H
 #define VERSIONFILTER_H
 
+#include <coinChain/Export.h>
 #include <coinChain/Filter.h>
 
 #include <string>
 
-class VersionFilter : public Filter
+class COINCHAIN_EXPORT VersionFilter : public Filter
 {
 public:
     VersionFilter() {}

@@ -5,11 +5,13 @@
 #define _CRYPTOKEYSTORE_H_
 
 #include <coin/KeyStore.h>
+
+#include <coinWallet/Export.h>
 #include <coinWallet/Crypter.h>
 
 typedef std::map<ChainAddress, std::pair<std::vector<unsigned char>, std::vector<unsigned char> > > CryptedKeyMap;
 
-class CCryptoKeyStore : public CBasicKeyStore
+class COINWALLET_EXPORT CCryptoKeyStore : public CBasicKeyStore
 {
 private:
     CryptedKeyMap mapCryptedKeys;

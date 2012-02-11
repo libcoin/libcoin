@@ -17,6 +17,7 @@
 #ifndef TRANSACTIONFILTER_H
 #define TRANSACTIONFILTER_H
 
+#include <coinChain/Export.h>
 #include <coinChain/PeerManager.h>
 #include <coinChain/Filter.h>
 #include <coinChain/Inventory.h>
@@ -32,7 +33,7 @@ class BlockChain;
 class Inventory;
 class CDataStream;
 
-class TransactionFilter : public Filter
+class COINCHAIN_EXPORT TransactionFilter : public Filter
 {
 public:
 

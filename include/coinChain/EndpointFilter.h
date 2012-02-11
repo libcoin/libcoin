@@ -17,13 +17,14 @@
 #ifndef ENDPOINTFILTER_H
 #define ENDPOINTFILTER_H
 
+#include <coinChain/Export.h>
 #include <coinChain/Filter.h>
 
 #include <string>
 
 class EndpointPool;
 
-class EndpointFilter : public Filter
+class COINCHAIN_EXPORT EndpointFilter : public Filter
 {
 public:
     EndpointFilter(EndpointPool& epp) : _endpointPool(epp) {}

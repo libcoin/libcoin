@@ -19,6 +19,8 @@
 
 #include <coin/uint256.h>
 #include <coin/serialize.h>
+
+#include <coinChain/Export.h>
 #include <coinChain/Chain.h>
 
 #include <string>
@@ -34,7 +36,7 @@
 
 //extern unsigned char pchMessageStart[4];
 
-class MessageHeader
+class COINCHAIN_EXPORT MessageHeader
 {
 public:
     MessageHeader();

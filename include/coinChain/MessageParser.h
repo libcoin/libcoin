@@ -21,10 +21,12 @@
 #include <boost/logic/tribool.hpp>
 #include <boost/tuple/tuple.hpp>
 
+#include <coinChain/Export.h>
+
 class Message;
 
 /// Parser for incoming requests.
-class MessageParser
+class COINCHAIN_EXPORT MessageParser
 {
 public:
     /// Construct ready to parse the message command.

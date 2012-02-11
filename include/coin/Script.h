@@ -5,6 +5,7 @@
 #ifndef H_BITCOIN_SCRIPT
 #define H_BITCOIN_SCRIPT
 
+#include <coin/Export.h>
 #include <coin/Address.h>
 #include <coin/KeyStore.h>
 

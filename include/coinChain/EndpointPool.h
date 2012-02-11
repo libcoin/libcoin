@@ -17,6 +17,7 @@
 #ifndef ENDPOINTPOOL_H
 #define ENDPOINTPOOL_H
 
+#include <coinChain/Export.h>
 #include <coinChain/db.h>
 
 #include <coinChain/Endpoint.h>
@@ -28,7 +29,7 @@
 
 typedef std::map<std::vector<unsigned char>, Endpoint> EndpointMap;
  
-class EndpointPool : protected CDB
+class COINCHAIN_EXPORT EndpointPool : protected CDB
 {
 public:
     EndpointPool(short defaultPort, const std::string dataDir, const char* pszMode="cr+") : CDB(dataDir, "addr.dat", pszMode) , _defaultPort(defaultPort), _localhost("0.0.0.0", defaultPort, false, NODE_NETWORK), _lastPurgeTime(0) { }

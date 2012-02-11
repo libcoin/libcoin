@@ -17,6 +17,8 @@
 #ifndef EXPLORER_H
 #define EXPLORER_H
 
+#include <coinStat/Export.h>
+
 #include <coinChain/Node.h>
 
 #include <fstream>
@@ -30,7 +32,7 @@ class Explorer;
 /// blocks. The first scan can take several minutes, after that the penalty
 /// of running the explorer is neglible.
 
-class Explorer {
+class COINSTAT_EXPORT Explorer {
 public:
     
     /// The TransactionListener scans each new transaction through

@@ -9,6 +9,8 @@
 #include <coin/Transaction.h>
 #include <coin/Asset.h>
 
+#include <coinChain/Export.h>
+
 #include <map>
 #include <string>
 #include <vector>
@@ -21,7 +23,7 @@ extern std::map<std::string, int> mapFileUseCount;
 
 extern void DBFlush(bool fShutdown);
 
-class CDB
+class COINCHAIN_EXPORT CDB
 {
 protected:
     Db* pdb;
@@ -248,19 +250,6 @@ public:
     {
         return Write(std::string("version"), nVersion);
     }
-};
-
-class CBrokerDB : public CDB
-{
-public:
-    CBrokerDB(const char* pszMode="cr+") : CDB("broker.dat", pszMode) { }
-private:
-    CBrokerDB(const CBrokerDB&);
-    void operator=(const CBrokerDB&);
-public:
-    bool WriteTx(const Transaction& addr);
-    bool EraseTx(const Transaction& addr);
-    bool LoadTxes(std::map<uint256, Transaction>& txes);
 };
 
 enum DBErrors

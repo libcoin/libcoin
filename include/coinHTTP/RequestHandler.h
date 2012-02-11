@@ -17,6 +17,7 @@
 #ifndef HTTP_REQUEST_HANDLER_H
 #define HTTP_REQUEST_HANDLER_H
 
+#include <coinHTTP/Export.h>
 #include <coinHTTP/Method.h>
 #include <coinHTTP/Header.h>
 
@@ -25,7 +26,7 @@
 struct Reply;
 struct Request;
 
-class Auth
+class COINHTTP_EXPORT Auth
 {
 public:
     Auth() {}
@@ -64,7 +65,7 @@ private:
 typedef std::map<std::string, Auth> Auths;
 
 /// The common handler for all incoming requests.
-class RequestHandler : private boost::noncopyable
+class COINHTTP_EXPORT RequestHandler : private boost::noncopyable
 {
 public:
     /// Construct with a directory containing files to be served.
