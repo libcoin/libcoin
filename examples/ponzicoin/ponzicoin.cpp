@@ -343,7 +343,7 @@ int main(int argc, char* argv[])
         server.registerMethod(method_ptr(new ListReceivedByAccount(wallet)), auth);
         server.registerMethod(method_ptr(new ListTransactions(wallet)), auth);
         server.registerMethod(method_ptr(new ListAccounts(wallet)), auth);
-        server.registerMethod(method_ptr(new GetTransaction(wallet)), auth);
+        server.registerMethod(method_ptr(new GetWalletTransaction(wallet)), auth);
         server.registerMethod(method_ptr(new BackupWallet(wallet)), auth);
         server.registerMethod(method_ptr(new KeypoolRefill(wallet)), auth);
         server.registerMethod(method_ptr(new WalletPassphraseChange(wallet)), auth);

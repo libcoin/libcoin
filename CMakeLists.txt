@@ -352,7 +352,7 @@ ENDIF(BDB_FOUND)
 #Note: We need as a minimum Boost 1.47 to support the signal_set used in Server. A backup signal_set has been created, though.
 SET(Boost_NO_BOOST_CMAKE ON)
 SET(Boost_ADDITIONAL_VERSIONS "1.47" "1.47.0" "1.48" "1.48.0")
-SET(Boost_USE_STATIC_LIBS        ON)
+SET(Boost_USE_STATIC_LIBS        OFF)
 SET(Boost_USE_MULTITHREADED      ON)
 SET(Boost_USE_STATIC_RUNTIME    OFF)
 
