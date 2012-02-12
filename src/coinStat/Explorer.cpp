@@ -105,13 +105,15 @@ void Explorer::save(std::string filename) {
 
 void Explorer::load(std::string filename) {
     ifstream ifs(filename.c_str());
-    std::stringstream buffer;
-    buffer << ifs.rdbuf();        
-    CDataStream ds(buffer.str());
-    ds >> _height;
-    ds >> _debits;
-    ds >> _credits;
-    ds >> _coins;
+    if( ifs.is_open() ) {
+        std::stringstream buffer;
+        buffer << ifs.rdbuf();        
+        CDataStream ds(buffer.str());
+        ds >> _height;
+        ds >> _debits;
+        ds >> _credits;
+        ds >> _coins;
+    }
 }
 
 void Explorer::scan() {

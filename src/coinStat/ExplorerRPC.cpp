@@ -130,7 +130,7 @@ Value GetAddressBalance::operator()(const Array& params, bool fHelp) {
     _explorer.getCoins(address, coins);
     
     // Now we have the coins - now get the value of these
-    int64 balance = 0;
+    int64_t balance = 0;
     for(Coins::const_iterator coin = coins.begin(); coin != coins.end(); ++coin)
         balance += _explorer.blockChain().value(*coin);
     
@@ -156,7 +156,7 @@ Value Search::operator()(const Array& params, bool fHelp) {
         if (params.size() < 2 || params[1].get_str() == "balance") {
             _explorer.getCoins(address, coins);
             // Now we have the coins - now get the value of these
-            int64 balance = 0;
+            int64_t balance = 0;
             for(Coins::const_iterator coin = coins.begin(); coin != coins.end(); ++coin)
                 balance += _explorer.blockChain().value(*coin);
             
@@ -225,7 +225,7 @@ Value Search::operator()(const Array& params, bool fHelp) {
             Coins coins;
             _explorer.getCoins(address, coins);
             // Now we have the coins - now get the value of these
-            int64 balance = 0;
+            int64_t balance = 0;
             for(Coins::const_iterator coin = coins.begin(); coin != coins.end(); ++coin)
                 balance += _explorer.blockChain().value(*coin);
             

@@ -84,8 +84,8 @@ Object tx2json(Transaction &tx, int64 timestamp, int64 blockheight)
     // "hash" : hash in hex
     // "ver" : vernum
     uint256 hash = tx.getHash();
-    entry.push_back(Pair("timestamp", timestamp));
-    entry.push_back(Pair("blockheight", blockheight));
+    entry.push_back(Pair("timestamp", (int64_t)timestamp));
+    entry.push_back(Pair("blockheight", (int64_t)blockheight));
     entry.push_back(Pair("hash", hash.toString()));
     entry.push_back(Pair("ver", (int)tx.version()));
     entry.push_back(Pair("vin_sz", uint64_t(tx.getNumInputs())));

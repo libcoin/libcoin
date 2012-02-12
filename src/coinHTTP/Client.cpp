@@ -32,14 +32,16 @@ using namespace boost;
 using namespace boost::asio;
 using namespace boost::asio::ip;
 
-Client::Client() : _context(ssl::context::sslv23), _resolver(_io_service), _socket(_io_service), _ssl_socket(_io_service, _context), _completion_handler(*this) {
+Client::Client() : _context(_io_service, ssl::context::sslv23), _resolver(_io_service), _socket(_io_service), _ssl_socket(_io_service, _context), _completion_handler(*this) {
     _context.set_options(ssl::context::no_sslv2);
-    _ssl_socket.set_verify_mode(ssl::verify_none);
+    //    _ssl_socket.set_verify_mode(ssl::verify_none);
+    _context.set_verify_mode(ssl::context_base::verify_none);
 }
 
-Client::Client(io_service& io_service) : _context(ssl::context::sslv23), _resolver(io_service), _socket(io_service), _ssl_socket(io_service, _context), _completion_handler(*this) {
+Client::Client(io_service& io_service) : _context(io_service, ssl::context::sslv23), _resolver(io_service), _socket(io_service), _ssl_socket(io_service, _context), _completion_handler(*this) {
     _context.set_options(ssl::context::no_sslv2);
-    _ssl_socket.set_verify_mode(ssl::verify_none);
+    //    _ssl_socket.set_verify_mode(ssl::verify_none);
+    _context.set_verify_mode(ssl::context_base::verify_none);
 }
 
 void Client::async_post(std::string url, std::string content, ClientCompletionHandler& handler, Headers headers) {

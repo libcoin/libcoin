@@ -28,7 +28,7 @@ boost__asio__signal_set* __signal_set = NULL;
 
 Server::Server(const string address, const string port, const string doc_root) : 
 _io_service(),
-_context(boost::asio::ssl::context::sslv23),
+_context(_io_service, boost::asio::ssl::context::sslv23),
 _secure(false),
 _signals(_io_service),
 _acceptor(_io_service),

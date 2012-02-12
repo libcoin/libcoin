@@ -112,7 +112,7 @@ private:
     Ledger _debits;
     Ledger _credits;
     Ledger _coins;
-    unsigned int _height;
+    int _height;
 };
 
 #endif // EXPLORER_H
