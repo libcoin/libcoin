@@ -62,6 +62,7 @@ int main(int argc, char* argv[])
             ("pid", value<string>(), "Specify pid file (default: bitcoind.pid)")
             ("nolisten", "Don't accept connections from outside")
             ("testnet", "Use the test network")
+            ("raphael", "Use raphael for graphics rendering of the blockchain")
             ("addnode", value<strings>(&add_peers), "Add a node to connect to")
             ("connect", value<strings>(&connect_peers), "Connect only to the specified node")
             ("rpcuser", value<string>(&rpc_user), "Username for JSON-RPC connections")
@@ -156,7 +157,7 @@ int main(int argc, char* argv[])
                 "</form>"
             "</body>"
         "</html>";
-        Server server(rpc_bind, lexical_cast<string>(rpc_port), search_page);
+        Server server(rpc_bind, lexical_cast<string>(rpc_port), (args.count("raphael") ? filesystem::initial_path().string() : search_page));
         if(ssl) server.setCredentials(data_dir, certchain, privkey);
         
         // Register Server methods.

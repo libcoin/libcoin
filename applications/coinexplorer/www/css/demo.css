@@ -1,0 +1,25 @@
+@charset "UTF-8";
+body {
+    background: #333;
+    color: #fff;
+    font: 300 100.1% "Helvetica Neue", Helvetica, "Arial Unicode MS", Arial, sans-serif;
+}
+#holder {
+    height: 90%;
+    left: 50%;
+    margin: -45% 0 0 -45%;
+    position: absolute;
+    top: 50%;
+    width: 90%;
+}
+#copy {
+    color: #fff;
+    bottom: 0;
+    font: 300 .7em "Helvetica Neue", Helvetica, "Arial Unicode MS", Arial, sans-serif;
+    position: absolute;
+    right: 1em;
+    text-align: right;
+}
+#copy a {
+    color: #fff;
+}
