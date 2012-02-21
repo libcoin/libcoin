@@ -31,7 +31,7 @@
 #endif
 
 #if defined(_MSC_VER) || defined(__CYGWIN__) || defined(__MINGW32__) || defined( __BCPLUSPLUS__)  || defined( __MWERKS__)
-    #  if defined( LIBCOIN_LIBRARY_STATIC )
+    #  if defined( COINHTTP_LIBRARY_STATIC )
     #    define COINHTTP_EXPORT
     #  elif defined( COINHTTP_LIBRARY )
     #    define COINHTTP_EXPORT   __declspec(dllexport)
