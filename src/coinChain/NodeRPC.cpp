@@ -84,14 +84,14 @@ Object tx2json(Transaction &tx, int64 timestamp, int64 blockheight)
     // "hash" : hash in hex
     // "ver" : vernum
     uint256 hash = tx.getHash();
-    entry.push_back(Pair("timestamp", (int64_t)timestamp));
-    entry.push_back(Pair("blockheight", (int64_t)blockheight));
+    entry.push_back(Pair("timestamp", (boost::int64_t)timestamp));
+    entry.push_back(Pair("blockheight", (boost::int64_t)blockheight));
     entry.push_back(Pair("hash", hash.toString()));
     entry.push_back(Pair("ver", (int)tx.version()));
-    entry.push_back(Pair("vin_sz", uint64_t(tx.getNumInputs())));
-    entry.push_back(Pair("vout_sz", uint64_t(tx.getNumOutputs())));
-    entry.push_back(Pair("lock_time", uint64_t(tx.lockTime())));
-    entry.push_back(Pair("size", uint64_t(::GetSerializeSize(tx, SER_NETWORK))));
+    entry.push_back(Pair("vin_sz", boost::uint64_t(tx.getNumInputs())));
+    entry.push_back(Pair("vout_sz", boost::uint64_t(tx.getNumOutputs())));
+    entry.push_back(Pair("lock_time", boost::uint64_t(tx.lockTime())));
+    entry.push_back(Pair("size", boost::uint64_t(::GetSerializeSize(tx, SER_NETWORK))));
     
     // now loop over the txins
     Array txins;
@@ -101,7 +101,7 @@ Object tx2json(Transaction &tx, int64 timestamp, int64 blockheight)
         Object prevout;
         prevout.clear();
         prevout.push_back(Pair("hash", txin.prevout().hash.toString()));
-        prevout.push_back(Pair("n", uint64_t(txin.prevout().index)));
+        prevout.push_back(Pair("n", boost::uint64_t(txin.prevout().index)));
         inentry.push_back(Pair("prev_out", prevout));
         if(tx.isCoinBase())            
             inentry.push_back(Pair("coinbase", HexStr(txin.signature())));

@@ -24,7 +24,7 @@
 #include <boost/asio.hpp>
 
 /// A reply to be sent to a client.
-struct COINHTTP_EXPORT Reply
+struct Reply
 {
     /// The status of the reply.
     enum status_type {

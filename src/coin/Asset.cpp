@@ -16,8 +16,6 @@
 
 #include <coin/Asset.h>
 
-#include <coinChain/db.h>
-
 using namespace std;
 using namespace boost;
 

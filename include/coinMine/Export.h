@@ -33,7 +33,7 @@
 #if defined(_MSC_VER) || defined(__CYGWIN__) || defined(__MINGW32__) || defined( __BCPLUSPLUS__)  || defined( __MWERKS__)
     #  if defined( LIBCOIN_LIBRARY_STATIC )
     #    define COINMINE_EXPORT
-    #  elif defined( COIN_LIBRARY )
+    #  elif defined( COINMINE_LIBRARY )
     #    define COINMINE_EXPORT   __declspec(dllexport)
     #  else
     #    define COINMINE_EXPORT   __declspec(dllimport)
