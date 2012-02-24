@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 {
     try {
         string config_file, data_dir;
-        unsigned short rpc_port;
+        unsigned short port, rpc_port;
         string rpc_bind, rpc_connect, rpc_user, rpc_pass;
         typedef vector<string> strings;
         strings rpc_params;
@@ -66,6 +66,7 @@ int main(int argc, char* argv[])
             ("testnet", "Use the test network")
             ("addnode", value<strings>(&add_peers), "Add a node to connect to")
             ("connect", value<strings>(&connect_peers), "Connect only to the specified node")
+            ("port", value<unsigned short>(&port)->default_value(8333), "Listen on specified port for the p2p protocol")
             ("rpcuser", value<string>(&rpc_user), "Username for JSON-RPC connections")
             ("rpcpassword", value<string>(&rpc_pass), "Password for JSON-RPC connections")
             ("rpcport", value<unsigned short>(&rpc_port)->default_value(8332), "Listen for JSON-RPC connections on <arg>")
@@ -167,7 +168,7 @@ int main(int argc, char* argv[])
         
         logfile = data_dir + "/debug.log";
         
-        Node node(chain, data_dir, args.count("nolisten") ? "" : "0.0.0.0"); // it is also here we specify the use of a proxy!
+        Node node(chain, data_dir, args.count("nolisten") ? "" : "0.0.0.0", lexical_cast<string>(port)); // it is also here we specify the use of a proxy!
 //        PortMapper(node.get_io_service(), port); // this will use the Node call
 
         // use the connect and addnode options to restrict and supplement the irc and endpoint db.
