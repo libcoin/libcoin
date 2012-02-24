@@ -55,7 +55,7 @@ class COINCHAIN_EXPORT Peer : public boost::enable_shared_from_this<Peer>, priva
 {
 public:
     /// Construct a peer connection with the given io_service.
-    explicit Peer(const Chain& chain, boost::asio::io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, int betsHeight);
+    explicit Peer(const Chain& chain, boost::asio::io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, int bestHeight);
     
     /// Get the socket associated with the peer connection.
     boost::asio::ip::tcp::socket& socket();
@@ -77,7 +77,13 @@ public:
     
     /// Get the local nonce
     const uint64 getNonce() const { return _nonce; }
-
+    
+    /// Set and record the Peer starting height
+    void setStartingHeight(int height) { _peerManager.recordPeerBlockCount(_startingHeight = height); }
+    
+    /// Get the Peer starting height.
+    int getStartingHeight() const { return _startingHeight; }
+    
 private:
     void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
     void handle_write(const boost::system::error_code& e, std::size_t bytes_transferred);
@@ -116,7 +122,6 @@ public:
     uint256 hashContinue;
     CBlockLocator locatorLastGetBlocksBegin;
     uint256 hashLastGetBlocksEnd;
-    int nStartingHeight;
     
     // flood relay
     std::vector<Endpoint> vAddrToSend;
@@ -236,7 +241,9 @@ public:
     void PushGetBlocks(const CBlockLocator locatorBegin, uint256 hashEnd);
 
 private:
-
+    /// The inital height of the connected node.
+    int _startingHeight;
+    
     /// The chain we are serving - the Peer need to know this as well!
     const Chain& _chain; 
     

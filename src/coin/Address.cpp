@@ -16,16 +16,26 @@
 
 #include <coin/Address.h>
 #include <coin/Key.h>
+#include <coin/Script.h>
 
 using namespace std;
 
 static const char* pszBase58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
-Address toAddress(const PubKey& vch)
+PubKeyHash toPubKeyHash(const PubKey& vch)
 {
     uint256 hash1;
     SHA256(&vch[0], vch.size(), (unsigned char*)&hash1);
     uint160 hash2;
+    RIPEMD160((unsigned char*)&hash1, sizeof(hash1), (unsigned char*)&hash2);
+    return hash2;
+}
+
+ScriptHash toScriptHash(const Script& vch)
+{
+    uint256 hash1;
+    SHA256(&vch[0], vch.size(), (unsigned char*)&hash1);
+    ScriptHash hash2;
     RIPEMD160((unsigned char*)&hash1, sizeof(hash1), (unsigned char*)&hash2);
     return hash2;
 }
@@ -160,6 +170,7 @@ bool DecodeBase58Check(const string& str, vector<unsigned char>& vchRet)
     return DecodeBase58Check(str.c_str(), vchRet);
 }
 
+/*
 string ChainAddress::toString() const {
     vector<unsigned char> address_part(1, _id);
     address_part.insert(address_part.end(), _address.begin(), _address.end());
@@ -170,7 +181,7 @@ bool ChainAddress::setString(const string& str) {
     vector<unsigned char> temp;
     DecodeBase58Check(str, temp);
     if (temp.empty()) {
-        _address = 0;
+        _address = PubKeyHash(0);
         _id = 0;
         return false;
     }
@@ -178,5 +189,5 @@ bool ChainAddress::setString(const string& str) {
     memcpy(&_address, &temp[1], _address.size());
     return true;
 }
-
+*/
 

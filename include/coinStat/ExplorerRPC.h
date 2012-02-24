@@ -33,28 +33,28 @@ protected:
     Explorer& _explorer;
 };
 
-/// Get debit coins belonging to an Address 
+/// Get debit coins belonging to an PubKeyHash 
 class COINSTAT_EXPORT GetDebit : public ExplorerMethod {
 public:
     GetDebit(Explorer& explorer) : ExplorerMethod(explorer) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
 };
 
-/// Get credit coins belonging to an Address 
+/// Get credit coins belonging to an PubKeyHash 
 class COINSTAT_EXPORT GetCredit : public ExplorerMethod {
 public:
     GetCredit(Explorer& explorer) : ExplorerMethod(explorer) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
 };
 
-/// Get unspent coins belonging to an Address 
+/// Get unspent coins belonging to an PubKeyHash 
 class COINSTAT_EXPORT GetCoins : public ExplorerMethod {
 public:
     GetCoins(Explorer& explorer) : ExplorerMethod(explorer) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
 };
 
-/// Get the balance based on the unspent coins of an Address 
+/// Get the balance based on the unspent coins of an PubKeyHash 
 class COINSTAT_EXPORT GetAddressBalance : public ExplorerMethod {
 public:
     GetAddressBalance(Explorer& explorer) : ExplorerMethod(explorer) { setName("getbalance"); }

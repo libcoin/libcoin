@@ -33,24 +33,236 @@
 std::string EncodeBase58Check(const std::vector<unsigned char>& vchIn);
 bool DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vchRet);
 
-// This is the raw Address - the BitcoinAddress or more correctly the ChainAddress includes the netword Id and is hence better suited for communicating with the outside. For backwards compatability we do, however, need to use the ChainAddress in e.g. the wallet. 
+// This is the raw PubKeyHash - the BitcoinAddress or more correctly the ChainAddress includes the netword Id and is hence better suited for communicating with the outside. For backwards compatability we do, however, need to use the ChainAddress in e.g. the wallet. 
 
 typedef std::vector<unsigned char> PubKey;
 
-typedef uint160 Address;
-Address toAddress(const PubKey& pubkey);
+class COIN_EXPORT PubKeyHash : public uint160 {
+public:
+    PubKeyHash(const uint160& b = 0) : uint160(b) {}
+    PubKeyHash(uint64 b) : uint160(b) {}
+    
+    PubKeyHash& operator=(const uint160& b) {
+        uint160::operator=(b);
+        return *this;
+    }
+    PubKeyHash& operator=(uint64 b) {
+        uint160::operator=(b);
+        return *this;
+    }
+    
+    explicit PubKeyHash(const std::string& str) : uint160(str) {}
+    
+    explicit PubKeyHash(const std::vector<unsigned char>& vch) : uint160(vch) {}
+};
 
+PubKeyHash toPubKeyHash(const PubKey& pubkey);
+
+class COIN_EXPORT ScriptHash : public uint160 {
+public:
+    ScriptHash(const uint160& b = 0) : uint160(b) {}
+    ScriptHash(uint64 b) : uint160(b) {}
+    
+    ScriptHash& operator=(const uint160& b) {
+        uint160::operator=(b);
+        return *this;
+    }
+    ScriptHash& operator=(uint64 b) {
+        uint160::operator=(b);
+        return *this;
+    }
+    
+    explicit ScriptHash(const std::string& str) : uint160(str) {}
+    
+    explicit ScriptHash(const std::vector<unsigned char>& vch) : uint160(vch) {}
+};
+
+class Script;
+ScriptHash toScriptHash(const Script& script);
+
+
+// Base class for all base58-encoded data
+class COIN_EXPORT Base58Data
+{
+protected:
+    // the version byte
+    unsigned char _version;
+    
+    // the actually encoded data
+    std::vector<unsigned char> _data;
+    
+    Base58Data() {
+        _version = 0;
+        _data.clear();
+    }
+    
+    ~Base58Data() {
+        // zero the memory, as it may contain sensitive data
+        if(!_data.empty())
+            memset(&_data[0], 0, _data.size());
+    }
+    
+    void setData(int version, const void* data, size_t size) {
+        _version = version;
+        _data.resize(size);
+        if (!_data.empty())
+            memcpy(&_data[0], data, size);
+    }
+    
+    void setData(int version, const unsigned char *pbegin, const unsigned char *pend) {
+        setData(version, (void*)pbegin, pend - pbegin);
+    }
+    
+public:
+    bool setString(const std::string& str) {
+        std::vector<unsigned char> temp;
+        DecodeBase58Check(str, temp);
+        if (temp.empty()) {
+            _data.clear();
+            _version = 0;
+            return false;
+        }
+        _version = temp[0];
+        _data.resize(temp.size() - 1);
+        if (!_data.empty())
+            memcpy(&_data[0], &temp[1], _data.size());
+        memset(&temp[0], 0, temp.size());
+        return true;
+    }
+    
+    std::string toString() const {
+        std::vector<unsigned char> temp(1, _version);
+        temp.insert(temp.end(), _data.begin(), _data.end());
+        return EncodeBase58Check(temp);
+    }
+    
+    unsigned char version() const { return _version; } 
+    
+    int compare(const Base58Data& b58) const {
+        if (_version < b58._version) return -1;
+        if (_version > b58._version) return  1;
+        if (_data < b58._data)   return -1;
+        if (_data > b58._data)   return  1;
+        return 0;
+    }
+    
+    bool operator==(const Base58Data& b58) const { return compare(b58) == 0; }
+    bool operator<=(const Base58Data& b58) const { return compare(b58) <= 0; }
+    bool operator>=(const Base58Data& b58) const { return compare(b58) >= 0; }
+    bool operator< (const Base58Data& b58) const { return compare(b58) <  0; }
+    bool operator> (const Base58Data& b58) const { return compare(b58) >  0; }
+};
+
+// base58-encoded bitcoin addresses
+// Public-key-hash-addresses have version 0 (or 192 testnet)
+// The data vector contains RIPEMD160(SHA256(pubkey)), where pubkey is the serialized public key
+// Script-hash-addresses have version 5 (or 196 testnet)
+// The data vector contains RIPEMD160(SHA256(cscript)), where cscript is the serialized redemption script
+class COIN_EXPORT ChainAddress : public Base58Data
+{
+protected:
+    uint160 getHash() const {
+        assert(_data.size() == 20);
+        uint160 hash160;
+        memcpy(&hash160, &_data[0], 20);
+        return hash160;
+    }
+    
+public:
+    enum Type {
+        PUBKEYHASH,
+        SCRIPTHASH,
+        UNDEFINED
+    };
+    
+    bool setHash(unsigned char version, const PubKeyHash& pubKeyHash) {
+        setData(version, &pubKeyHash, 20);
+        _type = PUBKEYHASH;
+        return true;
+    }
+    
+    void setPubKey(unsigned char version, const PubKey& pubKey) {
+        PubKeyHash pubKeyHash = toPubKeyHash(pubKey);
+        setData(version, &pubKeyHash, 20);
+        _type = PUBKEYHASH;
+    }
+    
+    void setType(Type type) { _type = type; }
+    
+    bool setHash(unsigned char version, const ScriptHash& scriptHash) {
+        setData(version, &scriptHash, 20);
+        _type = SCRIPTHASH;
+        return true;
+    }
+        
+    bool isValid() const {
+        return (_data.size() == 20) && (getHash() != 0) && (_type != UNDEFINED);
+    }
+    
+    bool isScriptHash() const {
+        return _type == SCRIPTHASH;
+    }
+    
+    bool isPubKeyHash() const {
+        return _type == PUBKEYHASH;
+    }
+    
+    PubKeyHash getPubKeyHash() const {
+        if(!isPubKeyHash())
+            return 0;
+        else
+            return getHash();
+    }
+    
+    ScriptHash getScriptHash() const {
+        if(!isScriptHash())
+            return 0;
+        else
+            return getHash();
+    }
+    
+    
+    ChainAddress() : _type(UNDEFINED) {}
+    
+    ChainAddress(unsigned char version, const PubKeyHash& pubKeyHash) {
+        setHash(version, pubKeyHash);
+    }
+
+    ChainAddress(unsigned char version, const PubKey& pubKey) {
+        setPubKey(version, pubKey);
+    }
+
+    ChainAddress(unsigned char version, const ScriptHash& scriptHash) {
+        setHash(version, scriptHash);
+    }
+
+    ChainAddress(const std::string& addr) {
+        setString(addr);
+    }
+    
+protected:
+    Type _type;
+};
+
+
+
+/// The ChainAddress supports reading and writing base58 addresses.
+/*
 class COIN_EXPORT ChainAddress
 {
+private:
+    const Chain& _chain;
+
 public:
-    bool setHash160(unsigned char network_id, const Address& address) {
-        _id = network_id;
-        _address = address;
+    ChainAddress() : 
+    bool setHash160(unsigned char version, const PubKeyHash& address) {
+        _version = version;
+        _hash = hash;
         return true;
     }
 
     bool setPubKey(unsigned char network_id, const std::vector<unsigned char>& pubKey) {
-        return setHash160(network_id, toAddress(pubKey));
+        return setHash160(network_id, toPubKeyHash(pubKey));
     }
 
     bool isValid(unsigned char network_id) const {
@@ -63,7 +275,7 @@ public:
 
     ChainAddress() : _address(0), _id(0) { }
 
-    ChainAddress(unsigned char network_id, Address address) {
+    ChainAddress(unsigned char network_id, PubKeyHash address) {
         setHash160(network_id, address);
     }
 
@@ -75,7 +287,7 @@ public:
         setString(str);
     }
 
-    Address getAddress() const {
+    PubKeyHash getPubKeyHash() const {
         return _address;
     }
 
@@ -98,8 +310,10 @@ public:
     bool operator> (const ChainAddress& chain_addr) const { return compare(chain_addr) >  0; }
     
 private:
-    Address _address;    
+    PubKeyHash _version;    
     unsigned char _id;
 };
+ 
+ */
 
 #endif

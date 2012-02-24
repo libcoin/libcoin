@@ -47,7 +47,13 @@ public:
     
     virtual const std::string dataDirSuffix() const = 0;
     
-    virtual char networkId() const = 0; // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
+    //    virtual char networkId() const = 0; // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
+    virtual ChainAddress getAddress(PubKeyHash hash) const = 0;
+    virtual ChainAddress getAddress(ScriptHash hash) const = 0;
+    virtual ChainAddress getAddress(std::string str) const = 0;
+    
+    /// signedMessageMagic is for using the wallet keys to sign messages - you can overload "Bitcoin" in other chains or leave it as is.
+    virtual std::string signedMessageMagic() const { return "Bitcoin Signed Message:\n"; }
     
     virtual const MessageStart& messageStart() const = 0;
     virtual short defaultPort() const = 0;
@@ -72,7 +78,17 @@ public:
 
     virtual const std::string dataDirSuffix() const { return "bitcoin"; }
     
-    virtual char networkId() const { return 0x00; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
+    //    virtual char networkId() const { return 0x00; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
+    virtual ChainAddress getAddress(PubKeyHash hash) const { return ChainAddress(0x00, hash); }
+    virtual ChainAddress getAddress(ScriptHash hash) const { return ChainAddress(0x05, hash); }
+    virtual ChainAddress getAddress(std::string str) const {
+        ChainAddress addr(str);
+        if(addr.version() == 0x00)
+            addr.setType(ChainAddress::PUBKEYHASH);
+        else if (addr.version() == 0x05)
+            addr.setType(ChainAddress::SCRIPTHASH);
+        return addr;
+    }
     
     virtual const MessageStart& messageStart() const { return _messageStart; };
     virtual short defaultPort() const { return 8333; }
@@ -102,8 +118,18 @@ public:
     
     virtual const std::string dataDirSuffix() const { return "bitcoin/testnet"; };
     
-    virtual char networkId() const { return 0x6f; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
-    
+    //    virtual char networkId() const { return 0x6f; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
+    virtual ChainAddress getAddress(PubKeyHash hash) const { return ChainAddress(0x6f, hash); }
+    virtual ChainAddress getAddress(ScriptHash hash) const { return ChainAddress(0xc4, hash); }
+    virtual ChainAddress getAddress(std::string str) const {
+        ChainAddress addr(str);
+        if(addr.version() == 0x6f)
+            addr.setType(ChainAddress::PUBKEYHASH);
+        else if (addr.version() == 0xc4)
+            addr.setType(ChainAddress::SCRIPTHASH);
+        return addr;
+    }
+
     virtual const MessageStart& messageStart() const { return _messageStart; };
     virtual short defaultPort() const { return 18333; }
     

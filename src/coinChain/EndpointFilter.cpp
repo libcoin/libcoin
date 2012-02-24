@@ -115,7 +115,7 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
         if (msg.command() == "version" || msg.command() == "addr" || msg.command() == "inv" || msg.command() == "getdata" || msg.command() == "ping")
             _endpointPool.currentlyConnected(origin->addr);
     
-    // Address refresh broadcast - has been moved into the EndpointFilter... - this means that it is only induced by some of the commands registered to this filter, but it is a 24hours recheck, so it should not matter.
+    // Endpoint refresh broadcast - has been moved into the EndpointFilter... - this means that it is only induced by some of the commands registered to this filter, but it is a 24hours recheck, so it should not matter.
     static int64 nLastRebroadcast;
     if (GetTime() - nLastRebroadcast > 24 * 60 * 60) {
         nLastRebroadcast = GetTime();

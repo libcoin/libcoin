@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2011 The Bitcoin developers
+// Copyright (c) 2009-2012 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 #ifndef BITCOIN_KEY_H
@@ -39,42 +39,8 @@
 // see www.keylength.com
 // script supports up to 75 for single byte push
 
-int static inline EC_KEY_regenerate_key(EC_KEY *eckey, BIGNUM *priv_key)
-{
-    int ok = 0;
-    BN_CTX *ctx = NULL;
-    EC_POINT *pub_key = NULL;
-
-    if (!eckey) return 0;
-
-    const EC_GROUP *group = EC_KEY_get0_group(eckey);
-
-    if ((ctx = BN_CTX_new()) == NULL)
-        goto err;
-
-    pub_key = EC_POINT_new(group);
-
-    if (pub_key == NULL)
-        goto err;
-
-    if (!EC_POINT_mul(group, pub_key, priv_key, NULL, NULL, ctx))
-        goto err;
-
-    EC_KEY_set_private_key(eckey,priv_key);
-    EC_KEY_set_public_key(eckey,pub_key);
-
-    ok = 1;
-
-err:
-
-    if (pub_key)
-        EC_POINT_free(pub_key);
-    if (ctx != NULL)
-        BN_CTX_free(ctx);
-
-    return(ok);
-}
-
+int extern EC_KEY_regenerate_key(EC_KEY *eckey, BIGNUM *priv_key);
+int extern ECDSA_SIG_recover_key_GFp(EC_KEY *eckey, ECDSA_SIG *ecsig, const unsigned char *msg, int msglen, int recid, int check);
 
 class key_error : public std::runtime_error
 {
@@ -84,7 +50,9 @@ public:
 
 
 // secure_allocator is defined in serialize.h
+// CPrivKey is a serialized private key, with all parameters included (279 bytes)
 typedef std::vector<unsigned char, secure_allocator<unsigned char> > CPrivKey;
+// CSecret is a serialization of just the secret parameter (32 bytes)
 typedef std::vector<unsigned char, secure_allocator<unsigned char> > CSecret;
 
 typedef std::vector<unsigned char> PubKey;
@@ -94,14 +62,28 @@ class CKey
 protected:
     EC_KEY* pkey;
     bool fSet;
+    bool fCompressedPubKey;
+
+    void SetCompressedPubKey()
+    {
+        EC_KEY_set_conv_form(pkey, POINT_CONVERSION_COMPRESSED);
+        fCompressedPubKey = true;
+    }
 
 public:
-    CKey()
+
+    void Reset()
     {
+        fCompressedPubKey = false;
         pkey = EC_KEY_new_by_curve_name(NID_secp256k1);
         if (pkey == NULL)
             throw key_error("CKey::CKey() : EC_KEY_new_by_curve_name failed");
         fSet = false;
+    }
+
+    CKey()
+    {
+        Reset();
     }
 
     CKey(const CKey& b)
@@ -130,10 +112,17 @@ public:
         return !fSet;
     }
 
-    void MakeNewKey()
+    bool IsCompressed() const
+    {
+        return fCompressedPubKey;
+    }
+
+    void MakeNewKey(bool fCompressed = true)
     {
         if (!EC_KEY_generate_key(pkey))
             throw key_error("CKey::MakeNewKey() : EC_KEY_generate_key failed");
+        if (fCompressed)
+            SetCompressedPubKey();
         fSet = true;
     }
 
@@ -146,7 +135,7 @@ public:
         return true;
     }
 
-    bool SetSecret(const CSecret& vchSecret)
+    bool SetSecret(const CSecret& vchSecret, bool fCompressed = false)
     {
         EC_KEY_free(pkey);
         pkey = EC_KEY_new_by_curve_name(NID_secp256k1);
@@ -161,10 +150,12 @@ public:
             throw key_error("CKey::SetSecret() : EC_KEY_regenerate_key failed");
         BN_clear_free(bn);
         fSet = true;
+        if (fCompressed || fCompressedPubKey)
+            SetCompressedPubKey();
         return true;
     }
 
-    CSecret GetSecret() const
+    CSecret GetSecret(bool &fCompressed) const
     {
         CSecret vchRet;
         vchRet.resize(32);
@@ -175,6 +166,7 @@ public:
         int n=BN_bn2bin(bn,&vchRet[32 - nBytes]);
         if (n != nBytes) 
             throw key_error("CKey::GetSecret(): BN_bn2bin failed");
+        fCompressed = fCompressedPubKey;
         return vchRet;
     }
 
@@ -190,21 +182,23 @@ public:
         return vchPrivKey;
     }
 
-    bool SetPubKey(const PubKey& vchPubKey)
+    bool SetPubKey(const std::vector<unsigned char>& vchPubKey)
     {
         const unsigned char* pbegin = &vchPubKey[0];
         if (!o2i_ECPublicKey(&pkey, &pbegin, vchPubKey.size()))
             return false;
         fSet = true;
+        if (vchPubKey.size() == 33)
+            SetCompressedPubKey();
         return true;
     }
 
-    PubKey GetPubKey() const
+    std::vector<unsigned char> GetPubKey() const
     {
         unsigned int nSize = i2o_ECPublicKey(pkey, NULL);
         if (!nSize)
             throw key_error("CKey::GetPubKey() : i2o_ECPublicKey failed");
-        PubKey vchPubKey(nSize, 0);
+        std::vector<unsigned char> vchPubKey(nSize, 0);
         unsigned char* pbegin = &vchPubKey[0];
         if (i2o_ECPublicKey(pkey, &pbegin) != nSize)
             throw key_error("CKey::GetPubKey() : i2o_ECPublicKey returned unexpected size");
@@ -213,14 +207,89 @@ public:
 
     bool Sign(uint256 hash, std::vector<unsigned char>& vchSig)
     {
-        vchSig.clear();
-        unsigned char pchSig[10000];
-        unsigned int nSize = 0;
-        if (!ECDSA_sign(0, (unsigned char*)&hash, sizeof(hash), pchSig, &nSize, pkey))
+        unsigned int nSize = ECDSA_size(pkey);
+        vchSig.resize(nSize); // Make sure it is big enough
+        if (!ECDSA_sign(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], &nSize, pkey))
+        {
+            vchSig.clear();
             return false;
-        vchSig.resize(nSize);
-        memcpy(&vchSig[0], pchSig, nSize);
+        }
+        vchSig.resize(nSize); // Shrink to fit actual size
         return true;
+    }
+
+    // create a compact signature (65 bytes), which allows reconstructing the used public key
+    // The format is one header byte, followed by two times 32 bytes for the serialized r and s values.
+    // The header byte: 0x1B = first key with even y, 0x1C = first key with odd y,
+    //                  0x1D = second key with even y, 0x1E = second key with odd y
+    bool SignCompact(uint256 hash, std::vector<unsigned char>& vchSig)
+    {
+        bool fOk = false;
+        ECDSA_SIG *sig = ECDSA_do_sign((unsigned char*)&hash, sizeof(hash), pkey);
+        if (sig==NULL)
+            return false;
+        vchSig.clear();
+        vchSig.resize(65,0);
+        int nBitsR = BN_num_bits(sig->r);
+        int nBitsS = BN_num_bits(sig->s);
+        if (nBitsR <= 256 && nBitsS <= 256)
+        {
+            int nRecId = -1;
+            for (int i=0; i<4; i++)
+            {
+                CKey keyRec;
+                keyRec.fSet = true;
+                if (fCompressedPubKey)
+                    keyRec.SetCompressedPubKey();
+                if (ECDSA_SIG_recover_key_GFp(keyRec.pkey, sig, (unsigned char*)&hash, sizeof(hash), i, 1) == 1)
+                    if (keyRec.GetPubKey() == this->GetPubKey())
+                    {
+                        nRecId = i;
+                        break;
+                    }
+            }
+
+            if (nRecId == -1)
+                throw key_error("CKey::SignCompact() : unable to construct recoverable key");
+
+            vchSig[0] = nRecId+27+(fCompressedPubKey ? 4 : 0);
+            BN_bn2bin(sig->r,&vchSig[33-(nBitsR+7)/8]);
+            BN_bn2bin(sig->s,&vchSig[65-(nBitsS+7)/8]);
+            fOk = true;
+        }
+        ECDSA_SIG_free(sig);
+        return fOk;
+    }
+
+    // reconstruct public key from a compact signature
+    // This is only slightly more CPU intensive than just verifying it.
+    // If this function succeeds, the recovered public key is guaranteed to be valid
+    // (the signature is a valid signature of the given data for that key)
+    bool SetCompactSignature(uint256 hash, const std::vector<unsigned char>& vchSig)
+    {
+        if (vchSig.size() != 65)
+            return false;
+        int nV = vchSig[0];
+        if (nV<27 || nV>=35)
+            return false;
+        ECDSA_SIG *sig = ECDSA_SIG_new();
+        BN_bin2bn(&vchSig[1],32,sig->r);
+        BN_bin2bn(&vchSig[33],32,sig->s);
+
+        EC_KEY_free(pkey);
+        pkey = EC_KEY_new_by_curve_name(NID_secp256k1);
+        if (nV >= 31)
+        {
+            SetCompressedPubKey();
+            nV -= 4;
+        }
+        if (ECDSA_SIG_recover_key_GFp(pkey, sig, (unsigned char*)&hash, sizeof(hash), nV - 27, 0) == 1)
+        {
+            fSet = true;
+            ECDSA_SIG_free(sig);
+            return true;
+        }
+        return false;
     }
 
     bool Verify(uint256 hash, const std::vector<unsigned char>& vchSig)
@@ -231,10 +300,29 @@ public:
         return true;
     }
 
-    ChainAddress GetAddress(unsigned int networkId) const
+    // Verify a compact signature
+    bool VerifyCompact(uint256 hash, const std::vector<unsigned char>& vchSig)
     {
-        return ChainAddress(networkId, GetPubKey());
+        CKey key;
+        if (!key.SetCompactSignature(hash, vchSig))
+            return false;
+        if (GetPubKey() != key.GetPubKey())
+            return false;
+        return true;
     }
+
+    bool IsValid()
+    {
+        if (!fSet)
+            return false;
+
+        bool fCompr;
+        CSecret secret = GetSecret(fCompr);
+        CKey key2;
+        key2.SetSecret(secret, fCompr);
+        return GetPubKey() == key2.GetPubKey();
+    }
+    
 };
 
 #endif

@@ -35,6 +35,7 @@ SET(TARGET_SRC
     Address.cpp
     Asset.cpp
     Block.cpp
+    Key.cpp
     KeyStore.cpp
     Transaction.cpp
     Script.cpp

@@ -83,7 +83,11 @@ tribool MessageParser::consume(const Chain& chain, Message& msg, char input)
             if(_counter < 12)
                 return indeterminate;
             else {
-                _checksum = (msg.command() != "version" && msg.command() != "verack");
+                // Version 0.2 obsoletes 20 Feb 2012
+                if (GetTime() > 1329696000)
+                    _checksum = true;
+                else
+                    _checksum = (msg.command() != "version" && msg.command() != "verack");
                 _state = messagesize;
                 _counter = 0;
                 return indeterminate;

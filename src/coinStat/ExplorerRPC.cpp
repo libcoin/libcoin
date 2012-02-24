@@ -31,12 +31,12 @@ Value GetDebit::operator()(const Array& params, bool fHelp) {
         throw RPC::error(RPC::invalid_params, "getdebit <btcaddr>\n"
                          "Get debit coins of <btcaddr>");
     
-    ChainAddress addr = ChainAddress(params[0].get_str());
-    if(!addr.isValid(_explorer.blockChain().chain().networkId()))
+    ChainAddress addr = _explorer.blockChain().chain().getAddress(params[0].get_str());
+    if (!addr.isValid())
         throw RPC::error(RPC::invalid_params, "getdebit <btcaddr>\n"
                          "btcaddr invalid!");
     
-    Address address = addr.getAddress();
+    PubKeyHash address = addr.getPubKeyHash();
     
     Coins coins;
     
@@ -60,12 +60,12 @@ Value GetCredit::operator()(const Array& params, bool fHelp) {
         throw RPC::error(RPC::invalid_params, "getcredit <btcaddr>\n"
                          "Get credit coins of <btcaddr>");
     
-    ChainAddress addr = ChainAddress(params[0].get_str());
-    if(!addr.isValid(_explorer.blockChain().chain().networkId()))
+    ChainAddress addr = _explorer.blockChain().chain().getAddress(params[0].get_str());
+    if (!addr.isValid())
         throw RPC::error(RPC::invalid_params, "getcredit <btcaddr>\n"
                          "btcaddr invalid!");
     
-    Address address = addr.getAddress();
+    PubKeyHash address = addr.getPubKeyHash();
     
     Coins coins;
     
@@ -89,12 +89,12 @@ Value GetCoins::operator()(const Array& params, bool fHelp) {
         throw RPC::error(RPC::invalid_params, "getcoins <btcaddr>\n"
                          "Get un spent coins of <btcaddr>");
     
-    ChainAddress addr = ChainAddress(params[0].get_str());
-    if(!addr.isValid(_explorer.blockChain().chain().networkId()))
+    ChainAddress addr = _explorer.blockChain().chain().getAddress(params[0].get_str());
+    if (!addr.isValid())
         throw RPC::error(RPC::invalid_params, "getcoins <btcaddr>\n"
                          "btcaddr invalid!");
     
-    Address address = addr.getAddress();
+    PubKeyHash address = addr.getPubKeyHash();
     
     Coins coins;
     
@@ -118,12 +118,12 @@ Value GetAddressBalance::operator()(const Array& params, bool fHelp) {
         throw RPC::error(RPC::invalid_params, "getbalance <address>\n"
                          "Get the balance of a single chain address");
     
-    ChainAddress addr = ChainAddress(params[0].get_str());
-    if(!addr.isValid(_explorer.blockChain().chain().networkId()))
+    ChainAddress addr = _explorer.blockChain().chain().getAddress(params[0].get_str());
+    if (!addr.isValid())
         throw RPC::error(RPC::invalid_params, "getbalance <address>\n"
                          "address invalid!");
     
-    Address address = addr.getAddress();
+    PubKeyHash address = addr.getPubKeyHash();
     
     Coins coins;
     
@@ -145,12 +145,12 @@ Value Search::operator()(const Array& params, bool fHelp) {
                          "Search the block chain for nearest matching address/transaction/block");
     
     // Is it an address ?
-    ChainAddress addr = ChainAddress(params[0].get_str());
-    if(addr.isValid(_explorer.blockChain().chain().networkId())) {
+    ChainAddress addr = _explorer.blockChain().chain().getAddress(params[0].get_str());
+    if (!addr.isValid()) {
         // We assume we got an address - now produce info for this:
         // return value, credit coins, debit coins, and spendable coins depending on options
         
-        Address address = addr.getAddress();
+        PubKeyHash address = addr.getPubKeyHash();
         Coins coins;
         
         if (params.size() < 2 || params[1].get_str() == "balance") {
@@ -221,7 +221,7 @@ Value Search::operator()(const Array& params, bool fHelp) {
     else { // assume a hash or hash fraction - search all possible hashes
         // hashes can be address hash, transaction hash or block hash - currently no fraction is supported
         if (params[0].get_str().size() < 64) { // assume uint160
-            Address address(params[0].get_str());
+            PubKeyHash address(params[0].get_str());
             Coins coins;
             _explorer.getCoins(address, coins);
             // Now we have the coins - now get the value of these

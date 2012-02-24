@@ -221,7 +221,7 @@ bool BlockFilter::process(const Block& block, Peers peers) {
         uint256 bestChain = _blockChain.getBestChain();
         if (bestChain == hash) {
             for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
-                if (_blockChain.getBestHeight() > ((*peer)->nStartingHeight != -1 ? (*peer)->nStartingHeight - 2000 : _blockChain.getTotalBlocksEstimate()))
+                if (_blockChain.getBestHeight() > ((*peer)->getStartingHeight() != -1 ? (*peer)->getStartingHeight() - 2000 : _blockChain.getTotalBlocksEstimate()))
                     (*peer)->PushInventory(Inventory(MSG_BLOCK, hash));
         }
     }
@@ -246,7 +246,7 @@ bool BlockFilter::process(const Block& block, Peers peers) {
                 uint256 blockHash = block.getHash();
                 if (bestChain == blockHash) {
                     for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
-                        if (_blockChain.getBestHeight() > ((*peer)->nStartingHeight != -1 ? (*peer)->nStartingHeight - 2000 : _blockChain.getTotalBlocksEstimate()))
+                        if (_blockChain.getBestHeight() > ((*peer)->getStartingHeight() != -1 ? (*peer)->getStartingHeight() - 2000 : _blockChain.getTotalBlocksEstimate()))
                             (*peer)->PushInventory(Inventory(MSG_BLOCK, blockHash));
                 }
             }

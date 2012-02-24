@@ -31,19 +31,19 @@ set<uint160> Asset::getAddresses()
     
 bool Asset::AddKey(const CKey& key)
 {
-    _keymap[toAddress(key.GetPubKey())] = key;
+    _keymap[toPubKeyHash(key.GetPubKey())] = key;
     return true;
 }
 
 bool Asset::HaveKey(const ChainAddress &address) const
 {
-    uint160 hash160 = address.getAddress();
+    uint160 hash160 = address.getPubKeyHash();
     return (_keymap.count(hash160) > 0);
 }
 
 bool Asset::GetKey(const ChainAddress &address, CKey& keyOut) const
 {
-    uint160 hash160 = address.getAddress();
+    uint160 hash160 = address.getPubKeyHash();
     KeyMap::const_iterator pair = _keymap.find(hash160);
     if(pair != _keymap.end())
     {
@@ -76,7 +76,7 @@ uint160 Asset::getAddress(const Output& out) const
         if (item.first == OP_PUBKEY)
         {
             // encode the pubkey into a hash160
-            return toAddress(item.second);                
+            return toPubKeyHash(item.second);                
         }
         else if (item.first == OP_PUBKEYHASH)
         {

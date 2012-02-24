@@ -153,7 +153,7 @@ Value GetNewAddress::operator()(const Array& params, bool fHelp) {
     std::vector<unsigned char> newKey;
     if (!_wallet.GetKeyFromPool(newKey, false))
         throw RPC::error(RPC::internal_error, "Error: Keypool ran out, please call keypoolrefill first");
-    ChainAddress address(_wallet.chain().networkId(), newKey);
+    ChainAddress address = _wallet.chain().getAddress(toPubKeyHash(newKey));
     
     _wallet.SetAddressBookName(address, strAccount);
     
@@ -170,8 +170,8 @@ Value SendToAddress::operator()(const Array& params, bool fHelp) {
         throw RPC::error(RPC::invalid_params, "sendtoaddress <bitcoinaddress> <amount> [comment] [comment-to]\n"
                             "<amount> is a real and is rounded to the nearest 0.00000001");
     
-    ChainAddress address(params[0].get_str());
-    if (!address.isValid(_wallet.chain().networkId()))
+    ChainAddress address = _wallet.chain().getAddress(params[0].get_str());
+    if (!address.isValid())
         throw RPC::error(RPC::invalid_params, "Invalid bitcoin address");
     
     // Amount
@@ -206,7 +206,7 @@ ChainAddress GetAccountAddress::getAccountAddress(string strAccount, bool bForce
     // Check if the current key has been used
     if (!account.vchPubKey.empty()) {
         Script scriptPubKey;
-        scriptPubKey.setChainAddress(_wallet.chain().networkId(), account.vchPubKey);
+        scriptPubKey.setAddress(account.vchPubKey);
         for (map<uint256, CWalletTx>::iterator it = _wallet.mapWallet.begin();
              it != _wallet.mapWallet.end() && !account.vchPubKey.empty();
              ++it) {
@@ -222,11 +222,11 @@ ChainAddress GetAccountAddress::getAccountAddress(string strAccount, bool bForce
         if (!_wallet.GetKeyFromPool(account.vchPubKey, false))
             throw RPC::error(RPC::internal_error, "Error: Keypool ran out, please call keypoolrefill first");
         
-        _wallet.SetAddressBookName(ChainAddress(_wallet.chain().networkId(), account.vchPubKey), strAccount);
+        _wallet.SetAddressBookName(_wallet.chain().getAddress(toPubKeyHash(account.vchPubKey)), strAccount);
         walletdb.WriteAccount(strAccount, account);
     }
     
-    return ChainAddress(_wallet.chain().networkId(), account.vchPubKey);
+    return _wallet.chain().getAddress(toPubKeyHash(account.vchPubKey));
 }
 
 Value GetAccountAddress::operator()(const Array& params, bool fHelp)
@@ -251,8 +251,8 @@ Value SetAccount::operator()(const Array& params, bool fHelp)
         throw RPC::error(RPC::invalid_params, "setaccount <bitcoinaddress> <account>\n"
                             "Sets the account associated with the given address.");
     
-    ChainAddress address(params[0].get_str());
-    if (!address.isValid(_wallet.chain().networkId()))
+    ChainAddress address = _wallet.chain().getAddress(params[0].get_str());
+    if (!address.isValid())
         throw RPC::error(RPC::invalid_params, "Invalid bitcoin address");
     
     
@@ -279,8 +279,8 @@ Value GetAccount::operator()(const Array& params, bool fHelp)
         throw RPC::error(RPC::invalid_params, "getaccount <bitcoinaddress>\n"
                             "Returns the account associated with the given address.");
     
-    ChainAddress address(params[0].get_str());
-    if (!address.isValid(_wallet.chain().networkId()))
+    ChainAddress address = _wallet.chain().getAddress(params[0].get_str());
+    if (!address.isValid())
         throw RPC::error(RPC::invalid_params, "Invalid bitcoin address");
     
     string strAccount;
@@ -331,11 +331,11 @@ Value GetReceivedByAddress::operator()(const Array& params, bool fHelp)
                             "Returns the total amount received by <bitcoinaddress> in transactions with at least [minconf] confirmations.");
     
     // Bitcoin address
-    ChainAddress address = ChainAddress(params[0].get_str());
+    ChainAddress address = _wallet.chain().getAddress(params[0].get_str());
     Script scriptPubKey;
-    if (!address.isValid(_wallet.chain().networkId()))
+    if (!address.isValid())
         throw RPC::error(RPC::invalid_params, "Invalid bitcoin address");
-    scriptPubKey.setChainAddress(address);
+    scriptPubKey.setAddress(address.getPubKeyHash());
     if (!IsMine(_wallet,scriptPubKey))
         return (double)0.0;
     
@@ -389,8 +389,9 @@ Value GetReceivedByAccount::operator()(const Array& params, bool fHelp)
             continue;
         
         BOOST_FOREACH(const Output& txout, wtx.getOutputs()) {
-            Address address;
-            if (ExtractAddress(txout.script(), &_wallet, address) && setAddress.count(ChainAddress(_wallet.chain().networkId(), address)))
+            PubKeyHash pubKeyHash;
+            ScriptHash scriptHash;
+            if (ExtractAddress(txout.script(), pubKeyHash, scriptHash) && _wallet.haveKey(pubKeyHash) && setAddress.count(_wallet.chain().getAddress(pubKeyHash)))
                 if (_wallet.getDepthInMainChain(wtx.getHash()) >= nMinDepth)
                     nAmount += txout.value();
         }
@@ -454,8 +455,8 @@ Value SendFrom::operator()(const Array& params, bool fHelp)
                             "<amount> is a real and is rounded to the nearest 0.00000001");
     
     string strAccount = AccountFromValue(params[0]);
-    ChainAddress address(params[1].get_str());
-    if (!address.isValid(_wallet.chain().networkId()))
+    ChainAddress address = _wallet.chain().getAddress(params[0].get_str());
+    if (!address.isValid())
         throw RPC::error(RPC::invalid_params, "Invalid bitcoin address");
     int64 nAmount = AmountFromValue(params[2]);
     int nMinDepth = 1;
@@ -513,8 +514,8 @@ Value SendMany::operator()(const Array& params, bool fHelp)
     int64 totalAmount = 0;
     BOOST_FOREACH(const Pair& s, sendTo)
     {
-    ChainAddress address(s.name_);
-    if (!address.isValid(_wallet.chain().networkId()))
+        ChainAddress address = _wallet.chain().getAddress(s.name_);
+    if (!address.isValid())
         throw RPC::error(RPC::invalid_params, string("Invalid bitcoin address:")+s.name_);
     
     if (setAddress.count(address))
@@ -522,7 +523,7 @@ Value SendMany::operator()(const Array& params, bool fHelp)
     setAddress.insert(address);
     
     Script scriptPubKey;
-    scriptPubKey.setChainAddress(address);
+    scriptPubKey.setAddress(address.getPubKeyHash());
     int64 nAmount = AmountFromValue(s.value_); 
     totalAmount += nAmount;
     
@@ -685,11 +686,12 @@ Value ListMethod::listReceived(const Array& params, bool fByAccounts)
         
         BOOST_FOREACH(const Output& txout, wtx.getOutputs())
             {
-            Address address;
-            if (!ExtractAddress(txout.script(), &_wallet, address) || address != 0)
+            PubKeyHash pubKeyHash;
+            ScriptHash scriptHash;
+            if (!(ExtractAddress(txout.script(), pubKeyHash, scriptHash) && _wallet.haveKey(pubKeyHash)))
                 continue;
             
-            tallyitem& item = mapTally[ChainAddress(_wallet.chain().networkId(), address)];
+            tallyitem& item = mapTally[_wallet.chain().getAddress(pubKeyHash)];
             item.nAmount += txout.value();
             item.nConf = min(item.nConf, nDepth);
             }
@@ -854,7 +856,7 @@ Value ListAccounts::operator()(const Array& params, bool fHelp)
     
     map<string, int64> mapAccountBalances;
     BOOST_FOREACH(const PAIRTYPE(ChainAddress, string)& entry, _wallet.mapAddressBook) {
-        if (_wallet.HaveKey(entry.first)) // This address belongs to me
+        if (_wallet.haveKey(entry.first.getPubKeyHash())) // This address belongs to me
             mapAccountBalances[entry.second] = 0;
     }
     
@@ -980,10 +982,9 @@ Value WalletPassphrase::operator()(const Array& params, bool fHelp)
         timeout = params[1].get_int();
     
     // Note that the walletpassphrase is stored in params[0] which is not mlock()ed
-    string strWalletPass;
+    SecureString strWalletPass;
     strWalletPass.reserve(100);
-    mlock(&strWalletPass[0], strWalletPass.capacity());
-    strWalletPass = params[0].get_str();
+    strWalletPass.assign(params[0].get_str().c_str());
     
     if (strWalletPass.length() > 0) {
         if (!_wallet.Unlock(strWalletPass)) {
@@ -1018,15 +1019,13 @@ Value WalletPassphraseChange::operator()(const Array& params, bool fHelp)
     if (!_wallet.IsCrypted())
         throw RPC::error(RPC::invalid_request, "Error: running with an unencrypted wallet, but walletpassphrasechange was called.");
     
-    string strOldWalletPass;
+    SecureString strOldWalletPass;
     strOldWalletPass.reserve(100);
-    mlock(&strOldWalletPass[0], strOldWalletPass.capacity());
-    strOldWalletPass = params[0].get_str();
+    strOldWalletPass.assign(params[0].get_str().c_str());
     
-    string strNewWalletPass;
+    SecureString strNewWalletPass;
     strNewWalletPass.reserve(100);
-    mlock(&strNewWalletPass[0], strNewWalletPass.capacity());
-    strNewWalletPass = params[1].get_str();
+    strNewWalletPass.assign(params[1].get_str().c_str());
     
     if (strOldWalletPass.length() < 1 || strNewWalletPass.length() < 1)
         throw RPC::error(RPC::invalid_params, "walletpassphrasechange <oldpassphrase> <newpassphrase>\n"
@@ -1075,10 +1074,9 @@ Value EncryptWallet::operator()(const Array& params, bool fHelp)
     if (_wallet.IsCrypted())
         throw RPC::error(RPC::invalid_request, "Error: running with an encrypted wallet, but encryptwallet was called.");
     
-    string strWalletPass;
+    SecureString strWalletPass;
     strWalletPass.reserve(100);
-    mlock(&strWalletPass[0], strWalletPass.capacity());
-    strWalletPass = params[0].get_str();
+    strWalletPass.assign(params[0].get_str().c_str());
     
     if (strWalletPass.length() < 1)
         throw runtime_error(
@@ -1103,8 +1101,8 @@ Value ValidateAddress::operator()(const Array& params, bool fHelp)
         throw RPC::error(RPC::invalid_params, "validateaddress <bitcoinaddress>\n"
                             "Return information about <bitcoinaddress>.");
     
-    ChainAddress address(params[0].get_str());
-    bool isValid = address.isValid(_wallet.chain().networkId());
+    ChainAddress address = _wallet.chain().getAddress(params[0].get_str());
+    bool isValid = address.isValid();
     
     Object ret;
     ret.push_back(Pair("isvalid", isValid));
@@ -1113,7 +1111,7 @@ Value ValidateAddress::operator()(const Array& params, bool fHelp)
         // version of the address:
         string currentAddress = address.toString();
         ret.push_back(Pair("address", currentAddress));
-        ret.push_back(Pair("ismine", (_wallet.HaveKey(address) > 0)));
+        ret.push_back(Pair("ismine", (_wallet.haveKey(address.getPubKeyHash()) > 0)));
         if (_wallet.mapAddressBook.count(address))
             ret.push_back(Pair("account", _wallet.mapAddressBook[address]));
     }

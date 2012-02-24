@@ -28,7 +28,7 @@ void Explorer::TransactionListener::operator()(const Transaction& tx) {
     // for each tx output in the tx check for a pubkey or a pubkeyhash in the script
     for(unsigned int n = 0; n < tx.getNumOutputs(); n++) {
         const Output& txout = tx.getOutput(n);
-        Address address = txout.getAddress();
+        PubKeyHash address = txout.getAddress();
         _explorer.insertDebit(address, Coin(hash, n));
     }
     if(!tx.isCoinBase()) {
@@ -39,7 +39,7 @@ void Explorer::TransactionListener::operator()(const Transaction& tx) {
             
             Output txout = prevtx.getOutput(txin.prevout().index);        
             
-            Address address = txout.getAddress();
+            PubKeyHash address = txout.getAddress();
             _explorer.insertCredit(address, Coin(hash, n));
             _explorer.markSpent(address, Coin(txin.prevout().hash, txin.prevout().index));
         }
@@ -54,7 +54,7 @@ void Explorer::BlockListener::operator()(const Block& block) {
         // for each tx output in the tx check for a pubkey or a pubkeyhash in the script
         for(unsigned int n = 0; n < tx->getNumOutputs(); n++) {
             const Output& txout = tx->getOutput(n);
-            Address address = txout.getAddress();
+            PubKeyHash address = txout.getAddress();
             _explorer.insertDebit(address, Coin(hash, n));
         }
         if(!tx->isCoinBase()) {
@@ -65,7 +65,7 @@ void Explorer::BlockListener::operator()(const Block& block) {
                 
                 Output txout = prevtx.getOutput(txin.prevout().index);        
                 
-                Address address = txout.getAddress();
+                PubKeyHash address = txout.getAddress();
                 _explorer.insertCredit(address, Coin(hash, n));
                 _explorer.markSpent(address, Coin(txin.prevout().hash, txin.prevout().index));
             }
@@ -74,19 +74,19 @@ void Explorer::BlockListener::operator()(const Block& block) {
     _explorer.setHeight(_explorer.blockChain().getBlockIndex(block.getHash())->nHeight);
 }
 
-void Explorer::getCredit(const Address& address, Coins& coins) const {
+void Explorer::getCredit(const PubKeyHash& address, Coins& coins) const {
     pair<Ledger::const_iterator, Ledger::const_iterator> range = _credits.equal_range(address);
     for(Ledger::const_iterator i = range.first; i != range.second; ++i)
         coins.insert(i->second);
 }
 
-void Explorer::getDebit(const Address& address, Coins& coins) const {
+void Explorer::getDebit(const PubKeyHash& address, Coins& coins) const {
     pair<Ledger::const_iterator, Ledger::const_iterator> range = _debits.equal_range(address);
     for(Ledger::const_iterator i = range.first; i != range.second; ++i)
         coins.insert(i->second);        
 }
 
-void Explorer::getCoins(const Address& address, Coins& coins) const {
+void Explorer::getCoins(const PubKeyHash& address, Coins& coins) const {
     pair<Ledger::const_iterator, Ledger::const_iterator> range = _coins.equal_range(address);
     for(Ledger::const_iterator i = range.first; i != range.second; ++i)
         coins.insert(i->second);
@@ -131,7 +131,7 @@ void Explorer::scan() {
             // for each tx output in the tx check for a pubkey or a pubkeyhash in the script
             for(unsigned int n = 0; n < tx->getNumOutputs(); n++) {
                 const Output& txout = tx->getOutput(n);
-                Address address = txout.getAddress();
+                PubKeyHash address = txout.getAddress();
                 insertDebit(address, Coin(hash, n));
             }
             if(!tx->isCoinBase()) {
@@ -142,7 +142,7 @@ void Explorer::scan() {
                     
                     Output txout = prevtx.getOutput(txin.prevout().index);        
                     
-                    Address address = txout.getAddress();
+                    PubKeyHash address = txout.getAddress();
                     insertCredit(address, Coin(hash, n));
                     markSpent(address, Coin(txin.prevout().hash, txin.prevout().index));
                 }
@@ -157,18 +157,18 @@ void Explorer::scan() {
     }
 }
 
-void Explorer::insertDebit(const Address& address, const Coin& coin) {
+void Explorer::insertDebit(const PubKeyHash& address, const Coin& coin) {
     if(_include_spend)
         _debits.insert(make_pair(address, coin));
     _coins.insert(make_pair(address, coin));
 }
 
-void Explorer::insertCredit(const Address& address, const Coin& coin) {
+void Explorer::insertCredit(const PubKeyHash& address, const Coin& coin) {
     if(_include_spend)
         _credits.insert(make_pair(address, coin));
 }
 
-void Explorer::markSpent(const Address& address, const Coin& coin) {
+void Explorer::markSpent(const PubKeyHash& address, const Coin& coin) {
     pair<Ledger::iterator, Ledger::iterator> range = _coins.equal_range(address);
     for(Ledger::iterator i = range.first; i != range.second; ++i)
         if (i->second == coin) {

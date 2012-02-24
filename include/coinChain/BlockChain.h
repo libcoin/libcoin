@@ -287,7 +287,7 @@ public:
     
     const Chain& chain() const { return _chain; }
     
-    bool connectInputs(const Transaction& tx, std::map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx, const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee = 0) const;
+    bool connectInputs(const Transaction& tx, std::map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx, const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, bool strictPayToScriptHash = true, int64 nMinFee = 0) const;
     
     void outputPerformanceTimings() const;
 
@@ -296,8 +296,8 @@ public:
 protected:        
 
     /// Read a Transaction from Disk.
-    bool readDrIndex(uint160 hash160, std::set<Coin>& debit) const;
-    bool readCrIndex(uint160 hash160, std::set<Coin>& credit) const;
+    //    bool readDrIndex(uint160 hash160, std::set<Coin>& debit) const;
+    //    bool readCrIndex(uint160 hash160, std::set<Coin>& credit) const;
     bool readDiskTx(uint256 hash, Transaction& tx) const;
     bool readDiskTx(uint256 hash, Transaction& tx, int64& height, int64& time) const;
     

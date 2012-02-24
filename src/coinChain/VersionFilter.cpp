@@ -68,7 +68,7 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
 
         // We need to wait till after we have sent our data setting the nStartingHeight for the remote. Otherwise the remote will only get its onw height back.
         
-        origin->nStartingHeight = bestHeight;
+        origin->setStartingHeight(bestHeight);
         
         origin->fClient = !(origin->nServices & NODE_NETWORK);
         
@@ -83,7 +83,7 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
                 
         origin->fSuccessfullyConnected = true;
         
-        printf("version message: version %d, blocks=%d\n", origin->nVersion, origin->nStartingHeight);
+        printf("version message: version %d, blocks=%d\n", origin->nVersion, origin->getStartingHeight());
         return true;
     }
     else if (msg.command() == "verack") {

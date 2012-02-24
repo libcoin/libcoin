@@ -311,7 +311,7 @@ public:
 
     /// Calculate the amount payed to a spicific address by this transaction. If the address is not part of the
     /// transaction, 0 will be returned. 
-    int64 paymentTo(Address address) const;
+    int64 paymentTo(PubKeyHash address) const;
     
     /// Check if a transaction with a given priority can be completed with no fee.
     static bool allowFree(double dPriority) {

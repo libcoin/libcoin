@@ -308,7 +308,7 @@ CBlockIndex* BlockChain::getHashStopIndex(uint256 hashStop) const
 }
 
 bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx,
-                   const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee) const
+                   const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, bool strictPayToScriptHash, int64 nMinFee) const
 {    
     // lock the pool and chain for reading
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
@@ -365,7 +365,7 @@ bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& map
             if (!(fBlock && (isInitialBlockDownload()))) {
                 int64 t1 = GetTimeMicros();
 
-                if (!VerifySignature(txPrev, tx, i))
+                if (!VerifySignature(txPrev, tx, i, strictPayToScriptHash, 0))
                     return error("ConnectInputs() : %s VerifySignature failed", tx.getHash().toString().substr(0,10).c_str());
             
                 _verifySignatureTimer += GetTimeMicros() - t1;
@@ -491,18 +491,6 @@ bool BlockChain::ReadTxIndex(uint256 hash, TxIndex& txindex) const
 {
     txindex.setNull();
     return Read(make_pair(string("tx"), hash), txindex);
-}
-
-bool BlockChain::readDrIndex(uint160 hash160, set<Coin>& debit) const
-{
-    //    txindex.SetNull();
-    return Read(make_pair(string("dr"), ChainAddress(_chain.networkId(), hash160).toString()), debit);
-}
-
-bool BlockChain::readCrIndex(uint160 hash160, set<Coin>& credit) const
-{
-    //    txindex.SetNull();
-    return Read(make_pair(string("cr"), ChainAddress(_chain.networkId(), hash160).toString()), credit);
 }
 
 bool Solver(const Script& scriptPubKey, vector<pair<opcodetype, vector<unsigned char> > >& vSolutionRet);

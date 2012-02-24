@@ -23,9 +23,9 @@ using namespace std;
 // mapWallet
 //
 
-bool Wallet::AddKey(const CKey& key)
+bool Wallet::addKey(const CKey& key)
 {
-    if (!CCryptoKeyStore::AddKey(key))
+    if (!CCryptoKeyStore::addKey(key))
         return false;
     if (!fFileBacked)
         return true;
@@ -34,9 +34,9 @@ bool Wallet::AddKey(const CKey& key)
     return true;
 }
 
-bool Wallet::AddCryptedKey(const vector<unsigned char> &vchPubKey, const vector<unsigned char> &vchCryptedSecret)
+bool Wallet::addCryptedKey(const vector<unsigned char> &vchPubKey, const vector<unsigned char> &vchCryptedSecret)
 {
-    if (!CCryptoKeyStore::AddCryptedKey(vchPubKey, vchCryptedSecret))
+    if (!CCryptoKeyStore::addCryptedKey(vchPubKey, vchCryptedSecret))
         return false;
     if (!fFileBacked)
         return true;
@@ -49,7 +49,7 @@ bool Wallet::AddCryptedKey(const vector<unsigned char> &vchPubKey, const vector<
     }
 }
 
-bool Wallet::Unlock(const string& strWalletPassphrase)
+bool Wallet::Unlock(const SecureString& strWalletPassphrase)
 {
     if (!IsLocked())
         return false;
@@ -70,7 +70,7 @@ bool Wallet::Unlock(const string& strWalletPassphrase)
     return false;
 }
 
-bool Wallet::ChangeWalletPassphrase(const string& strOldWalletPassphrase, const string& strNewWalletPassphrase)
+bool Wallet::ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase)
 {
     bool fWasLocked = IsLocked();
 
@@ -129,7 +129,7 @@ public:
     )
 };
 
-bool Wallet::EncryptWallet(const string& strWalletPassphrase)
+bool Wallet::EncryptWallet(const SecureString& strWalletPassphrase)
 {
     if (IsCrypted())
         return false;
@@ -270,7 +270,7 @@ bool Wallet::AddToWallet(const CWalletTx& wtxIn)
 
         // If default receiving address gets used, replace it with a new one
         Script scriptDefaultKey;
-        scriptDefaultKey.setChainAddress(_blockChain.chain().networkId(), vchDefaultKey);
+        scriptDefaultKey.setAddress(vchDefaultKey);
         BOOST_FOREACH(const Output& txout, wtx.getOutputs())
         {
             if (txout.script() == scriptDefaultKey)
@@ -279,7 +279,7 @@ bool Wallet::AddToWallet(const CWalletTx& wtxIn)
                 if (GetKeyFromPool(newDefaultKey, false))
                 {
                     SetDefaultKey(newDefaultKey);
-                    SetAddressBookName(ChainAddress(_blockChain.chain().networkId(), vchDefaultKey), "");
+                    SetAddressBookName(_blockChain.chain().getAddress(toPubKeyHash(vchDefaultKey)), "");
                 }
             }
         }
@@ -820,8 +820,8 @@ bool Wallet::CreateTransaction(const vector<pair<Script, int64> >& vecSend, CWal
 
                     // Fill a vout to ourself, using same address type as the payment
                     Script scriptChange;
-                    if (vecSend[0].first.getChainAddress(_blockChain.chain().networkId()).isValid(_blockChain.chain().networkId()))
-                        scriptChange.setChainAddress(_blockChain.chain().networkId(),vchPubKey);
+                    if (vecSend[0].first.getAddress() != 0)
+                        scriptChange.setAddress(vchPubKey);
                     else
                         scriptChange << vchPubKey << OP_CHECKSIG;
 
@@ -975,7 +975,7 @@ string Wallet::SendMoneyToBitcoinAddress(const ChainAddress& address, int64 nVal
 
     // Parse bitcoin address
     Script scriptPubKey;
-    scriptPubKey.setChainAddress(address);
+    scriptPubKey.setAddress(address.getPubKeyHash());
 
     return SendMoney(scriptPubKey, nValue, wtxNew, fAskFee);
 }
@@ -996,7 +996,7 @@ int Wallet::LoadWallet(bool& fFirstRunRet)
         return nLoadWalletRet;
     fFirstRunRet = vchDefaultKey.empty();
 
-    if (!HaveKey(ChainAddress(_blockChain.chain().networkId(), toAddress(vchDefaultKey))))
+    if (!haveKey(toPubKeyHash(vchDefaultKey)))
     {
         // Create new keyUser and set as default key
         RandAddSeedPerfmon();
@@ -1005,7 +1005,7 @@ int Wallet::LoadWallet(bool& fFirstRunRet)
         if (!GetKeyFromPool(newDefaultKey, false))
             return DB_LOAD_FAIL;
         SetDefaultKey(newDefaultKey);
-        if (!SetAddressBookName(ChainAddress(_blockChain.chain().networkId(), vchDefaultKey), ""))
+        if (!SetAddressBookName(chain().getAddress(toPubKeyHash(vchDefaultKey)), ""))
             return DB_LOAD_FAIL;
     }
 
@@ -1093,7 +1093,7 @@ bool Wallet::TopUpKeyPool()
             int64 nEnd = 1;
             if (!setKeyPool.empty())
                 nEnd = *(--setKeyPool.end()) + 1;
-            if (!walletdb.WritePool(nEnd, CKeyPool(GenerateNewKey())))
+            if (!walletdb.WritePool(nEnd, CKeyPool(generateNewKey())))
                 throw runtime_error("TopUpKeyPool() : writing generated key failed");
             setKeyPool.insert(nEnd);
             printf("keypool added key %"PRI64d", size=%d\n", nEnd, setKeyPool.size());
@@ -1121,7 +1121,7 @@ void Wallet::ReserveKeyFromKeyPool(int64& nIndex, CKeyPool& keypool)
         setKeyPool.erase(setKeyPool.begin());
         if (!walletdb.ReadPool(nIndex, keypool))
             throw runtime_error("ReserveKeyFromKeyPool() : read failed");
-        if (!HaveKey(ChainAddress(_blockChain.chain().networkId(), toAddress(keypool.vchPubKey))))
+        if (!haveKey(toPubKeyHash(keypool.vchPubKey)))
             throw runtime_error("ReserveKeyFromKeyPool() : unknown key in key pool");
         assert(!keypool.vchPubKey.empty());
         printf("keypool reserve %"PRI64d"\n", nIndex);
@@ -1162,7 +1162,7 @@ bool Wallet::GetKeyFromPool(vector<unsigned char>& result, bool fAllowReuse)
                 return true;
             }
             if (IsLocked()) return false;
-            result = GenerateNewKey();
+            result = generateNewKey();
             return true;
         }
         KeepKey(nIndex);

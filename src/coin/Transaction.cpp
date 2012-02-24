@@ -42,7 +42,7 @@ uint160 Output::getAddress() const
         vector<unsigned char> vchPubKey;
         if (item.first == OP_PUBKEY)
             // encode the pubkey into a hash160
-            return toAddress(item.second);
+            return toPubKeyHash(item.second);
         else if (item.first == OP_PUBKEYHASH)
             return uint160(item.second);                
     }
@@ -101,7 +101,7 @@ int64 Transaction::getValueOut() const
     return valueOut;
 }
 
-int64 Transaction::paymentTo(Address address) const {
+int64 Transaction::paymentTo(PubKeyHash address) const {
     int64 value = 0;
     BOOST_FOREACH(const Output& output, _outputs)
     {

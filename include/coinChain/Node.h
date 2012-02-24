@@ -99,6 +99,9 @@ public:
         return _peerManager.getNumInbound() + _peerManager.getNumOutbound();
     }
     
+    /// Proxy to get the median block countof the last five connected peers.
+    int getPeerMedianNumBlocks() const { return _peerManager.getPeerMedianNumBlocks(); }
+    
     /// Accept or connect depending on the number and type of the connected peers.
     void post_accept_or_connect();
     

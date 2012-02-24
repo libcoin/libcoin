@@ -148,13 +148,14 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
     // but non-standard clients might (so return a list of address/amount pairs)
     BOOST_FOREACH(const Output& txout, _outputs)
     {
-        Address address;
-        vector<unsigned char> vchPubKey;
-        if (!ExtractAddress(txout.script(), NULL, address))
+        PubKeyHash pubKeyHash;
+        ScriptHash scriptHash; // Didn't include support for P2SH yet!!!
+        PubKey vchPubKey;
+        if (!ExtractAddress(txout.script(), pubKeyHash, scriptHash))
         {
             printf("CWalletTx::GetAmounts: Unknown transaction type found, txid %s\n",
                    this->getHash().toString().c_str());
-            address = 0;
+            pubKeyHash = 0;
         }
 
         // Don't report 'change' txouts
@@ -162,10 +163,10 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
             continue;
 
         if (nDebit > 0)
-            listSent.push_back(make_pair(ChainAddress(pwallet->chain().networkId(), address), txout.value()));
+            listSent.push_back(make_pair(pwallet->chain().getAddress(pubKeyHash), txout.value()));
 
         if (pwallet->IsMine(txout))
-            listReceived.push_back(make_pair(ChainAddress(pwallet->chain().networkId(), address), txout.value()));
+            listReceived.push_back(make_pair(pwallet->chain().getAddress(pubKeyHash), txout.value()));
     }
 
 }

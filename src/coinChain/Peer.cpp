@@ -57,7 +57,7 @@ Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, Mes
     hashContinue = 0;
     locatorLastGetBlocksBegin.SetNull();
     hashLastGetBlocksEnd = 0;
-    nStartingHeight = bestHeight;
+    _startingHeight = bestHeight;
     fGetAddr = false;    
     _proxy = proxy;
     _nonce = 0;
@@ -402,7 +402,7 @@ void Peer::PushVersion() {
     RAND_bytes((unsigned char*)&_nonce, sizeof(_nonce));
     uint64 nLocalServices = NODE_NETWORK;
     PushMessage("version", VERSION, nLocalServices, nTime, addrYou, addrMe,
-                _nonce, std::string(pszSubVer), nStartingHeight);
+                _nonce, std::string(pszSubVer), _startingHeight);
 }
 
 void Peer::PushGetBlocks(const CBlockLocator locatorBegin, uint256 hashEnd)

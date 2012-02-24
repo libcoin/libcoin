@@ -47,7 +47,7 @@ public:
     explicit Miner(Node& node, PubKey& pubkey);
     
     /// Construct the Miner using an address;
-    explicit Miner(Node& node, Address& address);
+    explicit Miner(Node& node, PubKeyHash& address);
     
     /// Run the miner's io_service loop.
     void run();
@@ -117,7 +117,7 @@ private:
     std::string _override_name;
     unsigned int _update_interval; // milliseconds
     bool _generate;
-    const Address _address;
+    const PubKeyHash _address;
     const PubKey _pub_key;
     CReserveKey _reserve_key;
     uint64 _hashes_per_second;

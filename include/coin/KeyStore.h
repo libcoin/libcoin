@@ -9,53 +9,75 @@
 #include <coin/Address.h>
 #include <coin/Key.h>
 
-class CKeyStore
+
+/// KeyStore is a virtual base class for key stores. It enables mappings between PubKeyHashes and ScriptHashes, whether, all
+/// "Bitcoin" address specific stuff are kept in derived classes.
+class KeyStore
 {
 public:
-    virtual bool AddKey(const CKey& key) =0;
-    virtual bool HaveKey(const ChainAddress &address) const =0;
-    virtual bool HaveKey(const uint160 &asset) const =0;
-    virtual bool GetKey(const ChainAddress &address, CKey& keyOut) const =0;
-    virtual bool GetKey(const uint160 &asset, CKey& keyOut) const =0;
-    virtual bool GetPubKey(const ChainAddress &address, std::vector<unsigned char>& vchPubKeyOut) const;
-    virtual bool GetPubKey(const uint160 &asset, std::vector<unsigned char>& vchPubKeyOut) const = 0;
-    virtual std::vector<unsigned char> GenerateNewKey();
-    virtual unsigned char getId() const = 0;
+    // Add a key to the store.
+    virtual bool addKey(const CKey& key) = 0;
+    
+    // Check whether a key corresponding to a given address is present in the store.
+    virtual bool haveKey(const PubKeyHash &hash) const = 0;
+    virtual bool getKey(const PubKeyHash &hash, CKey& keyOut) const =0;
+    virtual void getKeys(std::set<PubKeyHash> &setAddress) const =0;
+    virtual bool getPubKey(const PubKeyHash &address, PubKey& vchPubKeyOut) const;
+    
+    // Support for BIP 0013 : see https://en.bitcoin.it/wiki/BIP_0013
+    virtual bool addScript(const Script& redeemScript) = 0;
+    virtual bool haveScript(const ScriptHash &hash) const = 0;
+    virtual bool getScript(const ScriptHash &hash, Script& redeemScriptOut) const = 0;
+    
+    // Generate a new key, and add it to the store
+    virtual std::vector<unsigned char> generateNewKey();
+    virtual bool getSecret(const PubKeyHash &hash, CSecret& secret, bool &compressed) const {
+        CKey key;
+        if (!getKey(hash, key))
+            return false;
+        secret = key.GetSecret(compressed);
+        return true;
+    }
 };
 
-typedef std::map<ChainAddress, CSecret> KeyMap;
+typedef std::map<PubKeyHash, std::pair<CSecret, bool> > KeyMap;
+typedef std::map<ScriptHash, Script> ScriptMap;
 
-class COIN_EXPORT CBasicKeyStore : public CKeyStore
+// Basic key store, that keeps keys in an address->secret map
+class BasicKeyStore : public KeyStore
 {
 protected:
-    KeyMap mapKeys;
-    unsigned char _id;
+    KeyMap _keys;
+    ScriptMap _scripts;
+    
 public:
-    CBasicKeyStore(unsigned char networkId) : _id(networkId) {}
-    
-    virtual unsigned char getId() const { return _id; }
-    
-    bool AddKey(const CKey& key);
-    bool HaveKey(const ChainAddress &address) const {
-        bool result;
-    //        CRITICAL_BLOCK(cs_KeyStore) - method is const - why do we want a mutex?
-        result = (mapKeys.count(address) > 0);
-        return result;
+    bool addKey(const CKey& key);
+    bool haveKey(const PubKeyHash &hash) const {
+        return (_keys.count(hash) > 0);
     }
-    bool GetKey(const ChainAddress &address, CKey& keyOut) const {
-        //        CRITICAL_BLOCK(cs_KeyStore) - method is const - why do we want a mutex?
-        //        {
-        KeyMap::const_iterator mi = mapKeys.find(address);
-        if (mi != mapKeys.end()) {
-            keyOut.SetSecret((*mi).second);
+
+    void getKeys(std::set<PubKeyHash> &addresses) const {
+        addresses.clear();
+        KeyMap::const_iterator mi = _keys.begin();
+        while (mi != _keys.end()) {
+            addresses.insert((*mi).first);
+            mi++;
+        }
+    }
+    
+    bool getKey(const PubKeyHash& hash, CKey &key) const {
+        KeyMap::const_iterator mi = _keys.find(hash);
+        if (mi != _keys.end()) {
+            key.Reset();
+            key.SetSecret((*mi).second.first, (*mi).second.second);
             return true;
         }
-        //        }
         return false;
     }
-    virtual bool HaveKey(const uint160 &asset) const { return HaveKey(ChainAddress(_id, asset)); }
-    virtual bool GetKey(const uint160 &asset, CKey& keyOut) const { return GetKey(ChainAddress(_id, asset), keyOut); }
-    virtual bool GetPubKey(const uint160 &asset, std::vector<unsigned char>& vchPubKeyOut) const { return CKeyStore::GetPubKey(ChainAddress(_id, asset), vchPubKeyOut); }
+    
+    virtual bool addScript(const Script& redeemScript);
+    virtual bool haveScript(const ScriptHash& hash) const;
+    virtual bool getScript(const ScriptHash& hash, Script& redeemScriptOut) const;
 };
 
 #endif

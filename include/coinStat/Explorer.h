@@ -26,7 +26,7 @@
 class Explorer;
 
 /// Explorer collects address to coin mappings from the block chain.
-/// This enables lookup in a database of coin owned by a spicific Address.
+/// This enables lookup in a database of coin owned by a spicific PubKeyHash.
 /// On first startup it scans the block file for all transactions, and 
 /// stores it in a file: "explorer.dat" This file is tehn updated every 1000
 /// blocks. The first scan can take several minutes, after that the penalty
@@ -80,13 +80,13 @@ public:
     const BlockChain& blockChain() const { return _blockChain; }
     
     /// Retreive coins credited from an address
-    void getCredit(const Address& btc, Coins& coins) const;
+    void getCredit(const PubKeyHash& btc, Coins& coins) const;
     
     /// Retreive coins debited to an address
-    void getDebit(const Address& btc, Coins& coins) const;
+    void getDebit(const PubKeyHash& btc, Coins& coins) const;
     
     /// Retreive spendable coins of address
-    void getCoins(const Address& btc, Coins& coins) const;
+    void getCoins(const PubKeyHash& btc, Coins& coins) const;
     
     /// Load the database from a file
     void load(std::string filename);
@@ -97,9 +97,9 @@ public:
     void scan();
     
     /// add credit and debit:
-    void insertDebit(const Address& address, const Coin& coin);
-    void insertCredit(const Address& address, const Coin& coin);
-    void markSpent(const Address& address, const Coin& coin);
+    void insertDebit(const PubKeyHash& address, const Coin& coin);
+    void insertCredit(const PubKeyHash& address, const Coin& coin);
+    void markSpent(const PubKeyHash& address, const Coin& coin);
 
     /// Set the height to the last block checked.
     void setHeight(int height) { _height = height; }
@@ -107,8 +107,8 @@ public:
 private:
     bool _include_spend;
     const BlockChain& _blockChain;
-    /// Multimap, mapping Address to Coin relationship. One Address can be asset for multiple coins
-    typedef std::multimap<Address, Coin> Ledger;
+    /// Multimap, mapping PubKeyHash to Coin relationship. One PubKeyHash can be asset for multiple coins
+    typedef std::multimap<PubKeyHash, Coin> Ledger;
     Ledger _debits;
     Ledger _credits;
     Ledger _coins;

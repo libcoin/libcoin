@@ -26,7 +26,7 @@ Miner::Miner(Node& node, CReserveKey& reservekey) : _node(node), _idle_timer(_io
 Miner::Miner(Node& node, PubKey& pubkey) : _node(node), _idle_timer(_io_service), _update_interval(2000), _generate(false), _address(0), _pub_key(pubkey), _reserve_key(NULL), _hashes_per_second(100000) { registerHasher(hasher_ptr(new CPUHasher)); }
 
 
-Miner::Miner(Node& node, Address& address) : _node(node), _idle_timer(_io_service), _update_interval(2000), _generate(false), _address(address), _pub_key(), _reserve_key(NULL), _hashes_per_second(100000) { registerHasher(hasher_ptr(new CPUHasher)); }
+Miner::Miner(Node& node, PubKeyHash& address) : _node(node), _idle_timer(_io_service), _update_interval(2000), _generate(false), _address(address), _pub_key(), _reserve_key(NULL), _hashes_per_second(100000) { registerHasher(hasher_ptr(new CPUHasher)); }
 
 void Miner::run() {
     _idle_timer.expires_at(posix_time::pos_infin);

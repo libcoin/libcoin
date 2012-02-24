@@ -9,30 +9,49 @@
 #include <vector>
 
 #include <coin/KeyStore.h>
+#include <coin/Script.h>
 
-PubKey CKeyStore::GenerateNewKey()
-{
+PubKey KeyStore::generateNewKey() {
     RandAddSeedPerfmon();
     CKey key;
     key.MakeNewKey();
-    if (!AddKey(key))
+    if (!addKey(key))
         throw std::runtime_error("CKeyStore::GenerateNewKey() : AddKey failed");
     return key.GetPubKey();
 }
 
-bool CKeyStore::GetPubKey(const ChainAddress &address, PubKey &vchPubKeyOut) const
-{
+bool KeyStore::getPubKey(const PubKeyHash &hash, PubKey &pubkey) const {
     CKey key;
-    if (!GetKey(address, key))
+    if (!getKey(hash, key))
         return false;
-    vchPubKeyOut = key.GetPubKey();
+    pubkey = key.GetPubKey();
     return true;
 }
 
-bool CBasicKeyStore::AddKey(const CKey& key)
-{
-    //    CRITICAL_BLOCK(cs_KeyStore)
-    mapKeys[key.GetAddress(_id)] = key.GetSecret();
+bool BasicKeyStore::addKey(const CKey& key) {
+    bool compressed = false;
+    CSecret secret = key.GetSecret(compressed);
+    _keys[toPubKeyHash(key.GetPubKey())] = make_pair(secret, compressed);
     return true;
 }
 
+bool BasicKeyStore::addScript(const Script& redeemScript) {
+    ScriptHash sh;
+    //    _scripts[toScriptHash(redeemScript)] = redeemScript;
+    _scripts[sh] = redeemScript;
+    return true;
+}
+
+bool BasicKeyStore::haveScript(const ScriptHash& hash) const {
+    return (_scripts.count(hash) > 0);
+}
+
+
+bool BasicKeyStore::getScript(const ScriptHash& hash, Script& redeemScript) const {
+    ScriptMap::const_iterator mi = _scripts.find(hash);
+    if (mi != _scripts.end()) {
+        redeemScript = (*mi).second;
+        return true;
+    }
+    return false;
+}

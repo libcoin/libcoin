@@ -9,9 +9,11 @@
 #include <coinWallet/Export.h>
 #include <coinWallet/Crypter.h>
 
-typedef std::map<ChainAddress, std::pair<std::vector<unsigned char>, std::vector<unsigned char> > > CryptedKeyMap;
+typedef std::map<PubKeyHash, std::pair<std::vector<unsigned char>, std::vector<unsigned char> > > CryptedKeyMap;
 
-class COINWALLET_EXPORT CCryptoKeyStore : public CBasicKeyStore
+/// Keystore which keeps the private keys encrypted
+/// It derives from the basic key store, which is used if no encryption is active.
+class COINWALLET_EXPORT CCryptoKeyStore : public BasicKeyStore
 {
 private:
     CryptedKeyMap mapCryptedKeys;
@@ -31,51 +33,53 @@ protected:
     bool Unlock(const CKeyingMaterial& vMasterKeyIn);
     
 public:
-    CCryptoKeyStore(unsigned char networkId) : CBasicKeyStore(networkId), fUseCrypto(false)
-    {
+    CCryptoKeyStore() : fUseCrypto(false) {}
+    
+    bool IsCrypted() const {
+        return fUseCrypto;
     }
     
-    bool IsCrypted() const
-    {
-    return fUseCrypto;
-    }
-    
-    bool IsLocked() const
-    {
-    if (!IsCrypted())
-        return false;
-    bool result;
-    CRITICAL_BLOCK(cs_KeyStore)
-    result = vMasterKey.empty();
-    return result;
-    }
-    
-    bool Lock()
-    {
-    if (!SetCrypted())
-        return false;
-    
-    CRITICAL_BLOCK(cs_KeyStore)
-    vMasterKey.clear();
-    
-    return true;
-    }
-    
-    virtual bool AddCryptedKey(const std::vector<unsigned char> &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
-    std::vector<unsigned char> GenerateNewKey();
-    bool AddKey(const CKey& key);
-    bool HaveKey(const ChainAddress &address) const
-    {
-    CRITICAL_BLOCK(cs_KeyStore)
-        {
+    bool IsLocked() const {
         if (!IsCrypted())
-            return CBasicKeyStore::HaveKey(address);
-        return mapCryptedKeys.count(address) > 0;
+            return false;
+        bool result;
+        result = vMasterKey.empty();
+        return result;
+    }
+    
+    bool Lock() {
+        if (!SetCrypted())
+            return false;
+        
+        vMasterKey.clear();
+        
+        return true;
+    }
+    
+    virtual bool addCryptedKey(const std::vector<unsigned char> &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
+    bool addKey(const CKey& key);
+    bool haveKey(const PubKeyHash &hash) const
+    {
+        if (!IsCrypted())
+            return BasicKeyStore::haveKey(hash);
+        return mapCryptedKeys.count(hash) > 0;
+        return false;
+    }
+    bool getKey(const PubKeyHash &hash, CKey& keyOut) const;
+    bool getPubKey(const PubKeyHash &hash, std::vector<unsigned char>& vchPubKeyOut) const;
+    void getKeys(std::set<PubKeyHash> &setAddress) const {
+        if (!IsCrypted()) {
+            BasicKeyStore::getKeys(setAddress);
+            return;
+        }
+        setAddress.clear();
+        CryptedKeyMap::const_iterator mi = mapCryptedKeys.begin();
+        while (mi != mapCryptedKeys.end()) {
+            setAddress.insert((*mi).first);
+            mi++;
         }
     }
-    bool GetKey(const ChainAddress &address, CKey& keyOut) const;
-    virtual bool GetPubKey(const ChainAddress &address, std::vector<unsigned char>& vchPubKeyOut) const;
-
+    
 protected:
     mutable CCriticalSection cs_KeyStore;
 };

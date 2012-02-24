@@ -51,8 +51,16 @@ public:
     
     virtual const std::string dataDirSuffix() const { return "ponzicoin"; }
     
-    virtual char networkId() const { return 0xff; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
-    
+    //    virtual char networkId() const { return 0xff; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
+    virtual ChainAddress getAddress(PubKeyHash hash) const { return ChainAddress(0xff, hash); }
+    virtual ChainAddress getAddress(ScriptHash hash) const { return ChainAddress(); }
+    virtual ChainAddress getAddress(std::string str) const {
+        ChainAddress addr(str);
+        if(addr.version() == 0xff)
+            addr.setType(ChainAddress::PUBKEYHASH);
+        return addr;
+    }
+
     virtual const MessageStart& messageStart() const { return _messageStart; };
     virtual short defaultPort() const { return 5247; }
     

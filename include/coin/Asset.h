@@ -36,7 +36,7 @@ public:
 
 class Asset;
 
-class COIN_EXPORT Asset : public CKeyStore
+class COIN_EXPORT Asset : public KeyStore
 {
 public:
     //    typedef Coin Coin;
@@ -51,7 +51,7 @@ private:
 public:
     Asset() {}
     void addAddress(uint160 hash160) { _keymap[hash160]; }
-    void addKey(CKey key) { _keymap[toAddress(key.GetPubKey())] = key; }
+    void addKey(CKey key) { _keymap[toPubKeyHash(key.GetPubKey())] = key; }
     
     std::set<uint160> getAddresses();
     

@@ -71,7 +71,7 @@ public:
         Node& _node; 
     };
 
-    Wallet(Node& node, std::string walletFile = "", std::string dataDir = "") : CCryptoKeyStore(node.blockChain().chain().networkId()), _blockChain(node.blockChain()), nTransactionFee(0), _emit(node), _resend_timer(node.get_io_service()) {
+    Wallet(Node& node, std::string walletFile = "", std::string dataDir = "") : CCryptoKeyStore(), _blockChain(node.blockChain()), nTransactionFee(0), _emit(node), _resend_timer(node.get_io_service()) {
         if(walletFile == "NOTFILEBACKED")
             fFileBacked = false;
         else {
@@ -123,6 +123,9 @@ public:
     */
     
     bool isFinal(const Transaction& tx) const { return _blockChain.isFinal(tx); }
+    bool isInMainChain(const uint256& hash) const { return _blockChain.isInMainChain(hash); }
+    
+    std::string getDateDir() const { return _dataDir; }
     
     bool WriteToDisk(const CWalletTx& wtx);
     
@@ -136,14 +139,14 @@ public:
     std::vector<unsigned char> vchDefaultKey;
 
     // keystore implementation
-    bool AddKey(const CKey& key);
-    bool LoadKey(const CKey& key) { return CCryptoKeyStore::AddKey(key); }
-    bool AddCryptedKey(const std::vector<unsigned char> &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
-    bool LoadCryptedKey(const std::vector<unsigned char> &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret) { return CCryptoKeyStore::AddCryptedKey(vchPubKey, vchCryptedSecret); }
+    bool addKey(const CKey& key);
+    bool LoadKey(const CKey& key) { return CCryptoKeyStore::addKey(key); }
+    bool addCryptedKey(const std::vector<unsigned char> &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
+    bool LoadCryptedKey(const std::vector<unsigned char> &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret) { return CCryptoKeyStore::addCryptedKey(vchPubKey, vchCryptedSecret); }
 
-    bool Unlock(const std::string& strWalletPassphrase);
-    bool ChangeWalletPassphrase(const std::string& strOldWalletPassphrase, const std::string& strNewWalletPassphrase);
-    bool EncryptWallet(const std::string& strWalletPassphrase);
+    bool Unlock(const SecureString& strWalletPassphrase);
+    bool ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase);
+    bool EncryptWallet(const SecureString& strWalletPassphrase);
 
     bool AddToWallet(const CWalletTx& wtxIn);
     bool AddToWalletIfInvolvingMe(const Transaction& tx, const Block* pblock, bool fUpdate = false);
@@ -181,11 +184,21 @@ public:
     }
     bool IsChange(const Output& txout) const
     {
-        Address address;
-        if (ExtractAddress(txout.script(), this, address))
+        PubKeyHash pubKeyHash;
+        ScriptHash scriptHash;
+        if (ExtractAddress(txout.script(), pubKeyHash, scriptHash)) {
+            ChainAddress address;
+            if (pubKeyHash != 0)
+                address = chain().getAddress(pubKeyHash);
+            else if (scriptHash != 0)
+                address = chain().getAddress(scriptHash);
+            else
+                return false;
+                
             CRITICAL_BLOCK(cs_wallet)
-                if (!mapAddressBook.count(ChainAddress(chain().networkId(), address)))
+                if (!mapAddressBook.count(address))
                     return true;
+    }
         return false;
     }
     int64 GetChange(const Output& txout) const
@@ -248,7 +261,11 @@ public:
     }
     
     int getDepthInMainChain(const uint256 hash) const { return _blockChain.getDepthInMainChain(hash); }
+    int getHeight(const uint256 hash) const { return _blockChain.getHeight(hash); }
+    int getBestHeight() const { return _blockChain.getBestHeight(); }
 
+    void getTransaction(const uint256 hash, Transaction& tx) const { _blockChain.getTransaction(hash, tx); }
+    
     int LoadWallet(bool& fFirstRunRet);
 //    bool BackupWallet(const std::string& strDest);
 
