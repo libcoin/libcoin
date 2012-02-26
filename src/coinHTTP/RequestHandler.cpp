@@ -50,6 +50,50 @@ private:
     RequestHandler& _delegate;
 };
 
+class Help : public Method{
+public:
+    Help(RequestHandler& delegate) : _delegate(delegate) {}
+    virtual Value operator()(const Array& params, bool fHelp) {
+        if (fHelp)
+            throw runtime_error(
+                                "help [command]\n"
+                                "List commands, or get help for a command.");
+        
+        string ret;
+
+        Array list;
+        const Methods methods = _delegate.getMethods();
+        if (params.size() == 0) {
+            for (Methods::const_iterator mi = methods.begin(); mi != methods.end(); ++mi) {
+                string name = (*mi).first;
+                ret += name + "\n";
+            }
+        }
+        else if (params.size() > 0) {
+            string command = params[0].get_str();
+            Methods::const_iterator mi = methods.find(command);
+            if (mi == methods.end()) { // command not found
+                return "help: unknown command:" + command + "\n";
+            }
+            else {
+                try {
+                    Array params;
+                    Method& cmd = *((*mi).second.get());
+                    cmd(params, true);
+                }
+                catch (Object& err) {
+                // Help text is returned in an exception
+                    ret = find_value(err, "message").get_str();
+                }
+            }
+        }
+        return ret;
+    }    
+    
+private:
+    RequestHandler& _delegate;
+};
+
 string Auth::username() {
     string user_pass = decode64(_base64auth);
     vector<string> userpass;
@@ -204,6 +248,7 @@ string Auth::decode64(string s) {
 
 RequestHandler::RequestHandler(const string& doc_root) : _doc_root(doc_root) {
     registerMethod(method_ptr(new DirtyDocCache(*this)));
+    registerMethod(method_ptr(new Help(*this)));
 }
 
 void RequestHandler::registerMethod(method_ptr method, Auth auth) {

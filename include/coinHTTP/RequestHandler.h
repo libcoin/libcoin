@@ -87,6 +87,9 @@ public:
     /// Remove an application handler, e.g. for RPC or CGI
     void unregisterMethod(const std::string name);
     
+    /// Const list of methods
+    const Methods& getMethods() const { return _methods; }
+    
     /// Handle a GET request and produce a reply.
     void handleGET(const Request& req, Reply& rep);
     

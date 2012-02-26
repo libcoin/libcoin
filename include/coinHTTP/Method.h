@@ -40,7 +40,7 @@ public:
     }
     
     virtual const std::string summary() const { return ""; } // OPTIONAL
-    virtual const std::string help() const { return ""; } // OPTIONAL
+    virtual const std::string help() const { return "https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_Calls_list"; } // OPTIONAL
     virtual const std::string params() const  { return ""; } // OPTIONAL
     virtual const std::string ret() const { return ""; } // OPTIONAL
     

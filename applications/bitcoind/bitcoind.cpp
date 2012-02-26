@@ -139,7 +139,10 @@ int main(int argc, char* argv[])
             if(reply.status == Reply::ok) {
                 Object rpc_reply = RPC::reply(reply.content);
                 Value result = find_value(rpc_reply, "result");
-                cout << write_formatted(result) << "\n";
+                if (result.type() == str_type)
+                    cout << result.get_str() << "\n";
+                else
+                    cout << write_formatted(result) << "\n";
                 return 0;
             }
             else {
