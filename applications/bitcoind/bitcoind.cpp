@@ -29,6 +29,7 @@
 
 #include <boost/thread.hpp>
 #include <boost/program_options.hpp>
+#include <boost/algorithm/string/split.hpp>
 
 #include <fstream>
 
@@ -45,9 +46,11 @@ int main(int argc, char* argv[])
         string rpc_bind, rpc_connect, rpc_user, rpc_pass;
         typedef vector<string> strings;
         strings rpc_params;
+        string proxy;
         strings connect_peers;
         strings add_peers;
         bool gen, ssl;
+        unsigned int timeout;
         string certchain, privkey;
 
         // Commandline options
@@ -64,6 +67,8 @@ int main(int argc, char* argv[])
             ("pid", value<string>(), "Specify pid file (default: bitcoind.pid)")
             ("nolisten", "Don't accept connections from outside")
             ("testnet", "Use the test network")
+            ("proxy", value<string>(&proxy), "Connect through socks4 proxy")
+            ("timeout", value<unsigned int>(&timeout)->default_value(5000), "Specify connection timeout (in milliseconds)")
             ("addnode", value<strings>(&add_peers), "Add a node to connect to")
             ("connect", value<strings>(&connect_peers), "Connect only to the specified node")
             ("port", value<unsigned short>(&port)->default_value(8333), "Listen on specified port for the p2p protocol")
@@ -171,7 +176,13 @@ int main(int argc, char* argv[])
         
         logfile = data_dir + "/debug.log";
         
-        Node node(chain, data_dir, args.count("nolisten") ? "" : "0.0.0.0", lexical_cast<string>(port)); // it is also here we specify the use of a proxy!
+        asio::ip::tcp::endpoint proxy_server;
+        if(proxy.size()) {
+            vector<string> host_port; split(host_port, proxy, is_any_of(":"));
+            if(host_port.size() < 2) host_port.push_back("1080"); 
+            proxy_server = asio::ip::tcp::endpoint(asio::ip::address_v4::from_string(host_port[0]), lexical_cast<short>(host_port[1]));
+        }
+        Node node(chain, data_dir, args.count("nolisten") ? "" : "0.0.0.0", lexical_cast<string>(port), proxy_server, timeout); // it is also here we specify the use of a proxy!
 //        PortMapper(node.get_io_service(), port); // this will use the Node call
 
         // use the connect and addnode options to restrict and supplement the irc and endpoint db.

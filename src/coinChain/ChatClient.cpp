@@ -34,7 +34,7 @@ using namespace boost;
 using namespace boost::asio;
 using namespace boost::asio::ip;
 
-ChatClient::ChatClient(boost::asio::io_service& io_service, function<void (void)> new_endpoint_notifier, const std::string& server, EndpointPool& endpointPool, string channel, unsigned int channels, const bool proxy) : _resolver(io_service), _socket(io_service), _notifier(new_endpoint_notifier), _name_in_use(false), _server(server), _endpointPool(endpointPool), _channel(channel), _channels(channels), _proxy(proxy) {
+ChatClient::ChatClient(boost::asio::io_service& io_service, function<void (void)> new_endpoint_notifier, const std::string& server, EndpointPool& endpointPool, string channel, unsigned int channels, tcp::endpoint proxy) : _resolver(io_service), _socket(io_service), _notifier(new_endpoint_notifier), _name_in_use(false), _server(server), _endpointPool(endpointPool), _channel(channel), _channels(channels), _proxy(proxy) {
     
     // Start an asynchronous resolve to translate the server and service names
     // into a list of endpoints.
@@ -48,7 +48,10 @@ void ChatClient::handle_resolve(const system::error_code& err, tcp::resolver::it
         // will be tried until we successfully establish a connection.
         tcp::endpoint endpoint = *endpoint_iterator;
         endpoint.port(6667);
-        _socket.async_connect(endpoint, bind(&ChatClient::handle_connect, this, placeholders::error, ++endpoint_iterator));
+        if (_proxy)
+            _proxy(_socket).async_connect(endpoint, bind(&ChatClient::handle_connect, this, placeholders::error, ++endpoint_iterator));
+        else
+            _socket.async_connect(endpoint, bind(&ChatClient::handle_connect, this, placeholders::error, ++endpoint_iterator));
     }
     else {
         printf("Error: %s\n", err.message().c_str());
@@ -154,7 +157,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                             // Hybrid IRC used by lfnet always returns IP when you userhost yourself,
                             // but in case another IRC is ever used this should work.
                             printf("GetIPFromIRC() got userhost %s\n", host.c_str());
-                            if (!_proxy) {
+                            if (true/*!_proxy*/) {
                                 Endpoint endpoint(host, 0, true);
                                 if (endpoint.isValid()) {
                                     _endpointPool.setLocal(endpoint);

@@ -24,6 +24,7 @@
 #include <coinChain/Export.h>
 #include <coinChain/Peer.h>
 #include <coinChain/PeerManager.h>
+#include <coinChain/Proxy.h>
 #include <coinChain/MessageHandler.h>
 #include <coinChain/BlockChain.h>
 #include <coinChain/EndpointPool.h>
@@ -76,7 +77,7 @@ class COINCHAIN_EXPORT Node : private boost::noncopyable
 {
 public:
     /// Construct the node to listen on the specified TCP address and port. Further, connect to IRC (irc.lfnet.org)
-    explicit Node(const Chain& chain = bitcoin, std::string dataDir = "", const std::string& address = "0.0.0.0", const std::string& port = "0", bool proxy = false, const std::string& irc = "92.243.23.21");
+    explicit Node(const Chain& chain = bitcoin, std::string dataDir = "", const std::string& address = "0.0.0.0", const std::string& port = "0", boost::asio::ip::tcp::endpoint proxy = boost::asio::ip::tcp::endpoint(), unsigned int timeout = 5000, const std::string& irc = "92.243.23.21");
     
     /// Run the server's io_service loop.
     void run();
@@ -195,14 +196,15 @@ private:
     /// The ChatClient to obtain addresses from IRC
     ChatClient _chatClient;
     
-    bool _proxy;
+    Proxy _proxy;
     
     filter_ptr _transactionFilter;
     filter_ptr _blockFilter;
 
+    unsigned int _connection_timeout; // seconds
+
     static const unsigned int _max_outbound = 8;
     static const unsigned int _max_inbound = 125-_max_outbound;
-    static const unsigned int _connection_timeout = 5; // seconds
 };
 
 #endif // NODE_H

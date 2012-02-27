@@ -30,7 +30,7 @@ using namespace std;
 using namespace boost;
 using namespace asio;
  
-Node::Node(const Chain& chain, std::string dataDir, const string& address, const string& port, bool proxy, const string& irc) : 
+Node::Node(const Chain& chain, std::string dataDir, const string& address, const string& port, ip::tcp::endpoint proxy, unsigned int timeout, const string& irc) : 
     _dataDir(dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir),
     _fileLock(_dataDir + "/.lock"),
     _io_service(),
@@ -41,7 +41,8 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     _endpointPool(chain.defaultPort(), _dataDir),
     _blockChain(chain, _dataDir),
     _chatClient(_io_service, bind(&Node::post_accept_or_connect, this), irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy),
-    _proxy(proxy) {
+    _proxy(proxy),
+    _connection_timeout(timeout) {
     
     _endpointPool.loadEndpoints(dataDir);
     _transactionFilter = filter_ptr(new TransactionFilter(_blockChain));
@@ -137,8 +138,12 @@ void Node::start_connect() {
     _new_server.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, false, _proxy, _blockChain.getBestHeight())); // false means outbound
     _new_server->addr = ep;
     // Set a deadline for the connect operation.
-    _connection_deadline.expires_from_now(posix_time::seconds(_connection_timeout));
-    _new_server->socket().async_connect(ep, bind(&Node::handle_connect, this, placeholders::error));
+    _connection_deadline.expires_from_now(posix_time::milliseconds(_connection_timeout));
+    // if using a socks4 proxy - we would here establish he connection to the socks server. 
+    if(_proxy)
+        _proxy(_new_server->socket()).async_connect(ep, bind(&Node::handle_connect, this, placeholders::error));
+    else
+        _new_server->socket().async_connect(ep, bind(&Node::handle_connect, this, placeholders::error));
     // start wait for deadline to expire.
     _connection_deadline.async_wait(bind(&Node::check_deadline, this, placeholders::error));
 }
@@ -174,8 +179,10 @@ void Node::handle_connect(const system::error_code& e) {
     else {
         printf("Failed connect: \"%s\" to: %s\n", e.message().c_str(), _new_server->addr.toString().c_str());
     }
-
+    
     _endpointPool.getEndpoint(_new_server->addr.getKey()).setLastTry(GetAdjustedTime());
+    
+    // if we have a proxy error - don't reconnect - wait for some action to be taken...
     
     _new_server.reset();    
     accept_or_connect();

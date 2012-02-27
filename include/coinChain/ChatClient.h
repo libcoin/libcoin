@@ -19,6 +19,8 @@
 
 #include <coinChain/Export.h>
 
+#include <coinChain/Proxy.h>
+
 #include <string>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -36,7 +38,7 @@ class EndpointPool;
 class COINCHAIN_EXPORT ChatClient
 {
 public:
-    ChatClient(boost::asio::io_service& io_service, boost::function<void (void)> new_endpoint_notifier, const std::string& server, EndpointPool& endpointPool, std::string channel, unsigned int channles, const bool proxy = false);
+    ChatClient(boost::asio::io_service& io_service, boost::function<void (void)> new_endpoint_notifier, const std::string& server, EndpointPool& endpointPool, std::string channel, unsigned int channles, boost::asio::ip::tcp::endpoint proxy = boost::asio::ip::tcp::endpoint());
     
 private:
     void handle_resolve(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
@@ -74,7 +76,7 @@ private:
     EndpointPool& _endpointPool;
     std::string _channel;
     unsigned int _channels;
-    bool _proxy;
+    Proxy _proxy;
 };
 
 #endif // CHATCLIENT_H

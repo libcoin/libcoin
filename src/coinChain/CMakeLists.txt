@@ -32,6 +32,7 @@ SET(TARGET_H
     ${HEADER_PATH}/NodeRPC.h
     ${HEADER_PATH}/Peer.h
     ${HEADER_PATH}/PeerManager.h
+    ${HEADER_PATH}/Proxy.h
     ${HEADER_PATH}/TransactionFilter.h
     ${HEADER_PATH}/VersionFilter.h
     ${LIBCOIN_CONFIG_HEADER}
@@ -61,6 +62,7 @@ SET(TARGET_SRC
     NodeRPC.cpp
     Peer.cpp
     PeerManager.cpp
+    Proxy.cpp
     TransactionFilter.cpp
     VersionFilter.cpp
 

@@ -21,18 +21,18 @@ SET(TARGET_H
     ${HEADER_PATH}/json/json_spirit_writer.h
     ${HEADER_PATH}/json/json_spirit.h
     ${HEADER_PATH}/Client.h
-    ${HEADER_PATH}/Export.h
     ${HEADER_PATH}/ConnectionManager.h
     ${HEADER_PATH}/Connection.h
+    ${HEADER_PATH}/Export.h
     ${HEADER_PATH}/Header.h
+    ${HEADER_PATH}/Method.h
     ${HEADER_PATH}/MimeTypes.h
     ${HEADER_PATH}/Reply.h
+    ${HEADER_PATH}/Request.h
     ${HEADER_PATH}/RequestHandler.h
     ${HEADER_PATH}/RequestParser.h
-    ${HEADER_PATH}/Request.h
-    ${HEADER_PATH}/Server.h
-    ${HEADER_PATH}/Method.h
     ${HEADER_PATH}/RPC.h
+    ${HEADER_PATH}/Server.h
     ${LIBCOIN_CONFIG_HEADER}
 )
 
@@ -43,13 +43,13 @@ SET(TARGET_SRC
     Client.cpp
     ConnectionManager.cpp
     Connection.cpp
+    Method.cpp
     MimeTypes.cpp
     Reply.cpp
     RequestHandler.cpp
     RequestParser.cpp
-    Server.cpp
     RPC.cpp
-    Method.cpp
+    Server.cpp
     ${LIBCOIN_VERSIONINFO_RC}
 )
 
