@@ -157,29 +157,29 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                             // Hybrid IRC used by lfnet always returns IP when you userhost yourself,
                             // but in case another IRC is ever used this should work.
                             printf("GetIPFromIRC() got userhost %s\n", host.c_str());
-                            if (true/*!_proxy*/) {
-                                Endpoint endpoint(host, 0, true);
-                                if (endpoint.isValid()) {
-                                    _endpointPool.setLocal(endpoint);
-                                    _my_name = encodeAddress(endpoint);
-                                    _notifier(); // this will start the Node...
-                                    // re nick
-                                    txstream << "NICK " << _my_name << "\r";
-                                    // now join the chat room 
-                                    if (_channels > 1) {
-                                        // randomly join e.g. #bitcoin00-#bitcoin99
-                                        int channel_number = GetRandInt(_channels);
-                                        txstream << setfill('0') << setw(2);
-                                        txstream << "JOIN #" << _channel << channel_number << "\r";
-                                        txstream <<  "WHO #" << _channel << channel_number <<  "\r";
-                                    }
-                                    else {
-                                        txstream << "JOIN #" << _channel << "\r";
-                                        txstream <<  "WHO #" << _channel << "\r";
-                                    }                
-                                    async_write(_socket, _send, boost::bind(&ChatClient::handle_write_request, this, placeholders::error));
-                                    break;
+                            Endpoint endpoint(host, 0, true);
+                            if (endpoint.isValid()) {
+                                _endpointPool.setLocal(endpoint);
+                                _my_name = encodeAddress(endpoint);
+                                _notifier(); // this will start the Node...
+                            }
+                            if (_proxy) {
+                                // re nick
+                                txstream << "NICK " << _my_name << "\r";
+                                // now join the chat room 
+                                if (_channels > 1) {
+                                    // randomly join e.g. #bitcoin00-#bitcoin99
+                                    int channel_number = GetRandInt(_channels);
+                                    txstream << setfill('0') << setw(2);
+                                    txstream << "JOIN #" << _channel << channel_number << "\r";
+                                    txstream <<  "WHO #" << _channel << channel_number <<  "\r";
                                 }
+                                else {
+                                    txstream << "JOIN #" << _channel << "\r";
+                                    txstream <<  "WHO #" << _channel << "\r";
+                                }                
+                                async_write(_socket, _send, boost::bind(&ChatClient::handle_write_request, this, placeholders::error));
+                                break;
                             }
                         }
                     }
