@@ -11,6 +11,7 @@ FOREACH( mylibfolder
         coin
         coinChain 
         coinHTTP
+        coinNAT
         coinWallet 
         coinMine 
         coinStat 

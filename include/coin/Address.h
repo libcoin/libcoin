@@ -236,7 +236,7 @@ public:
         setHash(version, scriptHash);
     }
 
-    ChainAddress(const std::string& addr) {
+    explicit ChainAddress(const std::string& addr) {
         setString(addr);
     }
     

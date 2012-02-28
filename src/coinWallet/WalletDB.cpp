@@ -146,7 +146,8 @@ int CWalletDB::LoadWallet(Wallet* pwallet)
             {
                 string strAddress;
                 ssKey >> strAddress;
-                ssValue >> pwallet->mapAddressBook[strAddress];
+                ChainAddress addr = pwallet->chain().getAddress(strAddress);
+                ssValue >> pwallet->mapAddressBook[addr];
             }
             else if (strType == "tx")
             {
