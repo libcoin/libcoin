@@ -54,7 +54,9 @@ void PortMapper::stop() {
 
 
 void PortMapper::handle_mapping(const boost::system::error_code& e) {
-    if(e && e != error::operation_aborted) {
+    if(e == error::operation_aborted)
+        return; // ignore cancel
+    if(e) {
         printf("PortMapper timer error: %s\n", e.message().c_str());
         _repeat_timer.expires_from_now(boost::posix_time::seconds(_repeat_interval));
     }
@@ -66,7 +68,7 @@ void PortMapper::handle_mapping(const boost::system::error_code& e) {
                     _idg_thread = thread(&PortMapper::reqIDGportmap, this, _port);                      
                 }
                 _state = IDGWAITPORTMAP;
-                _repeat_timer.expires_from_now(boost::posix_time::seconds(5)); // we give UPnP 5 seconds to setup mapping
+                _repeat_timer.expires_from_now(boost::posix_time::seconds(3)); // we give UPnP 3 seconds to setup mapping
                 break;
             case IDGWAITPORTMAP:
                 if (!_idg_trying) {
@@ -144,8 +146,10 @@ void PortMapper::reqIDGportmap(unsigned short p) {
             FreeUPNPUrls(&_impl->urls);
     }    
     _idg_trying = false;
-    _repeat_timer.expires_from_now(boost::posix_time::seconds(0));
-    _repeat_timer.async_wait(bind(&PortMapper::handle_mapping, this, placeholders::error));
+    if(_idg_mapping) {
+        _repeat_timer.expires_from_now(boost::posix_time::seconds(0));
+        _repeat_timer.async_wait(bind(&PortMapper::handle_mapping, this, placeholders::error));        
+    }
 }
 
 unsigned int PortMapper::reqPMPportmap(unsigned short port) {
@@ -162,7 +166,8 @@ boost::tribool PortMapper::repPMPportmap() {
     if(r == NATPMP_TRYAGAIN) {
         struct timeval timeout;
         getnatpmprequesttimeout(&_impl->natpmp, &timeout);
-        _pmp_timeout = timeout.tv_sec*1000 + timeout.tv_usec/1000;
+        _pmp_timeout = timeout.tv_sec*1000 + timeout.tv_usec/1000;    
+            
         return indeterminate;
     }
     
