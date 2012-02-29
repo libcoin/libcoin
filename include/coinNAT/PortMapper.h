@@ -74,6 +74,7 @@ private:
     
     boost::thread _idg_thread;
     bool _idg_mapping;
+    bool _idg_trying;
     
     unsigned int _pmp_timeout; // in milli seconds
     

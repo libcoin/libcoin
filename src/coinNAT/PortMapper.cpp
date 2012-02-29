@@ -40,7 +40,7 @@ public:
     natpmpresp_t response;
 };
 
-PortMapper::PortMapper(boost::asio::io_service& io_service, unsigned short port, unsigned int repeat_interval) : _portmap_state(NONE), _state(IDGPORTMAP), _port(port), _repeat_interval(repeat_interval), _repeat_timer(io_service), _impl(new Impl) {    
+PortMapper::PortMapper(boost::asio::io_service& io_service, unsigned short port, unsigned int repeat_interval) : _portmap_state(NONE), _state(IDGPORTMAP), _port(port), _repeat_interval(repeat_interval), _repeat_timer(io_service), _idg_trying(false), _impl(new Impl) {    
 }
 
 void PortMapper::start() {
@@ -61,16 +61,26 @@ void PortMapper::handle_mapping(const boost::system::error_code& e) {
     else {
         switch(_state) {
             case IDGPORTMAP:
-                _idg_thread = thread(&PortMapper::reqIDGportmap, this, _port);  
-                _state = IDGWAITPORTMAP;
-                return; // don't start the timer!
-            case IDGWAITPORTMAP:
-                _idg_thread.join(); // wait for the thread to really exit
-                if(_idg_mapping) { // portmapping performed
-                    _repeat_timer.expires_from_now(boost::posix_time::seconds(_repeat_interval));
-                    _state = IDGPORTMAP;
+                if (!_idg_trying) {
+                    _idg_trying = true;
+                    _idg_thread = thread(&PortMapper::reqIDGportmap, this, _port);                      
                 }
-                else {
+                _state = IDGWAITPORTMAP;
+                _repeat_timer.expires_from_now(boost::posix_time::seconds(5)); // we give UPnP 5 seconds to setup mapping
+                break;
+            case IDGWAITPORTMAP:
+                if (!_idg_trying) {
+                    _idg_thread.join(); // wait for the thread to really exit
+                    if(_idg_mapping) { // portmapping performed
+                        _repeat_timer.expires_from_now(boost::posix_time::seconds(_repeat_interval));
+                        _state = IDGPORTMAP;
+                    }
+                    else {
+                        _repeat_timer.expires_from_now(boost::posix_time::seconds(0));
+                        _state = PMPPORTMAP;                    
+                    }
+                }
+                else { // we end here due to a timeout.
                     _repeat_timer.expires_from_now(boost::posix_time::seconds(0));
                     _state = PMPPORTMAP;                    
                 }
@@ -133,6 +143,7 @@ void PortMapper::reqIDGportmap(unsigned short p) {
         if (r != 0)
             FreeUPNPUrls(&_impl->urls);
     }    
+    _idg_trying = false;
     _repeat_timer.expires_from_now(boost::posix_time::seconds(0));
     _repeat_timer.async_wait(bind(&PortMapper::handle_mapping, this, placeholders::error));
 }
@@ -148,8 +159,12 @@ unsigned int PortMapper::reqPMPportmap(unsigned short port) {
 
 boost::tribool PortMapper::repPMPportmap() {
     int r = readnatpmpresponseorretry(&_impl->natpmp, &_impl->response);
-    if(r == NATPMP_TRYAGAIN)
+    if(r == NATPMP_TRYAGAIN) {
+        struct timeval timeout;
+        getnatpmprequesttimeout(&_impl->natpmp, &timeout);
+        _pmp_timeout = timeout.tv_sec*1000 + timeout.tv_usec/1000;
         return indeterminate;
+    }
     
     closenatpmp(&_impl->natpmp);    
 
