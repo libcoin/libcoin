@@ -27,6 +27,8 @@
 #include <coinMine/Miner.h>
 #include <coinMine/MinerRPC.h>
 
+#include <coinNAT/PortMapper.h>
+
 #include <boost/thread.hpp>
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -49,7 +51,7 @@ int main(int argc, char* argv[])
         string proxy;
         strings connect_peers;
         strings add_peers;
-        bool gen, ssl;
+        bool portmap, gen, ssl;
         unsigned int timeout;
         string certchain, privkey;
 
@@ -66,6 +68,8 @@ int main(int argc, char* argv[])
         config.add_options()
             ("pid", value<string>(), "Specify pid file (default: bitcoind.pid)")
             ("nolisten", "Don't accept connections from outside")
+            ("portmap", value<bool>(&portmap)->default_value(true), "Use IGD-UPnP or NATPMP to map the listening port")
+            ("upnp", value<bool>(&portmap), "Use UPnP to map the listening port - deprecated, use portmap")
             ("testnet", "Use the test network")
             ("proxy", value<string>(&proxy), "Connect through socks4 proxy")
             ("timeout", value<unsigned int>(&timeout)->default_value(5000), "Specify connection timeout (in milliseconds)")
@@ -183,7 +187,7 @@ int main(int argc, char* argv[])
             proxy_server = asio::ip::tcp::endpoint(asio::ip::address_v4::from_string(host_port[0]), lexical_cast<short>(host_port[1]));
         }
         Node node(chain, data_dir, args.count("nolisten") ? "" : "0.0.0.0", lexical_cast<string>(port), proxy_server, timeout); // it is also here we specify the use of a proxy!
-//        PortMapper(node.get_io_service(), port); // this will use the Node call
+        PortMapper mapper(node.get_io_service(), port); // this will use the Node call
 
         // use the connect and addnode options to restrict and supplement the irc and endpoint db.
         for(strings::iterator ep = add_peers.begin(); ep != add_peers.end(); ++ep) node.addPeer(*ep);
@@ -257,7 +261,7 @@ int main(int argc, char* argv[])
             cerr << "Error: " << e.what() << endl; 
         }
 
-        printf("Server exitted, shutting down Node and Miner...\n");
+        printf("Server exited, shutting down Node and Miner...\n");
         // getting here means that we have exited from the server (e.g. by the quit method)
         
         miner.shutdown();

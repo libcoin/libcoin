@@ -14,6 +14,7 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <coin/util.h>
 #include <coinChain/Proxy.h>
 
 #include <boost/bind.hpp>
