@@ -40,15 +40,22 @@ public:
     natpmpresp_t response;
 };
 
-PortMapper::PortMapper(boost::asio::io_service& io_service, unsigned short port, unsigned int repeat_interval) : _portmap_state(NONE), _state(IDGPORTMAP), _port(port), _repeat_interval(repeat_interval), _repeat_timer(io_service), _impl(new Impl) {
-    
+PortMapper::PortMapper(boost::asio::io_service& io_service, unsigned short port, unsigned int repeat_interval) : _portmap_state(NONE), _state(IDGPORTMAP), _port(port), _repeat_interval(repeat_interval), _repeat_timer(io_service), _impl(new Impl) {    
+}
+
+void PortMapper::start() {
     _repeat_timer.expires_from_now(boost::posix_time::seconds(0));
     _repeat_timer.async_wait(bind(&PortMapper::handle_mapping, this, placeholders::error));
 }
 
+void PortMapper::stop() {
+    _repeat_timer.cancel();
+}
+
+
 void PortMapper::handle_mapping(const boost::system::error_code& e) {
-    if(e) {
-        printf("PortMapper error: %s\n", e.message().c_str());
+    if(e && e != error::operation_aborted) {
+        printf("PortMapper timer error: %s\n", e.message().c_str());
         _repeat_timer.expires_from_now(boost::posix_time::seconds(_repeat_interval));
     }
     else {
@@ -91,8 +98,8 @@ void PortMapper::handle_mapping(const boost::system::error_code& e) {
             default:
                 break;
         }
-        _repeat_timer.async_wait(bind(&PortMapper::handle_mapping, this, placeholders::error));
     }
+    _repeat_timer.async_wait(bind(&PortMapper::handle_mapping, this, placeholders::error));
 }
         
 void PortMapper::reqIDGportmap(unsigned short p) {

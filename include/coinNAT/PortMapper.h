@@ -23,14 +23,32 @@
 #include <boost/thread.hpp>
 #include <boost/logic/tribool.hpp>
 
+/// The PortMapper class is a wrapper around the miniupnpc and libnatpmp libraries.
+/// When activate is called it start a mapping cycle of:
+/// * try to setup mapping using IDG UPnP (spawns a background thread as the UPnP calls are blocking) if:
+/// ** OK: wait repeat_interval and start over again.
+/// ** NOT OK:...
+/// * try to setup mapping using NATPMP - wait for response. If:
+/// ** response not yet there: wait again
+/// ** OK: wait repeat_interval and start over again.
+/// ** NOT OK: do.
+/// The lease time is choosen to 2 times the repeat_interval 
 class PortMapper : boost::noncopyable {
 public:
+    /// Create a PortMapper using the io_service and mapping the port to the same public port. Repeat the mapping
+    /// every 10 minutes by default.
     PortMapper(boost::asio::io_service& io_service, unsigned short port, unsigned int repeat_interval = 10*60);
-                                 
-    void handle_mapping(const boost::system::error_code& e);
+
+    /// Start the portmapper.
+    void start();
+    
+    /// Stop the portmapper.
+    void stop();
     
 private:
-    //    bool getIDGdevice();
+    /// internal state machine handler
+    void handle_mapping(const boost::system::error_code& e);
+    
     void reqIDGportmap(unsigned short port);
 
     unsigned int reqPMPportmap(unsigned short port);

@@ -188,7 +188,8 @@ int main(int argc, char* argv[])
         }
         Node node(chain, data_dir, args.count("nolisten") ? "" : "0.0.0.0", lexical_cast<string>(port), proxy_server, timeout); // it is also here we specify the use of a proxy!
         PortMapper mapper(node.get_io_service(), port); // this will use the Node call
-
+        if(portmap) mapper.start();
+        
         // use the connect and addnode options to restrict and supplement the irc and endpoint db.
         for(strings::iterator ep = add_peers.begin(); ep != add_peers.end(); ++ep) node.addPeer(*ep);
         for(strings::iterator ep = connect_peers.begin(); ep != connect_peers.end(); ++ep) node.connectPeer(*ep);
