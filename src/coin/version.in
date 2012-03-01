@@ -11,6 +11,8 @@ extern "C" {
 #define LIBCOIN_PATCH_VERSION    @LIBCOIN_PATCH_VERSION@
 #define LIBCOIN_SOVERSION        @LIBCOIN_SOVERSION@
 
+#define PROTOCOL_VERSION	((LIBCOIN_MAJOR_VERSION*1000000) + (LIBCOIN_MINOR_VERSION*10000) + (LIBCOIN_PATCH_VERSION*100) + (LIBCOIN_SOVERSION))
+
 /* Convenience macro that can be used to decide whether a feature is present or not i.e.
  * #if COIN_MIN_VERSION_REQUIRED(0,4,0)
  *    your code here
@@ -46,15 +48,6 @@ extern COIN_EXPORT const char* coinGetSOVersion();
 
 /** The coinGetLibraryName() method returns the library name in human-friendly form. */
 extern COIN_EXPORT const char* coinGetLibraryName();
-
-// old defines for backwards compatibility.
-#define COIN_VERSION_MAJOR LIBCOIN_MAJOR_VERSION
-#define COIN_VERSION_MINOR LIBCOIN_MINOR_VERSION
-#define COIN_VERSION_PATCH LIBCOIN_PATCH_VERSION
-
-#define COIN_VERSION_RELEASE COIN_VERSION_PATCH
-#define COIN_VERSION_REVISION 0
-
 
 }
 

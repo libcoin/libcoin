@@ -40,7 +40,7 @@ bool AlertFilter::operator() (Peer* origin, Message& msg) {
                     // returns true if wasn't already contained in the set
                     if ((*peer)->setKnown.insert(alert.getHash()).second) {
                         if (alert.appliesTo((*peer)->nVersion, (*peer)->strSubVer) ||
-                            alert.appliesToMe() ||
+                            alert.appliesTo(PROTOCOL_VERSION, _sub_version) ||
                             GetAdjustedTime() < alert.until()) {
                             (*peer)->PushMessage("alert", alert);
                         }
@@ -55,7 +55,7 @@ bool AlertFilter::operator() (Peer* origin, Message& msg) {
                 const Alert& alert = item.second;
                 if (!alert.isInEffect()) {
                     if (origin->setKnown.insert(alert.getHash()).second) {
-                        if (alert.appliesTo(origin->nVersion, origin->strSubVer) || alert.appliesToMe() || GetAdjustedTime() < alert.until())
+                        if (alert.appliesTo(origin->nVersion, origin->strSubVer) || alert.appliesTo(PROTOCOL_VERSION, _sub_version) || GetAdjustedTime() < alert.until())
                             origin->PushMessage("alert", alert);
                     }
                 }

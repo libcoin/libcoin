@@ -39,7 +39,7 @@ typedef boost::shared_ptr<AlertHandler> alerthandler_ptr;
 class COINCHAIN_EXPORT AlertFilter : public Filter
 {
 public:
-    AlertFilter() {}
+    AlertFilter(std::string subversion) : _sub_version(subversion) {}
     
     /// Inhierit from AlertHandler and add it to receive alert notifications.
     void addHandler(alerthandler_ptr h) { _alertHandlers.insert(h); }
@@ -55,6 +55,7 @@ public:
     
 private:
     std::set<alerthandler_ptr> _alertHandlers;
+    std::string _sub_version;
 };
 
 #endif // ALERTFILTER_H

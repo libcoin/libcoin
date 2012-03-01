@@ -85,6 +85,14 @@ public:
     /// Shutdown the Node.
     void shutdown() { _io_service.dispatch(boost::bind(&Node::handle_stop, this)); }
     
+    /// Set the client name and optionally version
+    void setClientVersion(std::string name, std::vector<std::string> comments = std::vector<std::string>(), int client_version = PROTOCOL_VERSION); 
+
+    /// Get the client version aka subversion as specified in BIP-0014
+    int getClientVersion() const; 
+    
+    std::string getFullClientVersion() const;
+
     /// Add an endpoint to the endpoool (endpoint or "host:port" versions)
     void addPeer(std::string);
     void addPeer(boost::asio::ip::tcp::endpoint ep);
@@ -205,6 +213,11 @@ private:
 
     static const unsigned int _max_outbound = 8;
     static const unsigned int _max_inbound = 125-_max_outbound;
+    
+    /// Version info
+    std::string _client_name;
+    std::vector<std::string> _client_comments;
+    int _client_version;
 };
 
 #endif // NODE_H

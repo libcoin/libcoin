@@ -961,17 +961,6 @@ uint256 SignatureHash(Script scriptCode, const Transaction& txTo, unsigned int n
     ss.reserve(10000);
     ss << txTmp << nHashType;
 
-    /*
-    CDataStream sss(SER_GETHASH, VERSION);
-    sss.reserve(10000);
-    sss << txTmp;
-    
-    for(int i = 0; i < sss.size(); i++)
-        cout << (int)(unsigned char)sss[i] << ",";
-    cout << endl;
-    cout << endl;
-    cout << endl;
-    */
     return Hash(ss.begin(), ss.end());
 }
 

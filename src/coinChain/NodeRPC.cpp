@@ -181,7 +181,8 @@ Value GetInfo::operator()(const Array& params, bool fHelp) {
                          "Returns an object containing various state info.");
     
     Object obj;
-    obj.push_back(Pair("version",       (int)VERSION));
+    obj.push_back(Pair("version",       (int)_node.getClientVersion()));
+    obj.push_back(Pair("protocolversion", (int)PROTOCOL_VERSION));
     //        obj.push_back(Pair("balance",       ValueFromAmount(pwalletMain->GetBalance())));
     obj.push_back(Pair("blocks",        (int)_node.blockChain().getBestHeight()));
     obj.push_back(Pair("connections",   (int)_node.getConnectionCount()));

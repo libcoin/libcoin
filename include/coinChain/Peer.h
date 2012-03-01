@@ -55,7 +55,7 @@ class COINCHAIN_EXPORT Peer : public boost::enable_shared_from_this<Peer>, priva
 {
 public:
     /// Construct a peer connection with the given io_service.
-    explicit Peer(const Chain& chain, boost::asio::io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, int bestHeight);
+    explicit Peer(const Chain& chain, boost::asio::io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, int bestHeight, std::string sub_version);
     
     /// Get the socket associated with the peer connection.
     boost::asio::ip::tcp::socket& socket();
@@ -243,6 +243,9 @@ public:
 private:
     /// The inital height of the connected node.
     int _startingHeight;
+    
+    /// The sub version, as announced to the connected peers
+    std::string _sub_version;
     
     /// The chain we are serving - the Peer need to know this as well!
     const Chain& _chain; 

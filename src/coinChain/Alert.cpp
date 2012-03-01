@@ -116,7 +116,7 @@ string getWarnings(string strFor)
     assert(!"GetWarnings() : invalid parameter");
     return "error";
 }
-*/
+
 bool Alert::relayTo(Peer* peer) const
 {
     if (!isInEffect())
@@ -132,7 +132,7 @@ bool Alert::relayTo(Peer* peer) const
         }
     return false;
 }
-
+*/
 bool Alert::checkSignature()
 {
     CKey key;
@@ -186,6 +186,6 @@ bool Alert::processAlert()
     // Add to mapAlerts
     mapAlerts.insert(make_pair(getHash(), *this));
 
-    printf("accepted alert %d, AppliesToMe()=%d\n", _id, appliesToMe());
+    printf("accepted alert %d\n", _id);
     return true;
 }

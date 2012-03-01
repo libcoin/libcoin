@@ -265,7 +265,7 @@ int CWalletDB::LoadWallet(Wallet* pwallet)
             {
                 int nMinVersion = 0;
                 ssValue >> nMinVersion;
-                if (nMinVersion > VERSION)
+                if (nMinVersion > PROTOCOL_VERSION)
                     return DB_TOO_NEW;
             }
         }
@@ -278,13 +278,13 @@ int CWalletDB::LoadWallet(Wallet* pwallet)
     printf("nFileVersion = %d\n", nFileVersion);
 
     // Upgrade
-    if (nFileVersion < VERSION)
+    if (nFileVersion < PROTOCOL_VERSION)
     {
         // Get rid of old debug.log file in current directory
         if (nFileVersion <= 105 && !pszSetDataDir[0])
             unlink("debug.log");
 
-        WriteVersion(VERSION);
+        WriteVersion(PROTOCOL_VERSION);
     }
 
 

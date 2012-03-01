@@ -23,6 +23,7 @@ SET(TARGET_H
     ${HEADER_PATH}/KeyStore.h
     ${HEADER_PATH}/Script.h
     ${HEADER_PATH}/Transaction.h
+    ${HEADER_PATH}/Version.h
     ${LIBCOIN_CONFIG_HEADER}
 )
 

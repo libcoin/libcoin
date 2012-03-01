@@ -74,7 +74,7 @@ public:
     virtual unsigned int nextWorkRequired(const CBlockIndex* pindexLast) const ;
     //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const;
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
-    virtual unsigned int totalBlocksEstimate() const { return 140700; }
+    virtual unsigned int totalBlocksEstimate() const;
 
     virtual const std::string dataDirSuffix() const { return "bitcoin"; }
     
@@ -100,6 +100,8 @@ private:
     Block _genesisBlock;
     uint256 _genesis;
     MessageStart _messageStart;
+    typedef std::map<int, uint256> Checkpoints;
+    Checkpoints _checkpoints;
 };
 
 extern const BitcoinChain bitcoin;

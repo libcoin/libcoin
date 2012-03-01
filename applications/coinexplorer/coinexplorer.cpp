@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
         }
         
         if (args.count("version")) {
-            cout << argv[0] << " version is: " << FormatFullVersion() << "\n";
+            cout << argv[0] << " version is: " << FormatVersion(PROTOCOL_VERSION) << "\n";
             return 1;        
         }
 
@@ -133,6 +133,7 @@ int main(int argc, char* argv[])
         logfile = data_dir + "/debug.log";
         
         Node node(chain, data_dir, args.count("nolisten") ? "" : "0.0.0.0"); // it is also here we specify the use of a proxy!
+        node.setClientVersion("libcoin/coinexplorer", vector<string>(), 59100); 
 //        PortMapper(node.get_io_service(), port); // this will use the Node call
 
         // use the connect and addnode options to restrict and supplement the irc and endpoint db.

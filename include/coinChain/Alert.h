@@ -112,8 +112,7 @@ class Peer;
 class COINCHAIN_EXPORT Alert : public UnsignedAlert
 {
 public:
-    Alert()
-    {
+    Alert() {
         setNull();
     }
 
@@ -123,48 +122,42 @@ public:
         READWRITE(_signature);
     )
 
-    void setNull()
-    {
+    void setNull() {
         UnsignedAlert::setNull();
         _message.clear();
         _signature.clear();
     }
 
-    bool isNull() const
-    {
+    bool isNull() const {
         return (_expiration == 0);
     }
 
-    uint256 getHash() const
-    {
+    uint256 getHash() const {
         return SerializeHash(*this);
     }
 
-    bool isInEffect() const
-    {
+    bool isInEffect() const {
         return (GetAdjustedTime() < _expiration);
     }
 
-    bool cancels(const Alert& alert) const
-    {
+    bool cancels(const Alert& alert) const {
         if (!isInEffect())
             return false; // this was a no-op before 31403
         return (alert._id <= _cancel || _cancels.count(alert._id));
     }
 
-    bool appliesTo(int version, std::string subversion) const
-    {
+    bool appliesTo(int version, std::string subversion) const {
+    // TODO: rework for client-version-embedded-in-strSubVer ?
         return (isInEffect() &&
                 _min_version <= _version && _version <= _max_version &&
                 (_subversions.empty() || _subversions.count(subversion)));
     }
 
-    bool appliesToMe() const
-    {
-        return appliesTo(VERSION, ::pszSubVer);
-    }
+    //    bool appliesToMe() const {
+    //        return AppliesTo(PROTOCOL_VERSION, _node.getFullVersion());
+    //    }
 
-    bool relayTo(Peer* peer) const;
+    //    bool relayTo(Peer* peer) const;
 
     bool checkSignature();
 

@@ -250,7 +250,7 @@ int main(int argc, char* argv[])
         }
         
         if (args.count("version")) {
-            cout << argv[0] << " version is: " << FormatFullVersion() << "\n";
+            cout << argv[0] << " version is: " << FormatVersion(PROTOCOL_VERSION) << "\n";
             return 1;        
         }
         

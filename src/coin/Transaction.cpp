@@ -20,12 +20,6 @@
 using namespace std;
 using namespace boost;
 
-//
-// Global state
-//
-
-const int nTotalBlocksEstimate = 140700; // Conservative estimate of total nr of blocks on main chain
-
 //////////////////////////////////////////////////////////////////////////////
 //
 // Output

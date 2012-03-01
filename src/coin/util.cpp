@@ -13,6 +13,7 @@
 #include <boost/interprocess/sync/interprocess_recursive_mutex.hpp>
 #include <boost/foreach.hpp>
 #include <boost/program_options/detail/config_file.hpp>
+#include <boost/algorithm/string/join.hpp>
 
 #include <openssl/crypto.h>
 #include <openssl/rand.h>
@@ -751,17 +752,17 @@ string FormatVersion(int nVersion)
         return strprintf("%d.%d.%d.%d", nVersion/1000000, (nVersion/10000)%100, (nVersion/100)%100, nVersion%100);
 }
 
-string FormatFullVersion()
+// Format the subversion field according to BIP 14 spec (https://en.bitcoin.it/wiki/BIP_0014)
+std::string FormatSubVersion(const std::string& name, int nClientVersion, const std::vector<std::string>& comments)
 {
-    string s = FormatVersion(VERSION) + pszSubVer;
-    if (VERSION_IS_BETA) {
-        s += "-";
-        s += "beta";
-    }
-    return s;
+    std::ostringstream ss;
+    ss << "/";
+    ss << name << ":" << FormatVersion(nClientVersion);
+    if (!comments.empty())
+        ss << "(" << boost::algorithm::join(comments, "; ") << ")";
+    ss << "/";
+    return ss.str();
 }
-
-
 
 
 #ifdef DEBUG_LOCKORDER

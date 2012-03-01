@@ -26,7 +26,7 @@ using namespace asio;
 
 static map<Inventory, int64> mapAlreadyAskedFor;
 
-Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, int bestHeight) : _chain(chain),_socket(io_service), _peerManager(manager), _messageHandler(handler), _msgParser(), _suicide(io_service) {
+Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, int bestHeight, std::string sub_version) : _chain(chain),_socket(io_service), _peerManager(manager), _messageHandler(handler), _msgParser(), _suicide(io_service) {
     nServices = 0;
 
     vSend.SetType(SER_NETWORK);
@@ -401,8 +401,8 @@ void Peer::PushVersion() {
     Endpoint addrMe = (_proxy ? Endpoint("0.0.0.0") : local);
     RAND_bytes((unsigned char*)&_nonce, sizeof(_nonce));
     uint64 nLocalServices = NODE_NETWORK;
-    PushMessage("version", VERSION, nLocalServices, nTime, addrYou, addrMe,
-                _nonce, std::string(pszSubVer), _startingHeight);
+    PushMessage("version", PROTOCOL_VERSION, nLocalServices, nTime, addrYou, addrMe,
+                _nonce, _sub_version, _startingHeight);
 }
 
 void Peer::PushGetBlocks(const CBlockLocator locatorBegin, uint256 hashEnd)

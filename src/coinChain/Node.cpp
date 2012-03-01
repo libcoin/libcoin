@@ -42,7 +42,11 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     _blockChain(chain, _dataDir),
     _chatClient(_io_service, bind(&Node::post_accept_or_connect, this), irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy),
     _proxy(proxy),
-    _connection_timeout(timeout) {
+    _connection_timeout(timeout),
+    _client_name("libcoin"),
+    _client_comments(std::vector<std::string>()),
+    _client_version(PROTOCOL_VERSION) // This is not optimal...
+    {
     
     _endpointPool.loadEndpoints(dataDir);
     _transactionFilter = filter_ptr(new TransactionFilter(_blockChain));
@@ -70,14 +74,33 @@ void Node::run() {
     //    if(_acceptor.is_open()) start_accept();
     //    start_connect();
     
-    // Install filters for teh messages. First inserted filters are executed first.
+    // Install filters for the messages. First inserted filters are executed first.
     _messageHandler.installFilter(filter_ptr(new VersionFilter));
     _messageHandler.installFilter(filter_ptr(new EndpointFilter(_endpointPool)));
     _messageHandler.installFilter(_blockFilter);
     _messageHandler.installFilter(_transactionFilter);
-    _messageHandler.installFilter(filter_ptr(new AlertFilter)); // this only output the alert to stdout
+    _messageHandler.installFilter(filter_ptr(new AlertFilter(getFullClientVersion()))); // this only output the alert to stdout
     
     _io_service.run();
+}
+
+void Node::setClientVersion(std::string name, std::vector<std::string> comments, int client_version) {
+    _client_name = name;
+    _client_comments = comments;
+    _client_version = client_version;
+}
+
+int Node::getClientVersion() const {
+    return _client_version;
+}
+std::string Node::getFullClientVersion() const {
+    std::ostringstream ss;
+    ss << "/";
+    ss << _client_name << ":" << FormatVersion(_client_version);
+    if (!_client_comments.empty())
+    ss << "(" << boost::algorithm::join(_client_comments, "; ") << ")";
+    ss << "/";
+    return ss.str();
 }
 
 void Node::addPeer(string hostport) {
@@ -135,7 +158,7 @@ void Node::start_connect() {
     stringstream ss;
     ss << ep;
     printf("Trying connect to: %s\n", ss.str().c_str());
-    _new_server.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, false, _proxy, _blockChain.getBestHeight())); // false means outbound
+    _new_server.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, false, _proxy, _blockChain.getBestHeight(), getFullClientVersion())); // false means outbound
     _new_server->addr = ep;
     // Set a deadline for the connect operation.
     _connection_deadline.expires_from_now(posix_time::milliseconds(_connection_timeout));
@@ -189,7 +212,7 @@ void Node::handle_connect(const system::error_code& e) {
 }
 
 void Node::start_accept() {
-    _new_client.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, true, _proxy, _blockChain.getBestHeight())); // true means inbound
+    _new_client.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, true, _proxy, _blockChain.getBestHeight(), getFullClientVersion())); // true means inbound
     _acceptor.async_accept(_new_client->socket(), bind(&Node::handle_accept, this, placeholders::error));
 }
 

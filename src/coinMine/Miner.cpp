@@ -65,7 +65,7 @@ void Miner::handle_generate() {
     tx.addOutput(Output(_node.blockChain().chain().subsidy(bestIndex->nHeight+1), script));
     
     // generate a block candidate
-    Block block(VERSION, bestIndex->GetBlockHash(), 0, max(bestIndex->GetMedianTimePast()+1, GetAdjustedTime()), _node.blockChain().chain().nextWorkRequired(bestIndex), 0);
+    Block block(PROTOCOL_VERSION, bestIndex->GetBlockHash(), 0, max(bestIndex->GetMedianTimePast()+1, GetAdjustedTime()), _node.blockChain().chain().nextWorkRequired(bestIndex), 0);
     
     block.addTransaction(tx);
     fillinTransactions(block, bestIndex);

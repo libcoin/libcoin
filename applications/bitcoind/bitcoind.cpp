@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
         }
         
         if (args.count("version")) {
-            cout << argv[0] << " version is: " << FormatFullVersion() << "\n";
+            cout << argv[0] << " version is: " << FormatVersion(PROTOCOL_VERSION) << "\n";
             return 1;        
         }
 
@@ -187,6 +187,7 @@ int main(int argc, char* argv[])
             proxy_server = asio::ip::tcp::endpoint(asio::ip::address_v4::from_string(host_port[0]), lexical_cast<short>(host_port[1]));
         }
         Node node(chain, data_dir, args.count("nolisten") ? "" : "0.0.0.0", lexical_cast<string>(port), proxy_server, timeout); // it is also here we specify the use of a proxy!
+        node.setClientVersion("libcoin/bitcoind", vector<string>(), 59100); 
         PortMapper mapper(node.get_io_service(), port); // this will use the Node call
         if(portmap) mapper.start();
         

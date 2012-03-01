@@ -493,8 +493,6 @@ bool BlockChain::ReadTxIndex(uint256 hash, TxIndex& txindex) const
     return Read(make_pair(string("tx"), hash), txindex);
 }
 
-bool Solver(const Script& scriptPubKey, vector<pair<opcodetype, vector<unsigned char> > >& vSolutionRet);
-
 bool BlockChain::UpdateTxIndex(uint256 hash, const TxIndex& txindex)
 {
     return Write(make_pair(string("tx"), hash), txindex);

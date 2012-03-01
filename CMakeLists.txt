@@ -30,9 +30,9 @@ endif()
 PROJECT(libcoin)
 
 SET(LIBCOIN_MAJOR_VERSION 0)
-SET(LIBCOIN_MINOR_VERSION 4)
-SET(LIBCOIN_PATCH_VERSION 1)
-SET(LIBCOIN_SOVERSION 1)
+SET(LIBCOIN_MINOR_VERSION 5)
+SET(LIBCOIN_PATCH_VERSION 91)
+SET(LIBCOIN_SOVERSION 0)
 
 # set to 0 when not a release candidate, non zero means that any generated 
 # svn tags will be treated as release candidates of given number

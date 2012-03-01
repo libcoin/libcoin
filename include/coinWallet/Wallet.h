@@ -125,7 +125,7 @@ public:
     bool isFinal(const Transaction& tx) const { return _blockChain.isFinal(tx); }
     bool isInMainChain(const uint256& hash) const { return _blockChain.isInMainChain(hash); }
     
-    std::string getDateDir() const { return _dataDir; }
+    std::string getDataDir() const { return _dataDir; }
     
     bool WriteToDisk(const CWalletTx& wtx);
     
