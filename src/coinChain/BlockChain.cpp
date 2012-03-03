@@ -440,8 +440,10 @@ bool BlockChain::disconnectInputs(const Transaction& tx)
         }
     
     // Remove transaction from index
-    if (!EraseTxIndex(tx))
-        return error("DisconnectInputs() : EraseTxPos failed");
+    // This can fail if a duplicate of this transaction was in a chain that got
+    // reorganized away. This is only possible if this transaction was completely
+    // spent, so erasing it would be a no-op anway.
+    EraseTxIndex(tx);    
     
     return true;
 }
@@ -839,6 +841,26 @@ bool BlockChain::connectBlock(const Block& block, CBlockIndex* pindex)
     // Check it again in case a previous version let a bad block in
     if (!block.checkBlock(_chain.proofOfWorkLimit()))
         return false;
+    
+    // Do not allow blocks that contain transactions which 'overwrite' older transactions,
+    // unless those are already completely spent.
+    // If such overwrites are allowed, coinbases and transactions depending upon those
+    // can be duplicated to remove the ability to spend the first instance -- even after
+    // being sent to another address.
+    // See BIP30 and http://r6.ca/blog/20120206T005236Z.html for more information.
+    // This logic is not necessary for memory pool transactions, as AcceptToMemoryPool
+    // already refuses previously-known transaction id's entirely.
+    // This rule applies to all blocks whose timestamp is after March 15, 2012, 0:00 UTC.
+    // On testnet it is enabled as of februari 20, 2012, 0:00 UTC.
+    if (pindex->nTime > _chain.timeStamp(Chain::BIP0030))
+        BOOST_FOREACH(const Transaction& tx, block.getTransactions()) {
+        TxIndex txindexOld;
+            if (ReadTxIndex(tx.getHash(), txindexOld))
+                BOOST_FOREACH(const DiskTxPos &pos, txindexOld.getSpents())
+                if (pos.isNull())
+                    return false;
+        }
+
     
     //// issue here: it doesn't know the version
     unsigned int nTxPos = pindex->nBlockPos + ::GetSerializeSize(Block(), SER_DISK) - 1 + GetSizeOfCompactSize(block.getNumTransactions());

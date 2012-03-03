@@ -34,6 +34,9 @@ typedef boost::array<char, 4> MessageStart;
 class COINCHAIN_EXPORT Chain : private boost::noncopyable
 {
 public:
+    enum ChangeIdentifier {
+        BIP0030 = 30
+    };
     virtual const Block& genesisBlock() const = 0;
     virtual const uint256& genesisHash() const = 0;
     virtual const int64 subsidy(unsigned int height) const = 0;
@@ -46,6 +49,12 @@ public:
     virtual unsigned int totalBlocksEstimate() const { return 0; } // optional
     
     virtual const std::string dataDirSuffix() const = 0;
+    
+    virtual unsigned int timeStamp(ChangeIdentifier id) const {
+        switch(id) {
+            case BIP0030: return 1331769600;
+        }
+    }
     
     //    virtual char networkId() const = 0; // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
     virtual ChainAddress getAddress(PubKeyHash hash) const = 0;
@@ -119,6 +128,12 @@ public:
     //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const;
     
     virtual const std::string dataDirSuffix() const { return "bitcoin/testnet"; };
+    
+    virtual unsigned int timeStamp(ChangeIdentifier id) const {
+        switch(id) {
+            case BIP0030: return 1329696000;
+        }
+    }
     
     //    virtual char networkId() const { return 0x6f; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
     virtual ChainAddress getAddress(PubKeyHash hash) const { return ChainAddress(0x6f, hash); }

@@ -127,6 +127,7 @@ public:
     
     const size_t getNumSpents() const { return _spents.size(); }
     const DiskTxPos& getSpent(unsigned int n) { return _spents[n]; }
+    const std::vector<DiskTxPos> getSpents() const { return _spents; }
     void resizeSpents(size_t size) { _spents.resize(size); }
     void setSpent(const unsigned int n, const DiskTxPos& pos) { _spents[n] = pos; };
     void setNotSpent(const unsigned int n) { _spents[n].setNull(); }
