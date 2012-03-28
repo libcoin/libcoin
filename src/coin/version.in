@@ -2,7 +2,7 @@
 #ifndef COIN_VERSION
 #define COIN_VERSION 1
 
-#include <coin/export.h>
+#include <coin/Export.h>
 
 extern "C" {
 
