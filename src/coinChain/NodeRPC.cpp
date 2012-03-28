@@ -176,7 +176,7 @@ Value GetPenetration::operator()(const Array& params, bool fHelp) {
     
     // now build the answer : { confirmations, known, total } - 0, 0, X is unknown, n, X, X is confirmed up to n confirmations, 0, x, X is a x/X penetration
     Object obj;
-    obj.push_back(Pair("confirmations", bestheight - blockheight + 1));
+    obj.push_back(Pair("confirmations", (int)(bestheight - blockheight + 1)));
     obj.push_back(Pair("known", (int)known));
     obj.push_back(Pair("total", (int)total));
     

@@ -44,7 +44,8 @@ ip::tcp::socket& Connection::socket() {
 
 const ip::tcp::socket& Connection::socket() const {
     if(_secure)
-        return _ssl_socket.next_layer();
+        //return _ssl_socket.next_layer(); -- need the ugly cast hack below for boost < 1.48 - missing const version of next_layer()
+        return (*(const_cast<ssl_socket*>(&_ssl_socket))).next_layer();
     else
         return _socket;
 }
