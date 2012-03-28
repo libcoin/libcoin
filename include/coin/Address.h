@@ -57,6 +57,7 @@ public:
 };
 
 PubKeyHash toPubKeyHash(const PubKey& pubkey);
+PubKeyHash toPubKeyHash(const std::string& str);
 
 class COIN_EXPORT ScriptHash : public uint160 {
 public:

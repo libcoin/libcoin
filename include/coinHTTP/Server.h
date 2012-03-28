@@ -23,11 +23,14 @@
 #include <coinHTTP/RequestHandler.h>
 
 #include <string>
+#include <fstream>
 
 #include <boost/asio.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/asio/ssl.hpp>
+
+#include <boost/date_time/posix_time/posix_time_io.hpp>
 
 // This is a backup solution for boost prior to 1.47
 // We only use the signal_set in Server, and hence it can be done in this simple and more "ugly" way.
@@ -74,6 +77,26 @@ typedef boost::asio::signal_set boost__asio__signal_set;
 
 #endif
 
+class COINHTTP_EXPORT Logger 
+{
+public:
+    Logger(std::string dir) : _access(std::cout.rdbuf()) {
+        if(dir.size()) {
+            _access_file.open((dir + "/access_log").c_str(), std::ios::app); 
+            _access.rdbuf(_access_file.rdbuf());
+        }
+        
+        boost::posix_time::time_facet* facet = new boost::posix_time::time_facet("[%d/%b/%Y:%H:%M:%S %q]");
+        _access.imbue(std::locale(_access.getloc(), facet));
+
+        _access << std::endl << std::endl << std::endl;
+        _access << "Logger started" << std::endl;
+    }
+    std::ostream& access() { return _access; }
+private:
+    std::ofstream _access_file;
+    std::ostream _access; 
+};
 
 /// The top-level class of the HTTP server.
 class COINHTTP_EXPORT Server : private boost::noncopyable
@@ -82,7 +105,7 @@ public:
     /// Construct the server to listen on the specified TCP address and port, and
     /// serve up files from the given directory.
     /// doc_root can alternatively be set to an in memory html document, then this is the only document that will be returned.
-    explicit Server(const std::string address = boost::asio::ip::address_v4::loopback().to_string(), const std::string port = "8333", const std::string doc_root = "");
+    explicit Server(const std::string address = boost::asio::ip::address_v4::loopback().to_string(), const std::string port = "8333", const std::string doc_root = "", const std::string log_dir = "");
 
     /// Set the server credentials - this will also make the server secure.
     void setCredentials(const std::string dataDir, const std::string cert = "hostcert.pem", const std::string key = "hostkey.pem");
@@ -147,6 +170,9 @@ protected:
     
     /// The handler for all incoming requests.
     RequestHandler _requestHandler;
+    
+    /// The logger - currently logging only access, but will later log also e.g. errors
+    Logger _logger;
 };
 
 #endif // HTTP_SERVER_H

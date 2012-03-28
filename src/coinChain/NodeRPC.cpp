@@ -147,7 +147,42 @@ Value GetTransaction::operator()(const Array& params, bool fHelp) {
     return entry;    
 }        
 
+Value GetPenetration::operator()(const Array& params, bool fHelp) {
+    if (fHelp || params.size() < 1)
+        throw RPC::error(RPC::invalid_params, "getpenetration <txhash> <penetration fraction> \n"
+                         "Get how many peers that have announced this transaction with hash <txhash> \n"
+                         "Optionally if <pene...> is present, getpenetration will not exit until this req is met, or it is timed out");
 
+    uint256 hash;
+    hash.SetHex(params[0].get_str());
+    
+    int64 timestamp = 0;
+    int64 blockheight = 0;
+    
+    Transaction tx;
+    _node.blockChain().getTransaction(hash, tx, blockheight, timestamp);
+    int bestheight = _node.blockChain().getBestHeight();
+
+    size_t total = _node.getConnectionCount();
+    size_t known = total;
+    
+    if(tx.isNull()) { // transaction not yet confirmed - get penetration
+        known = _node.peerPenetration(hash);
+    }
+    
+    if (params.size() == 2 ) { // client is requesting a blocking wait
+        
+    }
+    
+    // now build the answer : { confirmations, known, total } - 0, 0, X is unknown, n, X, X is confirmed up to n confirmations, 0, x, X is a x/X penetration
+    Object obj;
+    obj.push_back(Pair("confirmations", bestheight - blockheight + 1));
+    obj.push_back(Pair("known", (int)known));
+    obj.push_back(Pair("total", (int)total));
+    
+    // register callback for a this specific tx to be confirmed up to certain level
+}
+    
 Value GetBlockCount::operator()(const Array& params, bool fHelp) {
     if (fHelp || params.size() != 0)
         throw RPC::error(RPC::invalid_params, "getblockcount\n"

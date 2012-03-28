@@ -51,6 +51,12 @@ public:
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
 };
 
+class COINCHAIN_EXPORT GetPenetration : public NodeMethod {
+public:
+    GetPenetration(Node& node) : NodeMethod(node) {}
+    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
+};
+
 class COINCHAIN_EXPORT GetBlockCount : public NodeMethod {
 public:
     GetBlockCount(Node& node) : NodeMethod(node) {}

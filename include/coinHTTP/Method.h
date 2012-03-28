@@ -22,6 +22,8 @@
 #include <string>
 #include <map>
 #include <boost/noncopyable.hpp>
+#include <boost/function.hpp>
+
 #include "json/json_spirit.h"
 
 /// The base class for Method functors - The definitions follow the JSON_RPC 2.0 definition and strives at introspection support.
@@ -30,6 +32,13 @@ class COINHTTP_EXPORT Method
 public:    
     /// The actual function call - you need to overload this to implement a method
     virtual json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp) = 0;
+    
+    typedef boost::function<void (json_spirit::Value)> MethodDone;
+
+    /// Non blocking version - pr. default it will be blocking, though
+    virtual void operator()(const json_spirit::Array& params, bool fHelp, MethodDone onDone) {
+        onDone(operator()(params, fHelp));
+    }
     
     /// Get the name of the method. Default implemented by lowercase typeid name. - REQUIRED
     virtual const std::string name() const { 

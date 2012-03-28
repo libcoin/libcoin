@@ -123,10 +123,13 @@ public:
 
     /// get a const handle to the Block Chain
     const BlockChain& blockChain() const { return _blockChain; }
-
-    /// Post a Transaction to the Node. (Note that we use dispatch - no need to post if we are already in the same thread)
-    void post(const Transaction& tx) { _io_service.dispatch(boost::bind(&TransactionFilter::process, static_cast<TransactionFilter*>(_transactionFilter.get()), tx, _peerManager.getAllPeers())); }
     
+    /// get the penetration among connected peers of a tx hash - the penetration percentage is the peerPenetration divided by the connection count
+    int peerPenetration(const uint256 hash) const;
+
+    /// Post a Transaction to n peers. (Note that we use dispatch - no need to post if we are already in the same thread)
+    void post(const Transaction& tx, size_t n = 0);
+        
     /// Post a Block to the Node. (Note that we use dispatch - no need to post if we are already in the same thread)
     void post(const Block& block) { _io_service.dispatch(boost::bind(&BlockFilter::process, static_cast<BlockFilter*>(_blockFilter.get()), block, _peerManager.getAllPeers())); }
         

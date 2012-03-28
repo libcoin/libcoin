@@ -30,6 +30,14 @@ struct Request {
     int http_version_minor;
     Headers headers;
     std::string payload;
+    
+    /// reset the request (used for keep_alive)
+    void reset() {
+        method.clear();
+        uri.clear();
+        headers.clear();
+        payload.clear();
+    }
 };
 
 #endif // HTTP_REQUEST_H

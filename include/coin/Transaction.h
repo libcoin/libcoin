@@ -241,6 +241,12 @@ public:
         setNull();
     }
 
+    Transaction(int version, unsigned int lockTime) {
+        setNull();
+        _version = version;
+        _lockTime = lockTime;
+    }
+    
     IMPLEMENT_SERIALIZE
     (
         READWRITE(this->_version);

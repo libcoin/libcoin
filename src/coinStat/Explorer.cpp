@@ -61,7 +61,11 @@ void Explorer::BlockListener::operator()(const Block& block) {
             for(unsigned int n = 0; n < tx->getNumInputs(); n++) {
                 const Input& txin = tx->getInput(n);
                 Transaction prevtx;
+                // We need a workaround for blocks that have not ordered its transactions
                 _explorer.blockChain().getTransaction(txin.prevout().hash, prevtx);
+                
+                if(prevtx.isNull())
+                    printf("Warning tx with hash %s not found", txin.prevout().hash.toString().c_str());
                 
                 Output txout = prevtx.getOutput(txin.prevout().index);        
                 

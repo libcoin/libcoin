@@ -40,13 +40,17 @@ class COINHTTP_EXPORT Connection : public boost::enable_shared_from_this<Connect
 {
 public:
     /// Construct a connection with the given io_service.
-    explicit Connection(boost::asio::io_service& io_service, ConnectionManager& manager, RequestHandler& handler);
+    explicit Connection(boost::asio::io_service& io_service, ConnectionManager& manager, RequestHandler& handler, std::ostream& access_log);
     
     /// Construct a secure connection with the given io_service and ssl context.
-    explicit Connection(boost::asio::io_service& io_service, boost::asio::ssl::context& context, ConnectionManager& manager, RequestHandler& handler);
+    explicit Connection(boost::asio::io_service& io_service, boost::asio::ssl::context& context, ConnectionManager& manager, RequestHandler& handler, std::ostream& access_log);
     
     /// Get the socket associated with the connection.
     boost::asio::ip::tcp::socket& socket();
+    
+    /// Get the const socket associated with the connection.
+    const boost::asio::ip::tcp::socket& socket() const;
+
     
     /// Start the first asynchronous operation for the connection.
     void start();
@@ -55,15 +59,20 @@ public:
     void stop();
     
 private:
+    /// log 
+    void log_request() const;
+
     /// Secure connectiontions need to perform a handshake first.
     virtual void handle_handshake(const boost::system::error_code& error);
     
     /// Handle completion of a read operation.
-    void handle_read(const boost::system::error_code& e,
-                             std::size_t bytes_transferred);
+    void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
     
     /// Handle completion of a write operation.
-    void handle_write(const boost::system::error_code& e);
+    void handle_write(const boost::system::error_code& e, std::size_t bytes_transferred);
+    
+    /// Handle keep alive timeouts
+    void handle_timeout(const boost::system::error_code& e);
     
     /// Dummy context to enable initialization of ghost ssl socket
     boost::asio::ssl::context _ctx;
@@ -77,6 +86,9 @@ private:
     /// Flag to determine if we are running secure
     bool _secure;
 
+    /// Timeout timer for Keep-Alive connections (as opposed to Close)
+    boost::asio::deadline_timer _keep_alive;
+    
     /// The manager for this connection.
     ConnectionManager& _connectionManager;
     
@@ -84,7 +96,12 @@ private:
     RequestHandler& _requestHandler;
     
     /// Buffer for incoming data.
-    boost::array<char, 8192> _buffer;
+    typedef boost::array<char, 8192> Buffer;
+    Buffer _buffer;
+    
+    /// Buffer iterator to store the buffer state between two keep_alive reads.
+    Buffer::iterator _buffer_iterator;
+    std::size_t _bytes_read;
     
     /// The incoming request.
     Request _request;
@@ -94,6 +111,9 @@ private:
     
     /// The reply to be sent back to the client.
     Reply _reply;
+    
+    /// The ostream to log to
+    std::ostream& _access_log;
 };
 
 typedef boost::shared_ptr<Connection> connection_ptr;

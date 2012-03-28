@@ -30,6 +30,7 @@ class COINHTTP_EXPORT Auth
 {
 public:
     Auth() {}
+    Auth(std::string base64auth);
     Auth(std::string username, std::string password) {
         _base64auth = encode64(username + ":" + password);
     }

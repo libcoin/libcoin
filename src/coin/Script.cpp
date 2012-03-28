@@ -1522,6 +1522,8 @@ bool VerifyScript(const Script& scriptSig, const Script& scriptPubKey, const Tra
     vector<vector<unsigned char> > stack, stackCopy;
     if (!EvalScript(stack, scriptSig, txTo, nIn, nHashType))
         return false;
+    if (stack.empty())
+        return false;
     if (fValidatePayToScriptHash)
         stackCopy = stack;
     if (!EvalScript(stack, scriptPubKey, txTo, nIn, nHashType))
@@ -1553,7 +1555,7 @@ bool VerifyScript(const Script& scriptSig, const Script& scriptPubKey, const Tra
 
 
 bool SignSignature(const KeyStore &keystore, const Transaction& txFrom, Transaction& txTo, unsigned int nIn, int nHashType)
-{
+{    
     assert(nIn < txTo.getNumInputs());
     const Input& txin = txTo.getInput(nIn);
     assert(txin.prevout().index < txFrom.getNumOutputs());
@@ -1564,7 +1566,8 @@ bool SignSignature(const KeyStore &keystore, const Transaction& txFrom, Transact
     uint256 hash = SignatureHash(txout.script(), txTo, nIn, nHashType);
     
     txnouttype whichType;
-    Script signature = txin.signature();
+    Script signature;
+    
     if (!Solver(keystore, txout.script(), hash, nHashType, signature, whichType))
         return false;
 
@@ -1584,8 +1587,10 @@ bool SignSignature(const KeyStore &keystore, const Transaction& txFrom, Transact
         signature << static_cast<valtype>(subscript); // Append serialized subscript
     }
     
+    txTo.replaceInput(nIn, Input(txin.prevout(), signature, txTo.getInput(nIn).sequence()));
+    
     // Test solution
-    if (!VerifyScript(signature, txout.script(), txTo, nIn, true, 0))
+    if (!VerifyScript(signature, txout.script(), txTo, nIn, false, 0))
         return false;
     
     return true;

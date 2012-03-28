@@ -265,3 +265,32 @@ void Node::handle_stop() {
     _peerManager.stop_all();
     _io_service.stop();
 }
+
+void Node::post(const Transaction& tx, size_t n)
+{ 
+    Peers peers = _peerManager.getAllPeers();
+    Peers some;
+    size_t s = peers.size();
+    if (n != 0 && n < s) {
+        for(int i = 0; i < n; i++) {
+            size_t r = GetRand(s);
+            Peers::const_iterator p = peers.begin();
+            advance(p, r);
+            some.insert(*p);
+        }
+        _io_service.dispatch(boost::bind(&TransactionFilter::process, static_cast<TransactionFilter*>(_transactionFilter.get()), tx, some));
+    }
+    else
+        _io_service.dispatch(boost::bind(&TransactionFilter::process, static_cast<TransactionFilter*>(_transactionFilter.get()), tx, peers));
+}
+
+int Node::peerPenetration(const uint256 hash) const {
+    // create Inv from hash
+    Inventory inv(MSG_TX, hash);
+    size_t count = 0;
+    Peers peers = _peerManager.getAllPeers();
+    for(Peers::iterator p = peers.begin(); p != peers.end(); ++p)
+        if ((*p)->setInventoryKnown.count(inv)) count++;
+    return count;
+}
+

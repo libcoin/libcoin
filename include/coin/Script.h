@@ -672,7 +672,7 @@ public:
 
     void setAddress(const PubKey& vchPubKey)
     {
-        setAddress(PubKeyHash(vchPubKey));
+        setAddress(toPubKeyHash(vchPubKey));
     }
 
 

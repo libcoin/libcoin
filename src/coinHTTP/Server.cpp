@@ -26,7 +26,7 @@ using namespace asio;
 boost__asio__signal_set* __signal_set = NULL;
 #endif
 
-Server::Server(const string address, const string port, const string doc_root) : 
+Server::Server(const string address, const string port, const string doc_root, const string log_dir) : 
 _io_service(),
 _context(_io_service, boost::asio::ssl::context::sslv23),
 _secure(false),
@@ -34,7 +34,8 @@ _signals(_io_service),
 _acceptor(_io_service),
 _connectionManager(),
 _new_connection(),
-_requestHandler(doc_root) {
+_requestHandler(doc_root),
+_logger(log_dir) {
     // Register to handle the signals that indicate when the server should exit.
     // It is safe to register for the same signal multiple times in a program,
     // provided all registration for the specified signal is made through Asio.
@@ -74,6 +75,10 @@ void Server::setCredentials(const std::string dataDir, const std::string cert, c
     else
         throw runtime_error(("SecureServer ERROR: missing server private key file " + keyfile.string()).c_str());
     _secure = true;
+    
+    SSL_CTX* ssl_ctx = _context.impl();
+    long mode = SSL_CTX_get_session_cache_mode(ssl_ctx);
+    cout << SSL_SESS_CACHE_SERVER << " " << mode << endl;
 }
 
 void Server::run() {
@@ -91,9 +96,9 @@ void Server::shutdown(){
 
 void Server::start_accept() {
     if(isSecure())
-        _new_connection.reset(new Connection(_io_service, _context, _connectionManager, _requestHandler));
+        _new_connection.reset(new Connection(_io_service, _context, _connectionManager, _requestHandler, _logger.access()));
     else
-        _new_connection.reset(new Connection(_io_service, _connectionManager, _requestHandler));
+        _new_connection.reset(new Connection(_io_service, _connectionManager, _requestHandler, _logger.access()));
         
     _acceptor.async_accept(_new_connection->socket(), bind(&Server::handle_accept, this, placeholders::error));
 }

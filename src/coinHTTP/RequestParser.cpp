@@ -46,6 +46,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else if (!is_char(input) || is_ctl(input) || is_tspecial(input)) {
+                reset();
                 return false;
             }
             else {
@@ -54,6 +55,7 @@ tribool RequestParser::consume(Request& req, char input)
             }
         case uri_start:
             if (is_ctl(input)) {
+                reset();
                 return false;
             }
             else {
@@ -67,6 +69,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else if (is_ctl(input)) {
+                reset();
                 return false;
             }
             else {
@@ -79,6 +82,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else {
+                reset();
                 return false;
             }
         case http_version_t_1:
@@ -87,6 +91,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else {
+                reset();
                 return false;
             }
         case http_version_t_2:
@@ -95,6 +100,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else {
+                reset();
                 return false;
             }
         case http_version_p:
@@ -103,6 +109,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else {
+                reset();
                 return false;
             }
         case http_version_slash:
@@ -113,6 +120,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else {
+                reset();
                 return false;
             }
         case http_version_major_start:
@@ -122,6 +130,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else {
+                reset();
                 return false;
             }
         case http_version_major:
@@ -134,6 +143,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else {
+                reset();
                 return false;
             }
         case http_version_minor_start:
@@ -143,6 +153,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else {
+                reset();
                 return false;
             }
         case http_version_minor:
@@ -155,6 +166,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else {
+                reset();
                 return false;
             }
         case expecting_newline_1:
@@ -164,6 +176,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else {
+                reset();
                 return false;
             }
         case header_line_start:
@@ -176,6 +189,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else if (!is_char(input) || is_ctl(input) || is_tspecial(input)) {
+                reset();
                 return false;
             }
             else {
@@ -193,6 +207,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else if (is_ctl(input)) {
+                reset();
                 return false;
             }
             else {
@@ -207,6 +222,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else if (!is_char(input) || is_ctl(input) || is_tspecial(input)) {
+                reset();
                 return false;
             }
             else {
@@ -220,6 +236,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else {
+                reset();
                 return false;
             }
         case header_value:
@@ -232,6 +249,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else if (is_ctl(input)) {
+                reset();
                 return false;
             }
             else {
@@ -244,6 +262,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else {
+                reset();
                 return false;
             }
         case expecting_newline_3:
@@ -253,8 +272,10 @@ tribool RequestParser::consume(Request& req, char input)
                     req.payload.clear();
                     return indeterminate;
                 }
-                else
+                else {
+                    reset();
                     return true;
+                }
             }
             else
                 return false;
@@ -262,8 +283,10 @@ tribool RequestParser::consume(Request& req, char input)
             req.payload.push_back(input);
             if(req.payload.size() < _length)
                 return indeterminate;
-            else
+            else {
+                reset();
                 return true;
+            }
         default:
             return false;
     }

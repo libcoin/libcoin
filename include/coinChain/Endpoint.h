@@ -58,18 +58,22 @@ class COINCHAIN_EXPORT Endpoint : public boost::asio::ip::tcp::endpoint
              READWRITE(_services);
              READWRITE(FLATDATA(_ipv6)); // for IPv6
              if (fWrite) {
-                 
+                 //boost::asio::ip::address_v6::bytes_type bytes = address().to_v6().to_bytes();
+                 //READWRITE(FLATDATA(bytes));
                  unsigned int ip = ntohl(address().to_v4().to_ulong());
                  unsigned short p = ntohs(port());
                  READWRITE(ip);
                  READWRITE(p);
              }
              else if (fRead) {
+                 //boost::asio::ip::address_v6::bytes_type bytes;
+                 //READWRITE(FLATDATA(bytes));
                  unsigned int ip;
                  unsigned short p;
                  READWRITE(ip);
                  READWRITE(p);
                  const_cast<Endpoint*>(this)->address(boost::asio::ip::address(boost::asio::ip::address_v4(htonl(ip))));
+                 //const_cast<Endpoint*>(this)->address(boost::asio::ip::address(boost::asio::ip::address_v6(bytes)));
                  const_cast<Endpoint*>(this)->port(htons(p));
              }
             )

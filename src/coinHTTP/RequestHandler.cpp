@@ -26,6 +26,7 @@
 #include <string>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/bind.hpp>
 
 #include <openssl/buffer.h>
 #include <openssl/bio.h>
@@ -94,6 +95,19 @@ private:
     RequestHandler& _delegate;
 };
 
+
+static inline bool is_base64(unsigned char c) {
+    return (isalnum(c) || (c == '+') || (c == '/'));
+}
+
+Auth::Auth(std::string base64auth) {
+    // check that the string is indeed a base64 string    
+    if(find_if(base64auth.begin(), base64auth.end(), !boost::bind(is_base64, _1)) == base64auth.end())
+        _base64auth = base64auth;
+    else
+        _base64auth = "";
+}
+
 string Auth::username() {
     string user_pass = decode64(_base64auth);
     vector<string> userpass;
@@ -118,10 +132,6 @@ static const std::string base64_chars =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 "abcdefghijklmnopqrstuvwxyz"
 "0123456789+/";
-
-static inline bool is_base64(unsigned char c) {
-    return (isalnum(c) || (c == '+') || (c == '/'));
-}
 
 string Auth::encode64(string s) {
     std::string ret;
@@ -268,6 +278,11 @@ void RequestHandler::handleGET(const Request& req, Reply& rep) {
         rep = Reply::stock_reply(Reply::bad_request);
         return;
     }
+
+    // remove everything including and after the "?" - i.e. the search part
+    size_t search_separator = request_path.find("?");
+    if (search_separator != string::npos)
+        request_path = request_path.substr(0, search_separator);
     
     // Request path must be absolute and not contain "..".
     if (request_path.empty() || request_path[0] != '/' || request_path.find("..") != string::npos) {
@@ -351,7 +366,7 @@ void RequestHandler::handlePOST(const Request& req, Reply& rep) {
     // use the header Content-Type to lookup a suitable application
     if(req.headers.count("Content-Type")) {
         const string mime = req.headers.find("Content-Type")->second;
-        if(mime == "application/json") {
+        if(mime.find("application/json") != string::npos) {
             // This is a JSON RPC call - parse and execute!
 
             RPC rpc;
@@ -375,7 +390,7 @@ void RequestHandler::handlePOST(const Request& req, Reply& rep) {
                     throw RPC::error(RPC::method_not_found);
                 
                 try {
-                    // Execute - should set  CRITICAL_BLOCK(cs_main)                    
+                    // Execute
                     rpc.execute(*(m->second));                    
                 }
                 catch (std::exception& e) {
@@ -400,7 +415,7 @@ void RequestHandler::handlePOST(const Request& req, Reply& rep) {
             rep.status = rpc.getStatus();
             return;
         }
-        else if(mime.find("text/plain") == 0) {
+        else if(mime.find("text/plain") != string::npos) {
             // This is a form POST - action is method, content is "params=<params>" 
             
             RPC rpc;
@@ -428,7 +443,6 @@ void RequestHandler::handlePOST(const Request& req, Reply& rep) {
                     throw RPC::error(RPC::method_not_found);
                 
                 try {
-                    // Execute - should set  CRITICAL_BLOCK(cs_main)                    
                     rpc.execute(*(m->second));                    
                 }
                 catch (std::exception& e) {

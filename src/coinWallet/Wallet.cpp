@@ -825,6 +825,7 @@ bool Wallet::CreateTransaction(const vector<pair<Script, int64> >& vecSend, CWal
                     else
                         scriptChange << vchPubKey << OP_CHECKSIG;
 
+                printf("Change Script: %s", scriptChange.toString().c_str());
                     // Insert change txn at random position:
                     unsigned int position = GetRandInt(wtxNew.getNumOutputs());
                     wtxNew.insertOutput(position, Output(nChange, scriptChange));
@@ -1124,7 +1125,7 @@ void Wallet::ReserveKeyFromKeyPool(int64& nIndex, CKeyPool& keypool)
         if (!haveKey(toPubKeyHash(keypool.vchPubKey)))
             throw runtime_error("ReserveKeyFromKeyPool() : unknown key in key pool");
         assert(!keypool.vchPubKey.empty());
-        printf("keypool reserve %"PRI64d"\n", nIndex);
+        printf("keypool reserve %"PRI64d" - key: %s\n", nIndex, toPubKeyHash(keypool.vchPubKey).toString().c_str());
     }
 }
 

@@ -61,7 +61,7 @@ public:
     const unsigned int getNumInbound() const;
     
     /// Returns all the peers
-    Peers getAllPeers() { return _peers; }
+    Peers getAllPeers() const { return _peers; }
 
     /// Get the median count of blocks in the last five connected peers.
     int getPeerMedianNumBlocks() const { return _peerBlockCounts.median(); }

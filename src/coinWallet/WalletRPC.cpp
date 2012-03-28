@@ -856,10 +856,10 @@ Value ListAccounts::operator()(const Array& params, bool fHelp)
     
     map<string, int64> mapAccountBalances;
     BOOST_FOREACH(const PAIRTYPE(ChainAddress, string)& entry, _wallet.mapAddressBook) {
-        cout << entry.first.toString() << " " << entry.second << endl;
+        //        cout << entry.first.toString() << " " << entry.second << endl;
         if (_wallet.haveKey(entry.first.getPubKeyHash())) {// This address belongs to me 
             mapAccountBalances[entry.second] = 0;
-            cout << "MINE: " << entry.first.toString() << " " << entry.second << endl;
+            //            cout << "MINE: " << entry.first.toString() << " " << entry.second << endl;
         }
     }
     

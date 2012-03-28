@@ -86,16 +86,23 @@ Value GetCredit::operator()(const Array& params, bool fHelp) {
 
 Value GetCoins::operator()(const Array& params, bool fHelp) {        
     if (fHelp || params.size() != 1)
-        throw RPC::error(RPC::invalid_params, "getcoins <btcaddr>\n"
-                         "Get un spent coins of <btcaddr>");
+        throw RPC::error(RPC::invalid_params, "getcoins <btcaddr>/<PubKeyHash>\n"
+                         "Get un spent coins of <btcaddr>/<PubKeyHash>");
     
-    ChainAddress addr = _explorer.blockChain().chain().getAddress(params[0].get_str());
-    if (!addr.isValid())
-        throw RPC::error(RPC::invalid_params, "getcoins <btcaddr>\n"
-                         "btcaddr invalid!");
-    
-    PubKeyHash address = addr.getPubKeyHash();
-    
+    string param = params[0].get_str();
+
+    PubKeyHash address;
+    ChainAddress addr = _explorer.blockChain().chain().getAddress(param);
+    if (!addr.isValid()) { // not an address - try with a PubKeyHash - base 16 encoded:
+        if(param.size() == 40 && all(param, is_from_range('a','f') || is_digit()))
+            address = toPubKeyHash(param); // for some reason the string is byte reversed as compared to the internal representation ?!?!?
+    else
+        throw RPC::error(RPC::invalid_params, "getcoins <btcaddr>/<PubKeyHash>\n"
+                         "invalid argument!");
+    }
+    else
+        address = addr.getPubKeyHash();
+
     Coins coins;
     
     _explorer.getCoins(address, coins);

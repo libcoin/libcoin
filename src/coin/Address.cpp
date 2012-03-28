@@ -31,6 +31,17 @@ PubKeyHash toPubKeyHash(const PubKey& vch)
     return hash2;
 }
 
+PubKeyHash toPubKeyHash(const std::string& str) {
+    PubKeyHash tmp(str);
+    unsigned char* p = tmp.begin();
+    for(unsigned int i = 0; i < tmp.size()/2; i++) {
+        unsigned char swap = p[i];
+        p[i] = p[tmp.size()-i-1];
+        p[tmp.size()-i-1] = swap;
+    }
+    return tmp;
+}
+
 ScriptHash toScriptHash(const Script& vch)
 {
     uint256 hash1;
