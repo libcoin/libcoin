@@ -338,6 +338,8 @@ OPTION(BUILD_LIBCOIN_APPLICATIONS "Enable to build libcoin Applications (e.g. bi
 # libcoin Examples
 OPTION(BUILD_LIBCOIN_EXAMPLES "Enable to build libcoin Examples" ON)
 
+OPTION(BUILD_COIND "Build coind - not released yet..." OFF)
+
 ################################################################################
 # 3rd Party Dependency Stuff
 IF(WIN32 AND NOT ANDROID)
