@@ -7,10 +7,11 @@ ELSE()
 ENDIF()
 
 SET(LIB_NAME coinHTTP)
+SET(SUB_LIB_NAME json)
 
 SET(HEADER_PATH ${PROJECT_SOURCE_DIR}/include/${LIB_NAME})
 
-SET(TARGET_H
+SET(SUB_TARGET_H
     ${HEADER_PATH}/json/json_spirit_error_position.h
     ${HEADER_PATH}/json/json_spirit_reader_template.h
     ${HEADER_PATH}/json/json_spirit_reader.h
@@ -20,6 +21,9 @@ SET(TARGET_H
     ${HEADER_PATH}/json/json_spirit_writer_template.h
     ${HEADER_PATH}/json/json_spirit_writer.h
     ${HEADER_PATH}/json/json_spirit.h
+)
+
+SET(TARGET_H
     ${HEADER_PATH}/Client.h
     ${HEADER_PATH}/ConnectionManager.h
     ${HEADER_PATH}/Connection.h

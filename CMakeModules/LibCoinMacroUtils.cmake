@@ -220,6 +220,7 @@ MACRO(SETUP_LIBRARY LIB_NAME)
         ADD_LIBRARY(${LIB_NAME}
             ${LIBCOIN_USER_DEFINED_DYNAMIC_OR_STATIC}
             ${TARGET_H}
+            ${SUB_TARGET_H}
             ${TARGET_H_NO_MODULE_INSTALL}
             ${TARGET_SRC}
         )
