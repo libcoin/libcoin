@@ -288,7 +288,7 @@ public:
     
     const Chain& chain() const { return _chain; }
     
-    bool connectInputs(const Transaction& tx, std::map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx, const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, bool strictPayToScriptHash = false, int64 nMinFee = 0) const;
+    bool connectInputs(const Transaction& tx, std::map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx, const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee = 0) const;
     
     void outputPerformanceTimings() const;
 
@@ -328,7 +328,7 @@ protected:
     bool WriteBlockIndex(const CDiskBlockIndex& blockindex);
     bool EraseBlockIndex(uint256 hash);
     bool ReadHashBestChain();
-    bool WriteHashBestChain();
+    bool WriteHashBestChain(const uint256 hash);
     bool ReadBestInvalidWork();
     bool WriteBestInvalidWork();
     bool LoadBlockIndex();

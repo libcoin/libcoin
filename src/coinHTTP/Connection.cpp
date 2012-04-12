@@ -110,7 +110,7 @@ void Connection::log_request() const {
         _access_log << "\"" << header->second << "\"";
     else
         _access_log << "-";
-    _access_log << " " << hex << (long) this;
+    //    _access_log << " " << hex << (long) this << dec;
     _access_log << endl;
 }
 

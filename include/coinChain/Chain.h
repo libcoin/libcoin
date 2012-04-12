@@ -35,6 +35,7 @@ class COINCHAIN_EXPORT Chain : private boost::noncopyable
 {
 public:
     enum ChangeIdentifier {
+        BIP0016 = 16,
         BIP0030 = 30
     };
     virtual const Block& genesisBlock() const = 0;
@@ -52,7 +53,8 @@ public:
     
     virtual unsigned int timeStamp(ChangeIdentifier id) const {
         switch(id) {
-            case BIP0030: return 1331769600;
+            case BIP0016: return 1329264000; // Feb 15                
+            case BIP0030: return 1331769600; // 03/15/2012 12:00am GMT.
         }
     }
     
@@ -131,7 +133,8 @@ public:
     
     virtual unsigned int timeStamp(ChangeIdentifier id) const {
         switch(id) {
-            case BIP0030: return 1329696000;
+            case BIP0016: return 1329264000; // Feb 15
+            case BIP0030: return 1329696000; // 02/20/2012 12:00am GMT
         }
     }
     

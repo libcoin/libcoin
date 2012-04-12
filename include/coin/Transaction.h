@@ -247,6 +247,17 @@ public:
         _lockTime = lockTime;
     }
     
+    /// We also need a copy constructor
+    Transaction(const Transaction& tx) {
+        setNull();
+        _version = tx._version;
+        _lockTime = tx._lockTime;
+        for(Inputs::const_iterator i = tx._inputs.begin(); i != tx._inputs.end(); ++i)
+            _inputs.push_back(*i);
+        for(Outputs::const_iterator o = tx._outputs.begin(); o != tx._outputs.end(); ++o)
+            _outputs.push_back(*o);
+    }
+    
     IMPLEMENT_SERIALIZE
     (
         READWRITE(this->_version);

@@ -308,11 +308,15 @@ CBlockIndex* BlockChain::getHashStopIndex(uint256 hashStop) const
 }
 
 bool BlockChain::connectInputs(const Transaction& tx, map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx,
-                   const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, bool strictPayToScriptHash, int64 nMinFee) const
+                   const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee) const
 {    
     // lock the pool and chain for reading
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
 
+    // BIP0016 check - if the block is newer than the BIP0016 date enforce strictPayToScriptHash
+    // Note that this will reject some transactions during block download, which should not be a problem.
+    bool strictPayToScriptHash = (pindexBlock->nTime > _chain.timeStamp(Chain::BIP0016));
+    
     int64 t0 = GetTimeMicros();
 
     // Take over previous transactions' spent pointers
@@ -666,9 +670,9 @@ bool BlockChain::ReadHashBestChain()
     return Read(string("hashBestChain"), _bestChain);
 }
 
-bool BlockChain::WriteHashBestChain()
+bool BlockChain::WriteHashBestChain(const uint256 bestChain)
 {
-    return Write(string("hashBestChain"), _bestChain);
+    return Write(string("hashBestChain"), bestChain);
 }
 
 bool BlockChain::ReadBestInvalidWork()
@@ -907,8 +911,7 @@ bool BlockChain::reorganize(const Block& block, CBlockIndex* pindexNew)
     // Find the fork
     CBlockIndex* pfork = _bestIndex;
     CBlockIndex* plonger = pindexNew;
-    while (pfork != plonger)
-        {
+    while (pfork != plonger) {
         while (plonger->nHeight > pfork->nHeight)
             if (!(plonger = plonger->pprev))
                 return error("Reorganize() : plonger->pprev is null");
@@ -916,35 +919,40 @@ bool BlockChain::reorganize(const Block& block, CBlockIndex* pindexNew)
             break;
         if (!(pfork = pfork->pprev))
             return error("Reorganize() : pfork->pprev is null");
-        }
+    }
+
+    printf("REORG heights: current %d, fork %d, longer %d)\n", _bestIndex->nHeight, pfork->nHeight, plonger->nHeight);
     
     // List of what to disconnect
     vector<CBlockIndex*> vDisconnect;
     for (CBlockIndex* pindex = _bestIndex; pindex != pfork; pindex = pindex->pprev)
         vDisconnect.push_back(pindex);
     
+    printf("REORG disconnect length: %d\n", vDisconnect.size());
+           
     // List of what to connect
     vector<CBlockIndex*> vConnect;
     for (CBlockIndex* pindex = pindexNew; pindex != pfork; pindex = pindex->pprev)
         vConnect.push_back(pindex);
     reverse(vConnect.begin(), vConnect.end());
-    
-    // here we simply issue a call to commit(blocks, blocks)
+
+    printf("REORG connect length: %d\n", vConnect.size());
     
     // Disconnect shorter branch
     vector<Transaction> vResurrect;
-    BOOST_FOREACH(CBlockIndex* pindex, vDisconnect)
-    {
-    Block block;
-    if (!_blockFile.readFromDisk(block, pindex))
-        return error("Reorganize() : ReadFromDisk for disconnect failed");
-    if (!disconnectBlock(block, pindex))
-        return error("Reorganize() : DisconnectBlock failed");
-    
-    // Queue memory transactions to resurrect
-    BOOST_FOREACH(const Transaction& tx, block.getTransactions())
-    if (!tx.isCoinBase())
-        vResurrect.push_back(tx);
+    BOOST_FOREACH(CBlockIndex* pindex, vDisconnect) {
+        Block block;
+        if (!_blockFile.readFromDisk(block, pindex))
+            return error("Reorganize() : ReadFromDisk for disconnect failed");
+        if (!disconnectBlock(block, pindex))
+            return error("Reorganize() : DisconnectBlock failed");
+        
+        // Queue memory transactions to resurrect
+        BOOST_FOREACH(const Transaction& tx, block.getTransactions())
+        if (!tx.isCoinBase()) {
+            vResurrect.push_back(tx);
+            printf("REORG resurrect: %s\n", tx.getHash().toString().c_str());
+        }
     }
     
     // Connect longer branch
@@ -968,8 +976,8 @@ bool BlockChain::reorganize(const Block& block, CBlockIndex* pindexNew)
     // update the transaction pool. We hence lock the chain and pool mutex:
     
     boost::unique_lock< boost::shared_mutex > lock(_chain_and_pool_access);
-    _bestChain = pindexNew->GetBlockHash();
-    if (!WriteHashBestChain())
+    //    _bestChain = pindexNew->GetBlockHash();
+    if (!WriteHashBestChain(pindexNew->GetBlockHash()))
         return error("Reorganize() : WriteHashBestChain failed");
     
     
@@ -1019,8 +1027,8 @@ bool BlockChain::setBestChain(const Block& block, CBlockIndex* pindexNew)
     uint256 oldBestChain = _bestChain;
     TxnBegin();
     if (_genesisBlockIndex == NULL && hash == getGenesisHash()) {
-        _bestChain = hash;
-        WriteHashBestChain();
+        //        _bestChain = hash;
+        WriteHashBestChain(hash);
         _bestChain = oldBestChain;
         if (!TxnCommit())
             return error("SetBestChain() : TxnCommit failed");
@@ -1028,8 +1036,8 @@ bool BlockChain::setBestChain(const Block& block, CBlockIndex* pindexNew)
     }
     else if (block.getPrevBlock() == _bestChain) {
         // Adding to current best branch
-        _bestChain = hash;
-        if (!connectBlock(block, pindexNew) || !WriteHashBestChain()) {
+        //        _bestChain = hash;
+        if (!connectBlock(block, pindexNew) || !WriteHashBestChain(hash)) {
             _bestChain = oldBestChain;
             TxnAbort();
             InvalidChainFound(pindexNew);
