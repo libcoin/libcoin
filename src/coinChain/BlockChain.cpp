@@ -786,7 +786,12 @@ bool BlockChain::LoadBlockIndex()
     }
     if (!_blockChainIndex.count(_bestChain))
         return error("BlockChain::LoadBlockIndex() : hashBestChain not found in the block index");
+    
     _bestIndex = _blockChainIndex[_bestChain];
+    // test the sanity of the best chain:
+    if(_bestIndex->pnext)
+        printf("The best chain is not terminated properly! \n");      
+
     _bestChainWork = _bestIndex->bnChainWork;
     printf("LoadBlockIndex(): hashBestChain=%s  height=%d\n", _bestChain.toString().substr(0,20).c_str(), getBestHeight());
     
@@ -809,6 +814,11 @@ bool BlockChain::LoadBlockIndex()
             pindexFork = pindex->pprev;
             }
         }
+    for (CBlockIndex* pindex = _bestIndex; pindex && pindex->pprev; pindex = pindex->pprev) {
+        if (pindex->nHeight == getBestHeight()-100)
+            pindexFork = pindex;
+    }
+
     if (pindexFork) {
         // Reorg back to the fork
         printf("LoadBlockIndex() : *** moving best chain pointer back to block %d\n", pindexFork->nHeight);
@@ -920,7 +930,7 @@ bool BlockChain::reorganize(const Block& block, CBlockIndex* pindexNew)
         if (!(pfork = pfork->pprev))
             return error("Reorganize() : pfork->pprev is null");
     }
-
+    
     printf("REORG heights: current %d, fork %d, longer %d)\n", _bestIndex->nHeight, pfork->nHeight, plonger->nHeight);
     
     // List of what to disconnect
@@ -929,57 +939,63 @@ bool BlockChain::reorganize(const Block& block, CBlockIndex* pindexNew)
         vDisconnect.push_back(pindex);
     
     printf("REORG disconnect length: %d\n", vDisconnect.size());
-           
+    
     // List of what to connect
     vector<CBlockIndex*> vConnect;
     for (CBlockIndex* pindex = pindexNew; pindex != pfork; pindex = pindex->pprev)
         vConnect.push_back(pindex);
     reverse(vConnect.begin(), vConnect.end());
-
+    
     printf("REORG connect length: %d\n", vConnect.size());
     
-    // Disconnect shorter branch
     vector<Transaction> vResurrect;
-    BOOST_FOREACH(CBlockIndex* pindex, vDisconnect) {
-        Block block;
-        if (!_blockFile.readFromDisk(block, pindex))
-            return error("Reorganize() : ReadFromDisk for disconnect failed");
-        if (!disconnectBlock(block, pindex))
-            return error("Reorganize() : DisconnectBlock failed");
-        
-        // Queue memory transactions to resurrect
-        BOOST_FOREACH(const Transaction& tx, block.getTransactions())
-        if (!tx.isCoinBase()) {
-            vResurrect.push_back(tx);
-            printf("REORG resurrect: %s\n", tx.getHash().toString().c_str());
-        }
-    }
-    
-    // Connect longer branch
     vector<Transaction> vDelete;
-    for (int i = 0; i < vConnect.size(); i++) {
-        CBlockIndex* pindex = vConnect[i];
-        Block block;
-        if (!_blockFile.readFromDisk(block,pindex))
-            return error("Reorganize() : ReadFromDisk for connect failed");
-        if (!connectBlock(block, pindex)) {
-            // Invalid block
-            TxnAbort();
-            return error("Reorganize() : ConnectBlock failed");
+    try {
+        // Disconnect shorter branch
+        BOOST_FOREACH(CBlockIndex* pindex, vDisconnect) {
+            Block block;
+            if (!_blockFile.readFromDisk(block, pindex))
+                return error("Reorganize() : ReadFromDisk for disconnect failed");
+            if (!disconnectBlock(block, pindex))
+                return error("Reorganize() : DisconnectBlock failed");
+            
+            // Queue memory transactions to resurrect
+            BOOST_FOREACH(const Transaction& tx, block.getTransactions())
+            if (!tx.isCoinBase()) {
+                vResurrect.push_back(tx);
+                printf("REORG resurrect: %s\n", tx.getHash().toString().c_str());
+            }
         }
         
-        // Queue memory transactions to delete
-        BOOST_FOREACH(const Transaction& tx, block.getTransactions())
-        vDelete.push_back(tx);
+        // Connect longer branch
+        for (int i = 0; i < vConnect.size(); i++) {
+            CBlockIndex* pindex = vConnect[i];
+            Block block;
+            if (!_blockFile.readFromDisk(block,pindex))
+                return error("Reorganize() : ReadFromDisk for connect failed");
+            if (!connectBlock(block, pindex)) {
+                // Invalid block
+                TxnAbort();
+                return error("Reorganize() : ConnectBlock failed");
+            }
+            
+            // Queue memory transactions to delete
+            BOOST_FOREACH(const Transaction& tx, block.getTransactions())
+            vDelete.push_back(tx);
+        }
+        // At this point we have finalized building the transaction and are ready to commit it and 
+        // update the transaction pool. We hence lock the chain and pool mutex:
+        
+        boost::unique_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+        //    _bestChain = pindexNew->GetBlockHash();
+        if (!WriteHashBestChain(pindexNew->GetBlockHash()))
+            return error("Reorganize() : WriteHashBestChain failed");
+    
+    } catch (bad_alloc) { // this will catch e.g. a memory alloc error and ensure that the Txn is abborted
+        return error("bad_alloc! in REORGANIZE");
+    } catch (...) {
+        return error("Unknown error in REORGANIZE");
     }
-    // At this point we have finalized building the transaction and are ready to commit it and 
-    // update the transaction pool. We hence lock the chain and pool mutex:
-    
-    boost::unique_lock< boost::shared_mutex > lock(_chain_and_pool_access);
-    //    _bestChain = pindexNew->GetBlockHash();
-    if (!WriteHashBestChain(pindexNew->GetBlockHash()))
-        return error("Reorganize() : WriteHashBestChain failed");
-    
     
     // Make sure it's successfully written to disk before changing memory structure
     if (!TxnCommit())
