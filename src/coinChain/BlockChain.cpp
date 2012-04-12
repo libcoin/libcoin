@@ -814,8 +814,10 @@ bool BlockChain::LoadBlockIndex()
             pindexFork = pindex->pprev;
             }
         }
+    
+    // delete the last 10 accepted blocks.
     for (CBlockIndex* pindex = _bestIndex; pindex && pindex->pprev; pindex = pindex->pprev) {
-        if (pindex->nHeight == getBestHeight()-100)
+        if (pindex->nHeight == getBestHeight()-10)
             pindexFork = pindex;
     }
 
@@ -827,6 +829,17 @@ bool BlockChain::LoadBlockIndex()
             return error("LoadBlockIndex() : block.ReadFromDisk failed");
         setBestChain(block, pindexFork);
     }
+
+    // trim the blockindex to only include the main chain
+    set<uint256> mainChain;
+    for (CBlockIndex* pindex = _bestIndex; pindex && pindex->pprev; pindex = pindex->pprev)
+        mainChain.insert(pindex->GetBlockHash());
+    
+    deque<uint256> ghostblocks;
+    for (BlockChainIndex::const_iterator bci = _blockChainIndex.begin(); bci != _blockChainIndex.end(); ++bci)
+        if(mainChain.count(bci->first) == 0) ghostblocks.push_back(bci->first);
+    for (deque<uint256>::const_iterator i = ghostblocks.begin(); i != ghostblocks.end(); ++i)
+        _blockChainIndex.erase(*i);
     
     return true;
 }
@@ -852,66 +865,70 @@ bool BlockChain::disconnectBlock(const Block& block, CBlockIndex* pindex)
 
 bool BlockChain::connectBlock(const Block& block, CBlockIndex* pindex)
 {
-    // Check it again in case a previous version let a bad block in
-    if (!block.checkBlock(_chain.proofOfWorkLimit()))
-        return false;
-    
-    // Do not allow blocks that contain transactions which 'overwrite' older transactions,
-    // unless those are already completely spent.
-    // If such overwrites are allowed, coinbases and transactions depending upon those
-    // can be duplicated to remove the ability to spend the first instance -- even after
-    // being sent to another address.
-    // See BIP30 and http://r6.ca/blog/20120206T005236Z.html for more information.
-    // This logic is not necessary for memory pool transactions, as AcceptToMemoryPool
-    // already refuses previously-known transaction id's entirely.
-    // This rule applies to all blocks whose timestamp is after March 15, 2012, 0:00 UTC.
-    // On testnet it is enabled as of februari 20, 2012, 0:00 UTC.
-    if (pindex->nTime > _chain.timeStamp(Chain::BIP0030))
-        BOOST_FOREACH(const Transaction& tx, block.getTransactions()) {
-        TxIndex txindexOld;
-            if (ReadTxIndex(tx.getHash(), txindexOld))
-                BOOST_FOREACH(const DiskTxPos &pos, txindexOld.getSpents())
-                if (pos.isNull())
-                    return false;
-        }
-
-    
-    //// issue here: it doesn't know the version
-    unsigned int nTxPos = pindex->nBlockPos + ::GetSerializeSize(Block(), SER_DISK) - 1 + GetSizeOfCompactSize(block.getNumTransactions());
-    
-    map<uint256, TxIndex> queuedChanges;
-    int64 fees = 0;
-    for(int i = 0; i < block.getNumTransactions(); ++i) {
-        const Transaction& tx = block.getTransaction(i);
-        DiskTxPos posThisTx(pindex->nFile, pindex->nBlockPos, nTxPos);
-        nTxPos += ::GetSerializeSize(tx, SER_DISK);
-        
-        if (!connectInputs(tx, queuedChanges, posThisTx, pindex, fees, true, false))
+    try {
+        // Check it again in case a previous version let a bad block in
+        if (!block.checkBlock(_chain.proofOfWorkLimit()))
             return false;
+        
+        // Do not allow blocks that contain transactions which 'overwrite' older transactions,
+        // unless those are already completely spent.
+        // If such overwrites are allowed, coinbases and transactions depending upon those
+        // can be duplicated to remove the ability to spend the first instance -- even after
+        // being sent to another address.
+        // See BIP30 and http://r6.ca/blog/20120206T005236Z.html for more information.
+        // This logic is not necessary for memory pool transactions, as AcceptToMemoryPool
+        // already refuses previously-known transaction id's entirely.
+        // This rule applies to all blocks whose timestamp is after March 15, 2012, 0:00 UTC.
+        // On testnet it is enabled as of februari 20, 2012, 0:00 UTC.
+        if (pindex->nTime > _chain.timeStamp(Chain::BIP0030))
+            BOOST_FOREACH(const Transaction& tx, block.getTransactions()) {
+                TxIndex txindexOld;
+                if (ReadTxIndex(tx.getHash(), txindexOld))
+                    BOOST_FOREACH(const DiskTxPos &pos, txindexOld.getSpents())
+                    if (pos.isNull())
+                        return false;
+            }
+        
+        
+        //// issue here: it doesn't know the version
+        unsigned int nTxPos = pindex->nBlockPos + ::GetSerializeSize(Block(), SER_DISK) - 1 + GetSizeOfCompactSize(block.getNumTransactions());
+        
+        map<uint256, TxIndex> queuedChanges;
+        int64 fees = 0;
+        for(int i = 0; i < block.getNumTransactions(); ++i) {
+            const Transaction& tx = block.getTransaction(i);
+            DiskTxPos posThisTx(pindex->nFile, pindex->nBlockPos, nTxPos);
+            nTxPos += ::GetSerializeSize(tx, SER_DISK);
+            
+            if (!connectInputs(tx, queuedChanges, posThisTx, pindex, fees, true, false))
+                return false;
+        }
+        // Write queued txindex changes
+        for (map<uint256, TxIndex>::iterator mi = queuedChanges.begin(); mi != queuedChanges.end(); ++mi) {
+            if (!UpdateTxIndex((*mi).first, (*mi).second))
+                return error("ConnectBlock() : UpdateTxIndex failed");
+        }
+        
+        if (block.getTransaction(0).getValueOut() > _chain.subsidy(pindex->nHeight) + fees)
+            return false;
+        
+        // Update block index on disk without changing it in memory.
+        // The memory index structure will be changed after the db commits.
+        if (pindex->pprev) {
+            CDiskBlockIndex blockindexPrev(pindex->pprev);
+            blockindexPrev.hashNext = pindex->GetBlockHash();
+            if (!WriteBlockIndex(blockindexPrev))
+                return error("ConnectBlock() : WriteBlockIndex failed");
+        }
+        
+        // Watch for transactions paying to me
+        //    BOOST_FOREACH(Transaction& tx, vtx)
+        //        SyncWithWallets(tx, this, true);
+        
+        return true;
+    } catch(...) {
+        return error("connectBlock threw an exception!");
     }
-    // Write queued txindex changes
-    for (map<uint256, TxIndex>::iterator mi = queuedChanges.begin(); mi != queuedChanges.end(); ++mi) {
-        if (!UpdateTxIndex((*mi).first, (*mi).second))
-            return error("ConnectBlock() : UpdateTxIndex failed");
-    }
-    
-    if (block.getTransaction(0).getValueOut() > _chain.subsidy(pindex->nHeight) + fees)
-        return false;
-    
-    // Update block index on disk without changing it in memory.
-    // The memory index structure will be changed after the db commits.
-    if (pindex->pprev) {
-        CDiskBlockIndex blockindexPrev(pindex->pprev);
-        blockindexPrev.hashNext = pindex->GetBlockHash();
-        if (!WriteBlockIndex(blockindexPrev))
-            return error("ConnectBlock() : WriteBlockIndex failed");
-    }
-    
-    // Watch for transactions paying to me
-    //    BOOST_FOREACH(Transaction& tx, vtx)
-    //        SyncWithWallets(tx, this, true);
-    
-    return true;
 }
 
 bool BlockChain::reorganize(const Block& block, CBlockIndex* pindexNew)
@@ -937,16 +954,12 @@ bool BlockChain::reorganize(const Block& block, CBlockIndex* pindexNew)
     vector<CBlockIndex*> vDisconnect;
     for (CBlockIndex* pindex = _bestIndex; pindex != pfork; pindex = pindex->pprev)
         vDisconnect.push_back(pindex);
-    
-    printf("REORG disconnect length: %d\n", vDisconnect.size());
-    
+        
     // List of what to connect
     vector<CBlockIndex*> vConnect;
     for (CBlockIndex* pindex = pindexNew; pindex != pfork; pindex = pindex->pprev)
         vConnect.push_back(pindex);
     reverse(vConnect.begin(), vConnect.end());
-    
-    printf("REORG connect length: %d\n", vConnect.size());
     
     vector<Transaction> vResurrect;
     vector<Transaction> vDelete;
@@ -963,7 +976,6 @@ bool BlockChain::reorganize(const Block& block, CBlockIndex* pindexNew)
             BOOST_FOREACH(const Transaction& tx, block.getTransactions())
             if (!tx.isCoinBase()) {
                 vResurrect.push_back(tx);
-                printf("REORG resurrect: %s\n", tx.getHash().toString().c_str());
             }
         }
         

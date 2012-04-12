@@ -92,7 +92,7 @@ public:
 
     void addTransaction(const Transaction& tx) { _transactions.push_back(tx); }
     size_t getNumTransactions() const { return _transactions.size(); }
-    const TransactionList getTransactions() const { return _transactions; }
+    const TransactionList& getTransactions() const { return _transactions; }
     Transaction& getTransaction(size_t i) { return _transactions[i]; }
     const Transaction& getTransaction(size_t i) const { return _transactions[i]; }
 
