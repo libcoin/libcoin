@@ -53,7 +53,7 @@ public:
     
     virtual unsigned int timeStamp(ChangeIdentifier id) const {
         switch(id) {
-            case BIP0016: return 1329264000; // Feb 15                
+            case BIP0016: return 1333238400; // April 1st                
             case BIP0030: return 1331769600; // 03/15/2012 12:00am GMT.
         }
     }
