@@ -121,7 +121,7 @@ void Explorer::load(std::string filename) {
 }
 
 void Explorer::scan() {
-    const CBlockIndex* pindex = _blockChain.getBlockIndex(_blockChain.getGenesisHash());
+    const CBlockIndex* pindex = _blockChain.getGenesisIndex();
     for(int h = 0; h < _height-250; ++h) if(!(pindex = pindex->pnext)) break; // rescan the last 250 entries
     
     while (pindex) {

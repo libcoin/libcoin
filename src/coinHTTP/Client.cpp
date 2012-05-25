@@ -200,16 +200,16 @@ void Client::handle_write_request(const system::error_code& err) {
         // automatically grow to accommodate the entire line. The growth may be
         // limited by passing a maximum size to the streambuf constructor.
         if(isSecure())
-            async_read_until(_ssl_socket, _response, "\r\n", bind(&Client::handle_read_status_line, this, placeholders::error));
+            async_read_until(_ssl_socket, _response, "\r\n", bind(&Client::handle_read_status_line, this, placeholders::error, placeholders::bytes_transferred));
         else
-            async_read_until(_socket, _response, "\r\n", bind(&Client::handle_read_status_line, this, placeholders::error));
+            async_read_until(_socket, _response, "\r\n", bind(&Client::handle_read_status_line, this, placeholders::error, placeholders::bytes_transferred));
     }
     else {
         _completion_handler(err);
     }
 }
 
-void Client::handle_read_status_line(const system::error_code& err) {
+void Client::handle_read_status_line(const system::error_code& err, std::size_t bytes_transferred) {
     if (!err) {
         // Check that response is OK.
         std::istream response_stream(&_response);
@@ -232,16 +232,22 @@ void Client::handle_read_status_line(const system::error_code& err) {
         
         // Read the response headers, which are terminated by a blank line.
         if(isSecure())
-            async_read_until(_ssl_socket, _response, "\r\n\r\n", bind(&Client::handle_read_headers, this, placeholders::error));
+            async_read_until(_ssl_socket, _response, "\r\n\r\n", bind(&Client::handle_read_headers, this, placeholders::error, placeholders::bytes_transferred));
         else
-            async_read_until(_socket, _response, "\r\n\r\n", bind(&Client::handle_read_headers, this, placeholders::error));
+            async_read_until(_socket, _response, "\r\n\r\n", bind(&Client::handle_read_headers, this, placeholders::error, placeholders::bytes_transferred));
+    }
+    else if (bytes_transferred == 0) {
+        boost::system::error_code e;
+        _completion_handler(e);
     }
     else {
+        cout << "read_statusline" << endl;
+
         _completion_handler(err);
     }
 }
 
-void Client::handle_read_headers(const system::error_code& err) {
+void Client::handle_read_headers(const system::error_code& err, std::size_t bytes_transferred) {
     if (!err) {
         // Process the response headers.
         std::istream response_stream(&_response);
@@ -262,16 +268,21 @@ void Client::handle_read_headers(const system::error_code& err) {
         
         // Start reading remaining data until EOF.
         if(isSecure())
-            async_read(_ssl_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error));
+            async_read(_ssl_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error, placeholders::bytes_transferred));
         else
-            async_read(_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error));
+            async_read(_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error, placeholders::bytes_transferred));
+    }
+    else if (bytes_transferred == 0) {
+        boost::system::error_code e;
+        _completion_handler(e);
     }
     else {
+        cout << "read_headers" << endl;
         _completion_handler(err);
     }
 }
 
-void Client::handle_read_content(const boost::system::error_code& err) {
+void Client::handle_read_content(const boost::system::error_code& err, std::size_t bytes_transferred) {
     if (!err) {
         // Write all of the data that has been read so far.
         stringstream ss;
@@ -280,11 +291,16 @@ void Client::handle_read_content(const boost::system::error_code& err) {
         
         // Continue reading remaining data until EOF.
         if(isSecure())
-            async_read(_ssl_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error));
+            async_read(_ssl_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error, placeholders::bytes_transferred));
         else
-            async_read(_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error));
+            async_read(_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error, placeholders::bytes_transferred));
+    }
+    else if (bytes_transferred == 0) {
+        boost::system::error_code e;
+        _completion_handler(e);
     }
     else {
+        cout << "read_content" << endl;
         _completion_handler(err);
     }
 }

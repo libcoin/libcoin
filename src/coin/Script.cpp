@@ -1560,6 +1560,13 @@ bool SignSignature(const KeyStore &keystore, const Transaction& txFrom, Transact
     const Input& txin = txTo.getInput(nIn);
     assert(txin.prevout().index < txFrom.getNumOutputs());
     const Output& txout = txFrom.getOutput(txin.prevout().index);
+    return SignSignature(keystore, txout, txTo, nIn, nHashType);
+}
+
+bool SignSignature(const KeyStore &keystore, const Output& txout, Transaction& txTo, unsigned int nIn, int nHashType)
+{    
+    assert(nIn < txTo.getNumInputs());
+    const Input& txin = txTo.getInput(nIn);
     
     // Leave out the signature from the hash, since a signature can't sign itself.
     // The checksig op will also drop the signatures from its hash.

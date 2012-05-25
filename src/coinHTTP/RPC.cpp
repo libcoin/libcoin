@@ -65,7 +65,8 @@ string RPC::content(string method, vector<string> params) {
     stringstream ss;
     ss << "{\"jsonrpc\":\"2.0\", \"id\":\"libbtc\", \"method\":\"" << method << "\", \"params\":[";
     if (params.size())
-        ss << "\"" << algorithm::join(params, "\", \"") << "\"";
+        //        ss << "\"" << algorithm::join(params, "\", \"") << "\"";
+        ss << algorithm::join(params, ",");
     ss << "] }";
     return ss.str();
 }
@@ -137,8 +138,10 @@ string& RPC::getContent() {
     // Generate JSON RPC 2.0 reply
     Object reply;
     reply.push_back(Pair("jsonrpc", "2.0"));
-    reply.push_back(Pair("result", _result));
-    reply.push_back(Pair("error", _error));
+    if (!_result.is_null())
+        reply.push_back(Pair("result", _result));
+    if (!_error.is_null())
+        reply.push_back(Pair("error", _error));
     reply.push_back(Pair("id", _id));
     _content = write(Value(reply)) + "\n";
     return _content;

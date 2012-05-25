@@ -78,7 +78,6 @@ void Server::setCredentials(const std::string dataDir, const std::string cert, c
     
     SSL_CTX* ssl_ctx = _context.impl();
     long mode = SSL_CTX_get_session_cache_mode(ssl_ctx);
-    cout << SSL_SESS_CACHE_SERVER << " " << mode << endl;
 }
 
 void Server::run() {

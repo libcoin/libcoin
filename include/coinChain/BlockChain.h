@@ -213,6 +213,8 @@ public:
     /// C O I N S
     
     bool isSpent(Coin coin) const;
+    /// This rather strange name refers to this coin included in a transaction in the memorypool
+    bool beingSpent(Coin coin) const { return _transactionConnections.find(coin) != _transactionConnections.end(); }
     int getNumSpent(uint256 hash) const ;
     uint256 spentIn(Coin coin) const;
 
@@ -281,6 +283,7 @@ public:
     
     const uint256& getGenesisHash() const { return _chain.genesisHash(); }
     const CBlockIndex* getBestIndex() const { return _bestIndex; }
+    const CBlockIndex* getGenesisIndex() const { return _genesisBlockIndex; }
     const uint256& getBestChain() const { return _bestChain; }
     const int64& getBestReceivedTime() const { return _bestReceivedTime; }
 

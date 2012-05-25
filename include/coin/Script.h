@@ -15,6 +15,7 @@
 #include <boost/foreach.hpp>
 
 class Transaction;
+class Output;
 
 enum
 {
@@ -720,6 +721,7 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const Script& s
 
 bool IsMine(const KeyStore& keystore, const Script& scriptPubKey);
 //bool ExtractAddress(const Script& scriptPubKey, const KeyStore* pkeystore, PubKeyHash& addressRet);
+bool SignSignature(const KeyStore &keystore, const Output& txout, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL);
 bool SignSignature(const KeyStore& keystore, const Transaction& txFrom, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL);
 
 bool VerifySignature(const Transaction& txFrom, const Transaction& txTo, unsigned int nIn, bool fValidatePayToScriptHash, int nHashType=0);

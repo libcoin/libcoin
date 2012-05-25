@@ -77,7 +77,11 @@ void Connection::handle_handshake(const boost::system::error_code& error) {
 
 void Connection::log_request() const {
     // 127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326 "http://www.example.com/start.html" "Mozilla/4.08 [en] (Win98; I ;Nav)"
-    ip::tcp::endpoint remote = socket().remote_endpoint();
+
+    boost::system::error_code ec;
+    ip::tcp::endpoint remote = socket().remote_endpoint(ec);
+    if(ec) // unbound requests are artefacts (result from write calling read, e.g. when trying ssl on non ssl conn)
+        return;
     _access_log << remote.address() << " - ";
     Headers::const_iterator header = _request.headers.find("Authorization");
     std::string basic_auth;
