@@ -63,7 +63,11 @@ Object RPC::error(RPC::Error e, const string message) {
 string RPC::content(string method, vector<string> params) {
     //    '{"jsonrpc": "1.0", "id":"curledhair", "method": "getblockcount", "params": [] }'
     stringstream ss;
-    ss << "{\"jsonrpc\":\"2.0\", \"id\":\"libbtc\", \"method\":\"" << method << "\", \"params\":[";
+    ss << "{\"jsonrpc\":\"2.0\", \"method\":\"" << method << "\", \"params\":[";
+    Value val;
+    // stringify nonparsable params - i.e. assume it is a string if nothing else.
+    for (vector<string>::iterator param = params.begin(); param != params.end(); ++param)
+        if (!read(*param, val)) *param = "\"" + *param + "\"";
     if (params.size())
         //        ss << "\"" << algorithm::join(params, "\", \"") << "\"";
         ss << algorithm::join(params, ",");
@@ -121,6 +125,13 @@ void RPC::parse(std::string action, std::string payload) {
     }
 }
 
+void RPC::parse(std::string action, std::vector<std::string> args) {
+    _method = action;
+    _params = Array();
+    BOOST_FOREACH(const string& arg, args) {
+        _params.push_back(arg);
+    }    
+}
 
 /*
 void RPC::setContent(string& content) {
@@ -142,7 +153,8 @@ string& RPC::getContent() {
         reply.push_back(Pair("result", _result));
     if (!_error.is_null())
         reply.push_back(Pair("error", _error));
-    reply.push_back(Pair("id", _id));
+    if (!_id.is_null())
+        reply.push_back(Pair("id", _id));
     _content = write(Value(reply)) + "\n";
     return _content;
 }

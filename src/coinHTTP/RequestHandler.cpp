@@ -279,10 +279,13 @@ void RequestHandler::handleGET(const Request& req, Reply& rep) {
         return;
     }
 
-    // remove everything including and after the "?" - i.e. the search part
+    // split in request path and query
+    string query;
     size_t search_separator = request_path.find("?");
-    if (search_separator != string::npos)
+    if (search_separator != string::npos) {
+        query = request_path.substr(search_separator + 1, string::npos); // exclude the '?'
         request_path = request_path.substr(0, search_separator);
+    }
     
     // Request path must be absolute and not contain "..".
     if (request_path.empty() || request_path[0] != '/' || request_path.find("..") != string::npos) {
@@ -295,11 +298,63 @@ void RequestHandler::handleGET(const Request& req, Reply& rep) {
         request_path += "index.html";
     }    
     
-    // Determine the file extension.
+    // Determine the file extension - if there is no extension, first look up the request an RPC call
     size_t last_slash_pos = request_path.find_last_of("/");
     size_t last_dot_pos = request_path.find_last_of(".");
     string extension;
-    if (last_dot_pos == string::npos) {
+    if (last_dot_pos == string::npos) { // could be an RPC call - do a lookup in methods
+        string method;
+        size_t slash_separator = request_path.rfind("/");
+        if (slash_separator != string::npos) {
+            method = request_path.substr(slash_separator + 1, string::npos); // exclude the '/'
+                                                                             // Check if the method requires authorization
+                                                                             // Find method
+            Methods::iterator m = _methods.find(method);
+            if (m != _methods.end()) {
+                RPC rpc;
+                try {
+                    if(_auths.count(method)) {
+                        if(req.headers.count("Authorization") == 0)
+                            throw Reply::stock_reply(Reply::unauthorized);
+                        string basic_auth = req.headers.find("Authorization")->second;
+                        if (basic_auth.length() > 9 && basic_auth.substr(0,6) != "Basic ")
+                            throw Reply::stock_reply(Reply::unauthorized);
+                        if(!_auths[method].valid(basic_auth.substr(6)))
+                            throw Reply::stock_reply(Reply::unauthorized);                    
+                    }
+                    
+                    // parse the query
+                    vector<string> args;
+                    if (args.size())
+                        split(args, query, is_any_of("&"));
+                    rpc.parse(method, args);
+                    try {
+                        // Execute
+                        rpc.execute(*(m->second));                    
+                    }
+                    catch (std::exception& e) {
+                        rpc.setError(RPC::error(RPC::unknown_error, e.what()));
+                    }
+                }
+                catch (Object& err) {
+                    rpc.setError(err);
+                }
+                catch (std::exception& e) {
+                    rpc.setError(RPC::error(RPC::parse_error, e.what()));
+                }
+                catch (Reply err) {
+                    rep = err;
+                    return;
+                }
+                // Form reply header and content
+                rep.content = rpc.getContent();
+                // rpc.setContent(rep.content);                    
+                rep.headers["Content-Length"] = lexical_cast<string>(rep.content.size());
+                rep.headers["Content-Type"] = "application/json";
+                rep.status = rpc.getStatus();
+                return;                
+            }
+        }
         request_path += "/index.html";
         last_slash_pos = request_path.find_last_of("/");
         last_dot_pos = request_path.find_last_of(".");

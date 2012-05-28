@@ -52,6 +52,9 @@ public:
 
     /// parse the content from a text/plain html form post - it is assumed that action = method, and payload is params=<params>
     void parse(std::string action, std::string payload);
+    
+    /// parse a get request with a query string
+    void parse(std::string action, std::vector<std::string> args);
 
     /// Get content envelope in application/json formmatted for JSON RPC 2.0
     std::string& getContent();
