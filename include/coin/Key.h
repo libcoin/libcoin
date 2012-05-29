@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include <boost/array.hpp>
+
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
 #include <openssl/obj_mac.h>
@@ -56,6 +58,9 @@ typedef std::vector<unsigned char, secure_allocator<unsigned char> > CPrivKey;
 typedef std::vector<unsigned char, secure_allocator<unsigned char> > CSecret;
 
 typedef std::vector<unsigned char> PubKey;
+
+// specialization of hexify to ensure that the byteorder matches the one chosen in blockexplorer.org
+std::string hexify(const PubKey& t);
 
 class CKey
 {

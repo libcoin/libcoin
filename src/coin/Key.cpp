@@ -2,8 +2,17 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
+#include <coin/Key.h>
+
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
+
+std::string hexify(const PubKey& t) {
+    boost::array<unsigned char, 65> bytes;
+    for(size_t i = 0; i < t.size(); ++i)
+        bytes[i] = t[i];
+    return hexify(bytes);
+}
 
 // Generate a private key from just the secret parameter
 int EC_KEY_regenerate_key(EC_KEY *eckey, BIGNUM *priv_key)

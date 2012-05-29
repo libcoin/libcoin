@@ -65,9 +65,9 @@ string RPC::content(string method, vector<string> params) {
     stringstream ss;
     ss << "{\"jsonrpc\":\"2.0\", \"method\":\"" << method << "\", \"params\":[";
     Value val;
-    // stringify nonparsable params - i.e. assume it is a string if nothing else.
+    // stringify nonparsable params - i.e. assume it is a string if nothing else. We use [ ] to ensure the entire string is read and not just the first few numbers of a longer string
     for (vector<string>::iterator param = params.begin(); param != params.end(); ++param)
-        if (!read(*param, val)) *param = "\"" + *param + "\"";
+        if (!read("[" + *param + "]", val)) *param = "\"" + *param + "\"";
     if (params.size())
         //        ss << "\"" << algorithm::join(params, "\", \"") << "\"";
         ss << algorithm::join(params, ",");
