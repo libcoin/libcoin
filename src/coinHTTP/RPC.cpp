@@ -149,10 +149,10 @@ string& RPC::getContent() {
     // Generate JSON RPC 2.0 reply
     Object reply;
     reply.push_back(Pair("jsonrpc", "2.0"));
-    if (!_result.is_null())
-        reply.push_back(Pair("result", _result));
     if (!_error.is_null())
         reply.push_back(Pair("error", _error));
+    else // if no error, always return the result - also if null
+        reply.push_back(Pair("result", _result));
     if (!_id.is_null())
         reply.push_back(Pair("id", _id));
     _content = write(Value(reply)) + "\n";
