@@ -311,7 +311,7 @@ void RequestHandler::handleGET(const Request& req, Reply& rep) {
                                                                              // Find method
             Methods::iterator m = _methods.find(method);
             if (m != _methods.end()) {
-                RPC rpc;
+                RPC rpc(req);
                 try {
                     if(_auths.count(method)) {
                         if(req.headers.count("Authorization") == 0)
@@ -424,7 +424,7 @@ void RequestHandler::handlePOST(const Request& req, Reply& rep) {
         if(mime.find("application/json") != string::npos) {
             // This is a JSON RPC call - parse and execute!
 
-            RPC rpc;
+            RPC rpc(req);
             try {
                 rpc.parse(req.payload);
 
@@ -473,7 +473,7 @@ void RequestHandler::handlePOST(const Request& req, Reply& rep) {
         else if(mime.find("text/plain") != string::npos) {
             // This is a form POST - action is method, content is "params=<params>" 
             
-            RPC rpc;
+            RPC rpc(req);
             try {
                 size_t slash = req.uri.rfind("/");
                 string action; 

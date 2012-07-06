@@ -45,7 +45,7 @@ public:
 
     static json_spirit::Object reply(std::string content);
     
-    RPC();
+    RPC(const Request& request);
     
     /// parse the content from a application/json - it is assumed that it is formatted according to the JSOC RPC 2.0 spec
     void parse(std::string payload);
@@ -77,6 +77,8 @@ private:
     json_spirit::Value _error;
     json_spirit::Array _params;
     json_spirit::Value _result;
+    
+    const Request& _request;
 };
 
 #endif

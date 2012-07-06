@@ -106,6 +106,14 @@ int64 Transaction::paymentTo(PubKeyHash address) const {
     return value;
 }
 
+bool Transaction::isSufficient(map<PubKeyHash, int64> payments) const {
+    for (map<PubKeyHash, int64>::const_iterator payment = payments.begin(); payment != payments.end(); ++payment) {
+        if (paymentTo(payment->first) < payment->second)
+            return false;
+    }
+    return true;
+}
+
 int64 Transaction::getMinFee(unsigned int nBlockSize, bool fAllowFree, bool fForRelay) const {
     // Base fee is either MIN_TX_FEE or MIN_RELAY_TX_FEE
     int64 nBaseFee = fForRelay ? MIN_RELAY_TX_FEE : MIN_TX_FEE;

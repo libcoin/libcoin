@@ -56,6 +56,8 @@ namespace status_strings {
     "HTTP/1.1 502 Bad Gateway\r\n";
     const string service_unavailable =
     "HTTP/1.1 503 Service Unavailable\r\n";
+    const string gateway_timeout =
+    "HTTP/1.1 504 Gateway Timeout\r\n";
     
     const_buffer to_buffer(Reply::status_type status) {
         switch (status) {
@@ -91,6 +93,8 @@ namespace status_strings {
                 return buffer(bad_gateway);
             case Reply::service_unavailable:
                 return buffer(service_unavailable);
+            case Reply::gateway_timeout:
+                return buffer(gateway_timeout);
             default:
                 return buffer(internal_server_error);
         }
@@ -197,6 +201,11 @@ namespace stock_replies {
     "<head><title>Service Unavailable</title></head>"
     "<body><h1>503 Service Unavailable</h1></body>"
     "</html>";
+    const char gateway_timeout[] =
+    "<html>"
+    "<head><title>Gateway Timeout</title></head>"
+    "<body><h1>504 Gateway Timeout</h1></body>"
+    "</html>";
     
     string to_string(Reply::status_type status) {
         switch (status) {
@@ -232,6 +241,8 @@ namespace stock_replies {
                 return bad_gateway;
             case Reply::service_unavailable:
                 return service_unavailable;
+            case Reply::gateway_timeout:
+                return gateway_timeout;
             default:
                 return internal_server_error;
         }

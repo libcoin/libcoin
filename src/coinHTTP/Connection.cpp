@@ -28,10 +28,10 @@ using namespace asio;
 using namespace std;
 
 
-Connection::Connection(io_service& io_service, ConnectionManager& manager, RequestHandler& handler, std::ostream& access_log) : _ctx(io_service, ssl::context::sslv23), _socket(io_service), _ssl_socket(io_service, _ctx), _secure(false), _keep_alive(io_service), _connectionManager(manager), _requestHandler(handler), _access_log(access_log) {
+Connection::Connection(io_service& io_service, ConnectionManager& manager, RequestHandler& handler, std::ostream& access_log) : _ctx(io_service, ssl::context::sslv23), _socket(io_service), _ssl_socket(io_service, _ctx), _secure(false), _keep_alive(io_service), _exec_postpone(io_service), _connectionManager(manager), _requestHandler(handler), _access_log(access_log), _max_request_duration(boost::posix_time::milliseconds(10000)) , _exec_retry_duration(boost::posix_time::milliseconds(1000)) {
 }
 
-Connection::Connection(io_service& io_service, ssl::context& context, ConnectionManager& manager, RequestHandler& handler, std::ostream& access_log) : _ctx(io_service, ssl::context::sslv23), _socket(io_service), _ssl_socket(io_service, context), _secure(true), _keep_alive(io_service), _connectionManager(manager), _requestHandler(handler), _access_log(access_log) {
+Connection::Connection(io_service& io_service, ssl::context& context, ConnectionManager& manager, RequestHandler& handler, std::ostream& access_log) : _ctx(io_service, ssl::context::sslv23), _socket(io_service), _ssl_socket(io_service, context), _secure(true), _keep_alive(io_service), _exec_postpone(io_service), _connectionManager(manager), _requestHandler(handler), _access_log(access_log), _max_request_duration(boost::posix_time::milliseconds(10000)) , _exec_retry_duration(boost::posix_time::milliseconds(1000)) {
 }
 
 
@@ -127,26 +127,16 @@ void Connection::handle_read(const system::error_code& e, std::size_t bytes_tran
         tie(result, _buffer_iterator) = _requestParser.parse(_request, _buffer_iterator, _buffer.begin() + bytes_transferred);
         
         if (result) {
-            if (_request.method == "GET") {
-                _reply.reset();
-                _requestHandler.handleGET(_request, _reply);
-                log_request();
-                _request.reset();
-                if(_secure)
-                    async_write(_ssl_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
-                else
-                    async_write(_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
-            }
-            else if(_request.method == "POST") {
-                _reply.reset();
-                _requestHandler.handlePOST(_request, _reply);
-                log_request();
-                _request.reset();
-                if(_secure)
-                    async_write(_ssl_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
-                else
-                    async_write(_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
-            }
+            // fill in the extra field of the Request
+            boost::system::error_code ec;
+            ip::tcp::endpoint remote = socket().remote_endpoint(ec);
+            if(!ec) // unbound requests are artefacts (result from write calling read, e.g. when trying ssl on non ssl conn)
+                _request.remote = remote.address();
+            _request.timestamp = boost::posix_time::microsec_clock::local_time();
+            _reply.reset();
+
+            // handle_exec: try get/post, if done call async write, else do a async_wait(handle_exec);
+            handle_wait(e);            
         }
         else if (!result) {
             _reply = Reply::stock_reply(Reply::bad_request);
@@ -170,6 +160,53 @@ void Connection::handle_read(const system::error_code& e, std::size_t bytes_tran
     }
 }
 
+void Connection::handle_wait(const system::error_code& e) {
+    if (e != boost::asio::error::operation_aborted) {
+        if (_request.method == "GET") {
+            if (boost::posix_time::microsec_clock::local_time() - _request.timestamp > _max_request_duration) {
+                _reply = Reply::stock_reply(Reply::gateway_timeout);
+                _request.pending = false;
+            }
+            else
+                _requestHandler.handleGET(_request, _reply);
+            if (_request.pending) {            
+                // wait a short amount of time and try the exec again
+                _exec_postpone.expires_from_now(_exec_retry_duration);
+                _exec_postpone.async_wait(bind(&Connection::handle_wait, shared_from_this(), placeholders::error));
+            }
+            else {
+                log_request();
+                _request.reset();
+                if(_secure)
+                    async_write(_ssl_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+                else
+                    async_write(_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+            }
+        }
+        else if(_request.method == "POST") {
+            if (boost::posix_time::microsec_clock::local_time() - _request.timestamp > _max_request_duration) {
+                _reply = Reply::stock_reply(Reply::gateway_timeout);
+                _request.pending = false;
+            }
+            else
+                _requestHandler.handlePOST(_request, _reply);
+            if(_request.pending) {            
+                // wait a short amount of time and try the exec again
+                _exec_postpone.expires_from_now(boost::posix_time::milliseconds(1));
+                _exec_postpone.async_wait(bind(&Connection::handle_wait, shared_from_this(), placeholders::error));
+            }
+            else {
+                log_request();
+                _request.reset();
+                if(_secure)
+                    async_write(_ssl_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+                else
+                    async_write(_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+            }
+        }
+    }
+}
+
 void Connection::handle_write(const system::error_code& e, size_t bytes_transferred) {
     bool keep_alive = true; // assuming HTTP 1.1
     if (_request.http_version_major == 1 && _request.http_version_minor == 0)
@@ -180,7 +217,7 @@ void Connection::handle_write(const system::error_code& e, size_t bytes_transfer
     
     if (!e) {
         if (keep_alive) { // read again, start deadline timer
-            _keep_alive.expires_from_now(posix_time::milliseconds(2000)); // 2 seconds
+            _keep_alive.expires_from_now(_exec_retry_duration); // 2 seconds
             _keep_alive.async_wait(bind(&Connection::handle_timeout, this, placeholders::error));
             // we need to enpty the buffer first:
             if (_buffer_iterator < _buffer.begin() + _bytes_read) { // call handle_read again

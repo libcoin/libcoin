@@ -330,6 +330,9 @@ public:
     /// transaction, 0 will be returned. 
     int64 paymentTo(PubKeyHash address) const;
     
+    /// Calculate for a payment map of pubkeyhashes and amounts if a transaction is sufficient.
+    bool isSufficient(std::map<PubKeyHash, int64> payments) const;
+    
     /// Check if a transaction with a given priority can be completed with no fee.
     static bool allowFree(double dPriority) {
         // Large (in bytes) low-priority (new, small-coin) transactions

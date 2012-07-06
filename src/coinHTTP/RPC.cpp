@@ -82,7 +82,7 @@ Object RPC::reply(string content) {
     return val.get_obj();
 }
 
-RPC::RPC() : _id(Value::null), _error(Value::null) {};
+RPC::RPC(const Request& request) : _id(Value::null), _error(Value::null), _request(request) {}
 
 void RPC::parse(string payload) {
     // Parse request
@@ -187,5 +187,5 @@ const Reply::status_type RPC::getStatus() {
 const string& RPC::method() { return _method; } 
 
 void RPC::execute(Method& method) {
-    _result = method(_params, false);
+    _result = method(_params, false, _request);
 }

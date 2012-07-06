@@ -68,6 +68,9 @@ private:
     /// Handle completion of a read operation.
     void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
     
+    /// Handle completion of a wait operation - some rpc methods support waiting for a certain state
+    void handle_wait(const boost::system::error_code& e);
+    
     /// Handle completion of a write operation.
     void handle_write(const boost::system::error_code& e, std::size_t bytes_transferred);
     
@@ -88,6 +91,9 @@ private:
 
     /// Timeout timer for Keep-Alive connections (as opposed to Close)
     boost::asio::deadline_timer _keep_alive;
+    
+    /// Timeout timer for postponing execution
+    boost::asio::deadline_timer _exec_postpone;
     
     /// The manager for this connection.
     ConnectionManager& _connectionManager;
@@ -114,6 +120,11 @@ private:
     
     /// The ostream to log to
     std::ostream& _access_log;
+    
+    /// max request time
+    boost::posix_time::time_duration _max_request_duration;
+    /// retry duration
+    boost::posix_time::time_duration _exec_retry_duration;
 };
 
 typedef boost::shared_ptr<Connection> connection_ptr;

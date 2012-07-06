@@ -26,11 +26,16 @@
 
 #include "json/json_spirit.h"
 
+class Request;
+
 /// The base class for Method functors - The definitions follow the JSON_RPC 2.0 definition and strives at introspection support.
 class COINHTTP_EXPORT Method
 {
 public:    
     /// The actual function call - you need to overload this to implement a method
+    virtual json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp, const Request& request) {
+        return operator()(params, fHelp); // ignore the extra request
+    }
     virtual json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp) = 0;
     
     typedef boost::function<void (json_spirit::Value)> MethodDone;

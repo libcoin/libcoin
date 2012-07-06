@@ -20,10 +20,15 @@
 #include <coinHTTP/Export.h>
 #include <coinHTTP/Header.h>
 
+#include <boost/asio/ip/address.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 #include <string>
 
 /// A request received from a client.
 struct Request {
+    Request() : pending(false) {}
+    
     std::string method;
     std::string uri;
     int http_version_major;
@@ -31,8 +36,18 @@ struct Request {
     Headers headers;
     std::string payload;
     
+    /// Extra info - the remote IP
+    boost::asio::ip::address remote;    
+
+    /// Extra info - the request receive timestamp
+    boost::posix_time::ptime timestamp;
+    
+    /// Extra info - pending: indicates that the procesing of the request have been postponed pending yet unresolved information
+    mutable bool pending;
+    
     /// reset the request (used for keep_alive)
     void reset() {
+        pending = false; // requests are per default not pending.
         method.clear();
         uri.clear();
         headers.clear();
