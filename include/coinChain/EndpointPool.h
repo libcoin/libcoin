@@ -26,13 +26,12 @@
 #include <string>
 #include <vector>
 
-
 typedef std::map<std::vector<unsigned char>, Endpoint> EndpointMap;
  
-class COINCHAIN_EXPORT EndpointPool : protected CDB
+class COINCHAIN_EXPORT EndpointPool : protected Database // CDB
 {
 public:
-    EndpointPool(short defaultPort, const std::string dataDir, const char* pszMode="cr+") : CDB(dataDir, "addr.dat", pszMode) , _defaultPort(defaultPort), _localhost("0.0.0.0", defaultPort, false, NODE_NETWORK), _lastPurgeTime(0) { }
+    EndpointPool(short defaultPort, const std::string dataDir, const char* pszMode="cr+");
     
     /// Purge old addresses - meant to be called periodically to awoid to much work
     void purge();
@@ -46,6 +45,7 @@ public:
     /// Get a set with the most recent endpoints.
     std::set<Endpoint> getRecent(int within, int rand_max);
 
+    void setLastTry(const Endpoint& ep);
     
     /// update the last seen time of an endpoint.
     void currentlyConnected(const Endpoint& ep);
@@ -63,7 +63,17 @@ public:
     void setLocal(Endpoint ep) { _localhost = ep; if(_localhost.port() == 0) _localhost.port(_defaultPort); }
     
     /// Load the endpoints from the database.
-    bool loadEndpoints(const std::string dataDir);
+    //    bool loadEndpoints(const std::string dataDir);
+
+private:
+    // Statement functors 
+    Statement<> delete_older_than;
+    StatementVec<Endpoint, 4, unsigned int, unsigned short, unsigned int, unsigned int> select_recent;
+    Statement<> update_endpoint;
+    Statement<> update_time;
+    Statement<> update_lasttry;
+    StatementVec<Endpoint, 4, unsigned int, unsigned short, unsigned int, unsigned int> candidates;
+
 private:
     EndpointPool(const EndpointPool&);
     void operator=(const EndpointPool&);

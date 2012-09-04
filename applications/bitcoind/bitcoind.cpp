@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
             ("help,?", "Show help messages")
             ("version,v", "print version string")
             ("conf,c", value<string>(&config_file)->default_value("bitcoin.conf"), "Specify configuration file")
-            ("datadir", "Specify non default data directory")
+            ("datadir", value<string>(&data_dir), "Specify non default data directory")
         ;
         
         options_description config("Config options");

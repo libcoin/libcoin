@@ -635,8 +635,6 @@ public:
 
     bool isPushOnly() const
     {
-        if (size() > 200)
-            return false;
         const_iterator pc = begin();
         while (pc < end())
         {

@@ -33,15 +33,153 @@ using namespace boost;
 // BlockChain
 //
 
-BlockChain::BlockChain(const Chain& chain, const string dataDir, const char* pszMode) : CDB(dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir, "blkindex.dat", pszMode), _chain(chain), _blockFile(dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir), _genesisBlockIndex(NULL), _bestChainWork(0), _bestInvalidWork(0), _bestChain(0), _bestIndex(NULL), _bestReceivedTime(0), _transactionsUpdated(0) {
+BlockChain::BlockChain(const Chain& chain, const string dataDir, const char* pszMode) : CDB(dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir, "blkindex.dat", pszMode), Database((dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir) + "/blockchain.sqlite"), _chain(chain), _blockFile(dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir), _genesisBlockIndex(NULL), _bestChainWork(0), _bestInvalidWork(0), _bestChain(0), _bestIndex(NULL), _bestReceivedTime(0), _transactionsUpdated(0) {
     load();
     _acceptBlockTimer = 0;
     _connectInputsTimer = 0;
     _verifySignatureTimer = 0;
     _setBestChainTimer = 0;
     _addToBlockIndexTimer = 0;
+    
+    // setup the database tables
+    execute("CREATE TABLE IF NOT EXISTS Blocks ("
+                "blk INTEGER PRIMARY KEY AUTOINCREMENT,"
+                "hash BINARY(32),"
+                "version INTEGER,"
+                "prev INTEGER REFERENCES Blocks(blk),"
+                "mrkl BINARY(32),"
+                "time INTEGER,"
+                "bits INTEGER,"
+                "nonce INTEGER"
+            ")");
+    
+    execute("CREATE INDEX IF NOT EXISTS BlockHash ON Blocks (hash)");
+    
+    execute("CREATE TABLE IF NOT EXISTS Transactions ("
+                "tx INTEGER PRIMARY KEY AUTOINCREMENT,"
+                "hash BINARY(32),"
+                "version INTEGER,"
+                "locktime INTEGER,"
+                "blk INTEGER REFERENCES Blocks(blk),"
+                "idx INTEGER"
+            ")");
+    
+    execute("CREATE INDEX IF NOT EXISTS TransactionHash ON Transactions (hash)");
+    
+    execute("CREATE TABLE IF NOT EXISTS Scripts ("
+                "script INTEGER PRIMARY KEY AUTOINCREMENT,"
+                "data BINARY"
+            ")");
+    
+    execute("CREATE INDEX IF NOT EXISTS ScriptIndex ON Scripts (data)");
+    
+    execute("CREATE TABLE IF NOT EXISTS Outputs ("
+                "coin INTEGER PRIMARY KEY AUTOINCREMENT,"
+                "tx INTEGER REFERENCES Transactions(tx),"
+                "idx INTEGER,"
+                "val INTEGER,"
+                "script INTEGER REFERENCES Scripts(script)"
+            ")");
+
+    execute("CREATE INDEX IF NOT EXISTS CoinIndex ON Outputs (tx, idx)");
+    
+    execute("CREATE TABLE IF NOT EXISTS Inputs ("
+                "spent INTEGER PRIMARY KEY AUTOINCREMENT,"
+                "tx INTEGER REFERENCES Transactions(tx),"
+                "idx INTEGER,"
+                "coin INTEGER REFERENCES Outputs(coin),"
+                "signature BINARY"
+            ")");
+
+    // makes it fast to lookup if a coins is spent, and where...
+    execute("CREATE INDEX IF NOT EXISTS SpentIndex ON Inputs (coin)");
+    
+    // if there are no blocks in the index - add the genesis block
+    //Block block(_chain.genesisBlock());
+    // writing a block consists of: writing the block header, writing the transactions, writing the inputs and outputs
+    //Statement _insert_block = prepare("INSERT INTO Blocks (hash, version, prev, mrkl, time, bits, nonce) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    //insert_block(block.getHash(), block.getVersion(), Data(), block.getMerkleRoot(), block.getBlockTime(), block.getBits(), block.getNonce())
+    //int64 blk = last_id(); // this is the genesis index
+    // loop over transactions and if present update them, else insert them
 }
 
+/*
+int64 BlockChain::insertBlock(const Block& block) {
+    // lookup the prev hash
+    Statement<int64> _lookup_block = prepare("SELECT blk FROM Blocks WHERE hash = ?");
+    int64 prev = _lookup_block(block.getPrevBlock()());
+    int64 prev = 0; // the genesis is 0 / NULL
+    if (rows.size()) prev = rows[0][0].get_int64();
+    // insert the block header
+    //begin();
+    Statement _insert_block = prepare("INSERT INTO Blocks (hash, version, prev, mrkl, time, bits, nonce) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    _insert_block(block.getHash(), block.getVersion(), prev, block.getMerkleRoot(), block.getBlockTime(), block.getBits(), block.getNonce());
+    int64 blk = last_id();
+    // loop over transactions and insert them
+    const TransactionList& txes = block.getTransactions();
+    for (size_t idx = 0; idx < txes.size(); ++idx)
+        upsertTransaction(txes[idx], idx, blk);
+
+    return blk;
+}
+
+int64 BlockChain::upsertTransaction(const Transaction& transaction, int64 idx = 0, int64 blk = 0) {
+    // first check if the transaction is already registered as a 'memory' transaction:
+    Statement _lookup_transaction = prepare("SELECT tx FROM Transactions WHERE hash = ?");
+    Statement _update_transaction = prepare("UPDATE Transactions SET idx = ?, blk = ? WHERE tx = ?");
+    Rows rows = _lookup_transaction(transaction.getHash());
+    if (rows.size()) { // found! - update
+        _update_transaction(idx, blk, rows[0][0]);
+        return rows[0][0].get_int64();
+    }
+    else { // not found - insert
+        Statement _insert_transaction = prepare("INSERT INTO Transactions (hash, version, locktime, blk, idx) VALUES (?, ?, ?, ?, ?)");
+        _insert_transaction(transaction.getHash(), transaction.getVersion(), transaction.getLockTime(), blk, idx);
+        int64 tx = last_id();
+        // now insert outputs
+        Outputs& outputs = transaction.getOutputs();
+        for (size_t idx = 0; idx < outputs.size(); ++idx){
+            Output& output = outputs[idx];
+            // do we need a new script ?
+            Statement _lookup_script = prepare("SELECT script FROM Scripts WHERE data = ?");
+            Rows rows = _lookup_script(output.script());
+            int64 script;
+            if (rows.size())
+                script = rows[0][0].get_int64();
+            else { // insert the script
+                Statement _insert_script = prepare("INSERT INTO Scripts (data) VALUES (?)");
+                _insert_script(output.script());
+                script = last_id();
+            }
+            Statement _insert_output = prepare("INSERT INTO Outputs (tx, idx, val, script) VALUES (?, ?, ?, ?)");
+            _insert_output(tx, idx, output.value(), script);
+        }
+        
+        // now insert the inputs and outputs
+        Inputs& inputs = transaction.getInputs();
+        for (size_t idx = 0; idx < inputs.size(); ++idx){
+            Input& input = inputs[idx];
+            // find the spent coin
+            Rows rows = _lookup_transaction(input.prevout().hash);
+            if (rows.size()) {
+                int64 prev_tx = rows[0][0];
+                Statement _lookup_coin = prepare("SELECT coin FROM Outputs WHERE tx = ? AND idx = ?");
+                Rows rows = _lookup_coin(prev_tx, input.prevout().index);
+                if (rows.size()) {
+                    Statement _insert_input = prepare("INSERT INTO Inputs (tx, idx, coin, signature) VALUES (?, ?, ?, ?)");
+                    _insert_input(tx, idx, rows[0][0], input.signature());
+                }
+                else
+                    throw "ERROR: spent coin not found"
+            }
+            else
+                throw "ERROR: transaction for spent coin not found";
+        }
+        
+        return tx;
+    }
+}
+*/
 void BlockChain::outputPerformanceTimings() const {
     printf("Performance timings: accept %d, addTo %.2f%%, setBest %.2f%%, connect %.2f%%, verify %.2f%%", _acceptBlockTimer/1000000, 100.*_addToBlockIndexTimer/_acceptBlockTimer, 100.*_setBestChainTimer/_acceptBlockTimer, 100.*_connectInputsTimer/_acceptBlockTimer, 100.*_verifySignatureTimer/_acceptBlockTimer );
 }
@@ -220,7 +358,44 @@ void BlockChain::getBlock(const uint256 hash, Block& block) const
         _blockFile.readFromDisk(block, txidx.getPos().getFile(), txidx.getPos().getBlockPos());
     }
 }
+/*
+void BlockChain::getBlock(const uint256 hash, Block& block) const
+{
+    // lock the pool and chain for reading
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+    block.setNull();
+    // lookup in the database:
+    Rows rows = _lookup_block(hash);
+    if (rows.size() == 0) { // try as if the hash was from a transaction
+        Statement _find_transaction = prepare("SELECT blk FROM Transactions WHERE hash = ?");
+        rows = _find_transaction(hash);
+    }
+    if (rows.size()) { // blk found fill in the block
+        int64 blk = rows[0][0];
+        Statement _find_block = prepare("SELECT blk, version, prev, mrkl, time, bits, nonce FROM Blocks WHERE blk = ?");
+        Rows rows = _find_block(blk);
+        int64 prev = rows[0][2].get_int64();
+        Statement _block_hash = prepare("SELECT hash FROM Blocks WHERE blk = ?");
+        block = Block(version, prev_hash, mrkl, time, bits, nonce);
+        Statement _get_transactions = prepare("SELECT tx, locktime FROM Transactions WHERE blk = ? ORDER BY idx");
+        Rows txes = _get_transactions(blk);
+        for (size_t idx = 0; idx < txes.size(); ++idx) {
+            idxes
+        }
+    }
+    
+    BlockChainIndex::const_iterator index = _blockChainIndex.find(hash);
+    if (index != _blockChainIndex.end()) {
+        _blockFile.readFromDisk(block, index->second);
+    }
+    // now try if the hash was for a transaction
+    TxIndex txidx;
+    if(ReadTxIndex(hash, txidx)) {
+        _blockFile.readFromDisk(block, txidx.getPos().getFile(), txidx.getPos().getBlockPos());
+    }
+}
 
+*/
 void BlockChain::getBlock(const CBlockIndex* index, Block& block) const {
     // lock the pool and chain for reading
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
@@ -816,10 +991,10 @@ bool BlockChain::LoadBlockIndex()
         }
     
     // delete the last 10 accepted blocks.
-    for (CBlockIndex* pindex = _bestIndex; pindex && pindex->pprev; pindex = pindex->pprev) {
-        if (pindex->nHeight == getBestHeight()-10)
-            pindexFork = pindex;
-    }
+    //    for (CBlockIndex* pindex = _bestIndex; pindex && pindex->pprev; pindex = pindex->pprev) {
+    //        if (pindex->nHeight == getBestHeight()-10)
+    //            pindexFork = pindex;
+    //    }
 
     if (pindexFork) {
         // Reorg back to the fork

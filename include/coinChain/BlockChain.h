@@ -159,7 +159,7 @@ typedef std::map<uint160, Coins> AssetIndex;
 typedef std::vector<Transaction> Transactions;
 typedef std::vector<Block> Blocks;
 
-class COINCHAIN_EXPORT BlockChain : private CDB
+class COINCHAIN_EXPORT BlockChain : private CDB, private Database
 {
 private: // noncopyable
     BlockChain(const BlockChain&);

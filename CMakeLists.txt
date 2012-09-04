@@ -359,6 +359,11 @@ IF(BDB_FOUND)
 	include_directories(${BDB_INCLUDE_DIR})
 ENDIF(BDB_FOUND)
 
+FIND_PACKAGE(SQLite3)
+IF(SQLITE3_FOUND)
+	include_directories(${SQLITE3_INCLUDE_DIR})
+ENDIF(SQLITE3_FOUND)
+
 #Note: We need as a minimum Boost 1.47 to support the signal_set used in Server. A backup signal_set has been created, though.
 SET(Boost_NO_BOOST_CMAKE ON)
 SET(Boost_ADDITIONAL_VERSIONS "1.47" "1.47.0" "1.48" "1.48.0")

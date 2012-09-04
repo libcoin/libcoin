@@ -25,6 +25,27 @@
 using namespace std;
 using namespace boost;
 
+EndpointPool::EndpointPool(short defaultPort, const std::string dataDir, const char* pszMode) :
+        Database(dataDir+"/endpoints.sqlite3") /*CDB(dataDir, "addr.dat", pszMode)*/ ,
+        _defaultPort(defaultPort),
+        _localhost("0.0.0.0", defaultPort, false, NODE_NETWORK),
+_lastPurgeTime(0) {
+    
+    execute("CREATE TABLE IF NOT EXISTS Endpoints(ip INTEGER NOT NULL, port INTEGER NOT NULL, time INTEGER, lasttry INTEGER, PRIMARY KEY (ip, port))");
+    
+    delete_older_than = prepare("DELETE FROM Endpoints WHERE time < ?");
+    select_recent = prepare("SELECT ip, port, time, lasttry FROM Endpoints WHERE time > ? ORDER BY RANDOM() LIMIT ?");
+    update_endpoint = prepare("INSERT OR REPLACE INTO Endpoints VALUES (?, ?, ?, ?)");
+    update_time = prepare("UPDATE Endpoints SET time = ? WHERE ip = ? AND port = ?");
+    update_lasttry = prepare("UPDATE Endpoints SET lasttry = ? WHERE ip = ? AND port = ?");
+    candidates = prepare("SELECT ip, port, time, lasttry FROM Endpoints WHERE lasttry < ? ORDER BY time DESC");
+
+            //    create_table();
+    //        Statement& create_index = prepare("CREATE INDEX IF NOT EXISTS AddressPort ON Endpoints(address, port)");
+    //        create_index();
+}
+
+
 void EndpointPool::purge()
 {    
     if (_lastPurgeTime == 0)
@@ -32,8 +53,11 @@ void EndpointPool::purge()
     
     if (GetTime() - _lastPurgeTime > 10 * 60) {
         _lastPurgeTime = GetTime();
-        
+
+        // remove endpoints older than 14 days:
         int64 since = GetAdjustedTime() - 14 * 24 * 60 * 60;
+        delete_older_than(since);
+        /*
         for (EndpointMap::iterator mi = _endpoints.begin(); mi != _endpoints.end();) {
             const Endpoint& endpoint = (*mi).second;
             if (endpoint.getTime() < since) {
@@ -46,26 +70,35 @@ void EndpointPool::purge()
             else
                 mi++;
         }
+        */
     }
 }
 
 set<Endpoint> EndpointPool::getRecent(int within, int rand_max)
 {
-    set<Endpoint> endpoints;
     int64 since = GetAdjustedTime() - within; // in the last 3 hours
+    
+    vector<Endpoint> endpoint_list= select_recent(since, rand_max); // rows will now contain a list of endpoint newer than 'since'
+                                                // C++11:   select_recent([&](Row& row) { endpoints.insert(Endpoint(row[0].get_int64(), row[1].get_int64(), row[2].get_int64(), row[3].get_int64())); },since, rand_max); // rows will now contain a list of endpoint newer than 'since'
+
+    set<Endpoint> endpoints(endpoint_list.begin(), endpoint_list.end());
+    // now generate loop over the rows and create a set of endpoints:
+    
+/*
     unsigned int nCount = 0;
     BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, Endpoint)& item, _endpoints)
         {
         const Endpoint& endpoint = item.second;
         if (endpoint.getTime() > since)
-            nCount++;
+            nCount++; // will return the number of endpoints newer than since
         }
     BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, Endpoint)& item, _endpoints)
         {
         const Endpoint& endpoint = item.second;
         if (endpoint.getTime() > since && GetRand(nCount) < rand_max)
-            endpoints.insert(endpoint);
+            endpoints.insert(endpoint); // will return roughly less than rand_max at random
         }
+ */
     return endpoints;
 }
 
@@ -80,6 +113,11 @@ bool EndpointPool::addEndpoint(Endpoint endpoint, int64 penalty)
     bool is_new = false;
     Endpoint found = endpoint;
     
+    update_endpoint((int64)endpoint.getIP(), (int64)endpoint.getPort(), (int64)endpoint.getTime(), 0);
+    
+    return true;
+/*
+    // add the endpoint to the database - first check if it is new
     EndpointMap::iterator it = _endpoints.find(endpoint.getKey());
     if (it == _endpoints.end()) {
         // New address
@@ -109,10 +147,14 @@ bool EndpointPool::addEndpoint(Endpoint endpoint, int64 penalty)
         writeEndpoint(found);
 
     return is_new;
+*/
 }
 
 void EndpointPool::currentlyConnected(const Endpoint& ep)
 {
+    int64 now = GetAdjustedTime();
+    update_time(now, (int64)ep.getIP(), ep.getPort());
+/*
     // Only if it's been published already
     EndpointMap::iterator it = _endpoints.find(ep.getKey());
     if (it != _endpoints.end()) {
@@ -124,6 +166,12 @@ void EndpointPool::currentlyConnected(const Endpoint& ep)
             writeEndpoint(found);
         }
     }
+*/
+}
+
+void EndpointPool::setLastTry(const Endpoint& ep) {
+    int64 now = GetAdjustedTime();
+    update_lasttry(now, (int64)ep.getIP(), ep.getPort());
 }
 
 Endpoint EndpointPool::getCandidate(const set<unsigned int>& not_in, int64 start_time)
@@ -134,6 +182,29 @@ Endpoint EndpointPool::getCandidate(const set<unsigned int>& not_in, int64 start
     Endpoint candidate;
     int64 best = INT64_MIN;
     
+    int64 now = GetAdjustedTime();
+    vector<Endpoint> endpoints = candidates(now-60*60);
+    
+    // iterate until we get an address not in not_in or in the same class-B network:
+    for (vector<Endpoint>::const_iterator e = endpoints.begin(); e != endpoints.end(); ++e) {
+        bool skip = false;
+        for (set<unsigned int>::const_iterator ep = not_in.begin(); ep != not_in.end(); ++ep) {
+            if (e->getIP() == (*ep)) {
+                skip = true;
+                break;
+            }
+        }
+        if (skip) continue;
+        
+        Endpoint candidate = *e;
+        if (!candidate.isIPv4() || !candidate.isValid())
+            continue;
+        
+        return candidate;
+    }
+    
+    return Endpoint();
+/*
     BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, Endpoint)& item, _endpoints)
         {
         const Endpoint& ep = item.second;
@@ -188,8 +259,9 @@ Endpoint EndpointPool::getCandidate(const set<unsigned int>& not_in, int64 start
         }
     }
     return candidate;
+ */
 }
-
+/*
 bool EndpointPool::writeEndpoint(const Endpoint& endpoint)
 {
     return Write(make_pair(string("addr"), endpoint.getKey()), endpoint);
@@ -248,3 +320,4 @@ bool EndpointPool::loadEndpoints(const string dataDir)
     
     return true;
 }
+*/

@@ -10,9 +10,91 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/lexical_cast.hpp>
 
 using namespace std;
 using namespace boost;
+
+void StatementBase::bind(int64 arg, int col) {
+    int ret = sqlite3_bind_int64(_stmt, col, arg);
+    if (ret != SQLITE_OK)
+        throw runtime_error("StatementBase::bind(int64) : error " + lexical_cast<string>(ret) + " binding a value");
+}
+void StatementBase::bind(double arg, int col) {
+    int ret = sqlite3_bind_double(_stmt, col, arg);
+    if (ret != SQLITE_OK)
+        throw runtime_error("StatementBase::bind(double) : error " + lexical_cast<string>(ret) + " binding a value");
+}
+void StatementBase::bind(const std::string& arg, int col) {
+    int ret = sqlite3_bind_text(_stmt, col, arg.c_str(), -1, SQLITE_TRANSIENT);
+    if (ret != SQLITE_OK)
+        throw runtime_error("StatementBase::bind(text) : error " + lexical_cast<string>(ret) + " binding a value");
+}
+void StatementBase::bind(const blob& arg, int col) {
+    int ret = sqlite3_bind_text(_stmt, col, (const char*)&arg.front(), arg.size(), SQLITE_TRANSIENT);
+    if (ret != SQLITE_OK)
+        throw runtime_error("StatementBase::bind(blob) : error " + lexical_cast<string>(ret) + " binding a value");
+}
+
+void StatementBase::get(int64& arg, int col) {
+    int storage_class = sqlite3_column_type(_stmt, col);
+    if (storage_class != SQLITE_INTEGER)
+        throw runtime_error("StatementBase::get(" + lexical_cast<string>(col) + ") : storage class error, expected SQLITE_INTEGER got: " + lexical_cast<string>(storage_class));
+    arg = sqlite3_column_int64(_stmt, col);
+}
+void StatementBase::get(double& arg, int col) {
+    int storage_class = sqlite3_column_type(_stmt, col);
+    if (storage_class != SQLITE_FLOAT)
+        throw runtime_error("StatementBase::get(" + lexical_cast<string>(col) + ") : storage class error, expected SQLITE_FLOAT got: " + lexical_cast<string>(storage_class));
+    arg = sqlite3_column_double(_stmt, col);
+}
+void StatementBase::get(std::string& arg, int col) {
+    int storage_class = sqlite3_column_type(_stmt, col);
+    if (storage_class != SQLITE3_TEXT)
+        throw runtime_error("StatementBase::get(" + lexical_cast<string>(col) + ") : storage class error, expected SQLITE_TEXT got: " + lexical_cast<string>(storage_class));
+    arg = string((const char*)sqlite3_column_text(_stmt, col));
+}
+void StatementBase::get(blob& arg, int col) {
+    int storage_class = sqlite3_column_type(_stmt, col);
+    if (storage_class != SQLITE_BLOB)
+        throw runtime_error("StatementBase::get(" + lexical_cast<string>(col) + ") : storage class error, expected SQLITE_BLOB got: " + lexical_cast<string>(storage_class));
+    int bytes = sqlite3_column_bytes(_stmt, col);
+    unsigned char* data = (unsigned char*)sqlite3_column_blob(_stmt, col);
+    arg = blob(data, data + bytes);
+}
+
+
+Database::Database(const string filename) {
+    _db = NULL;
+    
+    int ret = sqlite3_open(filename.c_str(), &_db);
+    if (ret != SQLITE_OK)
+        throw runtime_error("Database() : error " + lexical_cast<string>(ret) + " opening database environment");
+}
+
+Database::~Database() {
+    for (Statements::iterator s = _statements.begin(); s != _statements.end(); ++s) sqlite3_finalize(s->_stmt);
+    if (_db) sqlite3_close(_db);
+    _db = NULL;
+}
+
+StatementBase Database::prepare(string stmt) {
+    StatementBase s;
+    int ret = sqlite3_prepare_v2(_db, stmt.c_str(), -1, &s._stmt, NULL) ;
+    if (ret != SQLITE_OK)
+        throw runtime_error("Database::prepare() : error " + lexical_cast<string>(ret) + " preparing statement: " + stmt);
+    _statements.push_back(s);
+    return s;
+}
+
+void Database::execute(string stmt) {
+    StatementVoid s = prepare(stmt);
+    s();
+}
+
+const int64 Database::last_id() const {
+    return sqlite3_last_insert_rowid(_db);
+}
 
 
 //

@@ -38,13 +38,15 @@ class COINCHAIN_EXPORT Endpoint : public boost::asio::ip::tcp::endpoint
 {
     public:
     typedef std::vector<unsigned char> Key;
-        Endpoint();
-        Endpoint(boost::asio::ip::tcp::endpoint ep);
-        Endpoint(unsigned int ipIn, unsigned short portIn=0, uint64 nServicesIn=NODE_NETWORK);
-        explicit Endpoint(const struct sockaddr_in& sockaddr, uint64 nServicesIn=NODE_NETWORK);
-        explicit Endpoint(std::string strIn, unsigned short portIn, bool fNameLookup = false, uint64 nServicesIn=NODE_NETWORK);
-        explicit Endpoint(std::string strIn, bool fNameLookup = false, uint64 nServicesIn=NODE_NETWORK);
-
+    Endpoint();
+    Endpoint(boost::asio::ip::tcp::endpoint ep);
+    Endpoint(const Endpoint& endpoint);
+    Endpoint(unsigned int ipIn, unsigned short portIn=0, uint64 nServicesIn=NODE_NETWORK);
+    explicit Endpoint(const struct sockaddr_in& sockaddr, uint64 nServicesIn=NODE_NETWORK);
+    explicit Endpoint(std::string strIn, unsigned short portIn, bool fNameLookup = false, uint64 nServicesIn=NODE_NETWORK);
+    explicit Endpoint(std::string strIn, bool fNameLookup = false, uint64 nServicesIn=NODE_NETWORK);
+    explicit Endpoint(unsigned int ip, unsigned short port, unsigned int time, unsigned int last_try);
+    
         void init();
 
         IMPLEMENT_SERIALIZE

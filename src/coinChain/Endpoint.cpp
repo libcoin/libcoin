@@ -99,6 +99,10 @@ Endpoint::Endpoint(tcp::endpoint ep) : tcp::endpoint(ep) {
     _lastTry = 0;    
 }
 
+Endpoint::Endpoint(const Endpoint& ep) : tcp::endpoint(ep), _services(ep._services), _time(ep._time), _lastTry(ep._lastTry)  {
+    memcpy(_ipv6, ep._ipv6, sizeof(_ipv6));
+}
+
 Endpoint::Endpoint(unsigned int ip, unsigned short p, uint64 services)
 {
     init();
@@ -129,6 +133,15 @@ Endpoint::Endpoint(std::string strIn, bool fNameLookup, uint64 nServicesIn)
     init();
     Lookup(strIn, *this, nServicesIn, fNameLookup, 0, true);
 }
+
+Endpoint::Endpoint(unsigned int ip, unsigned short p, unsigned int time, unsigned int last_try) {
+    init();
+    address(address_v4(ip));
+    port(p);
+    _time = time;
+    _lastTry = last_try;
+}
+
 
 void Endpoint::init()
 {

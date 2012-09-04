@@ -17,6 +17,216 @@
 
 #include <db_cxx.h>
 
+#include <sqlite3.h>
+
+typedef std::vector<unsigned char> blob;
+
+class Database;
+
+struct undefined {};
+
+class StatementBase {
+    friend class Database;
+protected:
+    void bind(int64 arg, int col);
+    void bind(int arg, int col) { bind((int64)arg, col); }
+    void bind(double arg, int col);
+    void bind(const std::string& arg, int col);
+    void bind(const blob& arg, int col);
+    
+    void get(int64& arg, int col);
+    void get(int& arg, int col) { int64 a; get((a), col); arg = a;}
+    void get(unsigned int& arg, int col) { int64 a; get((a), col); arg = a;}
+    void get(unsigned short& arg, int col) { int64 a; get((a), col); arg = a;}
+
+    void get(double& arg, int col);
+    void get(std::string& arg, int col);
+    void get(blob& arg, int col);
+    
+    void get(undefined, int) {}
+protected:
+    sqlite3_stmt *_stmt;
+};
+
+#define FUNCTION_CALL_DEFINITIONS(RETURN_TYPE) \
+RETURN_TYPE operator()() { \
+return eval(); \
+} \
+template <typename T1> \
+RETURN_TYPE operator()(T1 v1) { \
+bind(v1, 1); \
+return operator()(); \
+} \
+template <typename T1, typename T2> RETURN_TYPE \
+operator()(T1 v1, T2 v2) { \
+bind(v2, 2); \
+return operator()(v1); \
+} \
+template <typename T1, typename T2, typename T3> RETURN_TYPE \
+operator()(T1 v1, T2 v2, T3 v3) { \
+bind(v3, 3); \
+return operator()(v1, v2); \
+} \
+template <typename T1, typename T2, typename T3, typename T4> RETURN_TYPE \
+operator()(T1 v1, T2 v2, T3 v3, T4 v4) { \
+bind(v4, 4); \
+return operator()(v1, v2, v3); \
+} \
+template <typename T1, typename T2, typename T3, typename T4, typename T5> RETURN_TYPE \
+operator()(T1 v1, T2 v2, T3 v3, T4 v4, T5 v5) { \
+bind(v5, 5); \
+return operator()(v1, v2, v3, v4); \
+} \
+template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6> RETURN_TYPE \
+operator()(T1 v1, T2 v2, T3 v3, T4 v4, T5 v5, T6 v6) { \
+bind(v6, 6); \
+return operator()(v1, v2, v3, v4, v5); \
+} \
+template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7> RETURN_TYPE \
+operator()(T1 v1, T2 v2, T3 v3, T4 v4, T5 v5, T6 v6, T7 v7) { \
+bind(v7, 7); \
+return operator()(v1, v2, v3, v4, v5, v6); \
+} \
+template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8> RETURN_TYPE \
+operator()(T1 v1, T2 v2, T3 v3, T4 v4, T5 v5, T6 v6, T7 v7, T8 v8) { \
+bind(v8, 8); \
+return operator()(v1, v2, v3, v4, v5, v6, v7); \
+} \
+
+
+template <class R, int N, class P0, class P1 = undefined, class P2 = undefined, class P3 = undefined, class P4 = undefined, class P5 = undefined, class P6 = undefined, class P7 = undefined>
+class Construct {
+public:
+    static R construct(P0 p0, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7) {
+        // will be kicked when N > 8
+        undefined ONLY_UP_TO_8_RETURN_VALUES_SUPPORTED;
+        P7 this_will_fail_at_compile_time = ONLY_UP_TO_8_RETURN_VALUES_SUPPORTED;
+    }
+};
+template <class R, class P0, class P1, class P2, class P3, class P4, class P5, class P6, class P7>
+class Construct<R, 8, P0, P1, P2, P3, P4, P5, P6, P7> {
+public:
+    static R construct(P0 p0, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7) {
+        return R(p0, p1, p2, p3, p4, p5, p6, p7);
+    }
+};
+template <class R, class P0, class P1, class P2, class P3, class P4, class P5, class P6>
+class Construct<R, 7, P0, P1, P2, P3, P4, P5, P6> {
+public:
+    static R construct(P0 p0, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, undefined) {
+        return R(p0, p1, p2, p3, p4, p5, p6);
+    }
+};
+template <class R, class P0, class P1, class P2, class P3, class P4, class P5>
+class Construct<R, 6, P0, P1, P2, P3, P4, P5> {
+public:
+    static R construct(P0 p0, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, undefined, undefined) {
+        return R(p0, p1, p2, p3, p4, p5);
+    }
+};
+template <class R, class P0, class P1, class P2, class P3, class P4>
+class Construct<R, 5, P0, P1, P2, P3, P4> {
+public:
+    static R construct(P0 p0, P1 p1, P2 p2, P3 p3, P4 p4, undefined, undefined, undefined) {
+        return R(p0, p1, p2, p3, p4);
+    }
+};
+template <class R, class P0, class P1, class P2, class P3>
+class Construct<R, 4, P0, P1, P2, P3> {
+public:
+    static R construct(P0 p0, P1 p1, P2 p2, P3 p3, undefined, undefined, undefined, undefined) {
+        return R(p0, p1, p2, p3);
+    }
+};
+template <class R, class P0, class P1, class P2>
+class Construct<R, 3, P0, P1, P2> {
+public:
+    static R construct(P0 p0, P1 p1, P2 p2, undefined, undefined, undefined, undefined, undefined) {
+        return R(p0, p1, p2);
+    }
+};
+
+template <class R, int N, class P0, class P1 = undefined, class P2 = undefined, class P3 = undefined, class P4 = undefined, class P5 = undefined, class P6 = undefined, class P7 = undefined>
+class StatementVec : public StatementBase {
+public:
+    StatementVec() : StatementBase() {}
+    StatementVec(StatementBase stmt) : StatementBase(stmt) {}
+    
+    std::vector<R> eval() {
+        int result = sqlite3_step(_stmt);
+        std::vector<R> rs;;
+        while(result == SQLITE_ROW) {
+            P0 p0; P1 p1; P2 p2; P3 p3; P4 p4; P5 p5; P6 p6; P7 p7;
+            get(p0, 0); get(p1, 1); get(p2, 2); get(p3, 3); get(p4, 4); get(p5, 5); get(p6, 6); get(p7, 7);
+            rs.push_back(Construct<R, N, P0, P1, P2, P3, P4, P5, P6, P7>::construct(p0, p1, p2, p3, p4, p5, p6, p7));
+            result = sqlite3_step(_stmt);
+        }
+        sqlite3_reset(_stmt);
+        return rs;
+    }
+    
+    FUNCTION_CALL_DEFINITIONS(std::vector<R>)
+};
+
+template <class R = undefined>
+class Statement : public StatementBase {
+public:
+    Statement() : StatementBase() {}
+    Statement(StatementBase stmt) : StatementBase(stmt) {}
+    
+    R eval() {
+        R r;
+        if (sqlite3_step(_stmt) == SQLITE_ROW)
+            get(r, 0);
+        sqlite3_reset(_stmt);
+        return r;
+    }
+    
+    FUNCTION_CALL_DEFINITIONS(R)
+};
+
+template<>
+class Statement<undefined> : public StatementBase {
+public:
+    Statement() : StatementBase() {}
+    Statement(StatementBase stmt) : StatementBase(stmt) {}
+    
+    undefined eval() {
+        while(sqlite3_step(_stmt) == SQLITE_ROW);
+        sqlite3_reset(_stmt);
+        return undefined();
+    }
+    
+    FUNCTION_CALL_DEFINITIONS(undefined)
+};
+
+typedef Statement<undefined> StatementVoid;
+
+class Database {
+public:
+	Database(const std::string filename);
+	~Database();
+	
+    StatementBase prepare(std::string stmt);
+    void execute(std::string stmt);
+    
+    void begin();
+    void commit();
+    
+    const int64 last_id() const;
+    
+    const std::string error_text() const { return sqlite3_errmsg(_db); }
+    
+private:
+	sqlite3 *_db;
+    typedef std::vector<StatementBase> Statements;
+    Statements _statements;
+};
+
+
+
+/// OLD Database code for Berkeley DB
+
 extern CCriticalSection cs_db;
 extern DbEnv dbenv;
 extern std::map<std::string, int> mapFileUseCount;

@@ -48,7 +48,7 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     _client_version(PROTOCOL_VERSION) // This is not optimal...
     {
     
-    _endpointPool.loadEndpoints(dataDir);
+    //    _endpointPool.loadEndpoints(dataDir);
     _transactionFilter = filter_ptr(new TransactionFilter(_blockChain));
     _blockFilter = filter_ptr(new BlockFilter(_blockChain));
     
@@ -203,7 +203,8 @@ void Node::handle_connect(const system::error_code& e) {
         printf("Failed connect: \"%s\" to: %s\n", e.message().c_str(), _new_server->addr.toString().c_str());
     }
     
-    _endpointPool.getEndpoint(_new_server->addr.getKey()).setLastTry(GetAdjustedTime());
+    //    _endpointPool.getEndpoint(_new_server->addr.getKey()).setLastTry(GetAdjustedTime());
+    _endpointPool.setLastTry(_new_server->addr);
     
     // if we have a proxy error - don't reconnect - wait for some action to be taken...
     
