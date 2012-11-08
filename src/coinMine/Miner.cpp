@@ -83,10 +83,10 @@ void Miner::handle_generate() {
         }
     }
     else
-        printf("Multiple hashers defined but automatic choosing not implemented");
+        log_error("Multiple hashers defined but automatic choosing not implemented");
     
     if(!p) {
-        printf("No suitable hashers defined!!");
+        log_error("No suitable hashers defined!!");
         return;
     }
     Hasher& hasher = *p;
@@ -104,11 +104,11 @@ void Miner::handle_generate() {
             return;
         
         //// debug print
-        printf("BitcoinMiner:\n");
-        printf("proof-of-work found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
+        log_debug("BitcoinMiner:\n");
+        log_debug("proof-of-work found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
         block.print();
-        printf("%s ", DateTimeStrFormat("%x %H:%M", GetTime()).c_str());
-        printf("generated %s\n", FormatMoney(block.getTransaction(0).getOutput(0).value()).c_str());
+        log_debug("%s ", DateTimeStrFormat("%x %H:%M", GetTime()).c_str());
+        log_debug("generated %s\n", FormatMoney(block.getTransaction(0).getOutput(0).value()).c_str());
         
         // Remove key from key pool
         if (_pub_key.empty() && _address == 0)
@@ -137,12 +137,12 @@ public:
     }
     
     void print() const {
-        printf("COrphan(hash=%s, dPriority=%.1f)\n", ptx->getHash().toString().substr(0,10).c_str(), dPriority);
+        log_info("COrphan(hash=%s, dPriority=%.1f)\n", ptx->getHash().toString().substr(0,10).c_str(), dPriority);
         BOOST_FOREACH(uint256 hash, setDependsOn)
-        printf("   setDependsOn %s\n", hash.toString().substr(0,10).c_str());
+            log_info("   setDependsOn %s\n", hash.toString().substr(0,10).c_str());
     }
 };
-
+/*
 void Miner::fillinTransactions(Block& block, const CBlockIndex* prev) {
     // Collect memory pool transactions into the block
     int64 nFees = 0;
@@ -256,7 +256,7 @@ void Miner::fillinTransactions(Block& block, const CBlockIndex* prev) {
     block.updateMerkleTree();    
 }
 
-
+*/
 
 const string Miner::Hasher::name() const {
     string n = typeid(*this).name();

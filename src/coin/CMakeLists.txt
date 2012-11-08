@@ -21,6 +21,7 @@ SET(TARGET_H
     ${HEADER_PATH}/Export.h
     ${HEADER_PATH}/Key.h
     ${HEADER_PATH}/KeyStore.h
+    ${HEADER_PATH}/Logger.h
     ${HEADER_PATH}/Script.h
     ${HEADER_PATH}/Transaction.h
     ${HEADER_PATH}/Version.h
@@ -38,6 +39,7 @@ SET(TARGET_SRC
     Block.cpp
     Key.cpp
     KeyStore.cpp
+    Logger.cpp
     Transaction.cpp
     Script.cpp
     ${LIBCOIN_VERSIONINFO_RC}

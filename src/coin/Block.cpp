@@ -15,6 +15,7 @@
  */
 
 #include <coin/Block.h>
+#include <coin/Logger.h>
 
 using namespace std;
 using namespace boost;
@@ -46,7 +47,7 @@ uint256 Block::buildMerkleTree() const
         }
         j += size;
     }
-    uint256 merkleRoot = (_merkleTree.empty() ? 0 : _merkleTree.back());
+    uint256 merkleRoot = (_merkleTree.empty() ? uint256(0) : _merkleTree.back());
     return merkleRoot;
 }
 
@@ -68,7 +69,7 @@ std::vector<uint256> Block::getMerkleBranch(int index) const
 uint256 Block::checkMerkleBranch(uint256 hash, const std::vector<uint256>& merkleBranch, int index)
 {
     if (index == -1)
-        return 0;
+        return uint256(0);
     BOOST_FOREACH(const uint256& otherside, merkleBranch)
     {
     if (index & 1)
@@ -82,7 +83,7 @@ uint256 Block::checkMerkleBranch(uint256 hash, const std::vector<uint256>& merkl
 
 void Block::print() const
 {
-    printf("Block(hash=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%d)\n",
+    log_info("Block(hash=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%d)\n",
            getHash().toString().substr(0,20).c_str(),
            _version,
            _prevBlock.toString().substr(0,20).c_str(),
@@ -91,13 +92,13 @@ void Block::print() const
            _transactions.size());
     for (int i = 0; i < _transactions.size(); i++)
         {
-        printf("  ");
+        log_info("  ");
         _transactions[i].print();
         }
-    printf("  vMerkleTree: ");
+    log_info("  vMerkleTree: ");
     for (int i = 0; i < _merkleTree.size(); i++)
-        printf("%s ", _merkleTree[i].toString().substr(0,10).c_str());
-    printf("\n");
+        log_info("%s ", _merkleTree[i].toString().substr(0,10).c_str());
+    log_info("\n");
 }
 
 bool Block::checkBlock(const CBigNum& proofOfWorkLimit) const

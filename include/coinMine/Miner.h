@@ -107,7 +107,7 @@ private:
     void handle_work() {};
     
     /// fillinTransactions is based in CreateNewBlock from the Satoshi client
-    void fillinTransactions(Block& block, const CBlockIndex* prev);
+    //    void fillinTransactions(Block& block, const CBlockIndex* prev);
     
 private:
     Node& _node;    

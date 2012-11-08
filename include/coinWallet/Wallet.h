@@ -88,7 +88,7 @@ public:
         
         bool firstRun = false;
         LoadWallet(firstRun);
-        if(firstRun) printf("Created a new wallet!");
+        if(firstRun) log_info("Created a new wallet!");
         
         // Do this infrequently and randomly to avoid giving away
         // that these are our transactions.
@@ -152,7 +152,7 @@ public:
     bool AddToWalletIfInvolvingMe(const Transaction& tx, const Block* pblock, bool fUpdate = false);
     bool EraseFromWallet(uint256 hash);
     void WalletUpdateSpent(const Transaction& prevout);
-    int ScanForWalletTransactions(const CBlockIndex* pindexStart = NULL, bool fUpdate = false);
+    //    int ScanForWalletTransactions(const CBlockIndex* pindexStart = NULL, bool fUpdate = false);
     void ReacceptWalletTransactions();
     void resend();
     int64 GetBalance(bool confirmed = true) const;
@@ -254,7 +254,7 @@ public:
         }
         return nChange;
     }
-    void SetBestChain(const CBlockLocator& loc);
+    //    void SetBestChain(const CBlockLocator& loc);
 
     int GetBlocksToMaturity(const Transaction& tx) const {
         return _blockChain.getBlocksToMaturity(tx);

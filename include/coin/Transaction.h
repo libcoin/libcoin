@@ -37,8 +37,8 @@ static const int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 
 class Transaction;
 
-struct Coin // was COutPoint
-{
+struct Coin { // was COutPoint
+
     uint256 hash;
     unsigned int index;
     
@@ -67,9 +67,44 @@ struct Coin // was COutPoint
     }
     
     void print() const {
-        printf("%s\n", toString().c_str());
+        log_info("%s\n", toString().c_str());
     }
 };
+
+struct Spending {
+    uint256 hash;
+    unsigned int index;
+    
+    Spending() { setNull(); }
+    Spending(uint256 hashIn, unsigned int nIn) { hash = hashIn; index = nIn; }
+    
+    IMPLEMENT_SERIALIZE( READWRITE(FLATDATA(*this)); )
+    
+    void setNull() { hash = 0; index = -1; }
+    bool isNull() const { return (hash == 0 && index == -1); }
+    
+    friend bool operator<(const Spending& a, const Spending& b) {
+        return (a.hash < b.hash || (a.hash == b.hash && a.index < b.index));
+    }
+    
+    friend bool operator==(const Spending& a, const Spending& b) {
+        return (a.hash == b.hash && a.index == b.index);
+    }
+    
+    friend bool operator!=(const Spending& a, const Spending& b) {
+        return !(a == b);
+    }
+    
+    std::string toString() const {
+        return strprintf("Spending(%s, %d)", hash.toString().substr(0,10).c_str(), index);
+    }
+    
+    void print() const {
+        log_info("%s\n", toString().c_str());
+    }
+};
+
+    
 
 struct CoinRef // was CInPoint
 {
@@ -152,7 +187,7 @@ public:
     }
 
     void print() const {
-        printf("%s\n", toString().c_str());
+        log_info("%s\n", toString().c_str());
     }
     
 private:
@@ -220,7 +255,7 @@ public:
     }
 
     void print() const {
-        printf("%s\n", toString().c_str());
+        log_info("%s\n", toString().c_str());
     }
     
 private:
@@ -373,7 +408,7 @@ public:
     }
 
     void print() const {
-        printf("%s", toString().c_str());
+        log_info("%s", toString().c_str());
     }
 
     /// Check if all internal settings of a transaction are valid. This is not a check if e.g. the inputs are spent.

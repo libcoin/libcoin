@@ -24,10 +24,12 @@
 #include <coinWallet/Wallet.h>
 #include <coinWallet/WalletRPC.h>
 
-#include <coinMine/Miner.h>
-#include <coinMine/MinerRPC.h>
+//#include <coinMine/Miner.h>
+//#include <coinMine/MinerRPC.h>
 
 #include <coinNAT/PortMapper.h>
+
+#include <coin/Logger.h>
 
 #include <boost/thread.hpp>
 #include <boost/program_options.hpp>
@@ -125,6 +127,10 @@ int main(int argc, char* argv[])
         if(!args.count("datadir"))
             data_dir = CDB::dataDir(bitcoin.dataDirSuffix());
         
+        std::ofstream olog((data_dir + "/debug.log").c_str(), std::ios_base::out|std::ios_base::app);
+        Logger::instantiate(olog);
+        Logger::label_thread("main");
+        
         // if present, parse the config file - if no data dir is specified we always assume bitcoin chain at this stage 
         string config_path = data_dir + "/" + config_file;
         ifstream ifs(config_path.c_str());
@@ -195,20 +201,20 @@ int main(int argc, char* argv[])
         for(strings::iterator ep = add_peers.begin(); ep != add_peers.end(); ++ep) node.addPeer(*ep);
         for(strings::iterator ep = connect_peers.begin(); ep != connect_peers.end(); ++ep) node.connectPeer(*ep);
         
-        Wallet wallet(node); // this will also register the needed callbacks
+        Wallet wallet(node, "wallet.dat", data_dir); // this will also register the needed callbacks
         
         if(args.count("rescan")) {
-            wallet.ScanForWalletTransactions();
-            printf("Scanned for wallet transactions");
+            //            wallet.ScanForWalletTransactions();
+            log_warn("Scanned for wallet transactions - need to be implemented!");
         }
         
         thread nodeThread(&Node::run, &node); // run this as a background thread
 
         CReserveKey reservekey(&wallet);
         
-        Miner miner(node, reservekey);
-        miner.setGenerate(gen);
-        thread miningThread(&Miner::run, &miner);
+        //        Miner miner(node, reservekey);
+        //        miner.setGenerate(gen);
+        //        thread miningThread(&Miner::run, &miner);
         
         Server server(rpc_bind, lexical_cast<string>(rpc_port), filesystem::initial_path().string());
         if(ssl) server.setCredentials(data_dir, certchain, privkey);
@@ -253,9 +259,9 @@ int main(int argc, char* argv[])
         server.registerMethod(method_ptr(new WalletPassphrase(wallet, server.get_io_service())), auth);
         
         // Register Mining methods.
-        server.registerMethod(method_ptr(new SetGenerate(miner)), auth);    
-        server.registerMethod(method_ptr(new GetGenerate(miner)), auth);    
-        server.registerMethod(method_ptr(new GetHashesPerSec(miner)), auth);    
+        //server.registerMethod(method_ptr(new SetGenerate(miner)), auth);
+        //server.registerMethod(method_ptr(new GetGenerate(miner)), auth);
+        //server.registerMethod(method_ptr(new GetHashesPerSec(miner)), auth);
         
         try { // we keep the server in its own exception scope as we want the other threads to shut down properly if the server exits
             server.run();    
@@ -263,11 +269,11 @@ int main(int argc, char* argv[])
             cerr << "Error: " << e.what() << endl; 
         }
 
-        printf("Server exited, shutting down Node and Miner...\n");
+        log_info("Server exited, shutting down Node and Miner...\n");
         // getting here means that we have exited from the server (e.g. by the quit method)
         
-        miner.shutdown();
-        miningThread.join();
+        //miner.shutdown();
+        //miningThread.join();
         
         node.shutdown();
         nodeThread.join();

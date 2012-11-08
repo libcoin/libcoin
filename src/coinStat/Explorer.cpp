@@ -65,7 +65,7 @@ void Explorer::BlockListener::operator()(const Block& block) {
                 _explorer.blockChain().getTransaction(txin.prevout().hash, prevtx);
                 
                 if(prevtx.isNull()) {
-                    printf("Warning tx with hash %s not found", txin.prevout().hash.toString().c_str());
+                    log_warn("Warning tx with hash %s not found", txin.prevout().hash.toString().c_str());
                     continue; // this is a hack!
                 }
                 
@@ -157,7 +157,7 @@ void Explorer::scan() {
         
         _height = pindex->nHeight;
         if(pindex->nHeight%100 == 0)
-            printf("[coins/block#: %d, %d, %d, %d]\n", pindex->nHeight, _coins.size(), _debits.size(), _credits.size());
+            log_info("[coins/block#: %d, %d, %d, %d]\n", pindex->nHeight, _coins.size(), _debits.size(), _credits.size());
         
         pindex = pindex->pnext;
     }

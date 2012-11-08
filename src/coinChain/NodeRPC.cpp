@@ -29,14 +29,10 @@ Value GetBlockHash::operator()(const Array& params, bool fHelp) {
     int height = params[0].get_int();
     if (height < 0 || height > _node.blockChain().getBestHeight())
         throw RPC::error(RPC::invalid_request, "Block number out of range.");
-    
-    Block block;
-    const CBlockIndex* pblockindex = _node.blockChain().getBestIndex();
-    while (pblockindex->nHeight > height)
-        pblockindex = pblockindex->pprev;
-    
-    return pblockindex->phashBlock->GetHex();
-}        
+
+    BlockIterator blk = _node.blockChain().iterator(height);
+    return blk->hash.GetHex();;
+}
 
 Value GetBlock::operator()(const Array& params, bool fHelp) {
     if (fHelp || params.size() != 1)
@@ -46,32 +42,34 @@ Value GetBlock::operator()(const Array& params, bool fHelp) {
     std::string strHash = params[0].get_str();
     uint256 hash(strHash);
     
+    BlockIterator blk = _node.blockChain().iterator(hash);
+    
     Block block;
     _node.blockChain().getBlock(hash, block);
     
     if (block.isNull())
         throw RPC::error(RPC::invalid_request,  "Block not found");
         
-    const CBlockIndex* blockindex = _node.blockChain().getBlockIndex(hash);
-
     Object result;
-    result.push_back(Pair("hash", block.getHash().GetHex()));
-    result.push_back(Pair("blockcount", blockindex->nHeight));
+    result.push_back(Pair("hash", blk->hash.GetHex()));
+    result.push_back(Pair("blockcount", blk.height()));
     result.push_back(Pair("version", block.getVersion()));
     result.push_back(Pair("merkleroot", block.getMerkleRoot().GetHex()));
     result.push_back(Pair("time", (boost::int64_t)block.getBlockTime()));
     result.push_back(Pair("nonce", (boost::uint64_t)block.getNonce()));
-    result.push_back(Pair("difficulty", _node.blockChain().getDifficulty(blockindex)));
+    result.push_back(Pair("difficulty", _node.blockChain().getDifficulty(blk)));
     Array txhashes;
     BOOST_FOREACH (const Transaction&tx, block.getTransactions())
     txhashes.push_back(tx.getHash().GetHex());
     
     result.push_back(Pair("tx", txhashes));
-    
-    if (blockindex->pprev)
-        result.push_back(Pair("hashprevious", blockindex->pprev->GetBlockHash().GetHex()));
-    if (blockindex->pnext)
-        result.push_back(Pair("hashnext", blockindex->pnext->GetBlockHash().GetHex()));
+
+    BlockIterator prev = blk + 1;
+    BlockIterator next = blk - 1;
+    if (!!prev)
+        result.push_back(Pair("hashprevious", prev->hash.GetHex()));
+    if (!!next )
+        result.push_back(Pair("hashnext", next->hash.GetHex()));
     
     return result;
 }        

@@ -677,7 +677,7 @@ public:
 
     void printHex() const
     {
-        printf("Script(%s)\n", HexStr(begin(), end(), true).c_str());
+        log_info("Script(%s)\n", HexStr(begin(), end(), true).c_str());
     }
 
     std::string toString() const
@@ -705,7 +705,7 @@ public:
 
     void print() const
     {
-        printf("%s\n", toString().c_str());
+        log_info("%s\n", toString().c_str());
     }
 };
 
@@ -722,6 +722,7 @@ bool IsMine(const KeyStore& keystore, const Script& scriptPubKey);
 bool SignSignature(const KeyStore &keystore, const Output& txout, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL);
 bool SignSignature(const KeyStore& keystore, const Transaction& txFrom, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL);
 
+bool VerifySignature(const Output& output, const Transaction& txTo, unsigned int nIn, bool fValidatePayToScriptHash, int nHashType=0);
 bool VerifySignature(const Transaction& txFrom, const Transaction& txTo, unsigned int nIn, bool fValidatePayToScriptHash, int nHashType=0);
 
 bool ExtractAddress(const Script& scriptPubKey, PubKeyHash& pubKeyHash, ScriptHash& scriptHash);

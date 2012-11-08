@@ -19,6 +19,8 @@
 #include <coinHTTP/ConnectionManager.h>
 #include <coinHTTP/RequestHandler.h>
 
+#include <coin/Logger.h>
+
 #include <boost/bind.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -252,7 +254,7 @@ void Connection::handle_timeout(const boost::system::error_code& e) {
         }        
     }
     else if (e != error::operation_aborted) {
-        printf("Possible boost keep_alive timer error in Server: %s\n", e.message().c_str());
+        log_debug("Possible boost keep_alive timer error in Server: %s\n", e.message().c_str());
     }
 }
 

@@ -54,16 +54,16 @@ public:
         typedef void (*h)(int);
         h ret = std::signal(sig, &handler);
         if (ret == SIG_ERR) {
-            //            printf("signal_set: registered signal unsuccessfull\n");
+            log_debug("signal_set: registered signal unsuccessfull\n");
         }
-        //        printf("signal_set: registered signal: %d \n", sig);
+        log_trace("signal_set: registered signal: %d \n", sig);
     }
     void handle(int sig) {
-        //        printf("signal_set: received signal: %d \n", sig);
+        log_trace("signal_set: received signal: %d \n", sig);
         _io_service.post(_signal_handler);
     }
     void async_wait(boost::function<void (void)> signal_handler) {
-        //        printf("signal_set: added handler (async_wait)");
+        log_trace("signal_set: added handler (async_wait)");
         _signal_handler = signal_handler;
     }
 private:
@@ -77,10 +77,10 @@ typedef boost::asio::signal_set boost__asio__signal_set;
 
 #endif
 
-class COINHTTP_EXPORT Logger 
+class COINHTTP_EXPORT ServerLogger
 {
 public:
-    Logger(std::string dir) : _access(std::cout.rdbuf()) {
+    ServerLogger(std::string dir) : _access(std::cout.rdbuf()) {
         if(dir.size()) {
             _access_file.open((dir + "/access_log").c_str(), std::ios::app); 
             _access.rdbuf(_access_file.rdbuf());
@@ -172,7 +172,7 @@ protected:
     RequestHandler _requestHandler;
     
     /// The logger - currently logging only access, but will later log also e.g. errors
-    Logger _logger;
+    ServerLogger _logger;
 };
 
 #endif // HTTP_SERVER_H

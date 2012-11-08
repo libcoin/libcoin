@@ -18,6 +18,7 @@
 #include <coinChain/Alert.h>
 
 #include <coin/util.h>
+#include <coin/Logger.h>
 #include <coinChain/Peer.h>
 
 using namespace std;
@@ -57,7 +58,7 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
         
         // Disconnect if we connected to ourself
         if (nNonce == origin->getNonce() && nNonce > 1) {
-            printf("connected to self at %s, disconnecting\n", origin->addr.toString().c_str());
+            log_debug("connected to self at %s, disconnecting\n", origin->addr.toString().c_str());
             origin->fDisconnect = true;
             return true;
         }
@@ -83,7 +84,7 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
                 
         origin->fSuccessfullyConnected = true;
         
-        printf("version message: version %d, blocks=%d\n", origin->nVersion, origin->getStartingHeight());
+        log_info("version message: version %d, blocks=%d\n", origin->nVersion, origin->getStartingHeight());
         return true;
     }
     else if (msg.command() == "verack") {

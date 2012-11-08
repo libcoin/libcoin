@@ -8,6 +8,7 @@
 #define NOMINMAX
 
 #include <coin/uint256.h>
+#include <coin/Logger.h>
 
 #ifndef _WIN32
 #include <sys/types.h>
@@ -59,8 +60,8 @@ typedef unsigned long long  uint64;
 #define UBEGIN(a)           ((unsigned char*)&(a))
 #define UEND(a)             ((unsigned char*)&((&(a))[1]))
 #define ARRAYLEN(array)     (sizeof(array)/sizeof((array)[0]))
-#define printf              OutputDebugStringF
-#define perror              OutputDebugStringF
+//#define printf              OutputDebugStringF
+//#define perror              OutputDebugStringF
 
 #ifdef snprintf
 #undef snprintf
@@ -340,12 +341,12 @@ inline std::string HexNumStr(const std::vector<unsigned char>& vch, bool f0x=tru
 template<typename T>
 void PrintHex(const T pbegin, const T pend, const char* pszFormat="%s", bool fSpaces=true)
 {
-    printf(pszFormat, HexStr(pbegin, pend, fSpaces).c_str());
+    log_info(pszFormat, HexStr(pbegin, pend, fSpaces).c_str());
 }
 
 inline void PrintHex(const std::vector<unsigned char>& vch, const char* pszFormat="%s", bool fSpaces=true)
 {
-    printf(pszFormat, HexStr(vch, fSpaces).c_str());
+    log_info(pszFormat, HexStr(vch, fSpaces).c_str());
 }
 
 inline int64 GetPerformanceCounter()

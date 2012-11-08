@@ -93,6 +93,7 @@ public:
     void addTransaction(const Transaction& tx) { _transactions.push_back(tx); }
     size_t getNumTransactions() const { return _transactions.size(); }
     const TransactionList& getTransactions() const { return _transactions; }
+    TransactionList& getTransactions() { return _transactions; }
     Transaction& getTransaction(size_t i) { return _transactions[i]; }
     const Transaction& getTransaction(size_t i) const { return _transactions[i]; }
 
@@ -123,7 +124,7 @@ public:
     const int getNonce() const { return _nonce; }
 
     void setNonce(unsigned int nonce) { _nonce = nonce; }
-
+    
     /// This function has changed as it served two purposes: sanity check for headers and real proof of work check. We only need the proofOfWorkLimit for the latter
     const bool checkProofOfWork(const CBigNum& proofOfWorkLimit = 0) const {
         uint256 hash = getHash();

@@ -7,6 +7,7 @@
 #include <coinChain/BlockChain.h>
 
 #include <coin/util.h>
+#include <coin/Logger.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -15,52 +16,64 @@
 using namespace std;
 using namespace boost;
 
-void StatementBase::bind(int64 arg, int col) {
-    int ret = sqlite3_bind_int64(_stmt, col, arg);
+void StatementBase::bind(int64 arg, int col) const {
+    int ret = sqlite3_bind_int64(_->stmt, col, arg);
     if (ret != SQLITE_OK)
-        throw runtime_error("StatementBase::bind(int64) : error " + lexical_cast<string>(ret) + " binding a value");
+        throw Database::Error("StatementBase::bind(int64) : error " + lexical_cast<string>(ret) + " binding a value");
 }
-void StatementBase::bind(double arg, int col) {
-    int ret = sqlite3_bind_double(_stmt, col, arg);
+void StatementBase::bind(double arg, int col) const {
+    int ret = sqlite3_bind_double(_->stmt, col, arg);
     if (ret != SQLITE_OK)
-        throw runtime_error("StatementBase::bind(double) : error " + lexical_cast<string>(ret) + " binding a value");
+        throw Database::Error("StatementBase::bind(double) : error " + lexical_cast<string>(ret) + " binding a value");
 }
-void StatementBase::bind(const std::string& arg, int col) {
-    int ret = sqlite3_bind_text(_stmt, col, arg.c_str(), -1, SQLITE_TRANSIENT);
+void StatementBase::bind(const std::string& arg, int col) const {
+    int ret = sqlite3_bind_text(_->stmt, col, arg.c_str(), -1, SQLITE_TRANSIENT);
     if (ret != SQLITE_OK)
-        throw runtime_error("StatementBase::bind(text) : error " + lexical_cast<string>(ret) + " binding a value");
+        throw Database::Error("StatementBase::bind(text) : error " + lexical_cast<string>(ret) + " binding a value");
 }
-void StatementBase::bind(const blob& arg, int col) {
-    int ret = sqlite3_bind_text(_stmt, col, (const char*)&arg.front(), arg.size(), SQLITE_TRANSIENT);
+void StatementBase::bind(const blob& arg, int col) const {
+    int ret = sqlite3_bind_blob(_->stmt, col, (const char*)&arg.front(), arg.size(), SQLITE_TRANSIENT);
     if (ret != SQLITE_OK)
-        throw runtime_error("StatementBase::bind(blob) : error " + lexical_cast<string>(ret) + " binding a value");
+        throw Database::Error("StatementBase::bind(blob) : error " + lexical_cast<string>(ret) + " binding a value");
 }
 
-void StatementBase::get(int64& arg, int col) {
-    int storage_class = sqlite3_column_type(_stmt, col);
+void StatementBase::bind(const uint256& arg, int col) const {
+    blob b((const char*) arg.begin(), (const char*) arg.end());
+    reverse(b.begin(), b.end());
+    bind(b, col);
+}
+
+void StatementBase::get(int64& arg, int col) const {
+    int storage_class = sqlite3_column_type(_->stmt, col);
     if (storage_class != SQLITE_INTEGER)
-        throw runtime_error("StatementBase::get(" + lexical_cast<string>(col) + ") : storage class error, expected SQLITE_INTEGER got: " + lexical_cast<string>(storage_class));
-    arg = sqlite3_column_int64(_stmt, col);
+        throw Database::Error("StatementBase::get(" + lexical_cast<string>(col) + ") : storage class error, expected SQLITE_INTEGER got: " + lexical_cast<string>(storage_class));
+    arg = sqlite3_column_int64(_->stmt, col);
 }
-void StatementBase::get(double& arg, int col) {
-    int storage_class = sqlite3_column_type(_stmt, col);
+void StatementBase::get(double& arg, int col) const {
+    int storage_class = sqlite3_column_type(_->stmt, col);
     if (storage_class != SQLITE_FLOAT)
-        throw runtime_error("StatementBase::get(" + lexical_cast<string>(col) + ") : storage class error, expected SQLITE_FLOAT got: " + lexical_cast<string>(storage_class));
-    arg = sqlite3_column_double(_stmt, col);
+        throw Database::Error("StatementBase::get(" + lexical_cast<string>(col) + ") : storage class error, expected SQLITE_FLOAT got: " + lexical_cast<string>(storage_class));
+    arg = sqlite3_column_double(_->stmt, col);
 }
-void StatementBase::get(std::string& arg, int col) {
-    int storage_class = sqlite3_column_type(_stmt, col);
+void StatementBase::get(std::string& arg, int col) const {
+    int storage_class = sqlite3_column_type(_->stmt, col);
     if (storage_class != SQLITE3_TEXT)
-        throw runtime_error("StatementBase::get(" + lexical_cast<string>(col) + ") : storage class error, expected SQLITE_TEXT got: " + lexical_cast<string>(storage_class));
-    arg = string((const char*)sqlite3_column_text(_stmt, col));
+        throw Database::Error("StatementBase::get(" + lexical_cast<string>(col) + ") : storage class error, expected SQLITE_TEXT got: " + lexical_cast<string>(storage_class));
+    arg = string((const char*)sqlite3_column_text(_->stmt, col));
 }
-void StatementBase::get(blob& arg, int col) {
-    int storage_class = sqlite3_column_type(_stmt, col);
+void StatementBase::get(blob& arg, int col) const {
+    int storage_class = sqlite3_column_type(_->stmt, col);
     if (storage_class != SQLITE_BLOB)
-        throw runtime_error("StatementBase::get(" + lexical_cast<string>(col) + ") : storage class error, expected SQLITE_BLOB got: " + lexical_cast<string>(storage_class));
-    int bytes = sqlite3_column_bytes(_stmt, col);
-    unsigned char* data = (unsigned char*)sqlite3_column_blob(_stmt, col);
+        throw Database::Error("StatementBase::get(" + lexical_cast<string>(col) + ") : storage class error, expected SQLITE_BLOB got: " + lexical_cast<string>(storage_class));
+    int bytes = sqlite3_column_bytes(_->stmt, col);
+    unsigned char* data = (unsigned char*)sqlite3_column_blob(_->stmt, col);
     arg = blob(data, data + bytes);
+}
+void StatementBase::get(uint256& arg, int col) const {
+    vector<unsigned char> a;
+    get(a, col);
+    reverse(a.begin(), a.end());
+    arg = uint256(a);
 }
 
 
@@ -69,23 +82,42 @@ Database::Database(const string filename) {
     
     int ret = sqlite3_open(filename.c_str(), &_db);
     if (ret != SQLITE_OK)
-        throw runtime_error("Database() : error " + lexical_cast<string>(ret) + " opening database environment");
+        throw Database::Error("Database() : error " + lexical_cast<string>(ret) + " opening database environment");
+    
+    _begin = prepare("BEGIN");
+    _commit = prepare("COMMIT");
+    _rollback = prepare("ROLLBACK");
 }
 
 Database::~Database() {
-    for (Statements::iterator s = _statements.begin(); s != _statements.end(); ++s) sqlite3_finalize(s->_stmt);
+    _statements.clear(); // this will unref all statements and force them to call finalize
     if (_db) sqlite3_close(_db);
     _db = NULL;
 }
 
 StatementBase Database::prepare(string stmt) {
     StatementBase s;
-    int ret = sqlite3_prepare_v2(_db, stmt.c_str(), -1, &s._stmt, NULL) ;
+    int ret = sqlite3_prepare_v2(_db, stmt.c_str(), -1, &s._->stmt, NULL) ;
     if (ret != SQLITE_OK)
-        throw runtime_error("Database::prepare() : error " + lexical_cast<string>(ret) + " preparing statement: " + stmt);
+        throw Database::Error("Database::prepare() : error " + lexical_cast<string>(ret) + " preparing statement: " + stmt);
+    s._->sql = stmt;
     _statements.push_back(s);
     return s;
 }
+
+void Database::begin() {
+    _begin();
+}
+
+void Database::commit() {
+    _commit();
+}
+
+void Database::rollback() {
+    _rollback();
+}
+
+
 
 void Database::execute(string stmt) {
     StatementVoid s = prepare(stmt);
@@ -96,6 +128,28 @@ const int64 Database::last_id() const {
     return sqlite3_last_insert_rowid(_db);
 }
 
+const std::string Database::statistics() const {
+    typedef map<int64, string> Stats;
+    Stats stats;
+    int64 total_time = 0;
+    int64 total_count = 0;
+    for (Statements::const_iterator s = _statements.begin(); s != _statements.end(); ++s)
+        if (s->stat_count()) {
+            double avg = 1./s->stat_count()*s->stat_time();
+            stats[s->stat_time()] = cformat("%9.3fs / #%6d = %6.3fus : \"%s\"", 0.000001*s->stat_time(), s->stat_count(), avg, s->sql()).text();
+            total_time += s->stat_time();
+            total_count += s->stat_count();
+        }
+    double avg = 1./total_count*total_time;
+    stats[total_time] = cformat("%9.3fs / #%6d = %6.3fus : \"%s\"", 0.000001*total_time, total_count, avg, "TOTAL").text();
+    stringstream oss;
+    oss << "\nTOTAL TIME / #CALLS = AVERAGE_TIME : SQL_STATEMENT\n";
+    for (Stats::const_reverse_iterator s = stats.rbegin(); s != stats.rend(); ++s) {
+        oss << cformat("%4.1f%% ", 100.*s->first/total_time).text() << s->second << "\n";
+    }
+    oss << std::endl;
+    return oss.str();
+}
 
 //
 // CDB
@@ -176,7 +230,7 @@ CDB::CDB(const std::string dataDir, const char* pszFile, const char* pszMode) : 
             string strLogDir = strDataDir + "/database";
             filesystem::create_directory(strLogDir.c_str());
             string strErrorFile = strDataDir + "/db.log";
-            printf("dbenv.open strLogDir=%s strErrorFile=%s\n", strLogDir.c_str(), strErrorFile.c_str());
+            log_debug("dbenv.open strLogDir=%s strErrorFile=%s\n", strLogDir.c_str(), strErrorFile.c_str());
 
             dbenv.set_alloc(&malloc, &realloc, &free); // WIN32 fix to force the same alloc/realloc and free routines in db and outside 
             dbenv.set_lg_dir(strLogDir.c_str());
@@ -283,7 +337,7 @@ void DBFlush(bool fShutdown)
 {
     // Flush log data to the actual data file
     //  on all files that are not in use
-    printf("DBFlush(%s)%s\n", fShutdown ? "true" : "false", fDbEnvInit ? "" : " db not started");
+    log_info("DBFlush(%s)%s\n", fShutdown ? "true" : "false", fDbEnvInit ? "" : " db not started");
     if (!fDbEnvInit)
         return;
     CRITICAL_BLOCK(cs_db)
@@ -293,13 +347,13 @@ void DBFlush(bool fShutdown)
         {
             string strFile = (*mi).first;
             int nRefCount = (*mi).second;
-            printf("%s refcount=%d\n", strFile.c_str(), nRefCount);
+            log_debug("%s refcount=%d\n", strFile.c_str(), nRefCount);
             if (nRefCount == 0)
             {
                 // Move log data to the dat file
                 CloseDb(strFile);
                 dbenv.txn_checkpoint(0, 0, 0);
-                printf("%s flush\n", strFile.c_str());
+                log_debug("%s flush\n", strFile.c_str());
                 dbenv.lsn_reset(strFile.c_str(), 0);
                 mapFileUseCount.erase(mi++);
             }

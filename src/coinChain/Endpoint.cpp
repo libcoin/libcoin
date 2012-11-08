@@ -278,5 +278,5 @@ std::string Endpoint::toString() const
 
 void Endpoint::print() const
 {
-    printf("Endpoint(%s)\n", toString().c_str());
+    log_info("Endpoint(%s)\n", toString().c_str());
 }

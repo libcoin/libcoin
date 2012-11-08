@@ -17,8 +17,9 @@
 #include <coinChain/Chain.h>
 
 #include <coin/Block.h>
-#include <coinChain/BlockIndex.h>
+#include <coinChain/BlockChain.h>
 #include <coin/Transaction.h>
+#include <coin/Logger.h>
 
 #include <boost/assign/list_of.hpp>
 
@@ -33,7 +34,7 @@ BitcoinChain::BitcoinChain() : _genesis("0x000000000019d6689c085ae165831e934ff76
     txNew.addInput(Input(Coin(), signature)); 
     Script script = Script() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
     txNew.addOutput(Output(50 * COIN, script)); 
-    _genesisBlock = Block(1, 0, 0, 1231006505, 0x1d00ffff, 2083236893);
+    _genesisBlock = Block(1, uint256(0), uint256(0), 1231006505, 0x1d00ffff, 2083236893);
     _genesisBlock.addTransaction(txNew);
     _genesisBlock.updateMerkleTree(); // genesisBlock
     assert(_genesisBlock.getHash() == _genesis);
@@ -49,6 +50,7 @@ BitcoinChain::BitcoinChain() : _genesis("0x000000000019d6689c085ae165831e934ff76
     (134444, uint256("0x00000000000005b12ffd4cd315cd34ffd4a594f430ac814c91184a0d42d2b0fe"))
     (140700, uint256("0x000000000000033b512028abb90e1626d8b346fd0ed598ac0a3c371138dce2bd"))
     (168000, uint256("0x000000000000099e61ea72015e79632f216fe6cb33d7899acb35b75c8303b763"))
+    (193000, uint256("0x000000000000059f452a5f7340de6682a977387c17010ff6e6c3bd83ca8b1317"))
     ;
 
 }
@@ -83,28 +85,26 @@ bool BitcoinChain::isStandard(const Transaction& tx) const {
     return true;
 }
 
-unsigned int BitcoinChain::nextWorkRequired(const CBlockIndex* pindexLast) const {
+unsigned int BitcoinChain::nextWorkRequired(BlockIterator blk) const {
     const int64 nTargetTimespan = 14 * 24 * 60 * 60; // two weeks
     const int64 nTargetSpacing = 10 * 60;
     const int64 nInterval = nTargetTimespan / nTargetSpacing;
     
     // Genesis block
-    if (pindexLast == NULL)
+    int h = blk.height();
+    if (h == 0) // trick to test that it is asking for the genesis block
         return proofOfWorkLimit().GetCompact();
     
     // Only change once per interval
-    if ((pindexLast->nHeight+1) % nInterval != 0)
-        return pindexLast->nBits;
+    if ((h + 1) % nInterval != 0)
+        return blk->bits;
     
     // Go back by what we want to be 14 days worth of blocks
-    const CBlockIndex* pindexFirst = pindexLast;
-    for (int i = 0; pindexFirst && i < nInterval-1; i++)
-        pindexFirst = pindexFirst->pprev;
-    assert(pindexFirst);
+    BlockIterator former = blk - (nInterval-1);
     
     // Limit adjustment step
-    int64 nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
-    printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
+    int nActualTimespan = blk->time - former->time;
+    log_debug("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
     if (nActualTimespan < nTargetTimespan/4)
         nActualTimespan = nTargetTimespan/4;
     if (nActualTimespan > nTargetTimespan*4)
@@ -112,7 +112,7 @@ unsigned int BitcoinChain::nextWorkRequired(const CBlockIndex* pindexLast) const
     
     // Retarget
     CBigNum bnNew;
-    bnNew.SetCompact(pindexLast->nBits);
+    bnNew.SetCompact(blk->bits);
     bnNew *= nActualTimespan;
     bnNew /= nTargetTimespan;
     
@@ -120,10 +120,10 @@ unsigned int BitcoinChain::nextWorkRequired(const CBlockIndex* pindexLast) const
         bnNew = proofOfWorkLimit();
     
     /// debug print
-    printf("GetNextWorkRequired RETARGET\n");
-    printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
-    printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().toString().c_str());
-    printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
+    log_debug("GetNextWorkRequired RETARGET\n");
+    log_debug("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
+    log_debug("Before: %08x  %s\n", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
+    log_debug("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
     
     return bnNew.GetCompact();
 }
@@ -151,7 +151,7 @@ TestNetChain::TestNetChain() : _genesis("0x00000007199508e34a9ff81e6ec0c477a4ccc
     Script script = Script() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
     txNew.addOutput(Output(50 * COIN, script)); 
 
-    _genesisBlock = Block(1, 0, 0, 1296688602, 0x1d07fff8, 384568319);
+    _genesisBlock = Block(1, uint256(0), uint256(0), 1296688602, 0x1d07fff8, 384568319);
     _genesisBlock.addTransaction(txNew);
     _genesisBlock.updateMerkleTree(); // genesisBlock
     assert(_genesisBlock.getHash() == _genesis);
@@ -176,28 +176,26 @@ bool TestNetChain::isStandard(const Transaction& tx) const {
     return true;
 }
 
-unsigned int TestNetChain::nextWorkRequired(const CBlockIndex* pindexLast) const {
+unsigned int TestNetChain::nextWorkRequired(BlockIterator blk) const {
     const int64 nTargetTimespan = 14 * 24 * 60 * 60; // two weeks
     const int64 nTargetSpacing = 10 * 60;
     const int64 nInterval = nTargetTimespan / nTargetSpacing;
     
     // Genesis block
-    if (pindexLast == NULL)
+    int h = blk.height();
+    if (h == 0) // trick to test that it is asking for the genesis block
         return proofOfWorkLimit().GetCompact();
     
     // Only change once per interval
-    if ((pindexLast->nHeight+1) % nInterval != 0)
-        return pindexLast->nBits;
+    if ((h + 1) % nInterval != 0)
+        return blk->bits;
     
     // Go back by what we want to be 14 days worth of blocks
-    const CBlockIndex* pindexFirst = pindexLast;
-    for (int i = 0; pindexFirst && i < nInterval-1; i++)
-        pindexFirst = pindexFirst->pprev;
-    assert(pindexFirst);
+    BlockIterator former = blk - (nInterval-1);
     
     // Limit adjustment step
-    int64 nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
-    printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
+    int nActualTimespan = blk->time - former->time;
+    log_debug("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
     if (nActualTimespan < nTargetTimespan/4)
         nActualTimespan = nTargetTimespan/4;
     if (nActualTimespan > nTargetTimespan*4)
@@ -205,7 +203,7 @@ unsigned int TestNetChain::nextWorkRequired(const CBlockIndex* pindexLast) const
     
     // Retarget
     CBigNum bnNew;
-    bnNew.SetCompact(pindexLast->nBits);
+    bnNew.SetCompact(blk->bits);
     bnNew *= nActualTimespan;
     bnNew /= nTargetTimespan;
     
@@ -213,10 +211,10 @@ unsigned int TestNetChain::nextWorkRequired(const CBlockIndex* pindexLast) const
         bnNew = proofOfWorkLimit();
     
     /// debug print
-    printf("GetNextWorkRequired RETARGET\n");
-    printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
-    printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().toString().c_str());
-    printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
+    log_debug("GetNextWorkRequired RETARGET\n");
+    log_debug("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
+    log_debug("Before: %08x  %s\n", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
+    log_debug("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
     
     return bnNew.GetCompact();
 }

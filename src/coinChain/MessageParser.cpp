@@ -36,7 +36,7 @@ tribool MessageParser::consume(const Chain& chain, Message& msg, char input)
     switch (_state) {
         case start_1:
             if (input != chain.messageStart()[0]) {
-                printf("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND, got: %d\n\n", input);
+                log_warn("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND, got: %d\n\n", input);
                 return false;
             }
             else {
@@ -46,7 +46,7 @@ tribool MessageParser::consume(const Chain& chain, Message& msg, char input)
             }
         case start_2:
             if (input != chain.messageStart()[1]) {
-                printf("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND\n\n");
+                log_warn("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND\n\n");
                 reset();
                 return false;
             }
@@ -57,7 +57,7 @@ tribool MessageParser::consume(const Chain& chain, Message& msg, char input)
             }
         case start_3:
             if (input != chain.messageStart()[2]) {
-                printf("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND\n\n");
+                log_warn("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND\n\n");
                 reset();
                 return false;
             }
@@ -68,7 +68,7 @@ tribool MessageParser::consume(const Chain& chain, Message& msg, char input)
             }
         case start_4:
             if (input != chain.messageStart()[3]) {
-                printf("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND, got: %d\n\n", input);
+                log_warn("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND, got: %d\n\n", input);
                 reset();
                 return false;
             }
@@ -101,7 +101,7 @@ tribool MessageParser::consume(const Chain& chain, Message& msg, char input)
                     _state = checksum;
                 else {
                     if (!msg.header().IsValid(chain)) {
-                        printf("\n\nPROCESSMESSAGE: ERRORS IN HEADER %s\n\n\n", msg.command().c_str());
+                        log_warn("\n\nPROCESSMESSAGE: ERRORS IN HEADER %s\n\n\n", msg.command().c_str());
                         return false;
                     }
                     if (msg.header().nMessageSize) {
@@ -122,7 +122,7 @@ tribool MessageParser::consume(const Chain& chain, Message& msg, char input)
                 return indeterminate;
             else {
                 if (!msg.header().IsValid(chain)) {
-                    printf("\n\nPROCESSMESSAGE: ERRORS IN HEADER %s\n\n\n", msg.command().c_str());
+                    log_warn("\n\nPROCESSMESSAGE: ERRORS IN HEADER %s\n\n\n", msg.command().c_str());
                     return false;
                 }
                 if (msg.header().nMessageSize) {
@@ -148,7 +148,7 @@ tribool MessageParser::consume(const Chain& chain, Message& msg, char input)
                     unsigned int nChecksum = 0;
                     memcpy(&nChecksum, &hash, sizeof(nChecksum));
                     if (nChecksum != msg.header().nChecksum) {
-                        printf("ProcessMessage(%s, %u bytes) : CHECKSUM ERROR nChecksum=%08x hdr.nChecksum=%08x\n",
+                        log_warn("ProcessMessage(%s, %u bytes) : CHECKSUM ERROR nChecksum=%08x hdr.nChecksum=%08x\n",
                                msg.command().c_str(), msg.header().nMessageSize, nChecksum, msg.header().nChecksum);
                         reset();
                         return false;

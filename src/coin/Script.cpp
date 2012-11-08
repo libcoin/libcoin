@@ -9,6 +9,7 @@
 
 #include <coin/BigNum.h>
 #include <coin/Transaction.h>
+#include <coin/Logger.h>
 
 using namespace std;
 using namespace boost;
@@ -889,8 +890,8 @@ uint256 SignatureHash(Script scriptCode, const Transaction& txTo, unsigned int n
 {
     if (nIn >= txTo.getNumInputs())
     {
-        printf("ERROR: SignatureHash() : nIn=%d out of range\n", nIn);
-        return 1;
+        log_error("ERROR: SignatureHash() : nIn=%d out of range\n", nIn);
+        return uint256(1);
     }
     Transaction txTmp(txTo);
 
@@ -930,8 +931,8 @@ uint256 SignatureHash(Script scriptCode, const Transaction& txTo, unsigned int n
         unsigned int nOut = nIn;
         if (nOut >= txTmp.getNumOutputs())
         {
-            printf("ERROR: SignatureHash() : nOut=%d out of range\n", nOut);
-            return 1;
+            log_error("ERROR: SignatureHash() : nOut=%d out of range\n", nOut);
+            return uint256(1);
         }
 
         txTmp.removeOutputs();
@@ -1186,13 +1187,24 @@ bool VerifySignature(const Transaction& txFrom, const Transaction& txTo, unsigne
     if (input.prevout().index >= txFrom.getNumOutputs())
         return false;
     const Output& output = txFrom.getOutput(input.prevout().index);
-
+    
     if (input.prevout().hash != txFrom.getHash())
         return false;
-
+    
     if (!VerifyScript(input.signature(), output.script(), txTo, nIn, fValidatePayToScriptHash, nHashType))
         return false;
+    
+    return true;
+}
 
+bool VerifySignature(const Output& output, const Transaction& txTo, unsigned int nIn, bool fValidatePayToScriptHash, int nHashType)
+{
+    assert(nIn < txTo.getNumInputs());
+    const Input& input = txTo.getInput(nIn);
+    
+    if (!VerifyScript(input.signature(), output.script(), txTo, nIn, fValidatePayToScriptHash, nHashType))
+        return false;
+    
     return true;
 }
 

@@ -17,6 +17,7 @@
 #include <coinChain/BlockFilter.h>
 #include <coinChain/BlockChain.h>
 #include <coin/Block.h>
+#include <coin/Logger.h>
 #include <coinChain/Peer.h>
 #include <coinChain/Inventory.h>
 
@@ -35,7 +36,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         CDataStream data(msg.payload());
         data >> block;
         
-        printf("received block %s\n", block.getHash().toString().substr(0,20).c_str());
+        log_debug("received block %s\n", block.getHash().toString().substr(0,20).c_str());
         // block.print();
         
         Inventory inv(MSG_BLOCK, block.getHash());
@@ -44,7 +45,8 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         // Check for duplicate
         uint256 hash = block.getHash();
         if (_blockChain.haveBlock(hash))
-            return error("ProcessBlock() : already have block %d %s", _blockChain.getBlockIndex(hash)->nHeight, hash.toString().substr(0,20).c_str());
+            return error("ProcessBlock() : already have block %d %s", _blockChain.getHeight(hash), hash.toString().substr(0,20).c_str());
+    
         if (_orphanBlocks.count(hash))
             return error("ProcessBlock() : already have block (orphan) %s", hash.toString().substr(0,20).c_str());
         
@@ -54,7 +56,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         
         // If don't already have its previous block, shunt it off to holding area until we get it
         if (!_blockChain.haveBlock(block.getPrevBlock())) {
-            printf("ProcessBlock: ORPHAN BLOCK, prev=%s\n", block.getPrevBlock().toString().substr(0,20).c_str());
+            log_info("ProcessBlock: ORPHAN BLOCK, prev=%s\n", block.getPrevBlock().toString().substr(0,20).c_str());
             Block* block_copy = new Block(block);
             _orphanBlocks.insert(make_pair(hash, block_copy));
             _orphanBlocksByPrev.insert(make_pair(block_copy->getPrevBlock(), block_copy));
@@ -68,64 +70,68 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
             _alreadyAskedFor.erase(inv);
     }
     else if (msg.command() == "getblocks") {
-        CBlockLocator locator;
+        BlockLocator locator;
         uint256 hashStop;
         CDataStream data(msg.payload());
 
         data >> locator >> hashStop;
         
         // Find the last block the caller has in the main chain
-        const CBlockIndex* pindex = _blockChain.getBlockIndex(locator);
+        BlockIterator blk = _blockChain.iterator(locator);
         
         // Send the rest of the chain
-        if (pindex)
-            pindex = pindex->pnext;
         int nLimit = 500 + _blockChain.getDistanceBack(locator);
         unsigned int nBytes = 0;
-        printf("getblocks %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.toString().substr(0,20).c_str(), nLimit);
-        for (; pindex; pindex = pindex->pnext) {
-            if (pindex->GetBlockHash() == hashStop) {
-                printf("  getblocks stopping at %d %s (%u bytes)\n", pindex->nHeight, pindex->GetBlockHash().toString().substr(0,20).c_str(), nBytes);
+        int height = blk.height() + 1;
+        log_debug("getblocks %d to %s limit %d\n", height, hashStop.toString().substr(0,20).c_str(), nLimit);
+        for (++blk; !!blk; ++blk) {
+            uint256 hash = blk->hash;
+            height = blk.height();
+            if (hash == hashStop) {
+                log_debug("  getblocks stopping at %d %s (%u bytes)\n", height, hash.toString().substr(0,20).c_str(), nBytes);
                 break;
             }
-            origin->PushInventory(Inventory(MSG_BLOCK, pindex->GetBlockHash()));
+            origin->PushInventory(Inventory(MSG_BLOCK, hash));
             Block block;
-            _blockChain.getBlock(pindex->GetBlockHash(), block);
+            _blockChain.getBlock(blk, block);
             nBytes += block.GetSerializeSize(SER_NETWORK);
             if (--nLimit <= 0 || nBytes >= SendBufferSize()/2) {
                 // When this block is requested, we'll send an inv that'll make them
                 // getblocks the next batch of inventory.
-                printf("  getblocks stopping at limit %d %s (%u bytes)\n", pindex->nHeight, pindex->GetBlockHash().toString().substr(0,20).c_str(), nBytes);
-                origin->hashContinue = pindex->GetBlockHash();
+                log_debug("  getblocks stopping at limit %d %s (%u bytes)\n", height, hash.toString().substr(0,20).c_str(), nBytes);
+                origin->hashContinue = hash;
                 break;
             }
         }
     }
     else if (msg.command() == "getheaders") {
-        CBlockLocator locator;
+        BlockLocator locator;
         uint256 hashStop;
         CDataStream data(msg.payload());
         data >> locator >> hashStop;
         
-        const CBlockIndex* pindex = NULL;
+        BlockIterator blk;
         if (locator.IsNull()) {
             // If locator is null, return the hashStop block
-            pindex = _blockChain.getHashStopIndex(hashStop);
-            if (pindex == NULL) return true;
+            blk = _blockChain.iterator(hashStop);
+            if (!blk) return true;
         }
         else {
             // Find the last block the caller has in the main chain
-            pindex = _blockChain.getBlockIndex(locator);
-            if (pindex)
-                pindex = pindex->pnext;
+            blk = _blockChain.iterator(locator);
+            if (!!blk)
+                ++blk;
         }
         
         vector<Block> vHeaders;
         int nLimit = 2000 + _blockChain.getDistanceBack(locator);
-        printf("getheaders %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.toString().substr(0,20).c_str(), nLimit);
-        for (; pindex; pindex = pindex->pnext) {
-            vHeaders.push_back(pindex->GetBlockHeader());
-            if (--nLimit <= 0 || pindex->GetBlockHash() == hashStop)
+        int height = blk.height();
+        log_debug("getheaders %d to %s limit %d\n", (!!blk ? height : -1), hashStop.toString().substr(0,20).c_str(), nLimit);
+        for (; !!blk; ++blk) {
+            Block block;
+            _blockChain.getBlockHeader(blk, block);
+            vHeaders.push_back(block);
+            if (--nLimit <= 0 || blk->hash == hashStop)
                 break;
         }
         origin->PushMessage("headers", vHeaders);
@@ -138,7 +144,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
             return error("message getdata size() = %d", vInv.size());
         
         BOOST_FOREACH(const Inventory& inv, vInv) {
-            printf("received getdata for: %s\n", inv.toString().c_str());
+            log_debug("received getdata for: %s\n", inv.toString().c_str());
             
             if (inv.getType() == MSG_BLOCK) {
                 // Send block from disk
@@ -175,7 +181,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                 origin->AddInventoryKnown(inv);
                 
                 bool fAlreadyHave = alreadyHave(inv);
-                printf("  got inventory: %s  %s\n", inv.toString().c_str(), fAlreadyHave ? "have" : "new");
+                log_debug("  got inventory: %s  %s\n", inv.toString().c_str(), fAlreadyHave ? "have" : "new");
                 
                 if (!fAlreadyHave)
                     origin->AskFor(inv);
@@ -187,7 +193,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
     }
     else if (msg.command() == "version") {
         // Ask the first connected node for block updates
-        static int nAskedForBlocks;
+        static int nAskedForBlocks = -2;
         if (!origin->fClient && (origin->nVersion < 32000 || origin->nVersion >= 32400) && (nAskedForBlocks < 1 || origin->getAllPeers().size() <= 1)) {
             nAskedForBlocks++;
             origin->PushGetBlocks(_blockChain.getBestLocator(), uint256(0));
@@ -209,21 +215,23 @@ uint256 BlockFilter::getOrphanRoot(const Block* pblock) {
 /// Need access to mapOrphanBlocks/ByPrev and a call to GetOrphanRoot
 bool BlockFilter::process(const Block& block, Peers peers) {
     uint256 hash = block.getHash();
-    // Store to disk
-    if (!_blockChain.acceptBlock(block))
-        return error("ProcessBlock() : AcceptBlock FAILED");
-    else {
-        // notify all listeners
-        for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
-            (*listener->get())(block);
+    // Store in DB
+    try {
+        _blockChain.acceptBlock(block);
+    }
+    catch (std::exception &e) {
+        return error((string("acceptBlock failed: ") + e.what()).c_str());
+    }
+    // notify all listeners
+    for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
+        (*listener->get())(block);
 
-        // Relay inventory, but don't relay old inventory during initial block download
-        uint256 bestChain = _blockChain.getBestChain();
-        if (bestChain == hash) {
-            for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
-                if (_blockChain.getBestHeight() > ((*peer)->getStartingHeight() != -1 ? (*peer)->getStartingHeight() - 2000 : _blockChain.getTotalBlocksEstimate()))
-                    (*peer)->PushInventory(Inventory(MSG_BLOCK, hash));
-        }
+    // Relay inventory, but don't relay old inventory during initial block download
+    uint256 bestChain = _blockChain.getBestChain();
+    if (bestChain == hash) {
+        for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
+            if (_blockChain.getBestHeight() > ((*peer)->getStartingHeight() != -1 ? (*peer)->getStartingHeight() - 2000 : _blockChain.getTotalBlocksEstimate()))
+                (*peer)->PushInventory(Inventory(MSG_BLOCK, hash));
     }
     
     // Recursively process any orphan blocks that depended on this one
@@ -235,11 +243,12 @@ bool BlockFilter::process(const Block& block, Peers peers) {
              mi != _orphanBlocksByPrev.upper_bound(hashPrev);
              ++mi) {
             Block* orphan = (*mi).second;
-            if (_blockChain.acceptBlock(*orphan)) {
+            try {
+                _blockChain.acceptBlock(*orphan);
                 // notify all listeners
                 for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
                     (*listener->get())(block);
-
+                
                 workQueue.push_back(orphan->getHash());
                 // Relay inventory, but don't relay old inventory during initial block download
                 uint256 bestChain = _blockChain.getBestChain();
@@ -250,13 +259,16 @@ bool BlockFilter::process(const Block& block, Peers peers) {
                             (*peer)->PushInventory(Inventory(MSG_BLOCK, blockHash));
                 }
             }
+            catch (std::exception &e) {
+                log_warn((string("acceptBlock orphan failed: ") + e.what()).c_str());
+            }
             _orphanBlocks.erase(orphan->getHash());
             delete orphan;
         }
         _orphanBlocksByPrev.erase(hashPrev);
     }
     //    _blockChain.outputPerformanceTimings();
-    printf("ProcessBlock: ACCEPTED\n");
+    log_debug("ProcessBlock: ACCEPTED\n");
     return true;
 }
 

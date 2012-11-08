@@ -19,6 +19,7 @@
 
 #include <coin/Address.h>
 #include <coin/util.h>
+#include <coin/Logger.h>
 //#include <coinChain/Peer.h>
 
 #include <iostream>
@@ -54,7 +55,7 @@ void ChatClient::handle_resolve(const system::error_code& err, tcp::resolver::it
             _socket.async_connect(endpoint, bind(&ChatClient::handle_connect, this, placeholders::error, ++endpoint_iterator));
     }
     else {
-        printf("Error: %s\n", err.message().c_str());
+        log_warn("Error: %s\n", err.message().c_str());
         _socket.close();
         _mode = wait_for_notice;
         tcp::resolver::query query(_server, "irc"); // should we remove irc as service type ?
@@ -77,7 +78,7 @@ void ChatClient::handle_connect(const boost::system::error_code& err, tcp::resol
         _socket.async_connect(endpoint, bind(&ChatClient::handle_connect, this, placeholders::error, ++endpoint_iterator));
     }
     else {
-        printf("Error: %s\n", err.message().c_str());
+        log_warn("Error: %s\n", err.message().c_str());
         _socket.close();
         _mode = wait_for_notice;
         tcp::resolver::query query(_server, "irc"); // should we remove irc as service type ?
@@ -131,7 +132,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                     async_write(_socket, _send, boost::bind(&ChatClient::handle_write_request, this, boost::asio::placeholders::error));
                 }
                 else if (rx.find(" 433 ") != string::npos) { // 
-                    printf("IRC name already in use\n");
+                    log_debug("IRC name already in use\n");
                     _name_in_use = true;
                     // close and rejoin
                     _socket.close();
@@ -156,7 +157,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                             
                             // Hybrid IRC used by lfnet always returns IP when you userhost yourself,
                             // but in case another IRC is ever used this should work.
-                            printf("GetIPFromIRC() got userhost %s\n", host.c_str());
+                            log_debug("GetIPFromIRC() got userhost %s\n", host.c_str());
                             Endpoint endpoint(host, 0, true);
                             if (endpoint.isValid()) {
                                 _endpointPool.setLocal(endpoint);
@@ -210,7 +211,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                     // index 7 is limited to 16 characters
                     // could get full length name at index 10, but would be different from join messages
                     name = words[7];
-                    printf("IRC got who\n");
+                    log_debug("IRC got who\n");
                 }
                 
                 if (words[1] == "JOIN" && words[0].size() > 1) {
@@ -221,7 +222,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                         name = words[0].substr(1, exclamation_pos-1); // the 1, -1 is due to the colon
                                                                       //                    if (strchr(pszName, '!'))
                                                                       //                        *strchr(pszName, '!') = '\0';
-                    printf("IRC got join\n");
+                    log_debug("IRC got join\n");
                 }
                 
                 if (name[0] == 'u') {
@@ -229,13 +230,13 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                     if (decodeAddress(name, endpoint)) {
                         endpoint.setTime(GetAdjustedTime());
                         if (_endpointPool.addEndpoint(endpoint, 51 * 60)) {
-                            printf("IRC got new address: %s\n", endpoint.toString().c_str());
+                            log_debug("IRC got new address: %s\n", endpoint.toString().c_str());
                             _notifier();
                         }
                         //                        nGotIREndpointes++;
                     }
                     else {
-                        printf("IRC decode failed\n");
+                        log_debug("IRC decode failed\n");
                     }
                 }
                 break;
@@ -260,7 +261,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
 void ChatClient::handle_write_request(const boost::system::error_code& err) {
     if (err) {
         // check if we were kicked out, then rejoin
-        std::cout << "Error: " << err.message() << "\n";
+        log_debug(err.message());
         // close and rejoin - we should add a postpone to this...
         _socket.close();
         _mode = wait_for_notice;

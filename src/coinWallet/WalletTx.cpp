@@ -9,6 +9,8 @@
 
 #include <coinWallet/Crypter.h>
 
+#include <coin/Logger.h>
+
 #include <openssl/rand.h>
 
 using namespace std;
@@ -153,7 +155,7 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
         PubKey vchPubKey;
         if (!ExtractAddress(txout.script(), pubKeyHash, scriptHash))
         {
-            printf("CWalletTx::GetAmounts: Unknown transaction type found, txid %s\n",
+            log_warn("CWalletTx::GetAmounts: Unknown transaction type found, txid %s\n",
                    this->getHash().toString().c_str());
             pubKeyHash = 0;
         }
@@ -246,7 +248,7 @@ void CWalletTx::AddSupportingTransactions(const BlockChain& blockChain)
                 ;
             }
             else {
-                printf("ERROR: AddSupportingTransactions() : unsupported transaction\n");
+                log_warn("ERROR: AddSupportingTransactions() : unsupported transaction\n");
                 continue;
             }
             

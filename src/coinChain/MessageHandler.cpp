@@ -45,26 +45,26 @@ bool MessageHandler::handleMessage(Peer* origin, Message& msg) {
         }
         return ret;
     } 
-    catch (OriginNotReady e) { // Must have a version message before anything else
+    catch (OriginNotReady& e) { // Must have a version message before anything else
     }
     catch (std::ios_base::failure& e) {
         if (strstr(e.what(), "end of data")) {
             // Allow exceptions from underlength message on vRecv
-            printf("ProcessMessage(%s, %u bytes) : Exception '%s' caught, normally caused by a message being shorter than its stated length\n", msg.command().c_str(), msg.payload().size(), e.what());
+            log_warn("ProcessMessage(%s, %u bytes) : Exception '%s' caught, normally caused by a message being shorter than its stated length\n", msg.command().c_str(), msg.payload().size(), e.what());
         }
         else if (strstr(e.what(), "size too large")) {
             // Allow exceptions from overlong size
-            printf("ProcessMessage(%s, %u bytes) : Exception '%s' caught\n", msg.command().c_str(), msg.payload().size(), e.what());
+            log_warn("ProcessMessage(%s, %u bytes) : Exception '%s' caught\n", msg.command().c_str(), msg.payload().size(), e.what());
         }
         else {
             PrintExceptionContinue(&e, "ProcessMessage()");
         }
     }
-    catch (std::exception& e) {
-        PrintExceptionContinue(&e, "ProcessMessage()");
-    }
-    catch (...) {
-        PrintExceptionContinue(NULL, "ProcessMessage()");
-    }
+    //    catch (std::exception& e) {
+    //        PrintExceptionContinue(&e, "ProcessMessage()");
+    //    }
+    //    catch (...) {
+    //        PrintExceptionContinue(NULL, "ProcessMessage()");
+    //    }
     return false;
 }

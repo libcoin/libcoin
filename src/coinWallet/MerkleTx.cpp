@@ -4,6 +4,7 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 #include <coinWallet/MerkleTx.h>
+#include <coin/Logger.h>
 
 using namespace std;
 
@@ -23,7 +24,7 @@ int CMerkleTx::setMerkleBranch(const Block& block, const BlockChain& blockChain)
     if (_index == txes.size()) {
         _merkleBranch.clear();
         _index = -1;
-        printf("ERROR: SetMerkleBranch() : couldn't find tx in block\n");
+        log_debug("ERROR: SetMerkleBranch() : couldn't find tx in block\n");
         return 0;
     }
     

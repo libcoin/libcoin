@@ -552,7 +552,7 @@ public:
         return *this;
     }
 
-    uint256(uint64 b)
+    explicit uint256(uint64 b)
     {
         pn[0] = (unsigned int)b;
         pn[1] = (unsigned int)(b >> 32);
@@ -642,7 +642,7 @@ inline const uint256 operator-(const uint256& a, const uint256& b)      { return
 
 
 
-
+/*
 inline int Testuint256AdHoc(std::vector<std::string> vArg)
 {
     uint256 g(0);
@@ -772,5 +772,5 @@ inline int Testuint256AdHoc(std::vector<std::string> vArg)
 
     return (0);
 }
-
+*/
 #endif

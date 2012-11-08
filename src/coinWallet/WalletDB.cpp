@@ -158,7 +158,7 @@ int CWalletDB::LoadWallet(Wallet* pwallet)
                 wtx.pwallet = pwallet;
 
                 if (wtx.getHash() != hash)
-                    printf("Error in wallet.dat, hash mismatch\n");
+                    log_error("Error in wallet.dat, hash mismatch\n");
 
                 // Undo serialize changes in 31600
                 if (31404 <= wtx.fTimeReceivedIsTxTime && wtx.fTimeReceivedIsTxTime <= 31703)
@@ -168,12 +168,12 @@ int CWalletDB::LoadWallet(Wallet* pwallet)
                         char fTmp;
                         char fUnused;
                         ssValue >> fTmp >> fUnused >> wtx.strFromAccount;
-                        printf("LoadWallet() upgrading tx ver=%d %d '%s' %s\n", wtx.fTimeReceivedIsTxTime, fTmp, wtx.strFromAccount.c_str(), hash.toString().c_str());
+                        log_info("LoadWallet() upgrading tx ver=%d %d '%s' %s\n", wtx.fTimeReceivedIsTxTime, fTmp, wtx.strFromAccount.c_str(), hash.toString().c_str());
                         wtx.fTimeReceivedIsTxTime = fTmp;
                     }
                     else
                     {
-                        printf("LoadWallet() repairing tx ver=%d %s\n", wtx.fTimeReceivedIsTxTime, hash.toString().c_str());
+                        log_info("LoadWallet() repairing tx ver=%d %s\n", wtx.fTimeReceivedIsTxTime, hash.toString().c_str());
                         wtx.fTimeReceivedIsTxTime = 0;
                     }
                     vWalletUpgrade.push_back(hash);
@@ -275,7 +275,7 @@ int CWalletDB::LoadWallet(Wallet* pwallet)
     BOOST_FOREACH(uint256 hash, vWalletUpgrade)
         WriteTx(hash, pwallet->mapWallet[hash]);
 
-    printf("nFileVersion = %d\n", nFileVersion);
+    log_debug("nFileVersion = %d\n", nFileVersion);
 
     // Upgrade
     if (nFileVersion < PROTOCOL_VERSION)
@@ -377,7 +377,7 @@ bool BackupWallet(const Wallet& wallet, const string& strDest)
 #else
                 filesystem::copy_file(pathSrc, pathDest);
 #endif
-                printf("copied wallet.dat to %s\n", pathDest.string().c_str());
+                log_info("copied wallet.dat to %s\n", pathDest.string().c_str());
 
                 return true;
             }

@@ -151,7 +151,7 @@ unsigned int PonziChain::nextWorkRequired(const CBlockIndex* pindexLast) const {
     
     // Limit adjustment step
     int64 nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
-    printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
+    log_debug("  nActualTimespan = %d  before bounds\n", nActualTimespan);
     if (nActualTimespan < nTargetTimespan/4)
         nActualTimespan = nTargetTimespan/4;
     if (nActualTimespan > nTargetTimespan*4)
@@ -167,10 +167,10 @@ unsigned int PonziChain::nextWorkRequired(const CBlockIndex* pindexLast) const {
         bnNew = proofOfWorkLimit();
     
     /// debug print
-    printf("GetNextWorkRequired RETARGET\n");
-    printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
-    printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().toString().c_str());
-    printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
+    log_debug("GetNextWorkRequired RETARGET\n");
+    log_debug("nTargetTimespan = %d    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
+    log_debug("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().toString().c_str());
+    log_debug("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
     
     return bnNew.GetCompact();
 }
@@ -311,7 +311,7 @@ int main(int argc, char* argv[])
         
         if(args.count("rescan")) {
             wallet.ScanForWalletTransactions();
-            printf("Scanned for wallet transactions");
+            log_info("Scanned for wallet transactions");
         }
         
         thread nodeThread(&Node::run, &node); // run this as a background thread
@@ -369,7 +369,7 @@ int main(int argc, char* argv[])
         
         server.run();
         
-        printf("Server exitted, shutting down Node and Miner...\n");
+        log_info("Server exitted, shutting down Node and Miner...\n");
         // getting here means that we have exited from the server (e.g. by the quit method)
         
         miner.shutdown();

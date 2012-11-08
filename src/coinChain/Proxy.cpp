@@ -15,6 +15,7 @@
  */
 
 #include <coin/util.h>
+#include <coin/Logger.h>
 #include <coinChain/Proxy.h>
 
 #include <boost/bind.hpp>
@@ -54,7 +55,7 @@ void Proxy::handle_proxy_connect(const system::error_code& e) {
         async_read(*_socket, _reply.buffers(), bind(&Proxy::handle_proxy_reply, this, placeholders::error, placeholders::bytes_transferred));
     }
     else {
-        printf("Failed connect to proxy server: \"%s\" to: %s\n", e.message().c_str(), lexical_cast<string>(_server).c_str());
+        log_error("Failed connect to proxy server: \"%s\" to: %s\n", e.message().c_str(), lexical_cast<string>(_server).c_str());
         _connection_handler(e);
     }
 
@@ -65,7 +66,7 @@ void Proxy::handle_write(const system::error_code& e, size_t bytes_transferred) 
         // ignore
     }
     else if (e != error::operation_aborted) {
-        printf("Proxy write error %s, disconnecting...\n", e.message().c_str());
+        log_error("Proxy write error %s, disconnecting...\n", e.message().c_str());
         // forward the error to the connection handler callback
         _connection_handler(e);
     }
@@ -77,12 +78,12 @@ void Proxy::handle_proxy_reply(const system::error_code& e, size_t bytes_transfe
         _connection_handler(e);
     }
     else if (e != error::operation_aborted) {
-        printf("Proxy write error %s, disconnecting...\n", e.message().c_str());
+        log_error("Proxy write error %s, disconnecting...\n", e.message().c_str());
         // forward the error to the connection handler callback
         _connection_handler(e);
     }
     else if (!_reply.success()) {
-        printf("Proxy connection error - status code %d...\n", _reply.status());
+        log_error("Proxy connection error - status code %d...\n", _reply.status());
         system::error_code err(_reply.status(), __application_category);
         _connection_handler(err);
     }

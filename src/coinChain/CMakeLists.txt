@@ -13,10 +13,9 @@ SET(TARGET_H
     ${HEADER_PATH}/db.h
     ${HEADER_PATH}/Alert.h
     ${HEADER_PATH}/AlertFilter.h
-    ${HEADER_PATH}/BlockIndex.h
-    ${HEADER_PATH}/BlockFile.h
     ${HEADER_PATH}/BlockChain.h
     ${HEADER_PATH}/BlockFilter.h
+    ${HEADER_PATH}/BlockTree.h
     ${HEADER_PATH}/Chain.h
     ${HEADER_PATH}/ChatClient.h
     ${HEADER_PATH}/Endpoint.h
@@ -46,9 +45,8 @@ SET(TARGET_SRC
     Alert.cpp
     AlertFilter.cpp
     BlockFilter.cpp
-    BlockIndex.cpp
-    BlockFile.cpp
     BlockChain.cpp
+    BlockTree.cpp
     Chain.cpp
     ChatClient.cpp
     Endpoint.cpp

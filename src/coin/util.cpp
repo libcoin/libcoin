@@ -5,6 +5,7 @@
 //#include "headers.h>
 #include <coin/util.h>
 #include <coin/Transaction.h>
+#include <coin/Logger.h>
 
 #include <boost/program_options/parsers.hpp>
 #include <boost/filesystem.hpp>
@@ -122,7 +123,7 @@ void RandAddSeedPerfmon()
     {
         RAND_add(pdata, nSize, nSize/100.0);
         memset(pdata, 0, nSize);
-        printf("%s RandAddSeed() %d bytes\n", DateTimeStrFormat("%x %H:%M", GetTime()).c_str(), nSize);
+        log_debug("%s RandAddSeed() %d bytes\n", DateTimeStrFormat("%x %H:%M", GetTime()).c_str(), nSize);
     }
 #endif
 }
@@ -298,7 +299,7 @@ bool error(const char* format, ...)
         ret = limit - 1;
         buffer[limit-1] = 0;
     }
-    printf("ERROR: %s\n", buffer);
+    log_error("ERROR: %s\n", buffer);
     return false;
 }
 
@@ -488,14 +489,14 @@ void LogException(std::exception* pex, const char* pszThread)
 {
     char pszMessage[10000];
     FormatException(pszMessage, pex, pszThread);
-    printf("\n%s", pszMessage);
+    log_error("\n%s", pszMessage);
 }
 
 void PrintException(std::exception* pex, const char* pszThread)
 {
     char pszMessage[10000];
     FormatException(pszMessage, pex, pszThread);
-    printf("\n\n************************\n%s\n", pszMessage);
+    log_error("\n\n************************\n%s\n", pszMessage);
     fprintf(stderr, "\n\n************************\n%s\n", pszMessage);
     strMiscWarning = pszMessage;
 #ifdef GUI
@@ -697,7 +698,7 @@ void AddTimeData(unsigned int ip, int64 nTime)
     if (vTimeOffsets.empty())
         vTimeOffsets.push_back(0);
     vTimeOffsets.push_back(nOffsetSample);
-    printf("Added time data, samples %d, offset %+"PRI64d" (%+"PRI64d" minutes)\n", vTimeOffsets.size(), vTimeOffsets.back(), vTimeOffsets.back()/60);
+    log_debug("Added time data, samples %d, offset %+"PRI64d" (%+"PRI64d" minutes)\n", vTimeOffsets.size(), vTimeOffsets.back(), vTimeOffsets.back()/60);
     if (vTimeOffsets.size() >= 5 && vTimeOffsets.size() % 2 == 1)
     {
         sort(vTimeOffsets.begin(), vTimeOffsets.end());
@@ -725,14 +726,14 @@ void AddTimeData(unsigned int ip, int64 nTime)
                     fDone = true;
                     string strMessage = "Warning: Please check that your computer's date and time are correct.  If your clock is wrong Bitcoin will not work properly.";
                     strMiscWarning = strMessage;
-                    printf("*** %s\n", strMessage.c_str());
+                    log_warn("*** %s\n", strMessage.c_str());
 //                    boost::thread(boost::bind(ThreadSafeMessageBox, strMessage+" ", string("Bitcoin"), wxOK | wxICON_EXCLAMATION, (wxWindow*)NULL, -1, -1));
                 }
             }
         }
         BOOST_FOREACH(int64 n, vTimeOffsets)
-            printf("%+"PRI64d"  ", n);
-        printf("|  nTimeOffset = %+"PRI64d"  (%+"PRI64d" minutes)\n", nTimeOffset, nTimeOffset/60);
+            log_debug("%+d  ", n);
+        log_debug("|  nTimeOffset = %+d  (%+d minutes)\n", nTimeOffset, nTimeOffset/60);
     }
 }
 
@@ -806,20 +807,20 @@ static boost::thread_specific_ptr<LockStack> lockstack;
 
 static void potential_deadlock_detected(const std::pair<CCriticalSection*, CCriticalSection*>& mismatch, const LockStack& s1, const LockStack& s2)
 {
-    printf("POTENTIAL DEADLOCK DETECTED\n");
-    printf("Previous lock order was:\n");
+    log_error("POTENTIAL DEADLOCK DETECTED\n");
+    log_error("Previous lock order was:\n");
     BOOST_FOREACH(const PAIRTYPE(CCriticalSection*, CLockLocation)& i, s2)
     {
-        if (i.first == mismatch.first) printf(" (1)");
-        if (i.first == mismatch.second) printf(" (2)");
-        printf(" %s\n", i.second.toString().c_str());
+        if (i.first == mismatch.first) log_error(" (1)");
+        if (i.first == mismatch.second) log_error(" (2)");
+        log_error(" %s\n", i.second.toString().c_str());
     }
-    printf("Current lock order is:\n");
+    log_error("Current lock order is:\n");
     BOOST_FOREACH(const PAIRTYPE(CCriticalSection*, CLockLocation)& i, s1)
     {
-        if (i.first == mismatch.first) printf(" (1)");
-        if (i.first == mismatch.second) printf(" (2)");
-        printf(" %s\n", i.second.toString().c_str());
+        if (i.first == mismatch.first) log_error(" (1)");
+        if (i.first == mismatch.second) log_error(" (2)");
+        log_error(" %s\n", i.second.toString().c_str());
     }
 }
 
@@ -829,7 +830,7 @@ static void push_lock(CCriticalSection* c, const CLockLocation& locklocation)
     if (lockstack.get() == NULL)
         lockstack.reset(new LockStack);
 
-    if (fDebug) printf("Locking: %s\n", locklocation.toString().c_str());
+    if (fDebug) log_debug("Locking: %s\n", locklocation.toString().c_str());
     dd_mutex.lock();
 
     (*lockstack).push_back(std::make_pair(c, locklocation));
@@ -858,7 +859,7 @@ static void pop_lock()
     if (fDebug) 
     {
         const CLockLocation& locklocation = (*lockstack).rbegin()->second;
-        printf("Unlocked: %s\n", locklocation.toString().c_str());
+        log_debug("Unlocked: %s\n", locklocation.toString().c_str());
     }
     dd_mutex.lock();
     (*lockstack).pop_back();

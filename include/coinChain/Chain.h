@@ -20,12 +20,10 @@
 #include <coin/Block.h>
 
 #include <coinChain/Export.h>
+#include <coinChain/BlockTree.h>
 
 #include <boost/noncopyable.hpp>
 #include <boost/array.hpp>
-
-class CBlockIndex;
-class Transaction;
 
 /// Pure virtual baseclass Chain defining a chain. Using this template you can define any bitcoin based cryptocurrency.
 
@@ -42,7 +40,7 @@ public:
     virtual const uint256& genesisHash() const = 0;
     virtual const int64 subsidy(unsigned int height) const = 0;
     virtual bool isStandard(const Transaction& tx) const = 0;
-    virtual unsigned int nextWorkRequired(const CBlockIndex* pindexLast) const = 0;
+    virtual unsigned int nextWorkRequired(BlockIterator blk) const = 0;
     virtual const CBigNum proofOfWorkLimit() const = 0;
     
     //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const = 0;
@@ -82,7 +80,7 @@ public:
     virtual const int64 subsidy(unsigned int height) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 32); }
-    virtual unsigned int nextWorkRequired(const CBlockIndex* pindexLast) const ;
+    virtual unsigned int nextWorkRequired(BlockIterator blk) const;
     //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const;
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
     virtual unsigned int totalBlocksEstimate() const;
@@ -126,7 +124,7 @@ public:
     virtual const int64 subsidy(unsigned int height) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 28); }
-    virtual unsigned int nextWorkRequired(const CBlockIndex* pindexLast) const ;
+    virtual unsigned int nextWorkRequired(BlockIterator blk) const;
     //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const;
     
     virtual const std::string dataDirSuffix() const { return "bitcoin/testnet"; };

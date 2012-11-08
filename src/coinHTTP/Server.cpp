@@ -15,6 +15,7 @@
  */
 
 #include <coinHTTP/Server.h>
+#include <coin/Logger.h>
 #include <boost/bind.hpp>
 #include <signal.h>
 
@@ -81,6 +82,7 @@ void Server::setCredentials(const std::string dataDir, const std::string cert, c
 }
 
 void Server::run() {
+    Logger::label_thread("server");
     // The io_service::run() call will block until all asynchronous operations
     // have finished. While the server is running, there is always at least one
     // asynchronous operation outstanding: the asynchronous accept call waiting

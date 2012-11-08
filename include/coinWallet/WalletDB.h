@@ -122,7 +122,7 @@ public:
         nWalletDBUpdated++;
         return Write(std::make_pair(std::string("mkey"), nID), kMasterKey, true);
     }
-
+/*
     bool WriteBestBlock(const CBlockLocator& locator)
     {
         boost::mutex::scoped_lock lock(_write);
@@ -134,7 +134,7 @@ public:
     {
         return Read(std::string("bestblock"), locator);
     }
-
+*/
     bool ReadDefaultKey(PubKey& vchPubKey)
     {
         vchPubKey.clear();

@@ -80,7 +80,7 @@ public:
 
     void print() const
     {
-        printf("%s", toString().c_str());
+        log_info("%s", toString().c_str());
     }
     
     const std::string& getStatusBar() const { return _status_bar; }

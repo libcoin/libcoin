@@ -17,6 +17,12 @@
 #ifndef HTTP_CONNECTION_HPP
 #define HTTP_CONNECTION_HPP
 
+#include <coinHTTP/Export.h>
+#include <coinHTTP/Reply.h>
+#include <coinHTTP/Request.h>
+#include <coinHTTP/RequestHandler.h>
+#include <coinHTTP/RequestParser.h>
+
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
 #include <boost/noncopyable.hpp>
@@ -24,12 +30,6 @@
 
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio/ssl.hpp>
-
-#include <coinHTTP/Export.h>
-#include <coinHTTP/Reply.h>
-#include <coinHTTP/Request.h>
-#include <coinHTTP/RequestHandler.h>
-#include <coinHTTP/RequestParser.h>
 
 class ConnectionManager;
 

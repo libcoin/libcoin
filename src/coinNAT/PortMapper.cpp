@@ -15,6 +15,7 @@
  */
 
 #include <coin/util.h>
+#include <coin/Logger.h>
 #include <coinNAT/PortMapper.h>
 
 #include "miniupnpc/miniwget.h"
@@ -57,7 +58,7 @@ void PortMapper::handle_mapping(const boost::system::error_code& e) {
     if(e == error::operation_aborted)
         return; // ignore cancel
     if(e) {
-        printf("PortMapper timer error: %s\n", e.message().c_str());
+        log_debug("PortMapper timer error: %s\n", e.message().c_str());
         _repeat_timer.expires_from_now(boost::posix_time::seconds(_repeat_interval));
     }
     else {
@@ -115,7 +116,7 @@ void PortMapper::handle_mapping(const boost::system::error_code& e) {
 }
         
 void PortMapper::reqIDGportmap(unsigned short p) {
-    printf("PortMapper::getIDGdevice()...\n");
+    log_debug("PortMapper::getIDGdevice()...\n");
     
     const char * multicastif = 0;
     const char * minissdpdpath = 0;
@@ -139,7 +140,7 @@ void PortMapper::reqIDGportmap(unsigned short p) {
         FreeUPNPUrls(&_impl->urls);        
     }
     else {
-        printf("No valid UPnP IGDs found\n");
+        log_debug("No valid UPnP IGDs found\n");
         _idg_mapping = false;
         freeUPNPDevlist(_impl->devlist); _impl->devlist = 0;
         if (r != 0)
@@ -174,12 +175,12 @@ boost::tribool PortMapper::repPMPportmap() {
     closenatpmp(&_impl->natpmp);    
 
     if(r == 0)
-        printf("NATPMP: mapped public port %hu to localport %hu liftime %u\n",
+        log_info("NATPMP: mapped public port %hu to localport %hu liftime %u\n",
                _impl->response.pnu.newportmapping.mappedpublicport,
                _impl->response.pnu.newportmapping.privateport,
                _impl->response.pnu.newportmapping.lifetime);
     else
-        printf("NATPMP: PORTMAP FAILED");
+        log_warn("NATPMP: PORTMAP FAILED");
     
     return (r == 0);
 }

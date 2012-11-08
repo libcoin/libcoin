@@ -22,7 +22,6 @@
 #include <coinChain/MessageHandler.h>
 #include <coinChain/Endpoint.h>
 #include <coinChain/MessageParser.h>
-#include <coinChain/BlockIndex.h>
 #include <coinChain/Inventory.h>
 
 #include <boost/asio.hpp>
@@ -120,7 +119,7 @@ public:
     int64 nReleaseTime;
     std::map<uint256, CRequestTracker> mapRequests;
     uint256 hashContinue;
-    CBlockLocator locatorLastGetBlocksBegin;
+    BlockLocator locatorLastGetBlocksBegin;
     uint256 hashLastGetBlocksEnd;
     
     // flood relay
@@ -238,7 +237,7 @@ public:
     
     bool ProcessMessages();
     
-    void PushGetBlocks(const CBlockLocator locatorBegin, uint256 hashEnd);
+    void PushGetBlocks(const BlockLocator locatorBegin, uint256 hashEnd);
 
 private:
     /// The inital height of the connected node.

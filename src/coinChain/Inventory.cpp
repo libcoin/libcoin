@@ -76,5 +76,5 @@ std::string Inventory::toString() const
 
 void Inventory::print() const
 {
-    printf("Inventory(%s)\n", toString().c_str());
+    log_info("Inventory(%s)\n", toString().c_str());
 }

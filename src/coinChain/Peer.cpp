@@ -15,10 +15,14 @@
  */
 
 #include <coinChain/Peer.h>
-#include <vector>
-#include <boost/bind.hpp>
 #include <coinHTTP/ConnectionManager.h>
 #include <coinHTTP/RequestHandler.h>
+
+#include <coin/Logger.h>
+
+#include <boost/bind.hpp>
+
+#include <vector>
 
 using namespace std;
 using namespace boost;
@@ -69,7 +73,7 @@ ip::tcp::socket& Peer::socket() {
 }
 
 void Peer::start() {
-    printf("Starting Peer: %s\n", addr.toString().c_str());
+    log_info("Starting Peer: %s\n", addr.toString().c_str());
     // Be shy and don't send version until we hear
     if (!fInbound) {
         PushVersion();
@@ -99,7 +103,7 @@ void Peer::check_activity(const system::error_code& e) {
         }
     }
     else if (e != error::operation_aborted) {
-        printf("Boost deadline timer error in Peer: %s\n", e.message().c_str());
+        log_info("Boost deadline timer error in Peer: %s\n", e.message().c_str());
     }
 
     // we ignore abort errors - they are generated due to timer cancels 
@@ -164,7 +168,7 @@ void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferre
         //        async_read(_socket, _recv, bind(&Peer::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
     }
     else if (e != error::operation_aborted) {
-        printf("Read error %s, disconnecting... (read %d bytes though) \n", e.message().c_str(), bytes_transferred);
+        log_error("Read error %s, disconnecting... (read %d bytes though) \n", e.message().c_str(), bytes_transferred);
         _peerManager.post_stop(shared_from_this());
     }
 }
@@ -177,7 +181,7 @@ void Peer::reply() {
         while (!mapAskFor.empty() && (*mapAskFor.begin()).first <= nNow)  {
             const Inventory& inv = (*mapAskFor.begin()).second;
             // we have already checkked for this (I think???)            if (!AlreadyHave(inv))
-            printf("sending getdata: %s\n", inv.toString().c_str());
+            log_debug("sending getdata: %s\n", inv.toString().c_str());
             vGetData.push_back(inv);
             if (vGetData.size() >= 1000) {
                 PushMessage("getdata", vGetData);
@@ -244,7 +248,7 @@ void Peer::broadcast() {
                 RAND_bytes((unsigned char*)&hashSalt, sizeof(hashSalt));
             uint256 hashRand = inv.getHash() ^ hashSalt;
             hashRand = Hash(BEGIN(hashRand), END(hashRand));
-            bool fTrickleWait = ((hashRand & 3) != 0);
+            bool fTrickleWait = ((hashRand & uint256(3)) != 0);
             if (fTrickleWait) {
                 vInvWait.push_back(inv);
                 continue;
@@ -288,7 +292,7 @@ void Peer::handle_write(const system::error_code& e, size_t bytes_transferred) {
         //        _activity = true;
     }
     else if (e != error::operation_aborted) {
-        printf("Write error %s, disconnecting...\n", e.message().c_str());
+        log_info("Write error %s, disconnecting...\n", e.message().c_str());
         _peerManager.post_stop(shared_from_this());
     }
 }
@@ -318,7 +322,7 @@ void Peer::AskFor(const Inventory& inv) {
     // We're using mapAskFor as a priority queue,
     // the key is the earliest time the request can be sent
     int64& nRequestTime = mapAlreadyAskedFor[inv];
-    printf("askfor %s   %"PRI64d"\n", inv.toString().c_str(), nRequestTime);
+    log_debug("askfor %s   %"PRI64d"\n", inv.toString().c_str(), nRequestTime);
     
     // Make sure not to reuse time indexes to keep things in the same order
     int64 nNow = (GetTime() - 1) * 1000000;
@@ -337,8 +341,8 @@ void Peer::BeginMessage(const char* pszCommand) {
     vSend << MessageHeader(_chain, pszCommand, 0);
     nMessageStart = vSend.size();
     if (fDebug)
-        printf("%s ", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());
-    printf("sending: %s ", pszCommand);
+        log_debug("%s ", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());
+    log_debug("sending: %s ", pszCommand);
 }
 
 void Peer::AbortMessage() {
@@ -347,7 +351,7 @@ void Peer::AbortMessage() {
     vSend.resize(nHeaderStart);
     nHeaderStart = -1;
     nMessageStart = -1;
-    printf("(aborted)\n");
+    log_debug("(aborted)\n");
 }
 
 void Peer::EndMessage() {
@@ -375,8 +379,8 @@ void Peer::EndMessage() {
         memcpy((char*)&vSend[nHeaderStart] + offsetof(MessageHeader, nChecksum), &nChecksum, sizeof(nChecksum));
     }
     
-    printf("(%d bytes) ", nSize);
-    printf("\n");
+    log_debug("(%d bytes) ", nSize);
+    log_debug("\n");
     
     nHeaderStart = -1;
     nMessageStart = -1;
@@ -405,7 +409,7 @@ void Peer::PushVersion() {
                 _nonce, _sub_version, _startingHeight);
 }
 
-void Peer::PushGetBlocks(const CBlockLocator locatorBegin, uint256 hashEnd)
+void Peer::PushGetBlocks(const BlockLocator locatorBegin, uint256 hashEnd)
 {
     // Filter out duplicate requests
     if (locatorBegin == locatorLastGetBlocksBegin && hashEnd == hashLastGetBlocksEnd)

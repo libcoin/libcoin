@@ -16,6 +16,7 @@
 
 #include <coinChain/MessageHeader.h>
 #include <coin/util.h>
+#include <coin/Logger.h>
 
 #ifndef _WIN32
 # include <arpa/inet.h>
@@ -77,7 +78,7 @@ bool MessageHeader::IsValid(const Chain& chain) const
     // Message size
     if (nMessageSize > MAX_SIZE)
     {
-        printf("MessageHeader::IsValid() : (%s, %u bytes) nMessageSize > MAX_SIZE\n", GetCommand().c_str(), nMessageSize);
+        log_debug("MessageHeader::IsValid() : (%s, %u bytes) nMessageSize > MAX_SIZE\n", GetCommand().c_str(), nMessageSize);
         return false;
     }
 

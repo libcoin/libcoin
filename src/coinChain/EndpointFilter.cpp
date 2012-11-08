@@ -64,7 +64,7 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
                 static uint256 hashSalt; // belongs to the Handler/Node...
                 if (hashSalt == 0)
                     RAND_bytes((unsigned char*)&hashSalt, sizeof(hashSalt));
-                uint256 hashRand = hashSalt ^ (((int64)ep.getIP())<<32) ^ ((GetTime() + ep.getIP())/(24*60*60));
+                uint256 hashRand = hashSalt ^ uint256(((int64)ep.getIP())<<32) ^ uint256((GetTime() + ep.getIP())/(24*60*60));
                 hashRand = Hash(BEGIN(hashRand), END(hashRand));
                 multimap<uint256, Peer*> mapMix;
                 Peers peers = origin->getAllPeers();
@@ -73,7 +73,7 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
                         continue;
                     unsigned int nPointer;
                     memcpy(&nPointer, &(*peer), sizeof(nPointer));
-                    uint256 hashKey = hashRand ^ nPointer;
+                    uint256 hashKey = hashRand ^ uint256(nPointer);
                     hashKey = Hash(BEGIN(hashKey), END(hashKey));
                     mapMix.insert(make_pair(hashKey, peer->get()));
                 }

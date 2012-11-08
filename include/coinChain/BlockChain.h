@@ -25,9 +25,8 @@
 #include <coinChain/Export.h>
 #include <coinChain/db.h>
 
-#include <coinChain/BlockIndex.h>
-#include <coinChain/BlockFile.h>
 #include <coinChain/Chain.h>
+#include <coinChain/BlockTree.h>
 
 #include <boost/noncopyable.hpp>
 #include <boost/thread/shared_mutex.hpp>
@@ -36,142 +35,35 @@
 
 class Transaction;
 
-class COINCHAIN_EXPORT DiskTxPos
-{
-public:
-    
-    DiskTxPos()
-    {
-    setNull();
-    }
-    
-    DiskTxPos(unsigned int file, unsigned int blockPos, unsigned int txPos) : _file(file), _blockPos(blockPos), _txPos(txPos) {}
-    
-    IMPLEMENT_SERIALIZE( READWRITE(FLATDATA(*this)); )
-    
-    void setNull() { _file = -1; _blockPos = 0; _txPos = 0; }
-    bool isNull() const { return (_file == -1); }
-    
-    const unsigned int getFile() const { return _file; }
-    const unsigned int getBlockPos() const { return _blockPos; }
-    const unsigned int getTxPos() const { return _txPos; }
-    
-    friend bool operator==(const DiskTxPos& a, const DiskTxPos& b)
-    {
-    return (a._file     == b._file &&
-            a._blockPos == b._blockPos &&
-            a._txPos    == b._txPos);
-    }
-    
-    friend bool operator!=(const DiskTxPos& a, const DiskTxPos& b)
-    {
-    return !(a == b);
-    }
-    
-    std::string toString() const
-    {
-    if (isNull())
-        return strprintf("null");
-    else
-        return strprintf("(nFile=%d, nBlockPos=%d, nTxPos=%d)", _file, _blockPos, _txPos);
-    }
-    
-    void print() const
-    {
-    printf("%s", toString().c_str());
-    }
-private:
-    unsigned int _file;
-    unsigned int _blockPos;
-    unsigned int _txPos;
-};
-
-/// A txdb record that contains the disk location of a transaction and the
-/// locations of transactions that spend its outputs.  vSpent is really only
-/// used as a flag, but having the location is very helpful for debugging.
-
-class COINCHAIN_EXPORT TxIndex
-{
-public:
-    
-    TxIndex()
-    {
-    setNull();
-    }
-    
-    TxIndex(const DiskTxPos& pos, unsigned int outputs) : _pos(pos)
-    {
-    _spents.resize(outputs);
-    }
-    
-    IMPLEMENT_SERIALIZE
-    (
-     if (!(nType & SER_GETHASH))
-     READWRITE(nVersion);
-     READWRITE(_pos);
-     READWRITE(_spents);
-     )
-    
-    void setNull()
-    {
-    _pos.setNull();
-    _spents.clear();
-    }
-    
-    bool isNull()
-    {
-    return _pos.isNull();
-    }
-    
-    const DiskTxPos& getPos() const { return _pos; }
-    
-    const size_t getNumSpents() const { return _spents.size(); }
-    const DiskTxPos& getSpent(unsigned int n) { return _spents[n]; }
-    const std::vector<DiskTxPos> getSpents() const { return _spents; }
-    void resizeSpents(size_t size) { _spents.resize(size); }
-    void setSpent(const unsigned int n, const DiskTxPos& pos) { _spents[n] = pos; };
-    void setNotSpent(const unsigned int n) { _spents[n].setNull(); }
-    
-    friend bool operator==(const TxIndex& a, const TxIndex& b)
-    {
-    return (a._pos    == b._pos &&
-            a._spents == b._spents);
-    }
-    
-    friend bool operator!=(const TxIndex& a, const TxIndex& b)
-    {
-    return !(a == b);
-    }
-private:
-    DiskTxPos _pos;
-    std::vector<DiskTxPos> _spents;
-};
-
-/// BlockChain encapsulates the BlockChain and provides a const interface for querying properties for blocks and transactions. 
-/// BlockChain also provides an interface for adding new blocks and transactions. (non-const)
-/// BlockChain automatically handles adding new transactions to a memorypool and erasing them again when a block containing the transaction is added.
-
-/// BlockChain inhierits from CDB, has a Chain definition reference and has a BlockFile. In fact BlockChain is the only class to access the block index db and the block file. BlockChain is hence thread safe for all const querying and for adding blocks and transactions, the user is responsible for not calling these methods at the same time from multiple threads.
-
-typedef std::map<uint256, CBlockIndex*> BlockChainIndex;
-typedef std::map<uint256, Transaction> TransactionIndex;
-typedef std::map<uint160, Coins> AssetIndex;
 typedef std::vector<Transaction> Transactions;
-typedef std::vector<Block> Blocks;
+//typedef std::vector<Block> Blocks;
+typedef std::map<uint256, Block> Branches;
 
-class COINCHAIN_EXPORT BlockChain : private CDB, private Database
+class Branch;
+
+class COINCHAIN_EXPORT BlockChain : private Database
 {
 private: // noncopyable
     BlockChain(const BlockChain&);
     void operator=(const BlockChain&);
 
 public:
-    /// The constructor - reference to a Chain definition i obligatory, if no dataDir is provided, the location for the db and the file is chosen from the Chain definition and the CDB::defaultDir method 
-    BlockChain(const Chain& chain = bitcoin, const std::string dataDir = "", const char* pszMode="cr+");
+    class Reject: public std::runtime_error {
+    public:
+        Reject(const std::string& s) : std::runtime_error(s.c_str()) {}
+    };
+    class Error: public std::runtime_error {
+    public:
+        Error(const std::string& s) : std::runtime_error(s.c_str()) {}
+    };
     
+    /// The constructor - reference to a Chain definition i obligatory, if no dataDir is provided, the location for the db and the file is chosen from the Chain definition and the CDB::defaultDir method
+    BlockChain(const Chain& chain = bitcoin, const std::string dataDir = "");
+
     /// T R A N S A C T I O N S    
     
     /// Get transactions from db or memory.
+    void getTransaction(const int64 tx, Transaction &txn) const;
     void getTransaction(const uint256& hash, Transaction& tx) const;
     void getTransaction(const uint256& hash, Transaction& tx, int64& height, int64& time) const;
     
@@ -179,11 +71,17 @@ public:
     Transactions unconfirmedTransactions() const {
         // lock the pool and chain for reading
         boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+        
+        Transactions txns;
+        std::vector<int64> txs = _findBlockTransactions(0);
 
-        Transactions txes;
-        for(TransactionIndex::const_iterator i = _transactionIndex.begin(); i != _transactionIndex.end(); ++i)
-            txes.push_back(i->second);
-        return txes;
+        for (std::vector<int64>::const_iterator tx = txs.begin(); tx != txs.end(); ++tx) {
+            Transaction txn;
+            getTransaction(*tx, txn);
+            txns.push_back(txn);
+        }
+        
+        return txns;
     }
     
     /// Query for existence of a Transaction.
@@ -195,63 +93,47 @@ public:
     /// Dry run version of the acceptTransaction method. Hence it is const. For probing transaction before they are scheduled for submission to the chain network.
     bool checkTransaction(const Transaction& tx) const {
         boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
-        return CheckForMemoryPool(tx);
+        //        return CheckForMemoryPool(tx);
     }
     
     /// Accept transaction (it will go into memory first)
-    bool acceptTransaction(const Transaction& tx) { 
-        return AcceptToMemoryPool(tx);
-    }
+    //    void acceptTransaction(const Transaction& txn, int64& fees, int64 min_fee);
+    void acceptTransaction(const Transaction& txn, bool verify = true);
+    void acceptBlockTransaction(const Transaction txn, int64& fees, int64 min_fee, BlockIterator blk = BlockIterator(), int64 idx = 0, bool verify = true);
+    void reacceptTransaction(int64 tx);
     
-    bool acceptTransaction(const Transaction& tx, bool& missing_inputs) { 
-        bool mi = false;
-        bool ret = AcceptToMemoryPool(tx, true, &mi);
-        missing_inputs = mi;
-        return ret;
-    }
-
     /// C O I N S
     
     bool isSpent(Coin coin) const;
     /// This rather strange name refers to this coin included in a transaction in the memorypool
-    bool beingSpent(Coin coin) const { return _transactionConnections.find(coin) != _transactionConnections.end(); }
-    int getNumSpent(uint256 hash) const ;
-    uint256 spentIn(Coin coin) const;
+    bool beingSpent(Coin coin) const { return _beingSpent(coin.hash, (int64)coin.index); }
 
     int64 value(Coin coin) const;
     
     /// B L O C K S
-    
-    /// Load the BlockIndex into memory and prepare the BlockFile.
-    bool load(bool allowNew = true);
-    
-    /// Print the Block tree.
-    void print();
-    
+        
     /// Query for existence of Block.
     bool haveBlock(uint256 hash) const;
     
     /// Accept a block (Note: this could lead to a reorganization of the block that is often quite time consuming).
-    bool acceptBlock(const Block& block);
-    
-    /// Locate blocks in the block chain
-    //CBlockLocator blockLocator(uint256 hashBlock);
-    
-    int getDistanceBack(const CBlockLocator& locator) const;
+    void acceptBlock(const Block &block);
 
-    const CBlockIndex* getBlockIndex(const CBlockLocator& locator) const;
+    int getDistanceBack(const BlockLocator& locator) const;
 
-    const CBlockIndex* getBlockIndex(const uint256 hash) const;
+    BlockIterator iterator(const BlockLocator& locator) const;
+    BlockIterator iterator(const uint256 hash) const;
+    BlockIterator iterator(const size_t height) const { return _tree.begin() + height; }
 
-    double getDifficulty(const CBlockIndex* pindex = NULL) const; 
+    double getDifficulty(BlockIterator blk = BlockIterator()) const;
     
     /// getBlock will first try to locate the block by its hash through the block index, if this fails it will assume that the hash for a tx and check the database to get the disk pos and then return the block as read from the block file
     void getBlock(const uint256 hash, Block& block) const;
     
-    void getBlock(const CBlockIndex* index, Block& block) const;
+    void getBlock(BlockIterator blk, Block& block) const;
 
-    CBlockIndex* getHashStopIndex(uint256 hashStop) const;
-
+    /// getBlockHeader will only make one query to the DB and return an empty block without the transactions
+    void getBlockHeader(BlockIterator blk, Block& block) const { block = _getBlock(blk->hash); }
+    
     /// Get height of block of transaction by its hash
     int getHeight(const uint256 hash) const;
     
@@ -269,83 +151,54 @@ public:
     bool isInMainChain(const uint256 hash) const;
     
     /// Get the best height
-    int getBestHeight() const
-    { 
-        // lock the pool and chain for reading
-        boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
-        return _bestIndex->nHeight;
+    int getBestHeight() const {
+        return _tree.height();
     }
     
     /// Get the locator for the best index
-    CBlockLocator getBestLocator() const;
-    
-    bool isInitialBlockDownload() const;
+    const BlockLocator& getBestLocator() const;
     
     const uint256& getGenesisHash() const { return _chain.genesisHash(); }
-    const CBlockIndex* getBestIndex() const { return _bestIndex; }
-    const CBlockIndex* getGenesisIndex() const { return _genesisBlockIndex; }
-    const uint256& getBestChain() const { return _bestChain; }
+    const uint256& getBestChain() const { return _tree.best()->hash; }
     const int64& getBestReceivedTime() const { return _bestReceivedTime; }
 
-    size_t getBlockChainIndexSize() const { return _blockChainIndex.size(); }
-    
     const Chain& chain() const { return _chain; }
     
-    bool connectInputs(const Transaction& tx, std::map<uint256, TxIndex>& mapTestPool, DiskTxPos posThisTx, const CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee = 0) const;
-    
+    bool connectInputs(const Transaction& txn, const int64 blk, int idx, int64& fees, int64 min_fee = 0) const;
+
     void outputPerformanceTimings() const;
 
     int getTotalBlocksEstimate() const { return _chain.totalBlocksEstimate(); }    
     
-protected:        
-
-    /// Read a Transaction from Disk.
-    //    bool readDrIndex(uint160 hash160, std::set<Coin>& debit) const;
-    //    bool readCrIndex(uint160 hash160, std::set<Coin>& credit) const;
-    bool readDiskTx(uint256 hash, Transaction& tx) const;
-    bool readDiskTx(uint256 hash, Transaction& tx, int64& height, int64& time) const;
-    
-    uint256 getBlockHash(const CBlockLocator& locator);
-    
-    bool isInMainChain(CBlockIndex* bi) const {
-        return (bi->pnext || bi == _bestIndex);
+    enum { _medianTimeSpan = 11 };
+    unsigned int getMedianTimePast(BlockIterator blk) const {
+        std::vector<unsigned int> samples;
+        
+        for (size_t i = 0; i < _medianTimeSpan && !!blk; ++i, --blk)
+            samples.push_back(blk->time);
+        
+        std::sort(samples.begin(), samples.end());
+        return samples[samples.size()/2];
     }    
     
+protected:
+    void updateBestLocator();
+
+    uint256 getBlockHash(const BlockLocator& locator) const;
+
     bool disconnectInputs(const Transaction& tx);    
     
+    void deleteTransaction(const int64 tx, Transaction &txn);
+    
     /// Block stuff
-    bool disconnectBlock(const Block& block, CBlockIndex* pindex);
-    bool connectBlock(const Block& block, CBlockIndex* pindex);
-    bool setBestChain(const Block& block, CBlockIndex* pindexNew);
-    bool addToBlockIndex(const Block& block, unsigned int nFile, unsigned int nBlockPos);
-
-    bool ReadTxIndex(uint256 hash, TxIndex& txindex) const;
-    bool UpdateTxIndex(uint256 hash, const TxIndex& txindex);
-    bool AddTxIndex(const Transaction& tx, const DiskTxPos& pos, int nHeight);
-    bool EraseTxIndex(const Transaction& tx);
-
-    bool ReadOwnerTxes(uint160 hash160, int nHeight, std::vector<Transaction>& vtx);
-    bool ReadDiskTx(uint256 hash, Transaction& tx, TxIndex& txindex) const;
-    bool ReadDiskTx(Coin outpoint, Transaction& tx, TxIndex& txindex) const;
-    bool ReadDiskTx(Coin outpoint, Transaction& tx) const;
-    bool WriteBlockIndex(const CDiskBlockIndex& blockindex);
-    bool EraseBlockIndex(uint256 hash);
-    bool ReadHashBestChain();
-    bool WriteHashBestChain(const uint256 hash);
-    bool ReadBestInvalidWork();
-    bool WriteBestInvalidWork();
-    bool LoadBlockIndex();
     
-    CBlockIndex* InsertBlockIndex(uint256 hash);
+    void deleteBlock(BlockIterator blk, Block& block);
     
-    void InvalidChainFound(CBlockIndex* pindexNew);
+    void InvalidChainFound(int64 blk_new);
     
-    bool reorganize(const Block& block, CBlockIndex* pindexNew);
+    bool reorganize(const Block& block, int64 blk_new);
     
-    bool CheckForMemoryPool(const Transaction& tx) const { Transaction* ptxOld = NULL; return CheckForMemoryPool(tx, ptxOld); }
-    bool CheckForMemoryPool(const Transaction& tx, Transaction*& ptxOld, bool fCheckInputs=true, bool* pfMissingInputs=NULL) const;
-
-    /// This is to accept 
+    /// This is to accept
     bool AcceptToMemoryPool(const Transaction& tx) {
         bool mi;
         return AcceptToMemoryPool(tx, true, &mi);
@@ -360,27 +213,65 @@ protected:
 
 private:
     const Chain& _chain;
-    BlockFile _blockFile; // this is ONLY interface to the block file!
+    /// database actions
+    Statement<int64> _findBlock;
+    StatementLastId _insertBlock;
+    StatementLastId _insertGenesisBlock;
+    StatementVoid _deleteBlock;
+    
+    StatementVec<int64, 1, int64> _findBlockTransactions;
 
-    CBlockIndex* _genesisBlockIndex;
+    StatementVoid _deleteConfirmation;
+    StatementLastId _insertConfirmation;
+    Statement<int64> _confirmationIdx;
     
-    BlockChainIndex _blockChainIndex;
+    Statement<int64> _findTransaction;
+    StatementLastId _insertTransaction;
+    StatementClass<Transaction, 2, int, unsigned int> _getTransaction;
+    StatementVoid _deleteTransaction;
     
-    CBigNum _bestChainWork;
-    CBigNum _bestInvalidWork;
+    StatementVec<int64, 1, int64> _getConfirmationBlocks;
+    StatementVec<int64, 1, int64> _getInputConfirmationBlocks;
     
-    uint256 _bestChain;
-    CBlockIndex* _bestIndex;
+    Statement<int64> _nonfirmationTime;
+    
+    StatementClass<Block, 6, int, uint256, uint256, int, int, int> _getBlock;
+
+    Statement<int64> _findOutput;
+    StatementClass<Output, 2, int64, Script> _getOutput;
+    StatementVec<Output, 2, int64, Script> _getOutputs;
+    StatementLastId _insertOutput;
+    StatementVoid _deleteOutputs;
+
+    StatementLastId _insertInput;
+    StatementVec<Input, 4, uint256, unsigned int, Script, unsigned int> _getInputs;
+    StatementVoid _deleteInputs;
+
+    Statement<int64> _findScript;
+    StatementLastId _insertScript;
+
+    StatementVec<int64, 1, int64> _spentInBlocks; // input is coin output is vector of blk
+
+    StatementVec<int64, 1, int64> _prunedTransactions;
+    
+    StatementVoid _pruneOutputs;
+    StatementVoid _pruneInputs;
+    
+    Statement<int64> _countOutputs;
+    
+    StatementVoid _pruneTransaction;
+    StatementVoid _pruneConfirmation;
+    
+    Statement<int64> _beingSpent;
+    
+    BlockLocator _bestLocator;
+    
+    BlockTree _tree;
+    
+    Branches _branches;
+    
     int64 _bestReceivedTime;
 
-    TransactionIndex _transactionIndex;    
-    
-    AssetIndex _creditIndex;
-    AssetIndex _debitIndex;
-    typedef std::map<Coin, CoinRef> TransactionConnections;
-    TransactionConnections _transactionConnections;
-    unsigned int _transactionsUpdated;
-    
     mutable boost::shared_mutex _chain_and_pool_access;
 
     mutable int64 _acceptBlockTimer;

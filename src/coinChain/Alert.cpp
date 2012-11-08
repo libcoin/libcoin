@@ -17,10 +17,10 @@
 #include <coinChain/Alert.h>
 
 #include <coin/Block.h>
-#include <coinChain/BlockIndex.h>
 #include <coinChain/Peer.h>
 
 #include <coin/Key.h>
+#include <coin/Logger.h>
 
 #include "boost/foreach.hpp"
 
@@ -160,12 +160,12 @@ bool Alert::processAlert()
         const Alert& alert = (*mi).second;
         if (cancels(alert))
             {
-            printf("cancelling alert %d\n", alert._id);
+            log_info("cancelling alert %d\n", alert._id);
             mapAlerts.erase(mi++);
             }
         else if (!alert.isInEffect())
             {
-            printf("expiring alert %d\n", alert._id);
+            log_info("expiring alert %d\n", alert._id);
             mapAlerts.erase(mi++);
             }
         else
@@ -178,7 +178,7 @@ bool Alert::processAlert()
     const Alert& alert = item.second;
     if (alert.cancels(*this))
         {
-        printf("alert already cancelled by %d\n", alert._id);
+        log_warn("alert already cancelled by %d\n", alert._id);
         return false;
         }
     }
@@ -186,6 +186,6 @@ bool Alert::processAlert()
     // Add to mapAlerts
     mapAlerts.insert(make_pair(getHash(), *this));
 
-    printf("accepted alert %d\n", _id);
+    log_info("accepted alert %d\n", _id);
     return true;
 }

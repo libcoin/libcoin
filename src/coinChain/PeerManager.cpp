@@ -55,7 +55,7 @@ const set<unsigned int> PeerManager::getPeerIPList() const {
         if(!ec)
             ips.insert(ep.address().to_v4().to_ulong());
         else
-            printf("WARNING: non-bound Peers in the Peer list ???: %s", ec.message().c_str());
+            log_warn("WARNING: non-bound Peers in the Peer list ???: %s", ec.message().c_str());
     }
     return ips;
 }
