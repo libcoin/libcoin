@@ -46,6 +46,7 @@ public:
     public:
         /// Touch is like Posix touch - it touches the file to ensure it exists.
         Touch(std::string lock_file_name) {
+            if (lock_file_name.size() == 0) return;
             boost::filesystem::create_directories(boost::filesystem::path(lock_file_name).parent_path());
             std::fstream f(lock_file_name.c_str(), std::ios_base::app | std::ios_base::in | std::ios_base::out);
             if(!f.is_open())
@@ -55,6 +56,7 @@ public:
     FileLock(std::string lockfile) : 
     _touch(lockfile), 
     _file_lock(lockfile.c_str()) {
+        if (lockfile.size() == 0) return;
         if( !_file_lock.try_lock())
             throw std::runtime_error( ("Cannot obtain a lock on data directory ( " + lockfile + " ) Bitcoin is probably already running.").c_str());
     }
@@ -77,7 +79,7 @@ class COINCHAIN_EXPORT Node : private boost::noncopyable
 {
 public:
     /// Construct the node to listen on the specified TCP address and port. Further, connect to IRC (irc.lfnet.org)
-    explicit Node(const Chain& chain = bitcoin, std::string dataDir = "", const std::string& address = "0.0.0.0", const std::string& port = "0", boost::asio::ip::tcp::endpoint proxy = boost::asio::ip::tcp::endpoint(), unsigned int timeout = 5000, const std::string& irc = "92.243.23.21");
+    explicit Node(const Chain& chain = bitcoin, BlockChain::Modes mode = BlockChain::Purged, std::string dataDir = "", const std::string& address = "0.0.0.0", const std::string& port = "0", boost::asio::ip::tcp::endpoint proxy = boost::asio::ip::tcp::endpoint(), unsigned int timeout = 5000, const std::string& irc = "92.243.23.21");
     
     /// Run the server's io_service loop.
     void run();

@@ -18,7 +18,7 @@
 #define ENDPOINTPOOL_H
 
 #include <coinChain/Export.h>
-#include <coinChain/db.h>
+#include <coinChain/Database.h>
 
 #include <coinChain/Endpoint.h>
 
@@ -28,7 +28,7 @@
 
 typedef std::map<std::vector<unsigned char>, Endpoint> EndpointMap;
  
-class COINCHAIN_EXPORT EndpointPool : protected Database // CDB
+class COINCHAIN_EXPORT EndpointPool : protected sqliterate::Database
 {
 public:
     EndpointPool(short defaultPort, const std::string dataDir, const char* pszMode="cr+");
@@ -64,15 +64,6 @@ public:
     
     /// Load the endpoints from the database.
     //    bool loadEndpoints(const std::string dataDir);
-
-private:
-    // Statement functors 
-    Statement<> delete_older_than;
-    StatementVec<Endpoint, 4, unsigned int, unsigned short, unsigned int, unsigned int> select_recent;
-    Statement<> update_endpoint;
-    Statement<> update_time;
-    Statement<> update_lasttry;
-    StatementVec<Endpoint, 4, unsigned int, unsigned short, unsigned int, unsigned int> candidates;
 
 private:
     EndpointPool(const EndpointPool&);

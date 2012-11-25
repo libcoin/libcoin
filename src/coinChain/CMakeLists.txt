@@ -18,6 +18,7 @@ SET(TARGET_H
     ${HEADER_PATH}/BlockTree.h
     ${HEADER_PATH}/Chain.h
     ${HEADER_PATH}/ChatClient.h
+    ${HEADER_PATH}/Database.h
     ${HEADER_PATH}/Endpoint.h
     ${HEADER_PATH}/EndpointPool.h
     ${HEADER_PATH}/EndpointFilter.h
@@ -33,6 +34,7 @@ SET(TARGET_H
     ${HEADER_PATH}/PeerManager.h
     ${HEADER_PATH}/Proxy.h
     ${HEADER_PATH}/TransactionFilter.h
+    ${HEADER_PATH}/Verifier.h
     ${HEADER_PATH}/VersionFilter.h
     ${LIBCOIN_CONFIG_HEADER}
 )
@@ -49,6 +51,7 @@ SET(TARGET_SRC
     BlockTree.cpp
     Chain.cpp
     ChatClient.cpp
+    Database.cpp
     Endpoint.cpp
     EndpointPool.cpp
     EndpointFilter.cpp
@@ -62,6 +65,7 @@ SET(TARGET_SRC
     PeerManager.cpp
     Proxy.cpp
     TransactionFilter.cpp
+    Verifier.cpp
     VersionFilter.cpp
 
     ${LIBCOIN_VERSIONINFO_RC}

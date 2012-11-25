@@ -15,7 +15,6 @@
  */
 
 #include <coinChain/EndpointPool.h>
-#include <coinChain/db.h>
 
 #include <coin/util.h>
 
@@ -24,25 +23,16 @@
 
 using namespace std;
 using namespace boost;
+using namespace sqliterate;
 
 EndpointPool::EndpointPool(short defaultPort, const std::string dataDir, const char* pszMode) :
-        Database(dataDir+"/endpoints.sqlite3") /*CDB(dataDir, "addr.dat", pszMode)*/ ,
+    Database(dataDir == "" ? ":memory:" : dataDir+"/endpoints.sqlite3") /*CDB(dataDir, "addr.dat", pszMode)*/ ,
         _defaultPort(defaultPort),
         _localhost("0.0.0.0", defaultPort, false, NODE_NETWORK),
-_lastPurgeTime(0) {
-    
-    execute("CREATE TABLE IF NOT EXISTS Endpoints(ip INTEGER NOT NULL, port INTEGER NOT NULL, time INTEGER, lasttry INTEGER, PRIMARY KEY (ip, port))");
-    
-    delete_older_than = prepare("DELETE FROM Endpoints WHERE time < ?");
-    select_recent = prepare("SELECT ip, port, time, lasttry FROM Endpoints WHERE time > ? ORDER BY RANDOM() LIMIT ?");
-    update_endpoint = prepare("INSERT OR REPLACE INTO Endpoints VALUES (?, ?, ?, ?)");
-    update_time = prepare("UPDATE Endpoints SET time = ? WHERE ip = ? AND port = ?");
-    update_lasttry = prepare("UPDATE Endpoints SET lasttry = ? WHERE ip = ? AND port = ?");
-    candidates = prepare("SELECT ip, port, time, lasttry FROM Endpoints WHERE lasttry < ? ORDER BY time DESC");
+    _lastPurgeTime(0) {
 
-            //    create_table();
-    //        Statement& create_index = prepare("CREATE INDEX IF NOT EXISTS AddressPort ON Endpoints(address, port)");
-    //        create_index();
+    query("CREATE TABLE IF NOT EXISTS Endpoints(ip INTEGER NOT NULL, port INTEGER NOT NULL, time INTEGER, lasttry INTEGER, PRIMARY KEY (ip, port))");
+
 }
 
 
@@ -56,21 +46,7 @@ void EndpointPool::purge()
 
         // remove endpoints older than 14 days:
         int64 since = GetAdjustedTime() - 14 * 24 * 60 * 60;
-        delete_older_than(since);
-        /*
-        for (EndpointMap::iterator mi = _endpoints.begin(); mi != _endpoints.end();) {
-            const Endpoint& endpoint = (*mi).second;
-            if (endpoint.getTime() < since) {
-                if (_endpoints.size() < 1000 || GetTime() > _lastPurgeTime + 20)
-                    break;
-
-                eraseEndpoint(endpoint);
-                _endpoints.erase(mi++);
-            }
-            else
-                mi++;
-        }
-        */
+        query("DELETE FROM Endpoints WHERE time < ?", since);
     }
 }
 
@@ -78,27 +54,11 @@ set<Endpoint> EndpointPool::getRecent(int within, int rand_max)
 {
     int64 since = GetAdjustedTime() - within; // in the last 3 hours
     
-    vector<Endpoint> endpoint_list= select_recent(since, rand_max); // rows will now contain a list of endpoint newer than 'since'
-                                                // C++11:   select_recent([&](Row& row) { endpoints.insert(Endpoint(row[0].get_int64(), row[1].get_int64(), row[2].get_int64(), row[3].get_int64())); },since, rand_max); // rows will now contain a list of endpoint newer than 'since'
+    vector<Endpoint> endpoint_list= queryColRow<Endpoint(unsigned int, unsigned short, unsigned int, unsigned int)>("SELECT ip, port, time, lasttry FROM Endpoints WHERE time > ? ORDER BY RANDOM() LIMIT ?", since, rand_max); // rows will now contain a list of endpoint newer than 'since'
 
     set<Endpoint> endpoints(endpoint_list.begin(), endpoint_list.end());
     // now generate loop over the rows and create a set of endpoints:
     
-/*
-    unsigned int nCount = 0;
-    BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, Endpoint)& item, _endpoints)
-        {
-        const Endpoint& endpoint = item.second;
-        if (endpoint.getTime() > since)
-            nCount++; // will return the number of endpoints newer than since
-        }
-    BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, Endpoint)& item, _endpoints)
-        {
-        const Endpoint& endpoint = item.second;
-        if (endpoint.getTime() > since && GetRand(nCount) < rand_max)
-            endpoints.insert(endpoint); // will return roughly less than rand_max at random
-        }
- */
     return endpoints;
 }
 
@@ -113,65 +73,21 @@ bool EndpointPool::addEndpoint(Endpoint endpoint, int64 penalty)
     bool is_new = false;
     Endpoint found = endpoint;
     
-    update_endpoint((int64)endpoint.getIP(), (int64)endpoint.getPort(), (int64)endpoint.getTime(), 0);
+    query("INSERT OR REPLACE INTO Endpoints VALUES (?, ?, ?, ?)", (int64)endpoint.getIP(), (int64)endpoint.getPort(), (int64)endpoint.getTime(), 0);
     
     return true;
-/*
-    // add the endpoint to the database - first check if it is new
-    EndpointMap::iterator it = _endpoints.find(endpoint.getKey());
-    if (it == _endpoints.end()) {
-        // New address
-        printf("AddAddress(%s)\n", endpoint.toString().c_str());
-        _endpoints.insert(make_pair(endpoint.getKey(), endpoint));
-        updated = true;
-        is_new = true;
-    }
-    else {
-        found = (*it).second;
-        if ((found.getServices() | endpoint.getServices()) != found.getServices()) {
-            // Services have been added
-            uint64 services =  found.getServices() | endpoint.getServices();
-            found.setServices(services);
-            updated = true;
-        }
-        bool currentlyOnline = (GetAdjustedTime() - endpoint.getTime() < 24 * 60 * 60);
-        int64 updateInterval = (currentlyOnline ? 60 * 60 : 24 * 60 * 60);
-        if (found.getTime() < endpoint.getTime() - updateInterval) {
-            // Periodically update most recently seen time
-            found.setTime(endpoint.getTime());
-            updated = true;
-        }
-    }
-    
-    if (updated)
-        writeEndpoint(found);
-
-    return is_new;
-*/
 }
 
 void EndpointPool::currentlyConnected(const Endpoint& ep)
 {
     int64 now = GetAdjustedTime();
-    update_time(now, (int64)ep.getIP(), ep.getPort());
-/*
-    // Only if it's been published already
-    EndpointMap::iterator it = _endpoints.find(ep.getKey());
-    if (it != _endpoints.end()) {
-        Endpoint& found = (*it).second;
-        int64 updateInterval = 20 * 60;
-        if (found.getTime() < GetAdjustedTime() - updateInterval) {
-            // Periodically update most recently seen time
-            found.setTime(GetAdjustedTime());
-            writeEndpoint(found);
-        }
-    }
-*/
+
+    query("UPDATE Endpoints SET time = ? WHERE ip = ? AND port = ?", now, (int64)ep.getIP(), ep.getPort());
 }
 
 void EndpointPool::setLastTry(const Endpoint& ep) {
     int64 now = GetAdjustedTime();
-    update_lasttry(now, (int64)ep.getIP(), ep.getPort());
+    query("UPDATE Endpoints SET lasttry = ? WHERE ip = ? AND port = ?", now, (int64)ep.getIP(), ep.getPort());
 }
 
 Endpoint EndpointPool::getCandidate(const set<unsigned int>& not_in, int64 start_time)
@@ -183,7 +99,7 @@ Endpoint EndpointPool::getCandidate(const set<unsigned int>& not_in, int64 start
     int64 best = INT64_MIN;
     
     int64 now = GetAdjustedTime();
-    vector<Endpoint> endpoints = candidates(now-60*60);
+    vector<Endpoint> endpoints = queryColRow<Endpoint(unsigned int, unsigned short, unsigned int, unsigned int)>("SELECT ip, port, time, lasttry FROM Endpoints WHERE lasttry < ? ORDER BY time DESC", now-60*60);
     
     // iterate until we get an address not in not_in or in the same class-B network:
     for (vector<Endpoint>::const_iterator e = endpoints.begin(); e != endpoints.end(); ++e) {

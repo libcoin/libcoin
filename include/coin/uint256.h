@@ -296,7 +296,11 @@ public:
         return (!(a == b));
     }
 
-
+    int64 getint64(const int n = 0) const {
+        int64 a = pn[2*n];
+        int64 b = pn[2*n+1];
+        return b<<32 | a;
+    }
 
     std::string GetHex() const
     {

@@ -28,14 +28,54 @@
 
 using namespace std;
 using namespace boost;
+using namespace sqliterate;
+
+// Confirmation is the Transaction class incl its DB index
+
+struct Confirmation : public Transaction {
+    Confirmation() : cnf(0), count(0) {}
+    Confirmation(int64 cnf, int version, unsigned int locktime, int64 count) : Transaction(version, locktime), cnf(cnf), count(count) {}
+    
+    int64 cnf;
+    int64 count;
+    
+    bool is_confirmed() { return (0 < count) && (count < LOCKTIME_THRESHOLD); }
+    bool is_coinbase() {return (cnf < 0); }
+};
+
+struct Unspent : public Coin, public Output {
+    Unspent() : coin(0), cnf(0) {}
+    Unspent(int64 coin, uint256 hash, unsigned int idx, int64 value, Script script, int64 cnf) : Coin(hash, idx), Output(value, script), coin(coin),cnf(cnf) { }
+
+    int64 coin;
+    int64 cnf;
+
+    bool is_valid() const { return (!Coin::isNull()) && (!Output::isNull()) && (cnf != 0); }
+    
+    bool operator!() { return !is_valid(); }
+    
+    static int64 hidx(uint256 hash, int index = 0) {
+        return hash.getint64() + index;
+    }
+    
+    int64 hidx() const {
+        return hidx(hash, index);
+    }
+};
 
 //
 // BlockChain
 //
 
-BlockChain::BlockChain(const Chain& chain, const string dataDir) : Database((dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir) + "/blockchain.sqlite3"), _chain(chain)
-    {
-
+BlockChain::BlockChain(const Chain& chain, BlockChain::Modes mode, const string dataDir) :
+    Database(dataDir == "" ? ":memory:" : dataDir + "/" + (mode == Full ? "blockchain" :
+                                                           (mode == Purged ? "purgedchain" :
+                                                            (mode == CheckPoint ? "cpchain" : "spvchain"))) + ".sqlite3"),
+    _chain(chain),
+    _verifier(0),
+    _mode(mode),
+    _purge_depth(144)
+{
     _acceptBlockTimer = 0;
     _connectInputsTimer = 0;
     _verifySignatureTimer = 0;
@@ -46,193 +86,125 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) : Database((dat
     // setup the database tables
     // The blocks points backwards, so they could create a tree. Which tree to choose ? The best of them... So each time a new block is inserted, it is checked against the main chain. If the main chain needs to be updated it will be.
     
-    execute("PRAGMA journal_mode=WAL");
-    execute("PRAGMA locking_mode=EXCLUSIVE");
-    execute("PRAGMA synchronous=OFF");
-    execute("PRAGMA page_size=16384"); // this is 512MiB of cache with 4kiB page_size
-    execute("PRAGMA cache_size=131072"); // this is 512MiB of cache with 4kiB page_size
-    execute("PRAGMA temp_store=MEMORY"); // use memory for temp tables
+    query("PRAGMA journal_mode=WAL");
+    query("PRAGMA locking_mode=EXCLUSIVE");
+    query("PRAGMA synchronous=OFF");
+    query("PRAGMA page_size=16384"); // this is 512MiB of cache with 4kiB page_size
+    query("PRAGMA cache_size=131072"); // this is 512MiB of cache with 4kiB page_size
+    query("PRAGMA temp_store=MEMORY"); // use memory for temp tables
     
-    execute("CREATE TABLE IF NOT EXISTS Blocks ("
-                "blk INTEGER PRIMARY KEY AUTOINCREMENT,"
-                "hash BINARY,"
-                "version INTEGER,"
-                "prev INTEGER REFERENCES Blocks(blk),"
-                "mrkl BINARY,"
-                "time INTEGER,"
-                "bits INTEGER,"
-                "nonce INTEGER"
-            ")");
+    query("CREATE TABLE IF NOT EXISTS Blocks ("
+              "count INTEGER PRIMARY KEY," // block count is height+1 - i.e. the genesis has count = 1
+              "hash BINARY,"
+              "version INTEGER,"
+              "prev BINARY,"
+              "mrkl BINARY,"
+              "time INTEGER,"
+              "bits INTEGER,"
+              "nonce INTEGER"
+          ")");
     
-    execute("CREATE INDEX IF NOT EXISTS BlockHash ON Blocks (hash)");
-    
-    execute("CREATE TABLE IF NOT EXISTS Transactions ("
-                "tx INTEGER PRIMARY KEY AUTOINCREMENT,"
-                "hash BINARY,"
-                "version INTEGER,"
-                "locktime INTEGER"
-            ")");
+//    query("CREATE INDEX IF NOT EXISTS BlockHash ON Blocks (hash)");
 
-    execute("CREATE INDEX IF NOT EXISTS TransactionHash ON Transactions (hash)");
-    
-    // This table maps the transactions to blocks - it is needed as each transaction can belong to several blocks, further, it can be unconfirmed
-    // The unconfirmed transactions have the following properties: blk=0, idx=timestamp
-    execute("CREATE TABLE IF NOT EXISTS Confirmations ("
-                "tx INTEGER REFERENCES Transactions(tx),"
-                "blk INTEGER REFERENCES Blocks(blk),"
-                "idx INTEGER,"
-                "PRIMARY KEY (tx, blk)"
-            ")");
+    query("CREATE TABLE IF NOT EXISTS Confirmations ("
+              "cnf INTEGER PRIMARY KEY AUTOINCREMENT," // coinbase transactions have cnf = -count
+              "version INTEGER,"
+              "locktime INTEGER,"
+              "count INTEGER," //for block transactions this points to a block (i.e. number less than 500.000.000) if > 500.000.000 a time is assumed
+              "idx INTEGER"
+          ")");
 
-    execute("CREATE INDEX IF NOT EXISTS BlockConfirmations ON Confirmations (blk)");
-    /*
-    execute("CREATE TABLE IF NOT EXISTS Scripts ("
-                "script INTEGER PRIMARY KEY AUTOINCREMENT,"
-                "data BINARY"
-            ")");
+    query("CREATE TABLE IF NOT EXISTS Unspents ("
+              "coin INTEGER PRIMARY KEY AUTOINCREMENT,"
+              "hidx INTEGER,"
+              "hash BINARY,"
+              "idx INTEGER,"
+              "value INTEGER,"
+              "script BINARY,"
+              "ocnf INTEGER REFERENCES Confirmations(cnf)" // if this is < 0 the coin is part of a coinbase tx
+          ")");
+    
+//    query("CREATE INDEX IF NOT EXISTS UnspentIndex ON Unspents (hash, idx)");
+    query("CREATE INDEX IF NOT EXISTS UnspentIndex ON Unspents (hidx)");
+    
+    query("CREATE TABLE IF NOT EXISTS Spendings ("
+              "ocnf INTEGER REFERENCES Confirmations(cnf)," // ocnf is the confirmation that introduced the coin
+              "coin INTEGER PRIMARY KEY," // this follows the same counting as the Unspents, except for coinbases, which has coin = -count
+              "hidx INTEGER,"
+              "hash BINARY,"
+              "idx INTEGER,"
+              "value INTEGER,"
+              "script BINARY,"
+              "signature BINARY,"
+              "sequence INTEGER,"
+              "icnf INTEGER REFERENCES Confirmations(cnf)" // icnf is the confirmation that spent the coin
+          ")");
 
-    execute("CREATE INDEX IF NOT EXISTS ScriptIndex ON Scripts (data)");
-     */
-
-    execute("CREATE TABLE IF NOT EXISTS Outputs ("
-                "coin INTEGER PRIMARY KEY AUTOINCREMENT,"
-                "tx INTEGER REFERENCES Transactions(tx),"
-                "idx INTEGER,"
-                "val INTEGER,"
-                "script BINARY"
-            ")");
-
-    execute("CREATE INDEX IF NOT EXISTS CoinIndex ON Outputs (tx, idx)");
-    
-    execute("CREATE TABLE IF NOT EXISTS Inputs ("
-                "spent INTEGER PRIMARY KEY AUTOINCREMENT,"
-                "tx INTEGER REFERENCES Transactions(tx),"
-                "idx INTEGER,"
-                "coin INTEGER REFERENCES Outputs(coin),"
-                "signature BINARY,"
-                "sequence INTEGER"
-            ")");
-
-    // makes it fast to lookup if a coin is spent, and where...
-    execute("CREATE INDEX IF NOT EXISTS SpentIndex ON Inputs (coin)");
-    // lookup inputs by tx
-    execute("CREATE INDEX IF NOT EXISTS TxIndex ON Inputs (tx)");
-
-    execute("CREATE TABLE IF NOT EXISTS Spendables ("
-                "hash BINARY,"
-                "idx INTEGER,"
-                "val INTEGER,"
-                "script BINARY,"
-                "height INTEGER" // height gives the height in the block chain and
-            ")");
-
-    // initialize all the database actions
-
-    _findBlock = prepare("SELECT blk FROM Blocks WHERE hash = ?");
-    _insertBlock = prepare("INSERT INTO Blocks (hash, version, prev, mrkl, time, bits, nonce) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    
-    _findBlockTransactions = prepare("SELECT tx FROM Confirmations WHERE blk = ? ORDER BY idx ASC");
-    
-    _insertConfirmation = prepare("INSERT INTO Confirmations (tx, blk, idx) VALUES (?, ?, ?)");
-    _deleteConfirmation = prepare("DELETE FROM Confirmations WHERE blk = ? AND tx = ?");
-    
-    _findTransaction = prepare("SELECT tx FROM Transactions WHERE hash = ?");
-    _insertTransaction = prepare("INSERT INTO Transactions (hash, version, locktime) VALUES (?, ?, ?)");
-    _getTransaction = prepare("SELECT version, locktime FROM Transactions WHERE tx = ?");
-    
-    _getConfirmationBlocks = prepare("SELECT blk FROM Confirmations WHERE tx = ?");
-
-    //    _alreadySpent = prepare("SELECT COUNT(*) FROM Inputs, Confirmations, MainChain WHERE (Confirmations.blk = MainChain.blk OR Confirmations.blk = 0) AND Confirmations.tx = Inputs.tx AND Inputs.tx <> ?1 AND coin IN (SELECT coin FROM Inputs WHERE tx = ?1)");
-    _getInputConfirmationBlocks = prepare("SELECT Confirmations.blk FROM Inputs, Confirmations WHERE Confirmations.tx = Inputs.tx AND Inputs.coin IN (SELECT coin FROM Inputs WHERE tx=?)");
-    
-    _confirmationIdx = prepare("SELECT idx FROM Confirmations WHERE blk = ? AND tx = ?");
-    
-    _nonfirmationTime = prepare("SELECT idx FROM Confirmations WHERE tx = ? AND blk = 0");
-    
-    _getBlock = prepare("SELECT b.version, p.hash, b.mrkl, b.time, b.bits, b.nonce FROM Blocks b, (SELECT COALESCE((SELECT hash FROM Blocks WHERE blk = (SELECT prev FROM Blocks WHERE blk = ?1)), X'0000000000000000000000000000000000000000000000000000000000000000') AS hash) p WHERE blk = ?1");
-
-    _findOutput = prepare("SELECT coin FROM Outputs WHERE tx = ? AND idx = ?");
-    _getOutput = prepare("SELECT Outputs.val, Outputs.script FROM Outputs WHERE Outputs.coin = ?");
-    _getOutputs = prepare("SELECT Outputs.val, Outputs.script FROM Outputs WHERE Outputs.tx = ? ORDER BY Outputs.idx ASC");
-    _insertOutput = prepare("INSERT INTO Outputs (tx, idx, val, script) VALUES (?, ?, ?, ?)");
-
-    // Check if a transactions spent pointers are used by other transactions already confirmed in this chain
-    //    _alreadySpent = prepare("SELECT COUNT(*) FROM Inputs, Confirmations, MainChain WHERE (Confirmations.blk = MainChain.blk OR Confirmations.blk = 0) AND Confirmations.tx = Inputs.tx AND Inputs.tx <> ?1 AND coin IN (SELECT coin FROM Inputs WHERE tx = ?1)");
-    
-    _insertInput = prepare("INSERT INTO Inputs (tx, idx, coin, signature, sequence) VALUES (?, ?, ?, ?, ?)");
-    _getInputs = prepare("SELECT Transactions.hash, Outputs.idx, Inputs.signature, Inputs.sequence FROM Transactions, Outputs, Inputs WHERE Inputs.tx = ? AND Outputs.coin = Inputs.coin AND Transactions.tx = Outputs.tx ORDER BY Inputs.idx ASC");
-    
-    //   _findScript = prepare("SELECT script FROM Scripts WHERE data = ?");
-    //    _insertScript = prepare("INSERT INTO Scripts (data) VALUES (?)");
-
-    // Check in which blocks an output has been spent
-    _spentInBlocks = prepare("SELECT Confirmations.blk FROM Inputs, Confirmations WHERE Inputs.coin = ? AND Inputs.tx = Confirmations.tx");
-    
-    // Being spent takes a prevout / webcoin (hash,idx) and checks if a blk=0 confirmation (nonfirmation) exists:
-    _beingSpent = prepare("SELECT COUNT(*) FROM Confirmations, Inputs WHERE Confirmations.blk = 0 AND Inputs.tx = Confirmations.tx AND Inputs.coin = (SELECT coin FROM Outputs WHERE tx = (SELECT tx FROM Transactions WHERE hash = ?) AND idx = ?)");
-
-    // Being spent takes a prevout / webcoin and checks if a mainchain confirmation/nonfirmation exists:
-    //    _isSpent = prepare("SELECT COUNT(*) FROM Confirmations, Inputs, MainChain WHERE (Confirmations.blk = MainChain.blk OR Confirmations.blk = 0) AND Inputs.tx = Confirmations.tx AND Inputs.coin = ?");
-
-    /// Pruning:
-    _prunedTransactions = prepare("SELECT tx FROM Outputs WHERE coin IN (SELECT coin FROM Inputs WHERE tx = ?) GROUP BY tx");
-    
-    _pruneOutputs = prepare("DELETE FROM Outputs WHERE coin IN (SELECT coin FROM Inputs WHERE tx = ?)");
-    _pruneInputs = prepare("DELETE FROM Inputs WHERE tx = ?");
-    
-    _countOutputs = prepare("SELECT COUNT(*) FROM Outputs WHERE tx = ?");
-    
-    _pruneTransaction = prepare("DELETE FROM Transactions WHERE tx = ?");
-    _pruneConfirmation = prepare("DELETE FROM Confirmations WHERE tx = ?");
-
-    
-    // find dump all block references:
-    StatementVec<BlockRef, 5, uint256, int64, int64, unsigned int, unsigned int> dumpBlockRefs = prepare("SELECT hash, blk, prev, time, bits FROM Blocks ORDER BY blk");
+//    query("CREATE INDEX IF NOT EXISTS SpendingIndex ON Spendings (hash, idx)");
+    query("CREATE INDEX IF NOT EXISTS SpendingIndex ON Spendings (hidx)");
+    query("CREATE INDEX IF NOT EXISTS SpendingsIn ON Spendings (icnf)");
+    query("CREATE INDEX IF NOT EXISTS SpendingsOut ON Spendings (ocnf)");
     
     // populate the tree
-    _tree.assign(dumpBlockRefs());
-    
-    if (_tree.height() < 0) { // there are no blocks, insert the genesis block
+    vector<BlockRef> blockchain = queryColRow<BlockRef(uint256, uint256, unsigned int, unsigned int)>("SELECT hash, prev, time, bits FROM Blocks ORDER BY count");
+    _tree.assign(blockchain);
+        
+    if (_tree.count() == 0) { // there are no blocks, insert the genesis block
         Block block = _chain.genesisBlock();
         try {
-            begin();
-            int64 key = _insertBlock(block.getHash(), block.getVersion(), 0, block.getMerkleRoot(), block.getTime(), block.getBits(), block.getNonce());
+            query("BEGIN --GENESIS");
+            insertBlockHeader(1, block);
             Transaction txn = block.getTransaction(0);
-            int64 tx = _insertTransaction(txn.getHash(), txn.version(), txn.lockTime());
-            _insertConfirmation(tx, key, 0);
-            // now insert the input
-            _insertInput(tx, 0, 0, txn.getInput(0).signature(), txn.getInput(0).sequence());
-            //            int64 scr = _insertScript(txn.getOutput(0).script());
-            _insertOutput(tx, 0, 50*COIN, txn.getOutput(0).script());
-            commit();
+            query("INSERT INTO Confirmations (cnf, locktime, version, count, idx) VALUES (?, ?, ?, ?, ?)", -1, txn.lockTime(), txn.version(), 1, 0); // conf = count for coinbase confirmations - other confirmations have
+            // now insert the spending - a coinbase has a special spending using no coin
+            query("INSERT INTO Spendings (ocnf, coin, hidx, hash, idx, value, script, signature, sequence, icnf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 0, -1, uint256(0), Unspent::hidx(uint256(0)), 0, 50*COIN, Script(), txn.getInput(0).signature(), txn.getInput(0).sequence(), 1);
+            query("INSERT INTO Unspents (hidx, hash, idx, value, script, ocnf) VALUES (?, ?, ?, ?, ?, ?)", Unspent::hidx(txn.getHash()), txn.getHash(), 0, 50*COIN, txn.getOutput(0).script(), -1);
+            query("COMMIT --GENESIS");
         }
         catch (std::exception& e) {
-            rollback();
+            query("ROLLBACK --GENESIS");
             throw Error(string("BlockChain - creating genesisblock failed: ") + e.what());
         }
         catch (...) {
-            rollback();
+            query("ROLLBACK --GENESIS");
             throw Error("BlockChain - creating genesisblock failed");
         }
-        _tree.assign(dumpBlockRefs()); // load the genesis block into the tree
+        _tree.assign(queryColRow<BlockRef(uint256, uint256, unsigned int, unsigned int)>("SELECT hash, prev, time, bits FROM Blocks ORDER BY count"));
     }
     updateBestLocator();
     log_info("BlockChain initialized - main best height: %d", _tree.height());
 }
 
+bool BlockChain::script_to_unspents() const {
+    //    return query<int64>("");
+}
+
+void BlockChain::script_to_unspents(bool enable) {
+    if (enable)
+        query("CREATE INDEX IF NOT EXISTS ScriptIndex ON Unspents (script)");
+    else
+        query("DROP INDEX IF EXISTS ScriptIndex");
+}
+
+
 // accept transaction insert a transaction into the block chain - note this is only the for inserting unconfirmed txns
 void BlockChain::acceptTransaction(const Transaction& txn, bool verify) {
     try {
-        begin();
+        query("BEGIN --TRANSACTION");
+
+        _verifier.reset();
         
         int64 fees = 0;
         acceptBlockTransaction(txn, fees, txn.getMinFee(1000, true, true), BlockIterator(), 0, verify);
         
-        commit();
+        if (!_verifier.yield_success())
+            throw Error("Verify Signature failed with: " + _verifier.reason());
+
+        query("COMMIT --TRANSACTION");
     }
-    catch (...) {
-        rollback();
-        throw;
+    catch (std::exception& e) {
+        query("ROLLBACK --TRANSACTION");
+        throw Error(string("acceptTransaction: ") + e.what());
     }
 }
 
@@ -241,177 +213,251 @@ void BlockChain::acceptTransaction(const Transaction& txn, bool verify) {
 // accept branch transaction: if the transaction is already present - only check that it can be confirmed in this branch
 
 void BlockChain::acceptBlockTransaction(const Transaction txn, int64& fees, int64 min_fee, BlockIterator blk, int64 idx, bool verify) {
-    // BIP0016 check - if the block is newer than the BIP0016 date enforce strictPayToScriptHash
-    bool create = true;
     int64 timestamp = 0;
-    int64 key = 0;
 
+    bool nonfirmation;
+    
     if (!blk) {
+        nonfirmation = true;
         timestamp = GetTimeMillis();
         idx = timestamp;
         blk = _tree.best();
     }
     else {
+        nonfirmation = false;
         timestamp = blk->time;
-        key = blk->key;
     }
 
+    uint256 hash = txn.getHash();
+    
+    // BIP0016 check - if the block is newer than the BIP0016 date enforce strictPayToScriptHash
     bool strictPayToScriptHash = (timestamp > _chain.timeStamp(Chain::BIP0016));
     
-    // lookup the tx to see if it is already present
-    int64 tx = _findTransaction(txn.getHash());
+    int64 cnf = 0;
+    // lookup the hash to see if it is in use
+    vector<int64> cnfs = queryCol<int64>("SELECT ocnf FROM Unspents WHERE hidx = ?", Unspent::hidx(txn.getHash()));
     
-    vector<int64> keys;
-    if (tx) {
-        // check if the transaction is in our branch already:
-        keys = _getConfirmationBlocks(tx);
-        /// BIP 30: this is enforced after March 15, 2012, 0:00 UTC
-        /// Note that there is, before this date two violations, both are coinbases and they are in the blocks 91842, 91880
-        if (timestamp > _chain.timeStamp(Chain::BIP0030)) {
-            if (blk.ancestor(keys) != _tree.end())
-                throw Error("Transaction already committed to this branch");
+    // if the transaction is already present there are some options:
+    // - it is unconfirmed - simply update it to be included in a block - also disable verification
+    // - it is a retransmit - exit and not it is already committed
+    // - it is one of the pre BIP0030 cases - i.e. coinbases gone wrong - create
+    // - so if coinbase older than BIP0030 OR not there - create
+    // - if unconfirmed getting confirmed - update
+    // - else error
+    if (cnfs.size()) {
+        // check for false positive
+        for (size_t i = 0; i < cnfs.size(); ++i) {
+            Unspent coin = queryRow<Unspent(int64, uint256, unsigned int, int64, Script, int64)>("SELECT coin, hash, idx, value, script, ocnf FROM Unspents WHERE hidx = ?", Unspent::hidx(txn.getHash()));
+            if (coin.hash == txn.getHash()) {
+                cnf = coin.cnf;
+                Confirmation conf = queryRow<Confirmation(int64, int, unsigned int, int64)>("SELECT cnf, version, locktime, count FROM Confirmations WHERE cnf = ?", cnf);
+                
+                /// BIP 30: this is enforced after March 15, 2012, 0:00 UTC
+                /// Note that there is, before this date two violations, both are coinbases and they are in the blocks 91842, 91880
+                if (timestamp < _chain.timeStamp(Chain::BIP0030) && conf.is_coinbase())
+                    cnf = 0; // this will force recreation
+                else if (!conf.is_confirmed() && !nonfirmation) {
+                    // remove old confirmation and replace it with the new one, that we do not need to validate...
+                    removeConfirmation(cnf, true); // throw if we are trying to remove a confirmation that is already in a block
+                    acceptBlockTransaction(txn, fees, min_fee, blk, idx, false);
+                    return;
+                }
+                else
+                    throw Error("Transaction already committed");
+                break;
+            }
         }
-        verify = false;
-        create = false;
     }
-    else
-        tx = _insertTransaction(txn.getHash(), txn.version(), txn.lockTime());
-    
-    _insertConfirmation(tx, key, idx);
 
-    // create the transaction and check that it is not spending already spent coins, relative to its confirmation chain
+    if (!cnf) {
+        if (!nonfirmation && idx == 0) { // coinbase
+            if (_mode == Full || blk.height() > _chain.totalBlocksEstimate())
+                cnf = query("INSERT INTO Confirmations (cnf, locktime, version, count, idx) VALUES (?, ?, ?, ?, ?)", -blk.count(), txn.lockTime(), txn.version(), blk.count(), idx);
+            else
+                cnf = -blk.count();
+        }
+        else if (_mode == Full || blk.height() > _chain.totalBlocksEstimate())
+            cnf = query("INSERT INTO Confirmations (locktime, version, count, idx) VALUES (?, ?, ?, ?)", txn.lockTime(), txn.version(), blk.count(), idx);
+        else
+            cnf = LOCKTIME_THRESHOLD;
+    }
+    
+    // create the transaction and check that it is not spending already spent coins
     
     // insert the inputs
     const Inputs& inputs = txn.getInputs();
     int64 value_in = 0;
     for (size_t in_idx = 0; in_idx < inputs.size(); ++in_idx) {
         const Input& input = inputs[in_idx];
-        int64 coin;
         if (input.isSubsidy()) {
             // do coinbase checks
-            if (key == 0)
+            if (nonfirmation)
                 throw Error("Coinbase only valid in a block");
             if (idx != 0)
                 throw Error("Coinbase at non zero index detected");
-            
-            coin = 0; // subsidy has no input!
-            value_in += _chain.subsidy(abs(blk.height()));
+            int64 value = _chain.subsidy(blk.height());
+            value_in += value;
+            if (_mode == Full || blk.height() > _chain.totalBlocksEstimate())
+                query("INSERT INTO Spendings (ocnf, coin, hidx, hash, idx, value, script, signature, sequence, icnf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 0, -blk.count(), Unspent::hidx(uint256(0)), uint256(0), 0, value, Script(), input.signature(), input.sequence(), blk.count());
+            //            value += fees;
+            //            query("INSERT INTO Unspents (hidx, hash, idx, value, script, ocnf) VALUES (?, ?, ?, ?, ?, ?)", Unspent::hidx(hash), hash, 0, value, txn.getOutput(0).script(), -blk.count());
         }
         else {
-            // find the spent coin
-            int64 prevtx = _findTransaction(input.prevout().hash);
-            int64 previdx = input.prevout().index;
-
-            if (!prevtx)
-                throw Reject("Transaction for spent coin not found");
-            // check that it exists and is in this branch
-            vector<int64> prevkeys = _getConfirmationBlocks(prevtx);
+            Unspent coin = queryRow<Unspent(int64, uint256, unsigned int, int64, Script, int64)>("SELECT coin, hash, idx, value, script, ocnf FROM Unspents WHERE hidx = ?", Unspent::hidx(input.prevout().hash, input.prevout().index));
             
-            BlockIterator prevblk = blk.ancestor(prevkeys); // returns the first ancestor among the iterators with key or _tree.end() otherwise
-            
-            bool nonfirmed = count(prevkeys.begin(), prevkeys.end(), 0);
+            // if coin not found, and we are committing a block, the coin could have been spent in an other unconfirmed transaction
+            // look it up in spendings before we conclude that the coin is not there
+            if (!coin && !nonfirmation) {
+                // get a Confirmation of a possible spending
+                Confirmation conf = queryRow<Confirmation(int64, int, unsigned int, int64)>("SELECT c.cnf, c.version, c.locktime, c.count FROM Confirmations c, Spendings s WHERE s.hidx = ? AND s.icnf = c.cnf", Unspent::hidx(input.prevout().hash, input.prevout().index));
 
-            if (prevblk == _tree.end() && !nonfirmed)
-                throw Error("Transaction for spent coin not confirmed in this branch");
-
-            if (prevblk != _tree.end()) {
-                int64 prevconf = _confirmationIdx(prevblk->key, prevtx);
-                if (blk != _tree.end() && prevconf == 0) { // using coinbase
-                    if (blk.height() - prevblk.height() < COINBASE_MATURITY) // coinbase
-                        throw Error("Tried to spend immature coinbase");
+                if (conf.cnf) {
+                    // check if the spending was in a nonfirmation
+                    if (!conf.is_confirmed()) { // note: this is an indication of an attempted double spending!
+                        // remove the confirmation and get a handle to the Unspent coin
+                        removeConfirmation(conf.cnf);
+                        coin = queryRow<Unspent(int64, uint256, unsigned int, int64, Script, int64)>("SELECT coin, hash, idx, value, script, ocnf FROM Unspents WHERE hidx = ?", Unspent::hidx(input.prevout().hash, input.prevout().index));
+                    }
                 }
             }
-            
-            coin = _findOutput(prevtx, previdx);
             if (!coin)
                 throw Reject("Spent coin not found !");
+
+            // we need to check: if the coin is a coinbase or if it is nonfirmed
+            // check if the unspent coin is a coinbase - if so check maturity
+            int count = query<int>("SELECT count FROM Confirmations WHERE cnf = ?", coin.cnf);
+
+            if (count > LOCKTIME_THRESHOLD) {
+                if (!nonfirmation)
+                    throw Error("Can only spend confirmed coins in a block");
+            }
+            else if (coin.coin < 0) { // coinbase transaction
+                if(blk.count() - count < COINBASE_MATURITY)
+                    throw Error("Tried to spend immature coinbase");
+            }
             
-            // check that it has not been spent in this branch or spent by in another nonfirmed tx
-            vector<int64> spent_in_blks = _spentInBlocks(coin);
-            if (blk.ancestor(spent_in_blks) != _tree.end())
-                throw Error("Coin already Spent in this branch");
-            if (key == 0 && count(spent_in_blks.begin(), spent_in_blks.end(), 0))
-                throw Error("Coin already Spent (but not confirmed yet)");
+            // all OK - spend the coin
             
-            if (!create)
-                continue;
-            
-            // get the value
-            Output output = _getOutput(coin);
-            
-            value_in += output.value();
+            value_in += coin.value();
             // Check for negative or overflow input values
-            if (!MoneyRange(output.value()) || !MoneyRange(value_in))
+            if (!MoneyRange(coin.value()) || !MoneyRange(value_in))
                 throw Error("Input values out of range");
             
             int64 t1 = GetTimeMicros();
             
-            if (verify && !VerifySignature(output, txn, in_idx, strictPayToScriptHash, 0))
-                throw runtime_error("VerifySignature failed");
+            //            if (verify && !VerifySignature(coin, txn, in_idx, strictPayToScriptHash, 0))
+            //    throw runtime_error("VerifySignature failed");
+
+            if (verify) // this is invocation only - the actual verification takes place in other threads
+                _verifier.verify(coin, txn, in_idx, strictPayToScriptHash, 0);
             
             _verifySignatureTimer += GetTimeMicros() - t1;
+            
+            if (_mode == Full || blk.height() > _chain.totalBlocksEstimate())
+                query("INSERT INTO Spendings (ocnf, coin, hidx, hash, idx, value, script, signature, sequence, icnf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", coin.coin, coin.cnf, coin.hidx(), coin.hash, coin.index, coin.value(), coin.script(), cnf);
+            query("DELETE FROM Unspents WHERE coin = ?", coin.coin);
         }
-        _insertInput(tx, in_idx, coin, input.signature(), input.sequence());
+    }
+
+    // and now create the coins
+
+    // verify outputs
+    if (idx == 0) { // coinbase
+        value_in += fees;
+        
+        if (value_in < txn.getValueOut())
+            throw Error("value in < value out");
+    }
+    else {
+        // Tally transaction fees
+        int64 fee = value_in - txn.getValueOut();
+        if (fee < 0)
+            throw Error("fee < 0");
+        if (fee < min_fee)
+            throw Error("fee < min_fee");
+        fees += fee;
+        if (!MoneyRange(fees))
+            throw Error("fees out of range");
     }
     
-    if (create) {
-        // verify outputs
-        if (idx == 0) {
-            value_in += fees;
-            
-            if (value_in < txn.getValueOut())
-                throw Error("value in < value out");
-        }
-        else {
-            // Tally transaction fees
-            int64 fee = value_in - txn.getValueOut();
-            if (fee < 0)
-                throw Error("fee < 0");
-            if (fee < min_fee)
-                throw Error("fee < min_fee");
-            fees += fee;
-            if (!MoneyRange(fees))
-                throw Error("fees out of range");
-        }
+    // insert the outputs
+    const Outputs& outputs = txn.getOutputs();
+    for (size_t out_idx = 0; out_idx < outputs.size(); ++out_idx){
+        const Output& output = outputs[out_idx];
+
+        query("INSERT INTO Unspents (hidx, hash, idx, value, script, ocnf) VALUES (?, ?, ?, ?, ?, ?)", Unspent::hidx(hash, out_idx), hash, out_idx, output.value(), output.script(), cnf);
+    }
+}
+
+
+
+void BlockChain::insertBlockHeader(int64 count, const Block& block) {
+    query("INSERT INTO Blocks (count, hash, version, prev, mrkl, time, bits, nonce) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", count, block.getHash(), block.getVersion(), block.getPrevBlock(), block.getMerkleRoot(), block.getBlockTime(), block.getBits(), block.getNonce());
+}
+
+
+void BlockChain::removeConfirmation(int64 cnf, bool only_nonfirmations) {
+    // first get a list of spendings in which this coin was used as input and delete these iteratively...
+    vector<int64> cnfs = queryCol<int64>("SELECT ocnf FROM Spendings WHERE icnf = ?");
+    for (size_t i = 0; i < cnfs.size(); ++i)
+        removeConfirmation(cnfs[i], true);
+    // delete the coins
+    query("DELETE FROM Unspents WHERE ocnf = ?", cnf);
+    query("INSERT INTO Unspents (coin, hidx, hash, idx, value, script, ocnf) SELECT coin, hidx, hash, idx, value, script, ocnf FROM Spendings WHERE icnf = ?", cnf);
+    query("DELETE FROM Spendings WHERE icnf = ?", cnf);
+    // check that the confirmation is not in a block
+    if (only_nonfirmations) {
+        int64 count = query<int64, int64>("SELECT count FROM Confirmations WHERE cnf = ?", cnf);
+        if (count && count < LOCKTIME_THRESHOLD)
+            throw Error("Trying to remove a transaction already in a block!");
+    }
         
-        // insert the outputs
-        const Outputs& outputs = txn.getOutputs();
-        for (size_t out_idx = 0; out_idx < outputs.size(); ++out_idx){
-            const Output& output = outputs[out_idx];
-            //            int64 script = _findScript(output.script());
-            //            if (script == 0) // do we need a new script ?
-            //                script = _insertScript(output.script());
-            
-            _insertOutput(tx, out_idx, output.value(), output.script());
-        }
+    query("DELETE FROM Confirmations WHERE cnf = ?", cnf);
+}
+
+void BlockChain::removeBlock(int count) {
+    typedef vector<int64> Cnfs;
+    Cnfs cnfs = queryCol<int64>("SELECT cnf FROM Confirmations WHERE count = ?", count);
+    // remove transactions in reverse order
+    for (Cnfs::const_reverse_iterator tx = cnfs.rbegin(); tx != cnfs.rend(); ++tx) {
+        removeConfirmation(*tx);
+    }
+    query("DELETE FROM Blocks WHERE count = ?", count);
+}
+
+void BlockChain::getBlockHeader(int count, Block& block) const {
+    block = queryRow<Block(int, uint256, uint256, int, int, int)>("SELECT version, prev, mrkl, time, bits, nonce FROM Blocks WHERE count = ?", count);
+}
+
+void BlockChain::getBlock(int count, Block& block) const {
+    block.setNull();
+
+    getBlockHeader(count, block);
+    
+    // now get the transactions
+    vector<Confirmation> confs = queryColRow<Confirmation(int, unsigned int, int64, int64)>("SELECT (version, locktime, cnf, count) FROM Confirmations WHERE count = ? ORDER BY idx", count);
+    
+    for (size_t idx = 0; idx < confs.size(); idx++) {
+        Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT (hash, idx, signature, sequence) FROM Spendings WHERE cin = ? ORDER BY idx", confs[idx].cnf);
+        Outputs outputs = queryColRow<Output(int64, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE icnf = ?1 ORDER BY idx ASC);", confs[idx].cnf);
+        Transaction txn = confs[idx];
+        txn.setInputs(inputs);
+        txn.setOutputs(outputs);
+        block.addTransaction(txn);
     }
 }
 
-void BlockChain::reacceptTransaction(int64 tx) {
-    // assume that tx exist - accept to main branch:
-    // check that inputs exists in this branch and they are not already spend (in this branch)
-    // get the list of inputs:
-    int64 now = GetTimeMillis();
-    BlockIterator blk = _tree.best();
-    try {
-        begin();
-        vector<int64> keys = _getInputConfirmationBlocks(tx);
-        if (blk.ancestor(keys) == _tree.end())
-            _insertConfirmation(tx, 0, now);
-        commit();
-    }
-    catch (std::exception& e) {
-        rollback();
-        throw Error(string("acceptTransaction: ") + e.what());
-    }
-}
-
+// accept block is more a offer block or block offered: consume(block) - output is a code that falls in 3 categories:
+// accepted(added to best chain, reorganized, sidechain...)
+// orphan - might be ok, but not able to check yet
+// block is considered wrong
+// throw: for some reason the block caused the logic to malfunction
 void BlockChain::acceptBlock(const Block &block) {
 
     uint256 hash = block.getHash();
 
-    typedef set<int64> Txes;
-    Txes unconfirmed;
+    typedef map<uint256, Transaction> Txns;
+    Txns unconfirmed;
     
     // check if we already have the block:
     BlockIterator blk = _tree.find(hash);
@@ -429,111 +475,99 @@ void BlockChain::acceptBlock(const Block &block) {
     if (block.getBlockTime() <= getMedianTimePast(prev))
         throw Error("Block's timestamp is too early");
 
+    int prev_height = prev.height(); // we need to store this as the prev iterator will be invalid after insert - iterators are not 
+    
+    BlockTree::Changes changes = _tree.insert(BlockRef(hash, prev->hash, block.getBlockTime(), block.getBits()));
     try {
-        begin();
-
-        int64 key = _insertBlock(hash, block.getVersion(), prev->key, block.getMerkleRoot(), block.getBlockTime(), block.getBits(), block.getNonce());
+        query("BEGIN --BLOCK");
 
         // now we need to check if the insertion of the new block will change the work
         // note that a change set is like a patch - it contains the blockrefs to remove and the blockrefs to add
-        BlockTree::Changes changes = _tree.insert(BlockRef(hash, key, prev->key, block.getBlockTime(), block.getBits()));
-        
-        // get a list of unconfirmed txes:
-        if (changes.deleted.size()) { // only for reconstructions!
-            for (BlockTree::Keys::const_iterator key = changes.deleted.begin(); key != changes.deleted.end(); ++key) {
-                vector<int64> txes = _findBlockTransactions(*key);
-                unconfirmed.insert(txes.begin() + 1, txes.end());
-            }
-            for (BlockTree::Keys::const_iterator key = changes.inserted.begin(); key != changes.inserted.end(); ++key) {
-                vector<int64> txes = _findBlockTransactions(*key);
-                for (vector<int64>::const_iterator tx = txes.begin() + 1; tx != txes.end(); ++tx)
-                    unconfirmed.erase(*tx);
-            }
-        }
-        
-        blk = _tree.find(key);
-        int height = blk.height();
-        
-        if (height < 0 && -height < _chain.totalBlocksEstimate())
+
+        if (prev_height < _chain.totalBlocksEstimate() && changes.inserted.size() == 0)
             throw Error("Branching disallowed before last checkpoint at: " + lexical_cast<string>(_chain.totalBlocksEstimate()));
         
-        if (!_chain.checkPoints(height, hash))
-            throw Error("Rejected by checkpoint lockin at " + lexical_cast<string>(height));
+        _branches[hash] = block;
         
-        for(size_t idx = 0; idx < block.getNumTransactions(); ++idx)
-            if(!isFinal(block.getTransaction(idx), abs(height), blk->time))
-                throw Error("Contains a non-final transaction");
-
-        // commit transactions
-        int64 fees = 0;
-        int64 min_fee = 0;
-        bool verify = (abs(height) > _chain.totalBlocksEstimate());
-        for(size_t idx = 1; idx < block.getNumTransactions(); ++idx) {
-            Transaction txn = block.getTransaction(idx);
-            acceptBlockTransaction(txn, fees, min_fee, blk, idx, verify);
+        // loop over deleted blocks and remove them
+        for (BlockTree::Hashes::const_iterator h = changes.deleted.begin(); h != changes.deleted.end(); ++h) {
+            BlockIterator blk = _tree.find(*h);
+            Block block;
+            getBlock(blk.count(), block);
+            removeBlock(blk.count());
+            Transactions& txns = block.getTransactions();
+            for (Transactions::const_iterator tx = txns.begin(); tx != txns.end(); ++tx)
+                unconfirmed[tx->getHash()] = *tx;
+            _branches[blk->hash] = block; // store it in the branches map
         }
-        Transaction txn = block.getTransaction(0);
-        acceptBlockTransaction(txn, fees, min_fee, blk, 0);
         
-        // check if we got a new best chain
-        if (height >= 0) {
+        // loop over inserted blocks and insert them
+        for (BlockTree::Hashes::const_iterator h = changes.inserted.begin(); h != changes.inserted.end(); ++h) {
+            uint256 hsh = *h;
+            Block block = _branches[*h];
+            blk = _tree.find(*h);
+            int height = blk.height(); // height for non trunk blocks is negative
+            
+            if (!_chain.checkPoints(height, blk->hash))
+                throw Error("Rejected by checkpoint lockin at " + lexical_cast<string>(height));
+            
+            for(size_t idx = 0; idx < block.getNumTransactions(); ++idx)
+                if(!isFinal(block.getTransaction(idx), height, blk->time))
+                    throw Error("Contains a non-final transaction");
+
+            _verifier.reset();
+            
+            insertBlockHeader(blk.count(), block);
+            
+            // commit transactions
+            int64 fees = 0;
+            int64 min_fee = 0;
+            bool verify = (height > _chain.totalBlocksEstimate());
+            for(size_t idx = 1; idx < block.getNumTransactions(); ++idx) {
+                Transaction txn = block.getTransaction(idx);
+                acceptBlockTransaction(txn, fees, min_fee, blk, idx, verify);
+                unconfirmed.erase(txn.getHash());
+            }
+            Transaction txn = block.getTransaction(0);
+            acceptBlockTransaction(txn, fees, min_fee, blk, 0);
+            
+            if (!_verifier.yield_success())
+                throw Error("Verify Signature failed with: " + _verifier.reason());
+            
             log_info("ACCEPT: New best=%s  height=%d", hash.toString().substr(0,20), height);
             if (height%1000 == 0) {
                 log_info(statistics());
                 log_info("Signature verification time: %f.3s", 0.000001*_verifySignatureTimer);
             }
         }
+        
+        // purge spendings in old blocks
+        if (_mode == Purged && _purge_depth && prev_height > _chain.totalBlocksEstimate()) { // no need to purge during download as we don't store spendings anyway
+            int64 old = prev_height - _purge_depth;
+            if (old >= _chain.totalBlocksEstimate()) {
+                query("DELETE FROM Spendings WHERE icnf IN (SELECT cnf FROM Confirmations WHERE count <= ?)", old);
+                query("DELETE FROM Confirmations WHERE count <= ?", old);
+            }
+        }
+        
         // if we reach here, everything went as it should and we can commit.
-        commit();
+        query("COMMIT --BLOCK");
+        // delete inserted blocks from the _branches
+        for (BlockTree::Hashes::const_iterator h = changes.inserted.begin(); h != changes.inserted.end(); ++h)
+            _branches.erase(*h);
         updateBestLocator();
     }
     catch (std::exception& e) {
-        rollback();
+        query("ROLLBACK --BLOCK");
         _tree.pop_back();
+        for (BlockTree::Hashes::const_iterator h = changes.deleted.begin(); h != changes.deleted.end(); ++h)
+            _branches.erase(*h);
+
         throw Error(string("acceptBlock: ") + e.what());
     }
-    
-    for (Txes::const_iterator tx = unconfirmed.begin(); tx != unconfirmed.end(); ++tx)
-        reacceptTransaction(*tx);
-
-    // now trim the tree
-    if (_tree.height() < COINBASE_MATURITY)
-        return;
-    BlockTree::Pruned pruned = _tree.trim(_tree.height() - COINBASE_MATURITY);
-    // delete branches
-    for (BlockTree::Keys::const_iterator key = pruned.branches.begin(); key != pruned.branches.end(); ++key) {
-        // delete block with key and all its content
-    }
-    // prune trunk
-    //     To prune a block you remove all inputs and the outputs they spend
-    //     Further remove all empty transactions
-    return; // no pruning!
-    try {
-        begin();
-        for (BlockTree::Keys::const_iterator key = pruned.trunk.begin(); key != pruned.trunk.end(); ++key) {
-            // loop over all transactions
-            typedef vector<int64> Txes;
-            Txes txes = _findBlockTransactions(*key);
-            for (Txes::const_iterator tx = txes.begin(); tx != txes.end(); ++tx) {
-                Txes pruned_txes = _prunedTransactions(*tx);
-                _pruneOutputs(*tx);
-                _pruneInputs(*tx);
-                
-                for (Txes::const_iterator ptx = pruned_txes.begin(); ptx != pruned_txes.end(); ++ ptx) {
-                    if (_countOutputs(*tx) == 0) {
-                        _deleteTransaction(*tx);
-                        _deleteConfirmation(*tx);
-                    }
-                }
-            }
-        }
-        commit();
-    }
-    catch (std::exception& e) {
-        rollback();
-        //        _tree.untrim();
-        throw Error(string("acceptBlock - trim: ") + e.what());
-    }
+        
+    for (Txns::const_iterator tx = unconfirmed.begin(); tx != unconfirmed.end(); ++tx)
+        acceptTransaction(tx->second, false);
 }
 
 
@@ -586,47 +620,47 @@ void BlockChain::getBlock(BlockIterator blk, Block& block) const {
     // lock the pool and chain for reading
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
     block.setNull();
-    block = _getBlock(blk->key);
-    
-    // obtain a list of txids from the database:
-    vector<int64> txs = _findBlockTransactions(blk->key); // this list is sorted according to idx in the block
-    
-    for (vector<int64>::iterator itx = txs.begin(); itx != txs.end(); ++itx) {
-        Transaction txn;
-        getTransaction(*itx, txn);
-        block.addTransaction(txn);
-    }
-    
+    getBlock(blk.count(), block);
 }
 
 void BlockChain::getBlock(const uint256 hash, Block& block) const
 {
     // lookup in the database:
     BlockIterator blk = _tree.find(hash);
-
+    
     if (!!blk) {
         getBlock(blk, block);
     }
-    else { // now try if the hash was for a transaction
-        int64 tx = _findTransaction(hash);
-        if (tx) {
-            // get block from transaction and look up again...
-        }
-    }
 }
 
-void BlockChain::getTransaction(const int64 tx, Transaction &txn) const {
-    // find the transaction:
-    txn = _getTransaction(tx);
+void BlockChain::getTransaction(const int64 cnf, Transaction &txn) const {
+    Confirmation conf = queryRow<Confirmation(int, unsigned int, int64, int64)>("SELECT (version, locktime, cnf, count) FROM Confirmations WHERE cnf = ?", cnf);
     
-    // fill it with outputs and inputs
-    Outputs outputs = _getOutputs(tx);
-    for (Outputs::const_iterator out = outputs.begin(); out != outputs.end(); ++out)
-        txn.addOutput(*out);
+    Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT (hash, idx, signature, sequence) FROM Spendings WHERE cin = ? ORDER BY idx", cnf);
+    Outputs outputs = queryColRow<Output(int64, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE icnf = ?1 ORDER BY idx ASC);", cnf);
+    txn = conf;
+    txn.setInputs(inputs);
+    txn.setOutputs(outputs);
+}
 
-    Inputs inputs = _getInputs(tx);
-    for (Inputs::const_iterator in = inputs.begin(); in != inputs.end(); ++in)
-        txn.addInput(*in);
+void BlockChain::getTransaction(const int64 cnf, Transaction &txn, int64& height, int64& time) const {
+    Confirmation conf = queryRow<Confirmation(int, unsigned int, int64, int64)>("SELECT (version, locktime, cnf, count) FROM Confirmations WHERE cnf = ?", cnf);
+ 
+    if (conf.count > LOCKTIME_THRESHOLD) {
+        height = -1;
+        time = conf.count;
+    }
+    else {
+        height = conf.count - 1;
+        BlockIterator blk = iterator(conf.count);
+        time = blk->time;
+    }
+    
+    Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT (hash, idx, signature, sequence) FROM Spendings WHERE cin = ? ORDER BY idx", cnf);
+    Outputs outputs = queryColRow<Output(int64, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE icnf = ?1 ORDER BY idx ASC);", cnf);
+    txn = conf;
+    txn.setInputs(inputs);
+    txn.setOutputs(outputs);
 }
 
 BlockIterator BlockChain::iterator(const BlockLocator& locator) const {
@@ -698,33 +732,31 @@ int BlockChain::getHeight(const uint256 hash) const
         return abs(blk.height());
 
     // assume it is a tx
-    
-    int64 tx = _findTransaction(hash);
-    vector<int64> keys = _getConfirmationBlocks(tx);
-    
-    blk = _tree.best().ancestor(keys);
-    
-    if (blk != _tree.end())
-        return blk.height();
-    
-    return -1;
+
+    //    return query<int64>("SELECT count FROM Confirmations WHERE ") - 1;
 }
 
 
 bool BlockChain::haveTx(uint256 hash, bool must_be_confirmed) const
 {
-    int64 tx = _findTransaction(hash);
-    vector<int64> keys = _getConfirmationBlocks(tx);
+    // There is no index on hash, only on the hash + index - we shall assume that the hash + 0 is at least in the spendings, and hence we need not query for more.
+    // Further, if we prune the database (remove spendings) we cannot answer this question (at least not if it is 
+    int64 cnf = query<int64, int64>("SELECT ocnf FROM Unspents WHERE hidx = ?", Unspent::hidx(hash));
+    if (!cnf)
+        cnf = query<int64, int64>("SELECT ocnf FROM Spendings WHERE hidx = ?", Unspent::hidx(hash));
+
+    if (!must_be_confirmed)
+        return cnf;
     
-    if (!must_be_confirmed && count(keys.begin(), keys.end(), 0) > 0) // nonfirmed
-        return true;
-    
-    BlockIterator blk = _tree.best().ancestor(keys);
-    
-    if (blk == _tree.end())
+    if (!cnf)
         return false;
     
-    return true;
+    int count = query<int>("SELECT count FROM Confirmations WHERE cnf = ?", cnf);
+    
+    if (count < LOCKTIME_THRESHOLD)
+        return true;
+    else
+        return false;
 }
 
 bool BlockChain::isFinal(const Transaction& tx, int nBlockHeight, int64 nBlockTime) const
@@ -752,65 +784,47 @@ bool BlockChain::haveBlock(uint256 hash) const
 void BlockChain::getTransaction(const uint256& hash, Transaction& txn) const {
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
 
-    txn.setNull();
-    int64 tx = _findTransaction(hash);
-    if (tx)
-        getTransaction(tx, txn);
+    int64 cnf = query<int64>("SELECT cnf FROM Unspents WHERE hash = ? LIMIT 1", txn.getHash());
+    
+    getTransaction(cnf, txn);
 }
 
 void BlockChain::getTransaction(const uint256& hash, Transaction& txn, int64& height, int64& time) const
 {
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
 
-    txn.setNull();
-    int64 tx = _findTransaction(hash);
-    if (!tx) return;
+    int64 cnf = query<int64>("SELECT cnf FROM Unspents WHERE hash = ? LIMIT 1", txn.getHash());
+
+    getTransaction(cnf, txn, height, time);
+}
+
+Transactions BlockChain::unconfirmedTransactions() const {
+    // lock the pool and chain for reading
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
     
-    // check if the transaction is confirmed in the main chain
+    Transactions txns;
+    std::vector<int64> cnfs = queryCol<int64>("SELECT cnf FROM Confirmations WHERE count > ?", LOCKTIME_THRESHOLD);
     
-    vector<int64> keys = _getConfirmationBlocks(tx);
-    
-    BlockIterator blk = _tree.best().ancestor(keys); // returns the first ancestor among the iterators with key or _tree.end() otherwise
-    
-    if (blk != _tree.end()) {
-        height = blk.height();
-        Block block = _getBlock(blk->key);
-        time = blk->time;
-    }
-    else {
-        // if not does it have a nonfirmation, and what is the time (idx)
-        int64 idx = _nonfirmationTime(tx);
-        if (idx) {
-            time = idx;
-            height = -1;
-        }
-        else
-            return;
+    for (std::vector<int64>::const_iterator cnf = cnfs.begin(); cnf != cnfs.end(); ++cnf) {
+        Transaction txn;
+        getTransaction(*cnf, txn);
+        txns.push_back(txn);
     }
     
-    getTransaction(tx, txn);
+    return txns;
 }
 
 bool BlockChain::isSpent(Coin coin) const {
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
 
-    int64 out = _findOutput(coin.hash, coin.index);
+    int64 c = query<int64, int64>("SELECT coin FROM Unspents WHERE hidx = ?", Unspent::hidx(coin.hash, coin.index));
 
-    if (!out)
-        return true; // technically we don't know... but we cannot claim it is not spent
-    
-    // check if it is used in some inputs
-    vector<int64> keys = _spentInBlocks(out);
-    
-    // check that it exists and is in this branch
-    BlockIterator blk = _tree.best().ancestor(keys); // returns the first ancestor among the iterators with key or _tree.end() otherwise
+    return c;
+}
 
-    if (blk != _tree.end())
-        return true; // spent in best chain
-    
-    bool nonfirmed = count(keys.begin(), keys.end(), 0);
-    
-    return nonfirmed; // being spent
+bool BlockChain::beingSpent(Coin coin) const {
+    int64 cnf = query<int64, int64>("SELECT c.cnf FROM Confirmations c, Unspents u WHERE c.ocnf = u.cnf AND u.hidx = ? AND c.count > ?", Unspent::hidx(coin.hash, coin.index), LOCKTIME_THRESHOLD);
+    return (cnf != 0);
 }
 
 int64 BlockChain::value(Coin coin) const {

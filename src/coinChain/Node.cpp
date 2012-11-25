@@ -32,16 +32,16 @@ using namespace std;
 using namespace boost;
 using namespace asio;
  
-Node::Node(const Chain& chain, std::string dataDir, const string& address, const string& port, ip::tcp::endpoint proxy, unsigned int timeout, const string& irc) : 
-    _dataDir(dataDir == "" ? CDB::dataDir(chain.dataDirSuffix()) : dataDir),
-    _fileLock(_dataDir + "/.lock"),
+Node::Node(const Chain& chain, BlockChain::Modes mode, std::string dataDir, const string& address, const string& port, ip::tcp::endpoint proxy, unsigned int timeout, const string& irc) :
+    _dataDir(dataDir),
+    _fileLock(_dataDir == "" ? "" : _dataDir + "/.lock"),
     _io_service(),
     _acceptor(_io_service),
     _peerManager(*this),
     _connection_deadline(_io_service),
     _messageHandler(),
     _endpointPool(chain.defaultPort(), _dataDir),
-    _blockChain(chain, _dataDir),
+    _blockChain(chain, mode, _dataDir),
     _chatClient(_io_service, bind(&Node::post_accept_or_connect, this), irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy),
     _proxy(proxy),
     _connection_timeout(timeout),

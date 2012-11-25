@@ -25,19 +25,19 @@
 /// It is optimised for a sparse tree - i.e. a tree with a well defined and long trunk and only
 /// few short branches. The trunk is held in a vector, and the branches are held in a map.
 /// It is assumed that the tree stores elements, Elem, that can be uniquely determined by their
-/// key - the key can be e.g. a number or a hash.
+/// hash - the hash can be e.g. a number or a hash.
 /// Each element can be associated with a height - the height is returned as a signed height - a positive height indicates
 /// that is belongs to the trunk. A negative height that it is associated with a branch.
-/// The height can be found using height(key) the trunk height is returned using height().
+/// The height can be found using height(hash) the trunk height is returned using height().
 /// The tree can be traversed using an iterator. Note that stepping forward and backwards is only associative on the main branch.
 /// In fact forward stepping is only supported on the main branch.
 /// The comparison operators < and > can be used to determine if the elements are in the same branch:
 /// a < b returns true if a is below b and in the same branch - in other words, if you can step down from b to a e.g. using --
 /// As SparseTree is a sparse tree it supports trimming. Trimming the tree is done using trim(height).
-/// This removes all branches ending below this height. A set of keys of removed elements is hereby returned.
-/// The Elements must satisfy the have public members "key" and "prev", prev is pointing to the previous element in the tree
+/// This removes all branches ending below this height. A set of hashes of removed elements is hereby returned.
+/// The Elements must satisfy the have public members "hash" and "prev", prev is pointing to the previous element in the tree
 
-template <class Elem, class Key = typename Elem::Key>
+template <class Elem, class Hash = typename Elem::Hash>
 class SparseTree {
 public:
     class Error: public std::runtime_error {
@@ -45,7 +45,7 @@ public:
         Error(const std::string& s) : std::runtime_error(s.c_str()) {}
     };
 
-    typedef std::vector<Key> Keys;
+    typedef std::vector<Hash> Hashes;
 
     class Iterator {
     public:
@@ -78,8 +78,14 @@ public:
         const Elem* operator->() { return _elem; }
         const Elem& operator*() { return *_elem; }
         
-        int height() const { return _tree->height(_elem->key); };
-
+        int height() const { return _tree->height(_elem->hash); };
+        int count() const {
+            if (is_valid())
+                return _tree->count(_elem->hash);
+            else
+                return 0;
+        }
+        
         bool operator!() const { return !is_valid(); }
         
         bool operator<(Iterator rhs) {
@@ -99,14 +105,14 @@ public:
                     if (lheight < 0)
                         return false;
                     else
-                        return lheight < rheight;
+                        return (lheight < rheight);
                 }
             }
         }
         
-        Iterator ancestor(Keys keys) const {
-            for (typename Keys::const_iterator key = keys.begin(); key != keys.end(); ++key) {
-                Iterator itr = _tree->find(*key);
+        Iterator ancestor(Hashes hashes) const {
+            for (typename Hashes::const_iterator hash = hashes.begin(); hash != hashes.end(); ++hash) {
+                Iterator itr = _tree->find(*hash);
                 if (itr < *this) return itr;
             }
             return _tree->end();
@@ -126,38 +132,47 @@ public:
         
         _trunk = trunk;
 
-        _heights[_trunk[0].key] = 0;
+        _heights[_trunk[0].hash] = 0;
         
         for (size_t h = 1; h < _trunk.size(); ++h) {
             // validate:
-            if (_trunk[h].prev != _trunk[h-1].key)
-                throw Error("Tree::assign - failed to validate trunk!");;
+            if (_trunk[h].prev != _trunk[h-1].hash)
+                throw Error("Tree::assign - failed to validate trunk!");
             
             // populate the hash index
-            _heights[_trunk[h].key] = h;
+            _heights[_trunk[h].hash] = h;
         }
         
         _branches.clear();
     }
 
-    int height() const { return _heights.size() - 1; }
-    int height(const Key& key) const {
-        typename Heights::const_iterator h = _heights.find(key);
+    int height() const {
+        return _heights.size() - 1;
+    }
+    int count() const {
+        return _heights.size();
+    }
+    int height(const Hash& hash) const {
+        typename Heights::const_iterator h = _heights.find(hash);
         if (h == _heights.end())
-            throw Error("SparseTree::height - key not known");
+            throw Error("SparseTree::height - hash not known");
         
         return h->second;
     }
+    int count(const Hash& hash) const {
+        int h = height(hash);
+        return abs(h) + 1;
+    }
     
-    bool have(const Key& key) const { return _heights.count(key); }
+    bool have(const Hash& hash) const { return _heights.count(hash); }
     
-    Iterator find(const Key key) const {
-        typename Heights::const_iterator h = _heights.find(key);
+    Iterator find(const Hash hash) const {
+        typename Heights::const_iterator h = _heights.find(hash);
         if (h == _heights.end())
             return end();
 
         if (h->second < 0) { // the iterator points to the stash
-            typename Branches::const_iterator i = _branches.find(key);
+            typename Branches::const_iterator i = _branches.find(hash);
             return Iterator(&(i->second), this);
         }
         else
@@ -175,14 +190,14 @@ public:
     }
 
 
-    const Elem& operator[](Key key) const {
-        return at(key);
+    const Elem& operator[](Hash hash) const {
+        return at(hash);
     }
 
-    const Elem& at(Key key) const {
-        int h = height(key);
+    const Elem& at(Hash hash) const {
+        int h = height(hash);
         if (h < 0)
-            return _branches.find(key)->second;
+            return _branches.find(hash)->second;
         else
             return _trunk[h];
     }
@@ -207,7 +222,7 @@ public:
         }
         else if (n < 0) {
             while (n < 0 && i != end() && i.height() < 0) {
-                i = Iterator(&(_branches.find(i->key)->second), this);
+                i = Iterator(&(_branches.find(i->hash)->second), this);
                 ++n;
             }
             int h = i.height() + n;
@@ -220,20 +235,19 @@ public:
     }
     
 protected:
-    typedef std::map<Key, Elem> Branches;
+    typedef std::map<Hash, Elem> Branches;
     Branches _branches;
     
-    typedef std::map<Key, int> Heights;
+    typedef std::map<Hash, int> Heights;
     Heights _heights;
     
     Trunk _trunk;
 };
 
 struct BlockRef {
-    typedef int64 Key;
-    uint256 hash;
-    Key key;
-    Key prev;
+    typedef uint256 Hash;
+    Hash hash;
+    Hash prev;
     unsigned int time;
     unsigned int bits;
     
@@ -245,8 +259,8 @@ struct BlockRef {
         return (CBigNum(1)<<256) / (target+1);
     }
     
-    BlockRef() : hash(0), key(0), prev(0), time(0), bits(0) {}
-    BlockRef(uint256 hash, Key key, Key prev, unsigned int time, unsigned int bits) : hash(hash), key(key), prev(prev), time(time), bits(bits) {}
+    BlockRef() : hash(0), prev(0), time(0), bits(0) {}
+    BlockRef(Hash hash, Hash prev, unsigned int time, unsigned int bits) : hash(hash), prev(prev), time(time), bits(bits) {}
 };
 
 class COINCHAIN_EXPORT BlockTree : public SparseTree<BlockRef> {
@@ -255,31 +269,23 @@ public:
     virtual void assign(const Trunk& trunk);
     
     struct Changes {
-        Keys deleted;
-        Keys inserted;
+        Hashes deleted;
+        Hashes inserted;
     };
 
     struct Pruned {
-        Keys branches;
-        Keys trunk;
+        Hashes branches;
+        Hashes trunk;
     };
     
     CBigNum accumulatedWork(BlockTree::Iterator blk) const;
     
-    Changes insert(const BlockRef& ref);
+    Changes insert(const BlockRef ref);
 
     void pop_back();
 
-    Iterator find(const BlockRef::Key key) const {
-        return SparseTree<BlockRef>::find(key);
-    }
-    
-    Iterator find(uint256 hash) const {
-        Hashes::const_iterator i = _hashes.find(hash);
-        if (i == _hashes.end())
-            return end();
-
-        return SparseTree<BlockRef>::find(i->second);
+    Iterator find(const BlockRef::Hash hash) const {
+        return SparseTree<BlockRef>::find(hash);
     }
     
     Iterator best() const {
@@ -293,7 +299,7 @@ public:
             trim_height = height();
         Pruned pruned;
         for (size_t h = _trimmed; h < trim_height; ++h)
-            pruned.trunk.push_back(_trunk[h].key);
+            pruned.trunk.push_back(_trunk[h].hash);
         _trimmed = trim_height;
         return pruned;
     }
@@ -302,9 +308,6 @@ public:
 private:
     typedef std::vector<CBigNum> AccumulatedWork;
     AccumulatedWork _acc_work;
-    
-    typedef std::map<uint256, BlockRef::Key> Hashes;
-    Hashes _hashes;
     
     size_t _trimmed;
 };

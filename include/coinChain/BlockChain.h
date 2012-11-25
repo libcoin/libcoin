@@ -23,10 +23,11 @@
 #include <coin/Transaction.h>
 
 #include <coinChain/Export.h>
-#include <coinChain/db.h>
+#include <coinChain/Database.h>
 
 #include <coinChain/Chain.h>
 #include <coinChain/BlockTree.h>
+#include <coinChain/Verifier.h>
 
 #include <boost/noncopyable.hpp>
 #include <boost/thread/shared_mutex.hpp>
@@ -41,7 +42,7 @@ typedef std::map<uint256, Block> Branches;
 
 class Branch;
 
-class COINCHAIN_EXPORT BlockChain : private Database
+class COINCHAIN_EXPORT BlockChain : private sqliterate::Database
 {
 private: // noncopyable
     BlockChain(const BlockChain&);
@@ -57,32 +58,36 @@ public:
         Error(const std::string& s) : std::runtime_error(s.c_str()) {}
     };
     
+    // modes
+    enum Modes {
+        Full, // everything is downloaded
+        Purged, // purging to keep only the last N block spendings, where N is > 107 (during start, purge everything)
+        SPV, //
+        CheckPoint // download headers and
+    };
+    
     /// The constructor - reference to a Chain definition i obligatory, if no dataDir is provided, the location for the db and the file is chosen from the Chain definition and the CDB::defaultDir method
-    BlockChain(const Chain& chain = bitcoin, const std::string dataDir = "");
+    BlockChain(const Chain& chain = bitcoin, Modes mode = Purged, const std::string dataDir = "");
 
+    /// BlockChain management methods
+    Modes mode() const { return _mode; }
+    
+    size_t purge_depth() const { return _purge_depth; }
+    void purge_depth(size_t purge_depth) { _purge_depth = (purge_depth > COINBASE_MATURITY + 20 ? purge_depth : COINBASE_MATURITY + 20); }
+
+    bool script_to_unspents() const;
+    void script_to_unspents(bool enable);
+    
     /// T R A N S A C T I O N S    
     
     /// Get transactions from db or memory.
-    void getTransaction(const int64 tx, Transaction &txn) const;
+    void getTransaction(const int64 cnf, Transaction &txn) const;
     void getTransaction(const uint256& hash, Transaction& tx) const;
+    void getTransaction(const int64 cnf, Transaction& tx, int64& height, int64& time) const;
     void getTransaction(const uint256& hash, Transaction& tx, int64& height, int64& time) const;
     
     /// Get all unconfirmed transactions.
-    Transactions unconfirmedTransactions() const {
-        // lock the pool and chain for reading
-        boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
-        
-        Transactions txns;
-        std::vector<int64> txs = _findBlockTransactions(0);
-
-        for (std::vector<int64>::const_iterator tx = txs.begin(); tx != txs.end(); ++tx) {
-            Transaction txn;
-            getTransaction(*tx, txn);
-            txns.push_back(txn);
-        }
-        
-        return txns;
-    }
+    Transactions unconfirmedTransactions() const;
     
     /// Query for existence of a Transaction.
     bool haveTx(uint256 hash, bool must_be_confirmed = false) const;
@@ -106,8 +111,8 @@ public:
     
     bool isSpent(Coin coin) const;
     /// This rather strange name refers to this coin included in a transaction in the memorypool
-    bool beingSpent(Coin coin) const { return _beingSpent(coin.hash, (int64)coin.index); }
-
+    bool beingSpent(Coin coin) const;
+    
     int64 value(Coin coin) const;
     
     /// B L O C K S
@@ -132,7 +137,10 @@ public:
     void getBlock(BlockIterator blk, Block& block) const;
 
     /// getBlockHeader will only make one query to the DB and return an empty block without the transactions
-    void getBlockHeader(BlockIterator blk, Block& block) const { block = _getBlock(blk->hash); }
+    void getBlockHeader(int count, Block& block) const;
+    void getBlockHeader(BlockIterator blk, Block& block) const { getBlockHeader(blk.count(), block); }
+
+    void getBlock(int count, Block& block) const;
     
     /// Get height of block of transaction by its hash
     int getHeight(const uint256 hash) const;
@@ -182,6 +190,9 @@ public:
     }    
     
 protected:
+    void removeConfirmation(int64 cnf, bool only_nonfirmations = false);
+    void removeBlock(int count);
+    
     void updateBestLocator();
 
     uint256 getBlockHash(const BlockLocator& locator) const;
@@ -191,8 +202,6 @@ protected:
     void deleteTransaction(const int64 tx, Transaction &txn);
     
     /// Block stuff
-    
-    void deleteBlock(BlockIterator blk, Block& block);
     
     void InvalidChainFound(int64 blk_new);
     
@@ -212,57 +221,16 @@ protected:
     bool RemoveFromMemoryPool(const Transaction& tx);
 
 private:
+    void insertBlockHeader(int64 count, const Block& block);
+    
+private:
     const Chain& _chain;
-    /// database actions
-    Statement<int64> _findBlock;
-    StatementLastId _insertBlock;
-    StatementLastId _insertGenesisBlock;
-    StatementVoid _deleteBlock;
     
-    StatementVec<int64, 1, int64> _findBlockTransactions;
+    Verifier _verifier;
+    
+    const Modes _mode;
 
-    StatementVoid _deleteConfirmation;
-    StatementLastId _insertConfirmation;
-    Statement<int64> _confirmationIdx;
-    
-    Statement<int64> _findTransaction;
-    StatementLastId _insertTransaction;
-    StatementClass<Transaction, 2, int, unsigned int> _getTransaction;
-    StatementVoid _deleteTransaction;
-    
-    StatementVec<int64, 1, int64> _getConfirmationBlocks;
-    StatementVec<int64, 1, int64> _getInputConfirmationBlocks;
-    
-    Statement<int64> _nonfirmationTime;
-    
-    StatementClass<Block, 6, int, uint256, uint256, int, int, int> _getBlock;
-
-    Statement<int64> _findOutput;
-    StatementClass<Output, 2, int64, Script> _getOutput;
-    StatementVec<Output, 2, int64, Script> _getOutputs;
-    StatementLastId _insertOutput;
-    StatementVoid _deleteOutputs;
-
-    StatementLastId _insertInput;
-    StatementVec<Input, 4, uint256, unsigned int, Script, unsigned int> _getInputs;
-    StatementVoid _deleteInputs;
-
-    Statement<int64> _findScript;
-    StatementLastId _insertScript;
-
-    StatementVec<int64, 1, int64> _spentInBlocks; // input is coin output is vector of blk
-
-    StatementVec<int64, 1, int64> _prunedTransactions;
-    
-    StatementVoid _pruneOutputs;
-    StatementVoid _pruneInputs;
-    
-    Statement<int64> _countOutputs;
-    
-    StatementVoid _pruneTransaction;
-    StatementVoid _pruneConfirmation;
-    
-    Statement<int64> _beingSpent;
+    size_t _purge_depth;
     
     BlockLocator _bestLocator;
     

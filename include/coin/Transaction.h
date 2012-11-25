@@ -71,54 +71,6 @@ struct Coin { // was COutPoint
     }
 };
 
-struct Spending {
-    uint256 hash;
-    unsigned int index;
-    
-    Spending() { setNull(); }
-    Spending(uint256 hashIn, unsigned int nIn) { hash = hashIn; index = nIn; }
-    
-    IMPLEMENT_SERIALIZE( READWRITE(FLATDATA(*this)); )
-    
-    void setNull() { hash = 0; index = -1; }
-    bool isNull() const { return (hash == 0 && index == -1); }
-    
-    friend bool operator<(const Spending& a, const Spending& b) {
-        return (a.hash < b.hash || (a.hash == b.hash && a.index < b.index));
-    }
-    
-    friend bool operator==(const Spending& a, const Spending& b) {
-        return (a.hash == b.hash && a.index == b.index);
-    }
-    
-    friend bool operator!=(const Spending& a, const Spending& b) {
-        return !(a == b);
-    }
-    
-    std::string toString() const {
-        return strprintf("Spending(%s, %d)", hash.toString().substr(0,10).c_str(), index);
-    }
-    
-    void print() const {
-        log_info("%s\n", toString().c_str());
-    }
-};
-
-    
-
-struct CoinRef // was CInPoint
-{
-    Transaction* ptx;
-    unsigned int index;
-    
-    CoinRef() { setNull(); }
-    CoinRef(Transaction* ptxIn, unsigned int nIn) { ptx = ptxIn; index = nIn; }
-    
-    void setNull() { ptx = NULL; index = -1; }
-    bool isNull() const { return (ptx == NULL && index == -1); }
-};
-
-
 /// An input of a transaction.  It contains the location of the previous
 /// transaction's output that it claims and a signature that matches the
 /// output's public key.
@@ -225,7 +177,7 @@ public:
         _script.clear();
     }
 
-    bool isNull() {
+    bool isNull() const {
         return (_value == -1);
     }
 
@@ -329,6 +281,7 @@ public:
     void addInput(const Input& input) { _inputs.push_back(input); }
     void replaceInput(unsigned int pos, const Input& input) { _inputs[pos] = input; }
     void removeInputs() { _inputs.clear(); }
+    void setInputs(const Inputs& inputs) { _inputs = inputs; }
 
     /// Const getters for total number of inputs, single input and the set of inputs for iteration. 
     unsigned int getNumInputs() const { return _inputs.size(); }
@@ -340,6 +293,7 @@ public:
     void replaceOutput(unsigned int pos, const Output& output) { _outputs[pos] = output; }
     void insertOutput(unsigned int pos, const Output& output) { _outputs.insert(_outputs.begin() + pos, output); }
     void removeOutputs() { _outputs.clear(); }
+    void setOutputs(const Outputs& outputs) { _outputs = outputs; }
 
     /// Const getters for total number of outputs, single output and the set of outputs for iteration. 
     unsigned int getNumOutputs() const { return _outputs.size(); }
