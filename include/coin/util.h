@@ -7,6 +7,18 @@
 
 #define NOMINMAX
 
+#define __STDC_LIMIT_MACROS
+#ifdef _MSC_VER
+
+typedef __int32 int32_t;
+typedef unsigned __int32 uint32_t;
+typedef __int64 int64_t;
+typedef unsigned __int64 uint64_t;
+
+#else
+#include <stdint.h>
+#endif
+
 #include <coin/uint256.h>
 #include <coin/Logger.h>
 
@@ -19,17 +31,6 @@
 #include <vector>
 #include <string>
 
-#define __STDC_LIMIT_MACROS
-#ifdef _MSC_VER
-
-typedef __int32 int32_t;
-typedef unsigned __int32 uint32_t;
-typedef __int64 int64_t;
-typedef unsigned __int64 uint64_t;
-
-#else
-#include <stdint.h>
-#endif
 
 #include <boost/thread.hpp>
 #include <boost/interprocess/sync/interprocess_recursive_mutex.hpp>
