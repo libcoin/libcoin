@@ -96,7 +96,6 @@ Endpoint EndpointPool::getCandidate(const set<unsigned int>& not_in, int64 start
     // Choose an address to connect to based on most recently seen
     //
     Endpoint candidate;
-    int64 best = INT64_MIN;
     
     int64 now = GetAdjustedTime();
     vector<Endpoint> endpoints = queryColRow<Endpoint(unsigned int, unsigned short, unsigned int, unsigned int)>("SELECT ip, port, time, lasttry FROM Endpoints WHERE lasttry < ? ORDER BY time DESC", now-60*60);
