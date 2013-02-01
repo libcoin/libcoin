@@ -24,7 +24,8 @@
 
 #include <coinChain/Export.h>
 #include <coinChain/Database.h>
-
+#include <coinChain/Spendables.h>
+#include <coinChain/Claims.h>
 #include <coinChain/Chain.h>
 #include <coinChain/BlockTree.h>
 #include <coinChain/Verifier.h>
@@ -37,13 +38,28 @@
 class Transaction;
 
 typedef std::vector<Transaction> Transactions;
-//typedef std::vector<Block> Blocks;
 typedef std::map<uint256, Block> Branches;
 
-class Branch;
+class Stats {
+public:
+    Stats() : _timer(0), _counter(0), _running(false) {}
+    
+    void start() { _running = true; ++_counter; _timer -= GetTimeMicros(); }
+    void stop() { _timer += GetTimeMicros(); _running = false; }
+    
+    std::string str() const {
+        int64 timer = _timer + (_running ? GetTimeMicros() : 0);
+        double avg = 1./_counter*timer;
+        std::string s = cformat("%9.3fs / #%6d = %6.3fus : \"%s\"", 0.000001*timer, _counter, avg).text();
+        return s;
+    }
+private:
+    int64 _timer;
+    int64 _counter;
+    bool _running;
+};
 
-class COINCHAIN_EXPORT BlockChain : private sqliterate::Database
-{
+class COINCHAIN_EXPORT BlockChain : private sqliterate::Database {
 private: // noncopyable
     BlockChain(const BlockChain&);
     void operator=(const BlockChain&);
@@ -58,25 +74,33 @@ public:
         Error(const std::string& s) : std::runtime_error(s.c_str()) {}
     };
     
-    // modes
-    enum Modes {
-        Full, // everything is downloaded
-        Purged, // purging to keep only the last N block spendings, where N is > 107 (during start, purge everything)
-        SPV, //
-        CheckPoint // download headers and
-    };
-    
-    /// The constructor - reference to a Chain definition i obligatory, if no dataDir is provided, the location for the db and the file is chosen from the Chain definition and the CDB::defaultDir method
-    BlockChain(const Chain& chain = bitcoin, Modes mode = Purged, const std::string dataDir = "");
+    /// The constructor - reference to a Chain definition is obligatory, if no dataDir is provided, the location for the db and the file is chosen from the Chain definition and the CDB::defaultDir method
+    BlockChain(const Chain& chain = bitcoin, const std::string dataDir = "");
 
-    /// BlockChain management methods
-    Modes mode() const { return _mode; }
+    /// The purge depth is the number of blocks kept as spendings and unspents. If purgedepth is set to 0 the client will be a full client
+    /// Else it is the number of old blocks served to the bitcoin network.
+    unsigned int purge_depth() const;
+    void purge_depth(unsigned int purge_depth);
     
-    size_t purge_depth() const { return _purge_depth; }
-    void purge_depth(size_t purge_depth) { _purge_depth = (purge_depth > COINBASE_MATURITY + 20 ? purge_depth : COINBASE_MATURITY + 20); }
-
+    bool lazy_purging() const { return _lazy_purging; }
+    void lazy_purging(bool p) { _lazy_purging = p; }
+    
+    /// query and set index for fast script to unspent lookup - enabling can take some time
     bool script_to_unspents() const;
     void script_to_unspents(bool enable);
+    
+    /// Validation Depth: 0 - don't verify - use the database for verification
+    /// if > 0 use Trie for validation as long as block count is below, use MerkleTrie when blockcount is equal or above
+    /// e.g. a value of 1 will keep the merkle trie switched on all the time and a value of UINT_MAX will ensure Trie all the time
+    /// Default is _chain.totalBlocksEstimate()
+    unsigned int validation_depth() const { return _validation_depth; }
+    void validation_depth(unsigned int v);
+    
+    /// Verification Depth: 0 - don't verify x (>0) verify anything later than this
+    /// default is x = _chain.totalBlocksEstimate()
+    /// Note: verification depth changes does not affect already accpeted blocks!
+    unsigned int verification_depth() const { return _verification_depth; }
+    void verification_depth(unsigned int v) { _verification_depth = v; }
     
     /// T R A N S A C T I O N S    
     
@@ -95,17 +119,21 @@ public:
     /// A Transaction is final if the critreias set by it locktime are met.
     bool isFinal(const Transaction& tx, int nBlockHeight=0, int64 nBlockTime=0) const;
     
-    /// Dry run version of the acceptTransaction method. Hence it is const. For probing transaction before they are scheduled for submission to the chain network.
-    bool checkTransaction(const Transaction& tx) const {
+    /// Dry run version of claim.
+    bool checkTransaction(const Transaction& txn) const {
         boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
-        //        return CheckForMemoryPool(tx);
+        try {
+            try_claim(txn, true);
+            return true;
+        }
+        catch (...) {
+            return false;
+        }
     }
     
-    /// Accept transaction (it will go into memory first)
-    //    void acceptTransaction(const Transaction& txn, int64& fees, int64 min_fee);
-    void acceptTransaction(const Transaction& txn, bool verify = true);
-    void acceptBlockTransaction(const Transaction txn, int64& fees, int64 min_fee, BlockIterator blk = BlockIterator(), int64 idx = 0, bool verify = true);
-    void reacceptTransaction(int64 tx);
+    std::pair<Claims::Spents, int64> try_claim(const Transaction& txn, bool verify) const;
+
+    void claim(const Transaction& txn, bool verify = true);
     
     /// C O I N S
     
@@ -113,7 +141,13 @@ public:
     /// This rather strange name refers to this coin included in a transaction in the memorypool
     bool beingSpent(Coin coin) const;
     
-    int64 value(Coin coin) const;
+    /// getUnspents return unspent coins and values before a certain timestamp.
+    /// If the timestamp is less than 500.000.000 it is assumed that it refers to a certain block,
+    /// else it referes to a certain (posix)time, and all confirmed unspents will be included plus those claimed before the timestamp.
+    /// If the timestamp is 0 (default) everything is included
+    void getUnspents(const Script& script, Unspents& unspents, unsigned int before = 0) const;
+    
+    //    int64 value(Coin coin) const;
     
     /// B L O C K S
         
@@ -121,7 +155,7 @@ public:
     bool haveBlock(uint256 hash) const;
     
     /// Accept a block (Note: this could lead to a reorganization of the block that is often quite time consuming).
-    void acceptBlock(const Block &block);
+    void append(const Block &block);
 
     int getDistanceBack(const BlockLocator& locator) const;
 
@@ -163,6 +197,10 @@ public:
         return _tree.height();
     }
     
+    BlockIterator getBest() const {
+        return _tree.best();
+    }
+    
     /// Get the locator for the best index
     const BlockLocator& getBestLocator() const;
     
@@ -170,10 +208,12 @@ public:
     const uint256& getBestChain() const { return _tree.best()->hash; }
     const int64& getBestReceivedTime() const { return _bestReceivedTime; }
 
+    typedef std::vector<Script> Payees;
+    typedef std::vector<unsigned int> Fractions;
+    Block getBlockTemplate(Payees scripts, Fractions fractions = Fractions(), Fractions fee_fractions = Fractions()) const;
+    
     const Chain& chain() const { return _chain; }
     
-    bool connectInputs(const Transaction& txn, const int64 blk, int idx, int64& fees, int64 min_fee = 0) const;
-
     void outputPerformanceTimings() const;
 
     int getTotalBlocksEstimate() const { return _chain.totalBlocksEstimate(); }    
@@ -190,8 +230,11 @@ public:
     }    
     
 protected:
-    void removeConfirmation(int64 cnf, bool only_nonfirmations = false);
-    void removeBlock(int count);
+    int getMinAcceptedBlockVersion() const;
+    int getMinEnforcedBlockVersion() const;
+    
+    void rollbackConfirmation(int64 cnf);
+    void rollbackBlock(int count);
     
     void updateBestLocator();
 
@@ -201,47 +244,62 @@ protected:
     
     void deleteTransaction(const int64 tx, Transaction &txn);
     
-    /// Block stuff
-    
-    void InvalidChainFound(int64 blk_new);
-    
-    bool reorganize(const Block& block, int64 blk_new);
-    
-    /// This is to accept
-    bool AcceptToMemoryPool(const Transaction& tx) {
-        bool mi;
-        return AcceptToMemoryPool(tx, true, &mi);
-    }
-
-    /// This is to accept transactions from blocks (no checks)
-    bool AcceptToMemoryPool(const Transaction& tx, bool fCheckInputs);
-    bool AcceptToMemoryPool(const Transaction& tx, bool fCheckInputs, bool* pfMissingInputs);
-
-    bool AddToMemoryPoolUnchecked(const Transaction& tx);
-    bool RemoveFromMemoryPool(const Transaction& tx);
-
 private:
-    void insertBlockHeader(int64 count, const Block& block);
+    typedef std::map<uint256, Transaction> Txns;
+    typedef std::set<uint256> Hashes;
     
+    void attach(BlockIterator &blk, Txns& unconfirmed, Hashes& confirmed);
+    void detach(BlockIterator &blk, Txns& unconfirmed);
+
+    void postTransaction(const Transaction txn, int64& fees, int64 min_fee, BlockIterator blk, int64 idx, bool verify);
+    void postSubsidy(const Transaction txn, BlockIterator blk, int64 fees);
+    
+    void insertBlockHeader(int64 count, const Block& block);
+
+    /// Mark a spendable spent - throw if already spent (or immature in case of database mode)
+    Output redeem(const Input& input, Confirmation conf);
+    
+    /// Issue a new spendable
+    void issue(const Output& output, uint256 hash, unsigned int out_idx, Confirmation conf, bool unique = true);
+    
+    /// Maturate the coinbase from block with count # - throw if not unique ?
+    void maturate(int64 count);
+
 private:
     const Chain& _chain;
     
     Verifier _verifier;
-    
-    const Modes _mode;
 
-    size_t _purge_depth;
+    unsigned int _validation_depth;
+
+    bool _lazy_purging; 
+    
+    unsigned int _purge_depth;
+    
+    unsigned int _verification_depth;
     
     BlockLocator _bestLocator;
     
     BlockTree _tree;
     
     Branches _branches;
+
+    // Collections to speed up chekking for dublicate hashes (BIP0030)
+    // And if coins are spendable
+    // Further, Spendables can be a Merkle Trie enabling querying for non-spending proofs
+    
+    Spendables _spendables;
+    Spendables _immature_coinbases;
+    
+    Claims _claims;
     
     int64 _bestReceivedTime;
 
     mutable boost::shared_mutex _chain_and_pool_access;
 
+    mutable Stats _redeemStats;
+    mutable Stats _issueStats;
+    
     mutable int64 _acceptBlockTimer;
     mutable int64 _connectInputsTimer;
     mutable int64 _verifySignatureTimer;

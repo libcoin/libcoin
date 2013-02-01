@@ -93,7 +93,8 @@ void TransactionFilter::process(Transaction& tx, Peers peers) {
     payload << tx;
     bool fMissingInputs = false;
     try {
-        _blockChain.acceptTransaction(tx);
+        _blockChain.claim(tx);
+        log_info("accepted txn: %s", tx.getHash().toString().substr(0,10));
 
         for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
             (*listener->get())(tx);
@@ -113,10 +114,10 @@ void TransactionFilter::process(Transaction& tx, Peers peers) {
                 Inventory inv(MSG_TX, tx.getHash());
                 
                 try {
-                    _blockChain.acceptTransaction(tx);
+                    _blockChain.claim(tx);
                     for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
                         (*listener->get())(tx);
-                    log_info("   accepted orphan tx %s\n", inv.getHash().toString().substr(0,10).c_str());
+                    log_info("   accepted orphan tx %s", inv.getHash().toString().substr(0,10).c_str());
                     //                        SyncWithWallets(tx, NULL, true);
                     relayMessage(peers, inv, payload);
                     _alreadyAskedFor.erase(inv);
@@ -132,12 +133,12 @@ void TransactionFilter::process(Transaction& tx, Peers peers) {
         eraseOrphanTx(hash);
     }
     catch (BlockChain::Reject& e) {
-        log_info("acceptTransaction Warning: %s\n", e.what());
-        log_debug("storing orphan tx %s\n", inv.getHash().toString().substr(0,10).c_str());
+        log_info("acceptTransaction Warning: %s", e.what());
+        log_debug("storing orphan tx %s", inv.getHash().toString().substr(0,10).c_str());
         addOrphanTx(tx);
     }
     catch (BlockChain::Error& e) {
-        log_info("acceptTransaction Error: %s\n", e.what());
+        log_info("acceptTransaction Error: %s", e.what());
     }
 }
 

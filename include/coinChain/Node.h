@@ -79,7 +79,10 @@ class COINCHAIN_EXPORT Node : private boost::noncopyable
 {
 public:
     /// Construct the node to listen on the specified TCP address and port. Further, connect to IRC (irc.lfnet.org)
-    explicit Node(const Chain& chain = bitcoin, BlockChain::Modes mode = BlockChain::Purged, std::string dataDir = "", const std::string& address = "0.0.0.0", const std::string& port = "0", boost::asio::ip::tcp::endpoint proxy = boost::asio::ip::tcp::endpoint(), unsigned int timeout = 5000, const std::string& irc = "92.243.23.21");
+    explicit Node(const Chain& chain = bitcoin, std::string dataDir = "", const std::string& address = "0.0.0.0", const std::string& port = "0", boost::asio::ip::tcp::endpoint proxy = boost::asio::ip::tcp::endpoint(), unsigned int timeout = 5000, const std::string& irc = "92.243.23.21");
+    
+    /// Read an old style block file - this is for rapid initialization.
+    void readBlockFile(std::string path, int fileno = 1);
     
     /// Run the server's io_service loop.
     void run();
@@ -117,6 +120,8 @@ public:
     void post_accept_or_connect();
     
     void post_stop(peer_ptr p);
+
+    void post_ready(peer_ptr p);
     
     /// Register a filter
     void installFilter(filter_ptr filter) {
@@ -147,6 +152,27 @@ public:
     /// Get a handle to the io_service.
     boost::asio::io_service& get_io_service() { return _io_service; }
     
+    /// BlockChain Modes    
+    enum Strictness {
+        FULL,
+        LAST_CHECKPOINT,
+        MINIMAL,
+        LAZY,
+        NONE
+    };
+    
+    Strictness verification() const { return _verification; }
+    void verification(Strictness v);
+    
+    Strictness validation() const { return _validation; }
+    void validation(Strictness v);
+    
+    Strictness persistence() const { return _persistence; }
+    void persistence(Strictness v);
+
+    bool searchable() const { return _blockChain.script_to_unspents(); }
+    void searchable(bool s) { _blockChain.script_to_unspents(s); }
+    
 private:
     /// Initiate an asynchronous accept operation.
     void start_accept();
@@ -156,6 +182,9 @@ private:
     
     /// Accept or connect depending on the number and type of the connected peers.
     void accept_or_connect();
+    
+    /// Peer ready means that a new peer is connected and has completed the first version handshake
+    void peer_ready(peer_ptr p);
     
     /// Check the deadline timer and give up
     void check_deadline(const boost::system::error_code& e);
@@ -172,6 +201,10 @@ private:
     /// Get a candidate to connect to using the internal list of peers.
     Endpoint getCandidate(const std::set<unsigned int>& not_in);
 
+    void update_verification();
+    void update_validation();
+    void update_persistence();
+    
     /// The data directory holding the block file, the address file, the database and logfiles
     std::string _dataDir;
     
@@ -184,6 +217,9 @@ private:
     /// Acceptor used to listen for incoming connections.
     boost::asio::ip::tcp::acceptor _acceptor;
 
+    /// The pool of transactions hides the block chain and the transaction database in a simple interface.
+    BlockChain _blockChain;
+    
     /// The connection manager which owns all live connections.
     PeerManager _peerManager;
     
@@ -203,9 +239,6 @@ private:
     /// The pool of endpoints, from which connections are initiated.
     EndpointPool _endpointPool;
     
-    /// The pool of transactions hides the block chain and the transaction database in a simple interface.
-    BlockChain _blockChain;
-    
     /// The ChatClient to obtain addresses from IRC
     ChatClient _chatClient;
     
@@ -223,6 +256,11 @@ private:
     std::string _client_name;
     std::vector<std::string> _client_comments;
     int _client_version;
+        
+    /// Strictness modes
+    Strictness _verification;
+    Strictness _validation;
+    Strictness _persistence;
 };
 
 #endif // NODE_H

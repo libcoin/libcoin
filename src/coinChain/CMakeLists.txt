@@ -18,6 +18,7 @@ SET(TARGET_H
     ${HEADER_PATH}/BlockTree.h
     ${HEADER_PATH}/Chain.h
     ${HEADER_PATH}/ChatClient.h
+    ${HEADER_PATH}/Claims.h
     ${HEADER_PATH}/Database.h
     ${HEADER_PATH}/Endpoint.h
     ${HEADER_PATH}/EndpointPool.h
@@ -25,6 +26,7 @@ SET(TARGET_H
     ${HEADER_PATH}/Export.h
     ${HEADER_PATH}/Filter.h
     ${HEADER_PATH}/Inventory.h    
+    ${HEADER_PATH}/MerkleTrie.h
     ${HEADER_PATH}/MessageHeader.h
     ${HEADER_PATH}/MessageHandler.h
     ${HEADER_PATH}/MessageParser.h
@@ -33,6 +35,9 @@ SET(TARGET_H
     ${HEADER_PATH}/Peer.h
     ${HEADER_PATH}/PeerManager.h
     ${HEADER_PATH}/Proxy.h
+    ${HEADER_PATH}/Referenced.h
+    ${HEADER_PATH}/Spendables.h
+    ${HEADER_PATH}/ref_ptr.h
     ${HEADER_PATH}/TransactionFilter.h
     ${HEADER_PATH}/Verifier.h
     ${HEADER_PATH}/VersionFilter.h
@@ -51,11 +56,13 @@ SET(TARGET_SRC
     BlockTree.cpp
     Chain.cpp
     ChatClient.cpp
+    Claims.cpp
     Database.cpp
     Endpoint.cpp
     EndpointPool.cpp
     EndpointFilter.cpp
     Inventory.cpp
+    MerkleTrie.cpp
     MessageHeader.cpp
     MessageHandler.cpp
     MessageParser.cpp

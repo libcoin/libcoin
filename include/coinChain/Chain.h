@@ -56,6 +56,15 @@ public:
         }
     }
     
+    // To enable upgrade from one block version to another we define a quorum and a majority for acceptance
+    // of minimum this version as well as a quorum and majority for when the checks of that block version should be enforced.
+    virtual size_t accept_quorum() const { return 1000;}
+    virtual size_t accept_majority() const { return 950; } // 95% of the last 1000
+
+    virtual size_t enforce_quorum() const { return 1000; }
+    virtual size_t enforce_majority() const { return 750; } // 75% of the last 1000
+
+    
     //    virtual char networkId() const = 0; // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
     virtual ChainAddress getAddress(PubKeyHash hash) const = 0;
     virtual ChainAddress getAddress(ScriptHash hash) const = 0;
@@ -136,6 +145,13 @@ public:
         }
     }
     
+    virtual size_t accept_quorum() const { return 100;}
+    virtual size_t accept_majority() const { return 75; } // 75% of the last 100
+    
+    virtual size_t enforce_quorum() const { return 100; }
+    virtual size_t enforce_majority() const { return 51; } // 51% of the last 100
+    
+
     //    virtual char networkId() const { return 0x6f; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
     virtual ChainAddress getAddress(PubKeyHash hash) const { return ChainAddress(0x6f, hash); }
     virtual ChainAddress getAddress(ScriptHash hash) const { return ChainAddress(0xc4, hash); }

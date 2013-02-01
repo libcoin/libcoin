@@ -83,6 +83,9 @@ public:
     /// Get the Peer starting height.
     int getStartingHeight() const { return _startingHeight; }
     
+    /// Successfully connected - notify the PeerManager
+    void successfullyConnected();
+    
 private:
     void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
     void handle_write(const boost::system::error_code& e, std::size_t bytes_transferred);
@@ -112,7 +115,6 @@ public:
     bool fClient;
     bool fInbound;
     bool fNetworkNode;
-    bool fSuccessfullyConnected;
     bool fDisconnect;
     
 public:
@@ -243,6 +245,8 @@ private:
     /// The inital height of the connected node.
     int _startingHeight;
     
+    bool _successfullyConnected;
+
     /// The sub version, as announced to the connected peers
     std::string _sub_version;
     

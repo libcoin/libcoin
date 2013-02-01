@@ -84,6 +84,8 @@ public:
 
     uint256 getHash() const;
 
+    uint256 getHalfHash() const;
+    
     int64 getBlockTime() const {
         return (int64)_time;
     }
@@ -110,6 +112,12 @@ public:
     void print() const;
 
     bool checkBlock(const CBigNum& proofOfWorkLimit) const;
+    
+    /// Version 2 check according to BIP 0034: Height should be in the coinbase
+    bool checkHeightInCoinbase(int height) const;
+
+    /// Version 3 check (no BIP): Root hash of all Spendables should be in the coinbase (following the height)
+    bool checkSpendablesRootInCoinbase(uint256 hash) const;
     
     const int getVersion() const { return _version; }
     

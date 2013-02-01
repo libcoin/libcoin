@@ -36,7 +36,7 @@ class COINCHAIN_EXPORT PeerManager : private boost::noncopyable
 {
 public:
     /// Constructor - we register the Node as a delegate to enable spawning of new Peers when the old ones die
-    PeerManager(Node& node) : _peerBlockCounts(5, 0), _node(node) {}
+    PeerManager(Node& node);
     
     /// Add the specified connection to the manager and start it.
     void start(peer_ptr p);
@@ -68,6 +68,9 @@ public:
 
     /// Record the block count in a newly connect peer.
     void recordPeerBlockCount(int height) { _peerBlockCounts.input(height); }
+    
+    /// Notify the connection of a new peer
+    void ready(peer_ptr peer);
     
 private:
     /// The managed connections.

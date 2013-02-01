@@ -40,10 +40,10 @@ public:
     bool yield_success() const;
     
 private:
-    void do_verify(const Output& output, const Transaction& txn, unsigned int in_idx, bool strictPayToScriptHash, int hash_type);
+    bool do_verify(const Output& output, const Transaction& txn, unsigned int in_idx, bool strictPayToScriptHash, int hash_type);
     
-    void queued(bool more);
-    bool queued() const;
+    void failed_with_reason(std::string reason);
+    bool already_failed() const;
     
 private:
     boost::asio::io_service _io_service;
@@ -51,13 +51,12 @@ private:
 
     boost::thread_group _threads;
 
+    std::vector<boost::shared_future<bool> > _pending_verifications;
+    
     bool _failed;
     std::string _reason;
     
-    size_t _counter;
-    mutable boost::shared_mutex _counter_access;
-    mutable boost::mutex _finish;
-    mutable boost::condition_variable _all_done;
+    mutable boost::shared_mutex _state_access;
 };
 
 #endif // _VERIFIER_H

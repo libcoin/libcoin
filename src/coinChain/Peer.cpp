@@ -54,7 +54,7 @@ Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, Mes
     fClient = false; // set by version message
     fInbound = inbound;
     fNetworkNode = false;
-    fSuccessfullyConnected = false;
+    _successfullyConnected = false;
     fDisconnect = false;
     //    nRefCount = 0;
     nReleaseTime = 0;
@@ -295,6 +295,11 @@ void Peer::handle_write(const system::error_code& e, size_t bytes_transferred) {
         log_info("Write error %s, disconnecting...\n", e.message().c_str());
         _peerManager.post_stop(shared_from_this());
     }
+}
+
+void Peer::successfullyConnected() {
+    _successfullyConnected = true;
+    _peerManager.ready(shared_from_this());
 }
 
 void Peer::AddAddressKnown(const Endpoint& addr) {

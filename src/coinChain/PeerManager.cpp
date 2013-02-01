@@ -25,6 +25,8 @@
 using namespace std;
 using namespace boost;
 
+PeerManager::PeerManager(Node& node) : _peerBlockCounts(5, node.blockChain().chain().totalBlocksEstimate()), _node(node) {}
+
 void PeerManager::start(peer_ptr p) {
     _peers.insert(p);
     p->start();
@@ -44,6 +46,10 @@ void PeerManager::stop(peer_ptr p) {
 void PeerManager::stop_all() {
     for_each(_peers.begin(), _peers.end(), bind(&Peer::stop, _1));
     _peers.clear();
+}
+
+void PeerManager::ready(peer_ptr peer) {
+    _node.post_ready(peer);
 }
 
 const set<unsigned int> PeerManager::getPeerIPList() const {

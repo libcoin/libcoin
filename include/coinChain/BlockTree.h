@@ -222,15 +222,22 @@ public:
         }
         else if (n < 0) {
             while (n < 0 && i != end() && i.height() < 0) {
-                i = Iterator(&(_branches.find(i->hash)->second), this);
+                typename Branches::const_iterator prev = _branches.find(i->prev);
+                if (prev != _branches.end())
+                    i = Iterator(&prev->second, this);
+                else {
+                    typename Heights::const_iterator prev = _heights.find(i->prev);
+                    if (prev != _heights.end())
+                        i = Iterator(&_trunk[prev->second], this);
+                }
                 ++n;
             }
             int h = i.height() + n;
             
             if (h >= 0 && i != end())
                 i = Iterator(&_trunk[h], this);
-            else
-                i = end();
+            //            else
+            //                i = end();
         }
     }
     
@@ -246,6 +253,7 @@ protected:
 
 struct BlockRef {
     typedef uint256 Hash;
+    int version;
     Hash hash;
     Hash prev;
     unsigned int time;
@@ -259,8 +267,8 @@ struct BlockRef {
         return (CBigNum(1)<<256) / (target+1);
     }
     
-    BlockRef() : hash(0), prev(0), time(0), bits(0) {}
-    BlockRef(Hash hash, Hash prev, unsigned int time, unsigned int bits) : hash(hash), prev(prev), time(time), bits(bits) {}
+    BlockRef() : version(3), hash(0), prev(0), time(0), bits(0) {}
+    BlockRef(int version, Hash hash, Hash prev, unsigned int time, unsigned int bits) : version(version), hash(hash), prev(prev), time(time), bits(bits) {}
 };
 
 class COINCHAIN_EXPORT BlockTree : public SparseTree<BlockRef> {

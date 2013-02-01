@@ -1,0 +1,10 @@
+SET(TARGET_SRC sqliterate.cpp)
+
+SET(TARGET_EXTERNAL_LIBRARIES
+    ${CMAKE_THREAD_LIBS_INIT}    
+    ${MATH_LIBRARY} 
+    ${Boost_LIBRARIES} 
+    ${DL_LIBRARY}
+)
+
+SETUP_TEST(sqliterate)

@@ -80,7 +80,7 @@ BlockTree::Changes BlockTree::insert(const BlockRef ref) {
         // insert new branch into trunk and update the heights
         for (Hashes::const_reverse_iterator hash = changes.inserted.rbegin(); hash != changes.inserted.rend(); ++hash) {
             _trunk.push_back(_branches[*hash]);
-            _heights[*hash] *= 1;
+            _heights[*hash] *= -1;
             _acc_work.push_back(_acc_work.back() + _branches[*hash].work());
             _branches.erase(*hash);
         }

@@ -82,9 +82,8 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
         if (origin->nVersion < 209)
             origin->vRecv.SetVersion(min(origin->nVersion, PROTOCOL_VERSION));
                 
-        origin->fSuccessfullyConnected = true;
+        origin->successfullyConnected();
         
-        log_info("version message: version %d, blocks=%d\n", origin->nVersion, origin->getStartingHeight());
         return true;
     }
     else if (msg.command() == "verack") {

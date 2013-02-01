@@ -217,10 +217,10 @@ bool BlockFilter::process(const Block& block, Peers peers) {
     uint256 hash = block.getHash();
     // Store in DB
     try {
-        _blockChain.acceptBlock(block);
+        _blockChain.append(block);
     }
     catch (std::exception &e) {
-        return error((string("acceptBlock failed: ") + e.what()).c_str());
+        return error((string("append(Block) failed: ") + e.what()).c_str());
     }
     // notify all listeners
     for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
@@ -244,7 +244,7 @@ bool BlockFilter::process(const Block& block, Peers peers) {
              ++mi) {
             Block* orphan = (*mi).second;
             try {
-                _blockChain.acceptBlock(*orphan);
+                _blockChain.append(*orphan);
                 // notify all listeners
                 for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
                     (*listener->get())(block);
@@ -260,7 +260,7 @@ bool BlockFilter::process(const Block& block, Peers peers) {
                 }
             }
             catch (std::exception &e) {
-                log_warn((string("acceptBlock orphan failed: ") + e.what()).c_str());
+                log_warn((string("append(Block) orphan failed: ") + e.what()).c_str());
             }
             _orphanBlocks.erase(orphan->getHash());
             delete orphan;

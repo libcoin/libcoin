@@ -24,7 +24,7 @@
 
 #include <coinHTTP/Server.h>
 #include <coinHTTP/RPC.h>
-
+/*
 /// Base class for all Node rpc methods - they all need a handle to the node.
 class COINSTAT_EXPORT ExplorerMethod : public Method {
 public:
@@ -46,26 +46,6 @@ public:
     GetCredit(Explorer& explorer) : ExplorerMethod(explorer) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
 };
-
-/// Get unspent coins belonging to an PubKeyHash 
-class COINSTAT_EXPORT GetCoins : public ExplorerMethod {
-public:
-    GetCoins(Explorer& explorer) : ExplorerMethod(explorer) {}
-    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
-};
-
-/// Get the balance based on the unspent coins of an PubKeyHash 
-class COINSTAT_EXPORT GetAddressBalance : public ExplorerMethod {
-public:
-    GetAddressBalance(Explorer& explorer) : ExplorerMethod(explorer) { setName("getbalance"); }
-    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
-};
-
-/// Do a search in the blockchain and in the explorer database.
-class COINSTAT_EXPORT Search : public ExplorerMethod {
-public:
-    Search(Explorer& explorer) : ExplorerMethod(explorer) {}
-    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
-};
+*/
 
 #endif // EXPLORERRPC_H

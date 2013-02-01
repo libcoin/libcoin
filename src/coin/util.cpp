@@ -42,6 +42,36 @@ bool fLogTimestamps = false;
 extern "C" void tss_cleanup_implemented() { }
 
 
+string default_data_dir(std::string suffix) {
+    // Windows: C:\Documents and Settings\username\Application Data\Bitcoin
+    // Mac: ~/Library/Application Support/Bitcoin
+    // Unix: ~/.bitcoin
+#if (defined _WIN32 || defined __MACH__) // convert first letter to upper case
+    std::transform(suffix.begin(), suffix.begin()+1, suffix.begin(), ::toupper);
+#else // prepend a "."
+    suffix = "." + suffix;
+#endif
+    
+#ifdef _WIN32
+    // Windows
+    return MyGetSpecialFolderPath(CSIDL_APPDATA, true) + "\\" + suffix;
+#else
+    char* pszHome = getenv("HOME");
+    if (pszHome == NULL || strlen(pszHome) == 0)
+        pszHome = (char*)"/";
+    std::string strHome = pszHome;
+    if (strHome[strHome.size()-1] != '/')
+        strHome += '/';
+#ifdef __MACH__
+    // Mac
+    strHome += "Library/Application Support/";
+    boost::filesystem::create_directory(strHome.c_str());
+#endif
+    
+    // Unix
+    return strHome + suffix;
+#endif
+}
 
 
 

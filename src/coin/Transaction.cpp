@@ -202,3 +202,60 @@ bool Transaction::checkTransaction() const
 
     return true;
 }
+
+uint256 Transaction::getSignatureHash(Script scriptCode, unsigned int n, int type) const {
+    if (n >= _inputs.size()) {
+        printf("ERROR: SignatureHash() : nIn=%d out of range\n", n);
+        return uint256(1);
+    }
+    Transaction txn(*this);
+    
+    // In case concatenating two scripts ends up with two codeseparators,
+    // or an extra one at the end, this prevents all those possible incompatibilities.
+    scriptCode.findAndDelete(Script(OP_CODESEPARATOR));
+    
+    // Blank out other inputs' signatures
+    for (unsigned int i = 0; i < txn._inputs.size(); i++)
+        txn._inputs[i].signature(Script());
+    txn._inputs[n].signature(scriptCode);
+    
+    // Blank out some of the outputs
+    if ((type & 0x1f) == SIGHASH_NONE) {
+        // Wildcard payee
+        txn._outputs.clear();
+        
+        // Let the others update at will
+        for (unsigned int i = 0; i < txn._inputs.size(); i++)
+            if (i != n)
+                txn._inputs[i].sequence(0);
+    }
+    else if ((type & 0x1f) == SIGHASH_SINGLE) {
+        // Only lock-in the txout payee at same index as txin
+        if (n >= txn._outputs.size()) {
+            printf("ERROR: SignatureHash() : nOut=%d out of range\n", n);
+            return uint256(1);
+        }
+        txn._outputs.resize(n + 1);
+        for (unsigned int i = 0; i < n; i++)
+            txn._outputs[i].setNull();
+        
+        // Let the others update at will
+        for (unsigned int i = 0; i < txn._inputs.size(); i++)
+            if (i != n)
+                txn._inputs[i].sequence(0);
+    }
+    
+    // Blank out other inputs completely, not recommended for open transactions
+    if (type & SIGHASH_ANYONECANPAY) {
+        txn._inputs[0] = txn._inputs[n];
+        txn._inputs.resize(1);
+    }
+    
+    // Serialize and hash
+    CDataStream ss(SER_GETHASH);
+    ss.reserve(10000);
+    ss << txn << type;
+    
+    return Hash(ss.begin(), ss.end());
+}
+

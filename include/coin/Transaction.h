@@ -102,8 +102,12 @@ public:
     )
 
     const Coin prevout() const { return _prevout; }
+
     const Script signature() const { return _signature; }
+    void signature(Script script) { _signature = script; }
+
     const unsigned int sequence() const { return _sequence; }
+    void sequence(unsigned int seq) { _sequence = seq; }
     
     
     bool isFinal() const {
@@ -269,6 +273,9 @@ public:
     uint256 getHash() const {
         return SerializeHash(*this);
     }
+    
+    /// Get the transaction hash used for signatures
+    uint256 getSignatureHash(Script scriptCode, unsigned int n, int type) const;
     
     /// Get version.
     unsigned int version() const { return _version; }

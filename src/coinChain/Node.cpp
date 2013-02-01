@@ -32,16 +32,16 @@ using namespace std;
 using namespace boost;
 using namespace asio;
  
-Node::Node(const Chain& chain, BlockChain::Modes mode, std::string dataDir, const string& address, const string& port, ip::tcp::endpoint proxy, unsigned int timeout, const string& irc) :
+Node::Node(const Chain& chain, std::string dataDir, const string& address, const string& port, ip::tcp::endpoint proxy, unsigned int timeout, const string& irc) :
     _dataDir(dataDir),
     _fileLock(_dataDir == "" ? "" : _dataDir + "/.lock"),
     _io_service(),
     _acceptor(_io_service),
+    _blockChain(chain, _dataDir),
     _peerManager(*this),
     _connection_deadline(_io_service),
     _messageHandler(),
     _endpointPool(chain.defaultPort(), _dataDir),
-    _blockChain(chain, mode, _dataDir),
     _chatClient(_io_service, bind(&Node::post_accept_or_connect, this), irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy),
     _proxy(proxy),
     _connection_timeout(timeout),
@@ -65,6 +65,97 @@ Node::Node(const Chain& chain, BlockChain::Modes mode, std::string dataDir, cons
         _acceptor.listen();        
     }
     // else nolisten
+    
+    // this setup the blockchain to use the database as validation index, and a purged client.
+    //    _blockChain.validation_index(BlockChain::MerkleTrie);
+    //    _blockChain.purge_depth();
+}
+
+void Node::readBlockFile(string path, int fileno) {
+    CAutoFile bf = fopen((path + "blk000" + lexical_cast<string>(fileno) + ".dat").c_str(), "rb");
+
+    int magic, size;
+    
+    if (!bf) return;
+    
+    Block block;
+    while (bf.good()) {
+        bf >> magic;
+        bf >> size;
+        bf >> block;
+        if (!_blockChain.haveBlock(block.getHash()))
+            _blockChain.append(block);
+    }
+    
+    readBlockFile(path, fileno+1);
+}
+
+void Node::verification(Strictness v) {
+    _verification = v;
+    update_verification();
+}
+
+void Node::update_verification() {
+    switch (_verification) {
+        case FULL:
+            _blockChain.verification_depth(1);
+            break;
+        case LAST_CHECKPOINT:
+            _blockChain.verification_depth(_blockChain.chain().totalBlocksEstimate());
+            break;
+        case MINIMAL:
+            _blockChain.verification_depth(_peerManager.getPeerMedianNumBlocks()-COINBASE_MATURITY);
+            break;
+        case NONE:
+            _blockChain.verification_depth(0);
+            break;
+    }
+}
+
+void Node::validation(Strictness v) {
+    _validation = v;
+    update_validation();
+}
+
+void Node::update_validation() {
+    switch (_validation) {
+        case FULL:
+            _blockChain.validation_depth(1);
+            break;
+        case LAST_CHECKPOINT:
+            _blockChain.validation_depth(_blockChain.chain().totalBlocksEstimate());
+            break;
+        case MINIMAL:
+            _blockChain.validation_depth(_peerManager.getPeerMedianNumBlocks()-COINBASE_MATURITY);
+            break;
+        case NONE:
+            _blockChain.validation_depth(0);
+            break;
+    }
+}
+
+void Node::persistence(Strictness p) {
+    _persistence = p;
+    update_persistence();
+}
+
+void Node::update_persistence() {
+    _blockChain.lazy_purging(false);
+    switch (_persistence) {
+        case FULL:
+            _blockChain.purge_depth(0);
+            break;
+        case LAST_CHECKPOINT:
+            _blockChain.purge_depth(_blockChain.chain().totalBlocksEstimate());
+            break;
+        case LAZY:
+            _blockChain.lazy_purging(true);
+        case MINIMAL:
+            _blockChain.purge_depth(_peerManager.getPeerMedianNumBlocks()-COINBASE_MATURITY);
+            break;
+        case NONE:
+            break;
+    }
 }
 
 void Node::run() {
@@ -253,12 +344,23 @@ void Node::accept_or_connect() {
     }
 }
 
+void Node::peer_ready(peer_ptr p) {
+    update_persistence();
+    update_validation();
+    update_verification();
+    log_info("version message: version %d, blocks=%d\n", p->nVersion, p->getStartingHeight());
+}
+
 void Node::post_accept_or_connect() {
     _io_service.post(bind(&Node::accept_or_connect, this));
 }
 
 void Node::post_stop(peer_ptr p) {
     _io_service.post(bind(&PeerManager::stop, &_peerManager, p));    
+}
+
+void Node::post_ready(peer_ptr p) {
+    _io_service.post(bind(&Node::peer_ready, this, p));
 }
 
 void Node::handle_stop() {

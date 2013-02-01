@@ -1,0 +1,166 @@
+Ttest_authtrie
+v5
+r1
+cCheck dependencies
+cCompileC tests/authtrie/libcoin.build/Debug/test_authtrie.build/Objects-normal/x86_64/authtrie.o /Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+
+N/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk
+c0000000050B326CE00000000000000AA
+t1353918158
+s170
+
+N/Users/gronager/Development/libcoin/libcoin/bin/authtried
+t2
+s0
+
+N/Users/gronager/Development/libcoin/libcoin/include/coinChain/Node.h
+c0000000050AD229400000000000024C8
+t1353523860
+s9416
+
+N/Users/gronager/Development/libcoin/libcoin/include/coinChain/NodeRPC.h
+c00000000504F05730000000000000AEC
+t1347356019
+s2796
+
+N/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/Server.h
+c000000005092610600000000000017C1
+t1351770374
+s6081
+
+N/Users/gronager/Development/libcoin/libcoin/include/coinWallet/Wallet.h
+c0000000050A6827C000000000000352B
+t1353089660
+s13611
+
+N/Users/gronager/Development/libcoin/libcoin/include/coinWallet/WalletRPC.h
+c00000000504F057300000000000021BE
+t1347356019
+s8638
+
+N/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp
+c0000000050B3C3560000000000000A02
+t1353958230
+s2562
+i<coinChain/Node.h>
+i<coinChain/NodeRPC.h>
+i<coinHTTP/Server.h>
+i<coinWallet/Wallet.h>
+i<coinWallet/WalletRPC.h>
+i<boost/thread.hpp>
+
+N/Users/gronager/Development/libcoin/libcoin/tests/authtrie/libcoin.build/Debug/test_authtrie.build/Objects-normal/i386/authtrie.o
+t2
+s0
+
+N/Users/gronager/Development/libcoin/libcoin/tests/authtrie/libcoin.build/Debug/test_authtrie.build/Objects-normal/i386/authtried
+t2
+s0
+
+N/Users/gronager/Development/libcoin/libcoin/tests/authtrie/libcoin.build/Debug/test_authtrie.build/Objects-normal/i386/authtried.LinkFileList
+c00000000000000000000000000000000
+t2
+s0
+
+N/Users/gronager/Development/libcoin/libcoin/tests/authtrie/libcoin.build/Debug/test_authtrie.build/Objects-normal/x86_64/authtrie.o
+t2
+s0
+
+N/Users/gronager/Development/libcoin/libcoin/tests/authtrie/libcoin.build/Debug/test_authtrie.build/Objects-normal/x86_64/authtried
+t2
+s0
+
+N/Users/gronager/Development/libcoin/libcoin/tests/authtrie/libcoin.build/Debug/test_authtrie.build/Objects-normal/x86_64/authtried.LinkFileList
+c0000000050B3C48C0000000000000084
+t1353958540
+s132
+
+N/Users/gronager/Development/libcoin/libcoin/tests/authtrie/libcoin.build/Debug/test_authtrie.build/Script-9E1C1A3E46A94243B94B3E38.sh
+c0000000050B3C48C00000000000000CC
+t1353958540
+s204
+
+N/usr/local/include/boost/thread.hpp
+c000000004E6524B50000000000000347
+t1315251381
+s839
+
+CBuild AST from /Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp
+r0
+
+CCheck dependencies
+r0
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection18"Check dependenciesda38e60cfc63b641^14ede60cfc63b641^---0#1#0#--18"Check dependencies36"5E0BC748-47A6-48DF-886C-F5A1F1136344-
+
+CCompileC tests/authtrie/libcoin.build/Debug/test_authtrie.build/Objects-normal/i386/authtrie.o /Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp normal i386 c++ com.apple.compilers.llvm.clang.1_0.compiler
+r0
+
+CCompileC tests/authtrie/libcoin.build/Debug/test_authtrie.build/Objects-normal/x86_64/authtrie.o /Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+s375651340.903999
+e375651341.069390
+r0
+xCompileC
+xtests/authtrie/libcoin.build/Debug/test_authtrie.build/Objects-normal/x86_64/authtrie.o
+x/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp
+xnormal
+xx86_64
+xc++
+xcom.apple.compilers.llvm.clang.1_0.compiler
+oclang: warning: argument unused during compilation: '-ftree-vectorize'
+o/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:32:17: error: expected namespace name
+ousing namespace boost;
+o                ^
+o/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:34:13: error: implicit instantiation of undefined template 'std::basic_string<char, std::char_traits<char>, std::allocator<char>>'
+ostd::string gen_random(int len = 50) {
+o            ^
+o/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/bits/stringfwd.h:55:11: note: template is declared here
+o    class basic_string;
+o          ^
+o/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:41:17: error: implicit instantiation of undefined template 'std::basic_string<char, std::char_traits<char>, std::allocator<char>>'
+o    std::string str;
+o                ^
+o/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/bits/stringfwd.h:55:11: note: template is declared here
+o    class basic_string;
+o          ^
+o/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:54:37: error: use of undeclared identifier 'uint256'
+o    typedef std::pair<unsigned int, uint256> Key;
+o                                    ^
+o/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:55:13: error: unknown type name 'uint256'
+o    typedef uint256 Hash;
+o            ^
+o/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:82:17: error: implicit instantiation of undefined template 'std::basic_string<char, std::char_traits<char>, std::allocator<char>>'
+o    std::string value;
+o                ^
+o/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/bits/stringfwd.h:55:11: note: template is declared here
+o    class basic_string;
+o          ^
+o/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:58:17: error: implicit instantiation of undefined template 'std::basic_string<char, std::char_traits<char>, std::allocator<char>>'
+o        value = gen_random();
+o                ^
+o/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/bits/stringfwd.h:55:11: note: template is declared here
+o    class basic_string;
+o          ^
+o/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:59:15: error: excess elements in scalar initializer
+o        key = Key(rand() % 12345, hash());
+o              ^                 ~~~~~~~~
+o/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:93:9: error: use of undeclared identifier 'test_'
+o        test_.insert(a);
+o        ^
+o9 errors generated.
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection79"Compile /Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp3a96e70cfc63b641^72c1110dfc63b641^-2819"clang: warning: argument unused during compilation: '-ftree-vectorize'/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:32:17: error: expected namespace nameusing namespace boost;                ^/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:34:13: error: implicit instantiation of undefined template 'std::basic_string<char, std::char_traits<char>, std::allocator<char>>'std::string gen_random(int len = 50) {            ^/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/bits/stringfwd.h:55:11: note: template is declared here    class basic_string;          ^/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:41:17: error: implicit instantiation of undefined template 'std::basic_string<char, std::char_traits<char>, std::allocator<char>>'    std::string str;                ^/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/bits/stringfwd.h:55:11: note: template is declared here    class basic_string;          ^/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:54:37: error: use of undeclared identifier 'uint256'    typedef std::pair<unsigned int, uint256> Key;                                    ^/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:55:13: error: unknown type name 'uint256'    typedef uint256 Hash;            ^/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:82:17: error: implicit instantiation of undefined template 'std::basic_string<char, std::char_traits<char>, std::allocator<char>>'    std::string value;                ^/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/bits/stringfwd.h:55:11: note: template is declared here    class basic_string;          ^/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:58:17: error: implicit instantiation of undefined template 'std::basic_string<char, std::char_traits<char>, std::allocator<char>>'        value = gen_random();                ^/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/bits/stringfwd.h:55:11: note: template is declared here    class basic_string;          ^/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:59:15: error: excess elements in scalar initializer        key = Key(rand() % 12345, hash());              ^                 ~~~~~~~~/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp:93:9: error: use of undeclared identifier 'test_'        test_.insert(a);        ^9 errors generated.9(36%IDEClangDiagnosticActivityLogMessage2@23"Expected namespace name-375651341#18446744073709551615#0#-2#27"com.apple.dt.IDE.diagnostic23%DVTTextDocumentLocation3@87"file://localhost/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp0000000000000000^31#16#31#16#931#0#20"Clang LLVM 1.0 Error--2@116"Implicit instantiation of undefined template 'std::basic_string<char, std::char_traits<char>, std::allocator<char>>'-375651341#18446744073709551615#0#1(2@25"Template is declared here-375651341#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@153"file://localhost/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/bits/stringfwd.h0000000000000000^54#10#54#10#1974#0#14"Semantic Issue--2#27"com.apple.dt.IDE.diagnostic3@87"file://localhost/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp0000000000000000^33#12#33#12#951#0#14"Semantic Issue--2@116"Implicit instantiation of undefined template 'std::basic_string<char, std::char_traits<char>, std::allocator<char>>'-375651341#18446744073709551615#0#1(2@25"Template is declared here-375651341#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@153"file://localhost/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/bits/stringfwd.h0000000000000000^54#10#54#10#1974#0#14"Semantic Issue--2#27"com.apple.dt.IDE.diagnostic3@87"file://localhost/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp0000000000000000^40#16#40#16#1127#0#14"Semantic Issue--2@38"Use of undeclared identifier 'uint256'-375651341#18446744073709551615#0#-2#27"com.apple.dt.IDE.diagnostic3@87"file://localhost/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp0000000000000000^53#36#53#36#1385#0#14"Semantic Issue--2@27"Unknown type name 'uint256'-375651341#18446744073709551615#0#-2#27"com.apple.dt.IDE.diagnostic3@87"file://localhost/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp0000000000000000^54#12#54#12#1411#0#11"Parse Issue--2@116"Implicit instantiation of undefined template 'std::basic_string<char, std::char_traits<char>, std::allocator<char>>'-375651341#18446744073709551615#0#1(2@25"Template is declared here-375651341#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@153"file://localhost/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/bits/stringfwd.h0000000000000000^54#10#54#10#1974#0#14"Semantic Issue--2#27"com.apple.dt.IDE.diagnostic3@87"file://localhost/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp0000000000000000^81#16#81#16#2262#0#14"Semantic Issue--2@116"Implicit instantiation of undefined template 'std::basic_string<char, std::char_traits<char>, std::allocator<char>>'-375651341#18446744073709551615#0#1(2@25"Template is declared here-375651341#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@153"file://localhost/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/bits/stringfwd.h0000000000000000^54#10#54#10#1974#0#14"Semantic Issue--2#27"com.apple.dt.IDE.diagnostic3@87"file://localhost/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp0000000000000000^57#16#57#16#1463#0#14"Semantic Issue--2@37"Excess elements in scalar initializer-375651341#18446744073709551615#0#-2#27"com.apple.dt.IDE.diagnostic3@87"file://localhost/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp0000000000000000^58#14#58#14#1491#0#14"Semantic Issue1(3@87"file://localhost/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp0000000000000000^58#32#58#40#1509#7#-2@36"Use of undeclared identifier 'test_'-375651341#18446744073709551615#0#-2#27"com.apple.dt.IDE.diagnostic3@87"file://localhost/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp0000000000000000^92#8#92#8#2515#0#14"Semantic Issue--0#0#0#-19%DVTDocumentLocation4@87"file://localhost/Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp0000000000000000^2256"CompileC tests/authtrie/libcoin.build/Debug/test_authtrie.build/Objects-normal/x86_64/authtrie.o tests/authtrie/authtrie.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -DLIBCOIN_LIBRARY_STATIC -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/bin/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/tests/authtrie/libcoin.build/Debug/test_authtrie.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/tests/authtrie/libcoin.build/Debug/test_authtrie.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/bin -mmacosx-version-min=10.7 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/tests/authtrie/libcoin.build/Debug/test_authtrie.build/Objects-normal/x86_64/authtrie.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/tests/authtrie/libcoin.build/Debug/test_authtrie.build/Objects-normal/x86_64/authtrie.dia -c /Users/gronager/Development/libcoin/libcoin/tests/authtrie/authtrie.cpp -o /Users/gronager/Development/libcoin/libcoin/tests/authtrie/libcoin.build/Debug/test_authtrie.build/Objects-normal/x86_64/authtrie.o36"87AB4984-1152-4253-98EC-3A37DB3D456F-
+
+CCreateUniversalBinary /Users/gronager/Development/libcoin/libcoin/bin/authtried normal "i386 x86_64"
+r0
+
+CLd /Users/gronager/Development/libcoin/libcoin/bin/authtried normal x86_64
+r0
+
+CLd /Users/gronager/Development/libcoin/libcoin/tests/authtrie/libcoin.build/Debug/test_authtrie.build/Objects-normal/i386/authtried normal i386
+r0
+
+CLd /Users/gronager/Development/libcoin/libcoin/tests/authtrie/libcoin.build/Debug/test_authtrie.build/Objects-normal/x86_64/authtried normal x86_64
+r0
+
+CPhaseScriptExecution "CMake PostBuild Rules" /Users/gronager/Development/libcoin/libcoin/tests/authtrie/libcoin.build/Debug/test_authtrie.build/Script-9E1C1A3E46A94243B94B3E38.sh
+r0
+

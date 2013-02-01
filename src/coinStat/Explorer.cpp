@@ -21,7 +21,7 @@
   
 using namespace std;
 using namespace boost;
-
+/*
 void Explorer::TransactionListener::operator()(const Transaction& tx) {
     uint256 hash = tx.getHash();
     
@@ -181,4 +181,5 @@ void Explorer::markSpent(const PubKeyHash& address, const Coin& coin) {
             _coins.erase(i);
             break;
         }
-}    
+}
+*/

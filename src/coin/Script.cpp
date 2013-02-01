@@ -885,8 +885,67 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const Script& script, con
 
 
 
-
+/*
 uint256 SignatureHash(Script scriptCode, const Transaction& txTo, unsigned int nIn, int nHashType)
+{
+    if (nIn >= txTo.getNumInputs()) {
+        printf("ERROR: SignatureHash() : nIn=%d out of range\n", nIn);
+        return uint256(1);
+    }
+    Transaction txTmp(txTo);
+    
+    // In case concatenating two scripts ends up with two codeseparators,
+    // or an extra one at the end, this prevents all those possible incompatibilities.
+    scriptCode.findAndDelete(Script(OP_CODESEPARATOR));
+    
+    // Blank out other inputs' signatures
+    for (unsigned int i = 0; i < txTmp.getNumInputs(); i++)
+        txTmp.getInput(i).signature(Script());
+    txTmp.getInput(nIn).signature(scriptCode);
+    
+    // Blank out some of the outputs
+    if ((nHashType & 0x1f) == SIGHASH_NONE)
+        {
+        // Wildcard payee
+        txTmp.vout.clear();
+        
+        // Let the others update at will
+        for (unsigned int i = 0; i < txTmp.vin.size(); i++)
+            if (i != nIn)
+                txTmp.vin[i].nSequence = 0;
+        }
+    else if ((nHashType & 0x1f) == SIGHASH_SINGLE)
+        {
+        // Only lock-in the txout payee at same index as txin
+        unsigned int nOut = nIn;
+        if (nOut >= txTmp.vout.size())
+            {
+            printf("ERROR: SignatureHash() : nOut=%d out of range\n", nOut);
+            return 1;
+            }
+        txTmp.vout.resize(nOut+1);
+        for (unsigned int i = 0; i < nOut; i++)
+            txTmp.vout[i].SetNull();
+        
+        // Let the others update at will
+        for (unsigned int i = 0; i < txTmp.vin.size(); i++)
+            if (i != nIn)
+                txTmp.vin[i].nSequence = 0;
+        }
+    
+    // Blank out other inputs completely, not recommended for open transactions
+    if (nHashType & SIGHASH_ANYONECANPAY)
+        {
+        txTmp.vin[0] = txTmp.vin[nIn];
+        txTmp.vin.resize(1);
+        }
+    
+    // Serialize and hash
+    CHashWriter ss(SER_GETHASH, 0);
+    ss << txTmp << nHashType;
+    return ss.GetHash();
+}
+
 {
     if (nIn >= txTo.getNumInputs())
     {
@@ -964,7 +1023,7 @@ uint256 SignatureHash(Script scriptCode, const Transaction& txTo, unsigned int n
 
     return Hash(ss.begin(), ss.end());
 }
-
+*/
 
 bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, Script scriptCode,
               const Transaction& txTo, unsigned int nIn, int nHashType)
@@ -982,7 +1041,7 @@ bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, Scr
         return false;
     vchSig.pop_back();
 
-    return key.Verify(SignatureHash(scriptCode, txTo, nIn, nHashType), vchSig);
+    return key.Verify(txTo.getSignatureHash(scriptCode, nIn, nHashType), vchSig);
 }
 
 
@@ -1582,7 +1641,7 @@ bool SignSignature(const KeyStore &keystore, const Output& txout, Transaction& t
     
     // Leave out the signature from the hash, since a signature can't sign itself.
     // The checksig op will also drop the signatures from its hash.
-    uint256 hash = SignatureHash(txout.script(), txTo, nIn, nHashType);
+    uint256 hash = txTo.getSignatureHash(txout.script(), nIn, nHashType);
     
     txnouttype whichType;
     Script signature;
@@ -1597,7 +1656,7 @@ bool SignSignature(const KeyStore &keystore, const Output& txout, Transaction& t
         Script subscript = txin.signature();
         
         // Recompute txn hash using subscript in place of scriptPubKey:
-        uint256 hash2 = SignatureHash(subscript, txTo, nIn, nHashType);
+        uint256 hash2 = txTo.getSignatureHash(subscript, nIn, nHashType);
         txnouttype subType;
         if (!Solver(keystore, subscript, hash2, nHashType, signature, subType))
             return false;

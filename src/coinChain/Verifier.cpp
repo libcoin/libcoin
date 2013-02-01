@@ -18,6 +18,7 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/thread.hpp>
+#include <boost/make_shared.hpp> 
 
 using namespace std;
 using namespace boost;
@@ -32,51 +33,50 @@ Verifier::Verifier(size_t threads) : _work(_io_service), _failed(false) {
 }
 
 Verifier::~Verifier() {
+    _io_service.stop();
     _threads.join_all();
 }
 
 void Verifier::reset() {
-    boost::unique_lock< boost::shared_mutex > lock(_counter_access);
-    _counter = 0;
+    unique_lock< boost::shared_mutex > lock(_state_access);
     _reason = "";
     _failed = false;
+    _pending_verifications.clear();
 }
 
 void Verifier::verify(const Output& output, const Transaction& txn, unsigned int in_idx, bool strictPayToScriptHash, int hash_type) {
-    queued(true);
-    _io_service.post(boost::bind(&Verifier::do_verify, this, output, txn, in_idx, strictPayToScriptHash, hash_type));
-    if (!_failed && !VerifySignature(output, txn, in_idx, strictPayToScriptHash, hash_type)) {
-        _failed = true;
-        _reason = "Transaction hash: " + txn.getHash().toString();
-    }
+    typedef packaged_task<bool> bool_task;
+    shared_ptr<bool_task> task = make_shared<bool_task>(boost::bind(&Verifier::do_verify, this, output, txn, in_idx, strictPayToScriptHash, hash_type));
+    unique_future<bool> fut = task->get_future();
+    _pending_verifications.push_back(boost::move(fut));
+    _io_service.post(boost::bind(&bool_task::operator(), task));
 }
 
-void Verifier::do_verify(const Output& output, const Transaction& txn, unsigned int in_idx, bool strictPayToScriptHash, int hash_type) {
-    bool ok = VerifySignature(output, txn, in_idx, strictPayToScriptHash, hash_type);
- 
-    queued(false);
+bool Verifier::do_verify(const Output& output, const Transaction& txn, unsigned int in_idx, bool strictPayToScriptHash, int hash_type) {
+    if (already_failed()) // no reason to waste time on a loosing tx
+        return true;
     
-    if (!queued())
-        _all_done.notify_one(); // weel only one is waiting
+    if (!VerifySignature(output, txn, in_idx, strictPayToScriptHash, hash_type)) {
+        failed_with_reason("Transaction hash: " + txn.getHash().toString());
+        return false;
+    }
+    
+    return true;
 }
 
-void Verifier::queued(bool more) {
-    boost::unique_lock< boost::shared_mutex > lock(_counter_access);
-    if(more)
-        ++_counter;
-    else
-        --_counter;
+void Verifier::failed_with_reason(std::string reason) {
+    unique_lock< shared_mutex > lock(_state_access);
+    _failed = true;
+    _reason = reason;
 }
 
-bool Verifier::queued() const {
-    boost::shared_lock< boost::shared_mutex > lock(_counter_access);
-    return _counter;
+bool Verifier::already_failed() const {
+    shared_lock< shared_mutex > lock(_state_access);
+    return _failed;
 }
 
 bool Verifier::yield_success() const {
     // wait for all threads to exit
-    unique_lock<boost::mutex> lock(_finish);
-    if (queued())
-        _all_done.wait(lock);
-    return !_failed;
+    wait_for_all(_pending_verifications.begin(), _pending_verifications.end());
+    return !already_failed();
 }

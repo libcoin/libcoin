@@ -25,6 +25,21 @@ uint256 Block::getHash() const
     return Hash(BEGIN(_version), END(_nonce));
 }
 
+template<typename T1>
+inline uint256 HalfHash(const T1 pbegin, const T1 pend)
+{
+    static unsigned char pblank[1];
+    uint256 hash1;
+    SHA256((pbegin == pend ? pblank : (unsigned char*)&pbegin[0]), (pend - pbegin) * sizeof(pbegin[0]), (unsigned char*)&hash1);
+    return hash1;
+}
+
+uint256 Block::getHalfHash() const
+{
+    return HalfHash(BEGIN(_version), END(_nonce));
+}
+
+
 int Block::GetSigOpCount() const
 {
     int n = 0;
@@ -141,3 +156,26 @@ bool Block::checkBlock(const CBigNum& proofOfWorkLimit) const
     return true;
 }
 
+bool Block::checkHeightInCoinbase(int height) const {
+    Script coinbase = getTransaction(0).getInput(0).signature();
+    Script expect = Script() << height;
+    return std::equal(expect.begin(), expect.end(), coinbase.begin());
+}
+
+bool Block::checkSpendablesRootInCoinbase(uint256 hash) const {
+    try {
+        Script coinbase = getTransaction(0).getInput(0).signature();
+        Script::const_iterator cbi = coinbase.begin();
+        opcodetype opcode;
+        std::vector<unsigned char> data;
+        // We simply ignore the first opcode and data, however, it is the height...
+        coinbase.getOp(cbi, opcode, data);
+        
+        // this should be an opcode for a number
+        coinbase.getOp(cbi, opcode, data);
+        uint256 hash_from_coinbase(data);
+        return (hash == hash_from_coinbase);
+    } catch (...) {
+        return false;
+    }
+}
