@@ -22,6 +22,8 @@
 #include <coinHTTP/ConnectionManager.h>
 #include <coinHTTP/RequestHandler.h>
 
+#include <coin/Logger.h>
+
 #include <string>
 #include <fstream>
 
