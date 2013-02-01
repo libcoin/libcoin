@@ -18,6 +18,7 @@
 #define REF_PTR_H
 
 #include <iostream>
+#include <cstdio> // define EOF
 
 /** Smart pointer for handling referenced counted objects.*/
 template<class T>
