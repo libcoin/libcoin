@@ -44,9 +44,9 @@ public:
 instance_of_cdbinit;
 
 string CDB::dataDir(string suffix) {
-    // Windows: C:\Documents and Settings\username\Application Data\Bitcoin
-    // Mac: ~/Library/Application Support/Bitcoin
-    // Unix: ~/.bitcoin
+    // Windows: C:\Documents and Settings\username\Application Data\Libcoin
+    // Mac: ~/Library/Application Support/Libcoin
+    // Unix: ~/.libcoin
 #if (defined _WIN32 || defined __MACH__) // convert first letter to upper case
     transform(suffix.begin(), suffix.begin()+1, suffix.begin(), ::toupper);
 #else // prepend a "."

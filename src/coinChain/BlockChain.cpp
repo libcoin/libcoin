@@ -715,14 +715,16 @@ void BlockChain::outputPerformanceTimings() const {
 
 // update best locator 
 void BlockChain::updateBestLocator() {
-    vector<int64> heights;
+    vector<int> heights;
     heights.push_back(_tree.height());
     int step = 1;
-    for (int i = 0; heights.back() && i < step; i++)
+    // push back 10 heights, then double the steps until genesis is reached
+    for (int i = 0;; i++) {
+        if (heights.back() - step <= 0) break;
         heights.push_back(heights.back()-step);
-    if (heights.size() > 10)
-        step *= 2;
-    if (heights.back() == 0) heights.pop_back();
+        if (heights.size() > 10)
+            step *= 2;
+    }
 
     _bestLocator.have.clear();
     for (int i = 0; i < heights.size(); ++i) {

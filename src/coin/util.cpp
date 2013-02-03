@@ -43,9 +43,9 @@ extern "C" void tss_cleanup_implemented() { }
 
 
 string default_data_dir(std::string suffix) {
-    // Windows: C:\Documents and Settings\username\Application Data\Bitcoin
-    // Mac: ~/Library/Application Support/Bitcoin
-    // Unix: ~/.bitcoin
+    // Windows: C:\Documents and Settings\username\Application Data\Libcoin
+    // Mac: ~/Library/Application Support/Libcoin
+    // Unix: ~/.libcoin
 #if (defined _WIN32 || defined __MACH__) // convert first letter to upper case
     std::transform(suffix.begin(), suffix.begin()+1, suffix.begin(), ::toupper);
 #else // prepend a "."
