@@ -729,4 +729,7 @@ inline bool AffinityBugWorkaround(void(*pfn)(void*))
     return false;
 }
 */
+
+size_t getMemorySize();
+
 #endif

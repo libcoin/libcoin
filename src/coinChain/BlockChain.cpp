@@ -55,11 +55,21 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
     // setup the database tables
     // The blocks points backwards, so they could create a tree. Which tree to choose ? The best of them... So each time a new block is inserted, it is checked against the main chain. If the main chain needs to be updated it will be.
     
+    size_t total_memory = getMemorySize();
+    log_info("Total memory size: %d", total_memory);
+    // use only 50% of the memory at max:
+    const size_t page_size = 4096;
+    size_t cache_size = total_memory/2/page_size;
+    
+    // we need to declare this static as the pointer to the c_str will live also outside this function
+    static string pragma_page_size = "PRAGMA page_size = " + lexical_cast<string>(page_size);
+    static string pragma_cache_size = "PRAGMA cache_size = " + lexical_cast<string>(cache_size);
+    
     query("PRAGMA journal_mode=WAL");
     query("PRAGMA locking_mode=NORMAL");
     query("PRAGMA synchronous=OFF");
-    query("PRAGMA page_size=16384"); // this is 512MiB of cache with 4kiB page_size
-    query("PRAGMA cache_size=131072"); // this is 512MiB of cache with 4kiB page_size
+    query(pragma_page_size.c_str()); // this is 512MiB of cache with 4kiB page_size
+    query(pragma_cache_size.c_str()); // this is 512MiB of cache with 4kiB page_size
     query("PRAGMA temp_store=MEMORY"); // use memory for temp tables
     
     query("CREATE TABLE IF NOT EXISTS Blocks ("
