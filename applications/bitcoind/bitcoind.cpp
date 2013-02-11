@@ -42,6 +42,85 @@ using namespace boost;
 using namespace boost::program_options;
 using namespace json_spirit;
 
+/// Pool is an interface for running a pool. It is a basis for the pool rpc commands: 'getwork', 'getblocktemplate' and 'submitblock'
+/// For getwork it keeps a list of "active" blocks mapped by merkleroot.
+/// For getblocktemplate/submitblock a list of "active" blocks are kept by workid
+/// Pool implements a pool that creates a coinbase output with only one output
+/// ValidationPool implements a pool that generates outputs with a weighted average of the last 120 validation blocks
+class Pool {
+public:
+    /// Initialize Pool with a node and a payee, i.e. an abstraction of a payee address generator
+    Pool(Node& node, Payee& payee) : _blockChain(blockChain), _payee(payee) {
+        // install a blockfilter to be notified each time a new block arrives invalidating the current mining effort
+    }
+    
+    virtual Block getBlockTemplate() {
+        BlockChain::Payees payees;
+        payees.push_back(_payee.current_script());
+        Block block = _node.blockChain().getBlockTemplate(payees);
+        // add the block to the list of work
+        
+    }
+    
+    virtual submitBlock(Block& block, string workid) {
+        
+    }
+    
+    virtual void getWork() {
+        
+    }
+    
+private:
+    const BlockChain& _blockChain;
+    Payee& _payee;
+    
+    typedef std::map<uint256, Block> WorkByMerkelHash;
+    typedef std::map<string, Block> WorkById;
+};
+
+class PoolMethod : public Method {
+    
+private:
+    Pool& _pool;
+};
+
+class GetBlockTemplate : public PoolMethod {
+public:
+    enum Mode {
+        Single,
+        Shared
+    };
+    GetBlockTemplate(Node& node, Mode mode, Payee& payee) : NodeMethod(node), _mode(mode), _payee(payee) {}
+    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
+private:
+    Mode _mode;
+    Payee& _payee;
+};
+
+Value GetBlockTemplate::operator()(const Array& params, bool fHelp) {
+    if (fHelp || params.size() != 0)
+        throw RPC::error(RPC::invalid_params, "getblocktemplate\n"
+                         "Returns an object containing various state info.");
+    
+    Block block;
+    // generate a block template - depending on the mode generate different coinbase output.
+    if (_mode == Single) {
+        BlockChain::Payees payees;
+        payees.push_back(_payee.current_script());
+        block = _node.blockChain().getBlockTemplate(payees);
+    }
+    else if (_mode == Shared) {
+        // get the last 100 blocks
+        //        _node.blockChain().;
+    }
+    
+    
+    
+    Object obj;
+
+    return obj;
+}
+
 int main(int argc, char* argv[])
 {
     try {
@@ -221,6 +300,11 @@ int main(int argc, char* argv[])
         //        miner.setGenerate(gen);
         //        thread miningThread(&Miner::run, &miner);
         
+        /// The Pool enables you to run a backend for a miner, i.e. your private pool, it also enables you to participate in the "Name of Pool"
+        // We need a list of blocks for the shared mining
+        // 
+        Pool pool(node, address);
+        
         Server server(rpc_bind, lexical_cast<string>(rpc_port), filesystem::initial_path().string());
         if(ssl) server.setCredentials(data_dir, certchain, privkey);
         
@@ -234,6 +318,11 @@ int main(int argc, char* argv[])
         server.registerMethod(method_ptr(new GetConnectionCount(node)));
         server.registerMethod(method_ptr(new GetDifficulty(node)));
         server.registerMethod(method_ptr(new GetInfo(node)));
+
+        // collaboration_mode can be single/shared and the address can be e.g. an address or it can be a pointer to a "reserve key" instance from a wallet
+        //server.registerMethod(method_ptr(new GetBlockTemplate(pool)));
+        //server.registerMethod(method_ptr(new GetWork(pool)));
+        //server.registerMethod(method_ptr(new SubmitBlock(pool)));
         
         // Register Wallet methods.
         server.registerMethod(method_ptr(new GetBalance(wallet)), auth);

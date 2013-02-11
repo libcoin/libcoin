@@ -193,7 +193,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
     }
     else if (msg.command() == "version") {
         // Ask the first connected node for block updates
-        static int nAskedForBlocks = -2;
+        static int nAskedForBlocks = 0;
         if (!origin->fClient && (origin->nVersion < 32000 || origin->nVersion >= 32400) && (nAskedForBlocks < 1 || origin->getAllPeers().size() <= 1)) {
             nAskedForBlocks++;
             origin->PushGetBlocks(_blockChain.getBestLocator(), uint256(0));

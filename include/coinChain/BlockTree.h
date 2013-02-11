@@ -147,10 +147,10 @@ public:
     }
 
     int height() const {
-        return _heights.size() - 1;
+        return _trunk.size() - 1;
     }
     int count() const {
-        return _heights.size();
+        return _trunk.size();
     }
     int height(const Hash& hash) const {
         typename Heights::const_iterator h = _heights.find(hash);

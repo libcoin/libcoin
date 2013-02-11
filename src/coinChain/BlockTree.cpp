@@ -18,6 +18,8 @@
 
 #include <coin/Block.h>
 
+#include <coin/Logger.h>
+
 using namespace std;
 using namespace boost;
 
@@ -32,6 +34,8 @@ void BlockTree::assign(const Trunk& trunk) {
         // update the work:
         _acc_work.push_back(_acc_work[h-1] + _trunk[h].work());
     }
+    
+    log_info("_heights.size() = %i", _heights.size());
 }
 
 CBigNum BlockTree::accumulatedWork(BlockIterator blk) const {
@@ -71,11 +75,15 @@ BlockTree::Changes BlockTree::insert(const BlockRef ref) {
         for (++blk ;blk != end(); ++blk) {
             changes.deleted.push_back(blk->hash);
             _branches[blk->hash] = *blk;
-            _heights[blk->hash] *=-1; // flip height
         }
-        
+
         // delete old branch from trunk
         _trunk.resize(root.height() + 1);
+        _acc_work.resize(root.height() + 1);
+
+        // flip height - need to do it after the iteration above as it depends on checking that the blk is in the trunk (i.e. h>0)
+        for (Hashes::const_iterator hash = changes.deleted.begin(); hash != changes.deleted.end(); ++hash)
+            _heights[*hash] *= -1;
         
         // insert new branch into trunk and update the heights
         for (Hashes::const_reverse_iterator hash = changes.inserted.rbegin(); hash != changes.inserted.rend(); ++hash) {

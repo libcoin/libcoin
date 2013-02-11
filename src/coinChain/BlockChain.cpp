@@ -574,11 +574,6 @@ void BlockChain::detach(BlockIterator &blk, Txns& unconfirmed) {
 }
 
 // append(block)
-// accept block is more a offer block or block offered: consume(block) - output is a code that falls in 3 categories:
-// accepted(added to best chain, reorganized, sidechain...)
-// orphan - might be ok, but not able to check yet
-// block is considered wrong
-// throw: for some reason the block caused the logic to malfunction
 void BlockChain::append(const Block &block) {
 
     uint256 hash = block.getHash();

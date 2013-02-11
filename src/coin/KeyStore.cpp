@@ -11,6 +11,13 @@
 #include <coin/KeyStore.h>
 #include <coin/Script.h>
 
+Script StaticPayee::current_script() {
+    Script script;
+    script.setAddress(_pkh);
+    return script;
+}
+
+
 PubKey KeyStore::generateNewKey() {
     RandAddSeedPerfmon();
     CKey key;
