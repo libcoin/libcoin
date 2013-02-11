@@ -54,6 +54,7 @@ public:
             case BIP0016: return 1333238400; // April 1st                
             case BIP0030: return 1331769600; // 03/15/2012 12:00am GMT.
         }
+        return 0;
     }
     
     // To enable upgrade from one block version to another we define a quorum and a majority for acceptance
@@ -143,6 +144,7 @@ public:
             case BIP0016: return 1329264000; // Feb 15
             case BIP0030: return 1329696000; // 02/20/2012 12:00am GMT
         }
+        return 0;
     }
     
     virtual size_t accept_quorum() const { return 100;}

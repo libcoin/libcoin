@@ -50,19 +50,19 @@ using namespace json_spirit;
 class Pool {
 public:
     /// Initialize Pool with a node and a payee, i.e. an abstraction of a payee address generator
-    Pool(Node& node, Payee& payee) : _blockChain(blockChain), _payee(payee) {
+    Pool(Node& node, Payee& payee) : _blockChain(node.blockChain()), _payee(payee) {
         // install a blockfilter to be notified each time a new block arrives invalidating the current mining effort
     }
     
     virtual Block getBlockTemplate() {
         BlockChain::Payees payees;
         payees.push_back(_payee.current_script());
-        Block block = _node.blockChain().getBlockTemplate(payees);
+        Block block = _blockChain.getBlockTemplate(payees);
         // add the block to the list of work
         
     }
     
-    virtual submitBlock(Block& block, string workid) {
+    virtual bool submitBlock(Block& block, string workid) {
         
     }
     
@@ -79,7 +79,8 @@ private:
 };
 
 class PoolMethod : public Method {
-    
+public:
+    PoolMethod(Pool& pool) : _pool(pool) {}
 private:
     Pool& _pool;
 };
@@ -90,11 +91,10 @@ public:
         Single,
         Shared
     };
-    GetBlockTemplate(Node& node, Mode mode, Payee& payee) : NodeMethod(node), _mode(mode), _payee(payee) {}
+    GetBlockTemplate(Pool& pool, Mode mode) : PoolMethod(pool), _mode(mode) {}
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
 private:
     Mode _mode;
-    Payee& _payee;
 };
 
 Value GetBlockTemplate::operator()(const Array& params, bool fHelp) {
@@ -106,8 +106,8 @@ Value GetBlockTemplate::operator()(const Array& params, bool fHelp) {
     // generate a block template - depending on the mode generate different coinbase output.
     if (_mode == Single) {
         BlockChain::Payees payees;
-        payees.push_back(_payee.current_script());
-        block = _node.blockChain().getBlockTemplate(payees);
+        //        payees.push_back(_payee.current_script());
+        //        block = _pool.getBlockTemplate(payees);
     }
     else if (_mode == Shared) {
         // get the last 100 blocks
@@ -302,8 +302,10 @@ int main(int argc, char* argv[])
         
         /// The Pool enables you to run a backend for a miner, i.e. your private pool, it also enables you to participate in the "Name of Pool"
         // We need a list of blocks for the shared mining
-        // 
-        Pool pool(node, address);
+        //
+        ChainAddress address("1sdhjadshf87897dsa98sd7f987s");
+        StaticPayee payee(address.getPubKeyHash());
+        Pool pool(node, payee);
         
         Server server(rpc_bind, lexical_cast<string>(rpc_port), filesystem::initial_path().string());
         if(ssl) server.setCredentials(data_dir, certchain, privkey);

@@ -32,7 +32,7 @@
 
 /// Singleton pool to speed up allocation of small objects
 template <class T>
-class Pool : public boost::singleton_pool<T, sizeof(T)> {};
+class MemoryPool : public boost::singleton_pool<T, sizeof(T)> {};
 
 class MerkleTrieBase {
 public:
