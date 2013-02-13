@@ -942,22 +942,6 @@ void BlockChain::getTransaction(const uint256& hash, Transaction& txn, int64& he
     getTransaction(cnf, txn, height, time);
 }
 
-Transactions BlockChain::unconfirmedTransactions() const {
-    // lock the pool and chain for reading
-    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
-    
-    Transactions txns;
-    std::vector<int64> cnfs = queryCol<int64>("SELECT cnf FROM Confirmations WHERE count > ?", LOCKTIME_THRESHOLD);
-    
-    for (std::vector<int64>::const_iterator cnf = cnfs.begin(); cnf != cnfs.end(); ++cnf) {
-        Transaction txn;
-        getTransaction(*cnf, txn);
-        txns.push_back(txn);
-    }
-    
-    return txns;
-}
-
 bool BlockChain::isSpent(Coin coin) const {
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
 

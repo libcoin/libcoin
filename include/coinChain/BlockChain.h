@@ -110,9 +110,6 @@ public:
     void getTransaction(const int64 cnf, Transaction& tx, int64& height, int64& time) const;
     void getTransaction(const uint256& hash, Transaction& tx, int64& height, int64& time) const;
     
-    /// Get all unconfirmed transactions.
-    Transactions unconfirmedTransactions() const;
-    
     /// Query for existence of a Transaction.
     bool haveTx(uint256 hash, bool must_be_confirmed = false) const;
     
