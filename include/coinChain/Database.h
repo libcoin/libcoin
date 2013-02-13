@@ -480,7 +480,7 @@ namespace sqliterate {
             Error(const std::string& s) : std::runtime_error(s.c_str()) {}
         };
         
-        Database(const std::string filename = ":memory:");
+        Database(const std::string filename = ":memory:", sqlite3_int64 heap_limit = 0);
         ~Database();
         
         StatementBase statement(const char* stmt);

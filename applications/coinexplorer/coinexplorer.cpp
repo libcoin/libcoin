@@ -379,8 +379,8 @@ int main(int argc, char* argv[])
         Node node(chain, data_dir, args.count("nolisten") ? "" : "0.0.0.0", lexical_cast<string>(port), proxy_server, timeout); // it is also here we specify the use of a proxy!
         node.setClientVersion("libcoin/coinexplorer", vector<string>(), 59100);
         node.verification(Node::MINIMAL);
-        node.validation(Node::MINIMAL);
-        node.persistence(Node::MINIMAL);
+        node.validation(Node::NONE);
+        node.persistence(Node::LAZY);
         node.searchable(true);
         PortMapper mapper(node.get_io_service(), port); // this will use the Node call
         if(portmap) mapper.start();

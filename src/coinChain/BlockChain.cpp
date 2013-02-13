@@ -38,7 +38,7 @@ using namespace sqliterate;
 //
 
 BlockChain::BlockChain(const Chain& chain, const string dataDir) :
-    sqliterate::Database(dataDir == "" ? ":memory:" : dataDir + "/blockchain.sqlite3"),
+    sqliterate::Database(dataDir == "" ? ":memory:" : dataDir + "/blockchain.sqlite3", getMemorySize()/4),
     _chain(chain),
     _verifier(0),
     _lazy_purging(false),
@@ -57,9 +57,9 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
     
     size_t total_memory = getMemorySize();
     log_info("Total memory size: %d", total_memory);
-    // use only 50% of the memory at max:
+    // use only 25% of the memory at max:
     const size_t page_size = 4096;
-    size_t cache_size = total_memory/2/page_size;
+    size_t cache_size = total_memory/4/page_size;
     
     // we need to declare this static as the pointer to the c_str will live also outside this function
     static string pragma_page_size = "PRAGMA page_size = " + lexical_cast<string>(page_size);

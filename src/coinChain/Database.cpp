@@ -84,12 +84,14 @@ namespace sqliterate {
         arg = uint256(a);
     }
     
-    Database::Database(const string filename) {
+    Database::Database(const string filename, sqlite3_int64 heap_limit) {
         _db = NULL;
-        
+
         int ret = sqlite3_open(filename.c_str(), &_db);
         if (ret != SQLITE_OK)
             throw Database::Error("Database() : error " + lexical_cast<string>(ret) + " opening database environment");
+        
+        sqlite3_soft_heap_limit64(heap_limit);
     }
     
     Database::~Database() {
