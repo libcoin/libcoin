@@ -72,7 +72,7 @@ public:
         Node& _node; 
     };
 
-    Wallet(Node& node, std::string walletFile = "", std::string dataDir = "") : CCryptoKeyStore(), _blockChain(node.blockChain()), nTransactionFee(0), _emit(node), _resend_timer(node.get_io_service()) {
+    Wallet(Node& node, std::string walletFile = "", std::string dataDir = "") : CCryptoKeyStore(), nTransactionFee(0), _blockChain(node.blockChain()), _emit(node), _resend_timer(node.get_io_service()) {
         if(walletFile == "NOTFILEBACKED")
             fFileBacked = false;
         else {

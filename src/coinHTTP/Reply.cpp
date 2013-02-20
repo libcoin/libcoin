@@ -15,8 +15,12 @@
  */
 
 #include <coinHTTP/Reply.h>
+#include <coinHTTP/RPC.h>
+
 #include <string>
 #include <boost/lexical_cast.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/bind.hpp>
 
 using namespace std;
 using namespace boost;
@@ -59,7 +63,7 @@ namespace status_strings {
     const string gateway_timeout =
     "HTTP/1.1 504 Gateway Timeout\r\n";
     
-    const_buffer to_buffer(Reply::status_type status) {
+    const_buffer to_buffer(Reply::Status status) {
         switch (status) {
             case Reply::ok:
                 return buffer(ok);
@@ -111,15 +115,15 @@ namespace misc_strings {
 
 vector<const_buffer> Reply::to_buffers() {
     vector<const_buffer> buffers;
-    buffers.push_back(status_strings::to_buffer(status));
-    for (Headers::iterator h = headers.begin(); h != headers.end(); ++h) {
+    buffers.push_back(status_strings::to_buffer(_status));
+    for (Headers::iterator h = _headers.begin(); h != _headers.end(); ++h) {
         buffers.push_back(buffer(h->first));
         buffers.push_back(buffer(misc_strings::name_value_separator));
         buffers.push_back(buffer(h->second));
         buffers.push_back(buffer(misc_strings::crlf));
     }
     buffers.push_back(buffer(misc_strings::crlf));
-    buffers.push_back(buffer(content));
+    buffers.push_back(buffer(_content));
     return buffers;
 }
 
@@ -207,7 +211,7 @@ namespace stock_replies {
     "<body><h1>504 Gateway Timeout</h1></body>"
     "</html>";
     
-    string to_string(Reply::status_type status) {
+    string to_string(Reply::Status status) {
         switch (status) {
             case Reply::ok:
                 return ok;
@@ -250,11 +254,48 @@ namespace stock_replies {
     
 } // namespace stock_replies
 
-Reply Reply::stock_reply(Reply::status_type status) {
-    Reply rep;
-    rep.status = status;
-    rep.content = stock_replies::to_string(status);
-    rep.headers["Content-Length"] = boost::lexical_cast<string>(rep.content.size());;
-    rep.headers["Content-Type"] = "text/html";
-    return rep;
+void Reply::status(Reply::Status s) {
+    _status = s;
+    _content = stock_replies::to_string(_status);
+    _headers["Content-Length"] = boost::lexical_cast<string>(_content.size());;
+    _headers["Content-Type"] = "text/html";
 }
+
+void Reply::setContentAndMime(const std::string& content, const std::string& mime) {
+    _status = ok;
+    _headers["Content-Length"] = lexical_cast<string>(content.size());
+    _headers["Content-Type"] = mime;
+    _content = content;
+}
+
+void Reply::dispatch(const CompletionHandler& handler) {
+    if (_method)
+        _method->dispatch(bind(&Reply::exec, this, handler));
+    else
+        handler();
+}
+
+void Reply::exec(const CompletionHandler& handler) {
+    try {
+        RPC rpc(_request);
+        
+        try {
+            if (!_method)
+                throw rpc.response(RPC::method_not_found);
+            json_spirit::Value result = (*_method)(rpc.params(), false, _request);
+            json_spirit::Object response = rpc.result_response(result);
+            setContentAndMime(write(response), "application/json");
+        }
+        catch (json_spirit::Object& err) {
+            throw rpc.error_response(err);
+        }
+        catch (...) {
+            throw rpc.response(RPC::internal_error);
+        }
+    }
+    catch (json_spirit::Object& err_response) {
+        setContentAndMime(write(err_response), "application/json");
+    }
+    handler();
+}
+

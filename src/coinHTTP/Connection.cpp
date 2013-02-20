@@ -30,10 +30,10 @@ using namespace asio;
 using namespace std;
 
 
-Connection::Connection(io_service& io_service, ConnectionManager& manager, RequestHandler& handler, std::ostream& access_log) : _ctx(io_service, ssl::context::sslv23), _socket(io_service), _ssl_socket(io_service, _ctx), _secure(false), _keep_alive(io_service), _exec_postpone(io_service), _connectionManager(manager), _requestHandler(handler), _access_log(access_log), _max_request_duration(boost::posix_time::milliseconds(10000)) , _exec_retry_duration(boost::posix_time::milliseconds(1000)) {
+Connection::Connection(io_service& io_service, ConnectionManager& manager, RequestHandler& handler, std::ostream& access_log) : _ctx(io_service, ssl::context::sslv23), _socket(io_service), _ssl_socket(io_service, _ctx), _secure(false), _keep_alive(io_service), _exec_postpone(io_service), _connectionManager(manager), _requestHandler(handler), _reply(_request), _access_log(access_log), _max_request_duration(boost::posix_time::milliseconds(10000)) , _exec_retry_duration(boost::posix_time::milliseconds(5000)) {
 }
 
-Connection::Connection(io_service& io_service, ssl::context& context, ConnectionManager& manager, RequestHandler& handler, std::ostream& access_log) : _ctx(io_service, ssl::context::sslv23), _socket(io_service), _ssl_socket(io_service, context), _secure(true), _keep_alive(io_service), _exec_postpone(io_service), _connectionManager(manager), _requestHandler(handler), _access_log(access_log), _max_request_duration(boost::posix_time::milliseconds(10000)) , _exec_retry_duration(boost::posix_time::milliseconds(1000)) {
+Connection::Connection(io_service& io_service, ssl::context& context, ConnectionManager& manager, RequestHandler& handler, std::ostream& access_log) : _ctx(io_service, ssl::context::sslv23), _socket(io_service), _ssl_socket(io_service, context), _secure(true), _keep_alive(io_service), _exec_postpone(io_service), _connectionManager(manager), _requestHandler(handler), _reply(_request), _access_log(access_log), _max_request_duration(boost::posix_time::milliseconds(10000)) , _exec_retry_duration(boost::posix_time::milliseconds(5000)) {
 }
 
 
@@ -85,9 +85,9 @@ void Connection::log_request() const {
     if(ec) // unbound requests are artefacts (result from write calling read, e.g. when trying ssl on non ssl conn)
         return;
     _access_log << remote.address() << " - ";
-    Headers::const_iterator header = _request.headers.find("Authorization");
+    Headers::const_iterator header = _request.headers().find("Authorization");
     std::string basic_auth;
-    if (header != _request.headers.end())
+    if (header != _request.headers().end())
         basic_auth = header->second;
     if (basic_auth.length() < 9)
         _access_log << "- ";
@@ -101,18 +101,18 @@ void Connection::log_request() const {
             _access_log << auth.username() << " ";
     }
     _access_log << posix_time::second_clock::local_time() << " ";
-    _access_log << "\"" << _request.method << " ";
-    _access_log << _request.uri << " ";
-    _access_log << "HTTP/" << _request.http_version_major << "." << _request.http_version_minor << "\" ";
-    _access_log << _reply.status << " ";
-    _access_log << _reply.content.size() << " ";
-    header = _request.headers.find("Referer");
-    if (header != _request.headers.end())
+    _access_log << "\"" << _request.method() << " ";
+    _access_log << _request.uri() << " ";
+    _access_log << "HTTP/" << _request.version() << "\" ";
+    _access_log << _reply.status() << " ";
+    _access_log << _reply.content_length() << " ";
+    header = _request.headers().find("Referer");
+    if (header != _request.headers().end())
         _access_log << "\"" << header->second << "\" ";
     else 
         _access_log << "- ";
-    header = _request.headers.find("User-Agent");
-    if (header != _request.headers.end())
+    header = _request.headers().find("User-Agent");
+    if (header != _request.headers().end())
         _access_log << "\"" << header->second << "\"";
     else
         _access_log << "-";
@@ -135,13 +135,18 @@ void Connection::handle_read(const system::error_code& e, std::size_t bytes_tran
             if(!ec) // unbound requests are artefacts (result from write calling read, e.g. when trying ssl on non ssl conn)
                 _request.remote = remote.address();
             _request.timestamp = boost::posix_time::microsec_clock::local_time();
-            _reply.reset();
 
-            // handle_exec: try get/post, if done call async write, else do a async_wait(handle_exec);
-            handle_wait(e);            
+            if (e != boost::asio::error::operation_aborted) {
+                if (boost::posix_time::microsec_clock::local_time() - _request.timestamp > _max_request_duration) {
+                    _reply.status(Reply::gateway_timeout);
+                    handle_exec();
+                }
+                else
+                    _requestHandler.async_exec(_request, _reply, bind(&Connection::handle_exec, shared_from_this()));
+            }
         }
         else if (!result) {
-            _reply = Reply::stock_reply(Reply::bad_request);
+            _reply.status(Reply::bad_request);
             log_request();
             _request.reset();
             if(_secure)
@@ -162,59 +167,22 @@ void Connection::handle_read(const system::error_code& e, std::size_t bytes_tran
     }
 }
 
-void Connection::handle_wait(const system::error_code& e) {
-    if (e != boost::asio::error::operation_aborted) {
-        if (_request.method == "GET") {
-            if (boost::posix_time::microsec_clock::local_time() - _request.timestamp > _max_request_duration) {
-                _reply = Reply::stock_reply(Reply::gateway_timeout);
-                _request.pending = false;
-            }
-            else
-                _requestHandler.handleGET(_request, _reply);
-            if (_request.pending) {            
-                // wait a short amount of time and try the exec again
-                _exec_postpone.expires_from_now(_exec_retry_duration);
-                _exec_postpone.async_wait(bind(&Connection::handle_wait, shared_from_this(), placeholders::error));
-            }
-            else {
-                log_request();
-                _request.reset();
-                if(_secure)
-                    async_write(_ssl_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
-                else
-                    async_write(_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
-            }
-        }
-        else if(_request.method == "POST") {
-            if (boost::posix_time::microsec_clock::local_time() - _request.timestamp > _max_request_duration) {
-                _reply = Reply::stock_reply(Reply::gateway_timeout);
-                _request.pending = false;
-            }
-            else
-                _requestHandler.handlePOST(_request, _reply);
-            if(_request.pending) {            
-                // wait a short amount of time and try the exec again
-                _exec_postpone.expires_from_now(boost::posix_time::milliseconds(1));
-                _exec_postpone.async_wait(bind(&Connection::handle_wait, shared_from_this(), placeholders::error));
-            }
-            else {
-                log_request();
-                _request.reset();
-                if(_secure)
-                    async_write(_ssl_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
-                else
-                    async_write(_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
-            }
-        }
-    }
+// handle_exec is called from the async_exec thread, but will do a async write on the Server thread
+void Connection::handle_exec() {
+    log_request();
+    _request.reset();
+    if(_secure)
+        async_write(_ssl_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+    else
+        async_write(_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
 }
 
 void Connection::handle_write(const system::error_code& e, size_t bytes_transferred) {
     bool keep_alive = true; // assuming HTTP 1.1
-    if (_request.http_version_major == 1 && _request.http_version_minor == 0)
+    if (_request.version() == "1.0")
         keep_alive = false; // keep alive is false for HTTP 1.0
-    Headers::const_iterator header = _request.headers.find("Connection");
-    if (header != _request.headers.end()) // if A Connection field is supplied - use it
+    Headers::const_iterator header = _request.headers().find("Connection");
+    if (header != _request.headers().end()) // if A Connection field is supplied - use it
         keep_alive = (header->second != "close");
     
     if (!e) {

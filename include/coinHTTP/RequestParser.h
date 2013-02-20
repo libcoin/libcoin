@@ -23,7 +23,7 @@
 #include <boost/logic/tribool.hpp>
 #include <boost/tuple/tuple.hpp>
 
-struct Request;
+class Request;
 
 /// Parser for incoming requests.
 class COINHTTP_EXPORT RequestParser
@@ -66,6 +66,9 @@ private:
     /// Check if a byte is a digit.
     static bool is_digit(int c);
     
+    /// decode URL
+    bool urlDecode(const std::string& in, std::string& out) const;
+    
     /// The current state of the parser.
     enum state {
         method_start,
@@ -91,6 +94,12 @@ private:
         expecting_newline_3,
         payload
     } _state;
+    
+    std::string _method;
+    std::string _uri;
+    int _version_major;
+    int _version_minor;
+    std::string _payload;
     
     std::string _name;
     std::string _value;

@@ -137,10 +137,12 @@ int64 Transaction::getMinFee(unsigned int nBlockSize, bool fAllowFree, bool fFor
     }
     
     // To limit dust spam, require MIN_TX_FEE/MIN_RELAY_TX_FEE if any output is less than 0.01
-    if (nMinFee < nBaseFee)
-        BOOST_FOREACH(const Output& output, _outputs)
-        if (output.value() < CENT)
-            nMinFee = nBaseFee;
+    if (nMinFee < nBaseFee) {
+        BOOST_FOREACH(const Output& output, _outputs) {
+            if (output.value() < CENT)
+                nMinFee = nBaseFee;
+        }
+    }
     
     // Raise the price as the block approaches full
     if (nBlockSize != 1 && nNewBlockSize >= MAX_BLOCK_SIZE_GEN/2) {

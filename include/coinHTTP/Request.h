@@ -20,21 +20,83 @@
 #include <coinHTTP/Export.h>
 #include <coinHTTP/Header.h>
 
+#include <coinHTTP/json/json_spirit.h>
+
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/asio/ip/address.hpp>
 
 #include <string>
 
-/// A request received from a client.
-struct Request {
-    Request() : pending(false) {}
+/// Request received from a client.
+
+class Request {
+public:
+    enum ErrorCode {
+        unknown_error = -1,
+        invalid_request = -32600,
+        method_not_found = -36001,
+        invalid_params = -36002,
+        internal_error = -36003,
+        parse_error = -32700
+    };
+
+    Request() { reset(); }
+
+    void setMethod(const std::string method);
+
+    void setURI(const std::string& uri);
     
-    std::string method;
-    std::string uri;
-    int http_version_major;
-    int http_version_minor;
-    Headers headers;
-    std::string payload;
+    void setVersion(int major, int minor);
+    
+    void addHeader(const std::string& field, const std::string& value);
+    
+    /// Set the content of the request and parse it.
+    void setContent(const std::string& content);
+    
+    bool is_get() const { return _method == "GET"; }
+    bool is_post() const { return _method == "POST"; }
+    
+    const std::string& method() const {
+        return _method;
+    }
+    
+    const std::string& uri() const {
+        return _uri;
+    }
+    
+    const Headers& headers() const {
+        return _headers;
+    }
+    
+    const std::string& content() const {
+        return _content;
+    }
+    
+    std::string version() const {
+        std::ostringstream is;
+        is << _version_major << "." << _version_major;
+        return is.str();
+    }
+    
+    std::string path() const {
+        size_t search_separator = _uri.find("?");
+        if (search_separator != std::string::npos)
+            return _uri.substr(0, search_separator);
+        else
+            return _uri;
+    }
+    
+    std::string query() const {
+        size_t search_separator = _uri.find("?");
+        if (search_separator != std::string::npos)
+            return _uri.substr(search_separator + 1, std::string::npos); // exclude the '?'
+        else
+            return "";
+    }
+    
+    std::string basic_auth() const;
+
+    json_spirit::Object error(ErrorCode e, const std::string message = "");
     
     /// Extra info - the remote IP
     boost::asio::ip::address remote;    
@@ -42,17 +104,23 @@ struct Request {
     /// Extra info - the request receive timestamp
     boost::posix_time::ptime timestamp;
     
-    /// Extra info - pending: indicates that the procesing of the request have been postponed pending yet unresolved information
-    mutable bool pending;
-    
     /// reset the request (used for keep_alive)
-    void reset() {
-        pending = false; // requests are per default not pending.
-        method.clear();
-        uri.clear();
-        headers.clear();
-        payload.clear();
+    void reset();
+
+    std::string mime() const {
+        if (_headers.count("content-type"))
+            return _headers.find("content-type")->second;
+            
+        return "";
     }
+    
+private:
+    std::string _method;
+    std::string _uri;
+    int _version_major;
+    int _version_minor;
+    Headers _headers;
+    std::string _content;
 };
 
 #endif // HTTP_REQUEST_H

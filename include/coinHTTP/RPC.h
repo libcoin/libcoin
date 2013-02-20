@@ -26,6 +26,7 @@
 #include <string>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/system/error_code.hpp>
 
 class COINHTTP_EXPORT RPC
 {
@@ -40,6 +41,10 @@ public:
     };
     
     static json_spirit::Object error(Error e, const std::string message = "");
+    json_spirit::Object response(Error e, const std::string message = "");
+    
+    json_spirit::Object error_response(const json_spirit::Object& error);
+    json_spirit::Object result_response(const json_spirit::Value& result);
     
     static std::string content(std::string method, std::vector<std::string> params);
 
@@ -64,21 +69,36 @@ public:
     
     void setError(const json_spirit::Value& error);
 
-    const Reply::status_type getStatus();
+    const Reply::Status getStatus();
     
     const std::string& method();
     
-    void execute(Method& method);
+    const json_spirit::Array& params() const {
+        return _params;
+    }
+    
+    //    void execute(Method& method);
+
+    typedef boost::function<void (const boost::system::error_code&)> CompletionHandler;
+    
+    //    void dispatch(const CompletionHandler& handler);
+    
+    //    void async_execute(const CompletionHandler& handler);
+    
+    //    void setMethod(Method* method) { _call_method = method; }
     
 private:
     std::string _method;
     std::string _content;
     json_spirit::Value _id;
+    std::string _version;
     json_spirit::Value _error;
     json_spirit::Array _params;
     json_spirit::Value _result;
     
     const Request& _request;
+    //    Reply& _reply;
+    //    Method* _call_method;
 };
 
 #endif

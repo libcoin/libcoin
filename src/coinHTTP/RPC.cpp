@@ -16,6 +16,7 @@
 
 #include <coinHTTP/RPC.h>
 #include <coinHTTP/Method.h>
+#include <coinHTTP/Request.h>
 
 #include <sstream>
 #include <string>
@@ -23,6 +24,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
+#include <boost/bind.hpp>
 
 #include <coinHTTP/json/json_spirit.h>
 
@@ -36,29 +38,68 @@ Object RPC::error(RPC::Error e, const string message) {
     err.push_back(Pair("code", (int)e));
     if (message.size()) {
         err.push_back(Pair("message", message));
-        return err;
     }
-    switch (e) {
-        case invalid_request:
-            err.push_back(Pair("message", "Invalid Request."));                
-            return err;                
-        case method_not_found:
-            err.push_back(Pair("message", "Method not found."));                
-            return err;                
-        case invalid_params:
-            err.push_back(Pair("message", "Invalid params."));                
-            return err;                
-        case internal_error:
-            err.push_back(Pair("message", "Internal error."));                
-            return err;                
-        case parse_error:
-            err.push_back(Pair("message", "Parse error."));                
-            return err;                
-        default:
-            err.push_back(Pair("message", "Server error."));                
-            return err;
+    else {
+        switch (e) {
+            case invalid_request:
+                err.push_back(Pair("message", "Invalid Request."));
+                break;
+            case method_not_found:
+                err.push_back(Pair("message", "Method not found."));
+                break;
+            case invalid_params:
+                err.push_back(Pair("message", "Invalid params."));
+                break;
+            case internal_error:
+                err.push_back(Pair("message", "Internal error."));
+                break;
+            case parse_error:
+                err.push_back(Pair("message", "Parse error."));
+                break;
+            default:
+                err.push_back(Pair("message", "Server error."));
+                break;
+        }
     }
+    
+    return err;
 }
+
+Object RPC::response(RPC::Error e, const string message) {
+    Object err = error(e, message);
+    return error_response(err);
+}
+
+json_spirit::Object RPC::error_response(const json_spirit::Object& err) {
+    Object response;
+
+    if (_version.size())
+        response.push_back(Pair("jsonrpc", _version));
+    response.push_back(Pair("error", err));
+    if (_version != "2.0") {
+        response.push_back(Pair("result", Value::null));
+        response.push_back(Pair("id", _id));
+    }
+    else if (!_id.is_null())
+        response.push_back(Pair("id", _id));
+    return response;
+}
+
+json_spirit::Object RPC::result_response(const json_spirit::Value& result) {
+    Object response;
+    
+    if (_version.size())
+        response.push_back(Pair("jsonrpc", _version));
+    response.push_back(Pair("result", result));
+    if (_version != "2.0") {
+        response.push_back(Pair("error", Value::null));
+        response.push_back(Pair("id", _id));
+    }
+    else if (!_id.is_null())
+        response.push_back(Pair("id", _id));
+    return response;
+}
+
 
 string RPC::content(string method, vector<string> params) {
     //    '{"jsonrpc": "1.0", "id":"curledhair", "method": "getblockcount", "params": [] }'
@@ -82,14 +123,28 @@ Object RPC::reply(string content) {
     return val.get_obj();
 }
 
-RPC::RPC(const Request& request) : _id(Value::null), _error(Value::null), _request(request) {}
+//RPC::RPC(const Request& request, Reply& reply) : _id(Value::null), _error(Value::null), _request(request), _reply(reply) {}
+
+RPC::RPC(const Request& request) : _id(Value::null), _error(Value::null), _request(request) {
+    if (_request.is_post() && _request.mime() == "application/json")
+        parse(_request.content());
+    else if (_request.is_get())
+        parse(_request.path(), _request.query());
+    // alternatively everything will be void...
+}
+
 
 void RPC::parse(string payload) {
     // Parse request
     Value parsed_req;
     if (!json_spirit::read(payload, parsed_req) || parsed_req.type() != obj_type)
-        throw error(parse_error);
+        throw response(parse_error);
     const Object& request = parsed_req.get_obj();
+    
+    // Parse the version - can be e.g. 1.0 or 2.0, or even empty (meaning 1.0)
+    Value version = find_value(request, "jsonrpc");
+    if (version.type() == str_type)
+        _version = version.get_str();
     
     // Parse id now so errors from here on will have the id
     _id = find_value(request, "id");
@@ -97,9 +152,9 @@ void RPC::parse(string payload) {
     // Parse method
     Value method = find_value(request, "method");
     if (method.type() == null_type)
-        throw error(parse_error, "Missing method.");
+        throw response(parse_error, "Missing method.");
     if (method.type() != str_type)
-        throw error(parse_error, "Method must be a string");
+        throw response(parse_error, "Method must be a string");
     _method = method.get_str();
     
     // Parse params
@@ -109,7 +164,7 @@ void RPC::parse(string payload) {
     else if (parse_params.type() == null_type)
         _params = Array();
     else
-        throw error(parse_error, "Params must be an array");        
+        throw response(parse_error, "Params must be an array");
 }
 
 void RPC::parse(std::string action, std::string payload) {
@@ -148,11 +203,18 @@ void RPC::setContent(string& content) {
 string& RPC::getContent() {
     // Generate JSON RPC 2.0 reply
     Object reply;
-    reply.push_back(Pair("jsonrpc", "2.0"));
-    if (!_error.is_null())
+    if (_version.size())
+        reply.push_back(Pair("jsonrpc", _version));
+    if (_version == "2.0") {
+        if (!_error.is_null())
+            reply.push_back(Pair("error", _error));
+        else // if no error, always return the result - also if null
+            reply.push_back(Pair("result", _result));
+    }
+    else { // _version == 1.0 (or something else)
         reply.push_back(Pair("error", _error));
-    else // if no error, always return the result - also if null
         reply.push_back(Pair("result", _result));
+    }
     if (!_id.is_null())
         reply.push_back(Pair("id", _id));
     _content = write(Value(reply)) + "\n";
@@ -172,7 +234,7 @@ void RPC::setError(const Value& error) {
     _error = error;
 }
 
-const Reply::status_type RPC::getStatus() {
+const Reply::Status RPC::getStatus() {
     if (_error == Value::null)
         return Reply::ok;
     
@@ -186,6 +248,22 @@ const Reply::status_type RPC::getStatus() {
 
 const string& RPC::method() { return _method; } 
 
+/*
 void RPC::execute(Method& method) {
     _result = method(_params, false, _request);
 }
+
+void RPC::dispatch(const CompletionHandler& handler) {
+    _call_method->dispatch(boost::bind(&RPC::async_execute, this, handler));
+}
+
+void RPC::async_execute(const CompletionHandler& handler) {
+    _result = (*_call_method)(_params, false, _request);
+    _reply.content = getContent();
+    _reply.headers["Content-Length"] = lexical_cast<string>(_reply.content.size());
+    _reply.headers["Content-Type"] = "application/json";
+    _reply.status = getStatus();
+    boost::system::error_code ec (0, boost::system::system_category());
+    handler(ec);
+}
+*/

@@ -51,7 +51,7 @@ private:
 public:
     Asset() {}
     void addAddress(uint160 hash160) { _keymap[hash160]; }
-    void addKey(CKey key) { _keymap[toPubKeyHash(key.GetPubKey())] = key; }
+    bool addKey(const CKey& key) { _keymap[toPubKeyHash(key.GetPubKey())] = key; return true; }
     
     std::set<uint160> getAddresses();
     

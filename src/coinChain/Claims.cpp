@@ -31,7 +31,7 @@ const Output Claims::prev(const Coin& coin) const {
 
 void Claims::insert(Transaction txn, const Spents& spents, int64 fee, unsigned int ts) {
     Claim claim(txn, fee, ts);
-    // check if inputs are part of this
+    // check for dependent transactions
     for (Inputs::const_iterator i = txn.getInputs().begin(); i != txn.getInputs().end(); ++i) {
         Confirmations::const_iterator cnf = _confirmations.find(i->prevout().hash);
         if (cnf != _confirmations.end()) {
@@ -58,7 +58,7 @@ void Claims::erase(uint256 hash) {
         _priorities.erase(hash);
         // clean up spendings - we erase all possible spendings from this transaction
         for (unsigned int idx = 0; idx < cnf->second.getNumInputs(); ++idx)
-            _spents.erase(Coin(hash, idx));
+            _spents.erase(cnf->second.getInput(idx).prevout());
         // remove the outputs from the map of scripts
         for (size_t idx = 0; idx < cnf->second.getNumOutputs(); ++idx) {
             typedef pair<Scripts::iterator, Scripts::iterator> Range;
@@ -89,8 +89,8 @@ vector<Transaction> Claims::transactions(int64& fee, size_t header_and_coinbase)
                 break;
             size += insert_claim(claim, txns, inserted);
             fee += claim.fee;
-            ++p;
         }
+        ++p;
     }
     
     return txns;
@@ -101,8 +101,10 @@ size_t Claims::insert_claim(const Claim& claim, vector<Transaction>& txns, set<u
     for (vector<uint256>::const_iterator h = claim.depends.begin(); h != claim.depends.end(); ++h) {
         if (!inserted.count(*h)) {
             Confirmations::const_iterator cnf = _confirmations.find(*h);
-            const Claim& c = cnf->second;
-            size += insert_claim(c, txns, inserted);
+            if (cnf != _confirmations.end()) {
+                const Claim& c = cnf->second;
+                size += insert_claim(c, txns, inserted);
+            }
         }
     }
     txns.push_back(claim);

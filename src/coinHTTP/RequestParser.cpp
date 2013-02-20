@@ -26,6 +26,16 @@ RequestParser::RequestParser() : _state(method_start) {
 
 void RequestParser::reset() {
     _state = method_start;
+    
+    _method.clear();
+    _uri.clear();
+    _version_major = _version_minor = 0;
+    _payload.clear();
+    
+    _name.clear();
+    _value.clear();
+    _length = 0;
+
 }
 
 tribool RequestParser::consume(Request& req, char input)
@@ -37,11 +47,13 @@ tribool RequestParser::consume(Request& req, char input)
             }
             else {
                 _state = method;
-                req.method.push_back(input);
+                _method.push_back(input);
                 return indeterminate;
             }
         case method:
             if (input == ' ') {
+                req.setMethod(_method);
+                _method.clear();
                 _state = uri;
                 return indeterminate;
             }
@@ -50,7 +62,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return false;
             }
             else {
-                req.method.push_back(input);
+                _method.push_back(input);
                 return indeterminate;
             }
         case uri_start:
@@ -60,11 +72,17 @@ tribool RequestParser::consume(Request& req, char input)
             }
             else {
                 _state = uri;
-                req.uri.push_back(input);
+                _uri.push_back(input);
                 return indeterminate;
             }
         case uri:
             if (input == ' ') {
+                string uri;
+                if (urlDecode(_uri, uri))
+                    req.setURI(uri);
+                else
+                    return false;
+                _uri.clear();
                 _state = http_version_h;
                 return indeterminate;
             }
@@ -73,7 +91,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return false;
             }
             else {
-                req.uri.push_back(input);
+                _uri.push_back(input);
                 return indeterminate;
             }
         case http_version_h:
@@ -114,8 +132,8 @@ tribool RequestParser::consume(Request& req, char input)
             }
         case http_version_slash:
             if (input == '/') {
-                req.http_version_major = 0;
-                req.http_version_minor = 0;
+                _version_major = 0;
+                _version_minor = 0;
                 _state = http_version_major_start;
                 return indeterminate;
             }
@@ -125,7 +143,7 @@ tribool RequestParser::consume(Request& req, char input)
             }
         case http_version_major_start:
             if (is_digit(input)) {
-                req.http_version_major = req.http_version_major * 10 + input - '0';
+                _version_major = _version_major * 10 + input - '0';
                 _state = http_version_major;
                 return indeterminate;
             }
@@ -139,7 +157,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return indeterminate;
             }
             else if (is_digit(input)) {
-                req.http_version_major = req.http_version_major * 10 + input - '0';
+                _version_major = _version_major * 10 + input - '0';
                 return indeterminate;
             }
             else {
@@ -148,7 +166,7 @@ tribool RequestParser::consume(Request& req, char input)
             }
         case http_version_minor_start:
             if (is_digit(input)) {
-                req.http_version_minor = req.http_version_minor * 10 + input - '0';
+                _version_minor = _version_minor * 10 + input - '0';
                 _state = http_version_minor;
                 return indeterminate;
             }
@@ -158,11 +176,12 @@ tribool RequestParser::consume(Request& req, char input)
             }
         case http_version_minor:
             if (input == '\r') {
+                req.setVersion(_version_major, _version_minor);
                 _state = expecting_newline_1;
                 return indeterminate;
             }
             else if (is_digit(input)) {
-                req.http_version_minor = req.http_version_minor * 10 + input - '0';
+                _version_minor = _version_minor * 10 + input - '0';
                 return indeterminate;
             }
             else {
@@ -184,7 +203,7 @@ tribool RequestParser::consume(Request& req, char input)
                 _state = expecting_newline_3;
                 return indeterminate;
             }
-            else if (!req.headers.empty() && (input == ' ' || input == '\t')) {
+            else if (!req.headers().empty() && (input == ' ' || input == '\t')) {
                 _state = header_lws;
                 return indeterminate;
             }
@@ -194,7 +213,7 @@ tribool RequestParser::consume(Request& req, char input)
             }
             else {
                 _name.clear();                
-                _name.push_back(input);
+                _name.push_back(tolower(input));
                 _state = header_name;
                 return indeterminate;
             }
@@ -213,7 +232,7 @@ tribool RequestParser::consume(Request& req, char input)
             else {
                 _state = header_value;
                 _value.clear();
-                _value.push_back(input);
+                _value.push_back(tolower(input));
                 return indeterminate;
             }
         case header_name:
@@ -226,7 +245,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return false;
             }
             else {
-                _name.push_back(input);
+                _name.push_back(tolower(input));
                 return indeterminate;
             }
         case space_before_header_value:
@@ -241,8 +260,8 @@ tribool RequestParser::consume(Request& req, char input)
             }
         case header_value:
             if (input == '\r') {
-                req.headers[_name] = _value;
-                if (_name == "Content-Length") {
+                req.addHeader(_name, _value);
+                if (_name == "content-length") {
                     istringstream(_value) >> _length;
                 }
                 _state = expecting_newline_2;
@@ -253,7 +272,7 @@ tribool RequestParser::consume(Request& req, char input)
                 return false;
             }
             else {
-                _value.push_back(input);
+                _value.push_back(tolower(input));
                 return indeterminate;
             }
         case expecting_newline_2:
@@ -269,10 +288,11 @@ tribool RequestParser::consume(Request& req, char input)
             if (input == '\n') {
                 if(_length) {
                     _state = payload;
-                    req.payload.clear();
+                    _payload.clear();
                     return indeterminate;
                 }
                 else {
+                    req.setContent(_payload);
                     reset();
                     return true;
                 }
@@ -280,10 +300,12 @@ tribool RequestParser::consume(Request& req, char input)
             else
                 return false;
         case payload:
-            req.payload.push_back(input);
-            if(req.payload.size() < _length)
+            _payload.push_back(input);
+            if(_payload.size() < _length)
                 return indeterminate;
             else {
+                req.setContent(_payload);
+                _payload.clear();
                 reset();
                 return true;
             }
@@ -314,4 +336,34 @@ bool RequestParser::is_tspecial(int c) {
 
 bool RequestParser::is_digit(int c) {
     return c >= '0' && c <= '9';
+}
+
+bool RequestParser::urlDecode(const std::string& in, std::string& out) const {
+    out.clear();
+    out.reserve(in.size());
+    for (size_t i = 0; i < in.size(); ++i) {
+        if (in[i] == '%') {
+            if (i + 3 <= in.size()) {
+                int value = 0;
+                std::istringstream is(in.substr(i + 1, 2));
+                if (is >> std::hex >> value) {
+                    out += static_cast<char>(value);
+                    i += 2;
+                }
+                else {
+                    return false;
+                }
+            }
+            else {
+                return false;
+            }
+        }
+        else if (in[i] == '+') {
+            out += ' ';
+        }
+        else {
+            out += in[i];
+        }
+    }
+    return true;
 }

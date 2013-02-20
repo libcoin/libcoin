@@ -72,6 +72,8 @@ public:
     
     /// Returns a list of commands that are processed by this filter
     virtual Commands commands() { std::set<std::string> c; return c; }
+    
+    virtual ~Filter() {}
 };
 
 typedef boost::shared_ptr<Filter> filter_ptr;

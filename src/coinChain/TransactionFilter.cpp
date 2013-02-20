@@ -91,7 +91,7 @@ void TransactionFilter::process(Transaction& tx, Peers peers) {
     Inventory inv(MSG_TX, tx.getHash());
     CDataStream payload;
     payload << tx;
-    bool fMissingInputs = false;
+    //    bool fMissingInputs = false;
     try {
         _blockChain.claim(tx);
         log_info("accepted txn: %s", tx.getHash().toString().substr(0,10));

@@ -47,7 +47,7 @@ public:
         async_post(url, content, *this, headers);
         _io_service.run();
         if(_error)
-            _reply.content += _error.message();
+            _reply.content() += _error.message();
         // parse the reply
         return _reply;
     }

@@ -41,7 +41,7 @@ public:
     natpmpresp_t response;
 };
 
-PortMapper::PortMapper(boost::asio::io_service& io_service, unsigned short port, unsigned int repeat_interval) : _portmap_state(NONE), _state(IDGPORTMAP), _port(port), _repeat_interval(repeat_interval), _repeat_timer(io_service), _idg_trying(false), _impl(new Impl) {    
+PortMapper::PortMapper(boost::asio::io_service& io_service, unsigned short port, unsigned int repeat_interval) : _state(IDGPORTMAP), _port(port), _repeat_interval(repeat_interval), _repeat_timer(io_service), _idg_trying(false), _impl(new Impl) {    
 }
 
 void PortMapper::start() {

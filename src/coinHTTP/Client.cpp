@@ -15,6 +15,7 @@
  */
 
 #include <coinHTTP/Client.h>
+#include <coinHTTP/Request.h>
 
 #include <iostream>
 #include <istream>
@@ -32,13 +33,13 @@ using namespace boost;
 using namespace boost::asio;
 using namespace boost::asio::ip;
 
-Client::Client() : _context(_io_service, ssl::context::sslv23), _resolver(_io_service), _socket(_io_service), _ssl_socket(_io_service, _context), _completion_handler(*this) {
+Client::Client() : _context(_io_service, ssl::context::sslv23), _resolver(_io_service), _socket(_io_service), _ssl_socket(_io_service, _context), _reply(Request()), _completion_handler(*this) {
     _context.set_options(ssl::context::no_sslv2);
     //    _ssl_socket.set_verify_mode(ssl::verify_none);
     _context.set_verify_mode(ssl::context_base::verify_none);
 }
 
-Client::Client(io_service& io_service) : _context(io_service, ssl::context::sslv23), _resolver(io_service), _socket(io_service), _ssl_socket(io_service, _context), _completion_handler(*this) {
+Client::Client(io_service& io_service) : _context(io_service, ssl::context::sslv23), _resolver(io_service), _socket(io_service), _ssl_socket(io_service, _context), _reply(Request()), _completion_handler(*this) {
     _context.set_options(ssl::context::no_sslv2);
     //    _ssl_socket.set_verify_mode(ssl::verify_none);
     _context.set_verify_mode(ssl::context_base::verify_none);
@@ -217,7 +218,7 @@ void Client::handle_read_status_line(const system::error_code& err, std::size_t 
         response_stream >> http_version;
         unsigned int status_code;
         response_stream >> status_code;
-        _reply.status = (Reply::status_type)status_code;
+        _reply.status((Reply::Status)status_code);
         std::string status_message;
         std::getline(response_stream, status_message);
         if (!response_stream || http_version.substr(0, 5) != "HTTP/") {
@@ -257,14 +258,14 @@ void Client::handle_read_headers(const system::error_code& err, std::size_t byte
             string key = header.substr(0, colon);
             if (colon != string::npos) {
                 string value = header.substr(colon + 2); // skip colon and whitespace
-                _reply.headers[key] = value;
+                _reply.headers()[key] = value;
             }
         }
         
         // Store whatever content we already have to output.
         stringstream ss;
         ss << &_response;
-        _reply.content += ss.str();
+        _reply.content() += ss.str();
         
         // Start reading remaining data until EOF.
         if(isSecure())
@@ -287,7 +288,7 @@ void Client::handle_read_content(const boost::system::error_code& err, std::size
         // Write all of the data that has been read so far.
         stringstream ss;
         ss << &_response;
-        _reply.content += ss.str();
+        _reply.content() += ss.str();
         
         // Continue reading remaining data until EOF.
         if(isSecure())

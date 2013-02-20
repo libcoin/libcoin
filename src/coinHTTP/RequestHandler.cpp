@@ -16,7 +16,6 @@
 
 #include <coinHTTP/RequestHandler.h>
 #include <coinHTTP/MimeTypes.h>
-#include <coinHTTP/Reply.h>
 #include <coinHTTP/Request.h>
 #include <coinHTTP/Method.h>
 #include <coinHTTP/RPC.h>
@@ -217,45 +216,6 @@ string Auth::decode64(string encoded_string) {
     return ret;
 }
 
-/*
-string Auth::encode64(string s) {
-    BIO *bmem, *b64;
-    BUF_MEM *bptr;
-    
-    b64 = BIO_new(BIO_f_base64());
-    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
-    bmem = BIO_new(BIO_s_mem());
-    b64 = BIO_push(b64, bmem);
-    BIO_write(b64, s.c_str(), s.size());
-    BIO_flush(b64);
-    BIO_get_mem_ptr(b64, &bptr);
-
-    cout << "Base64 length: " << bptr->length << endl;
-    
-    string result(bptr->data, bptr->length);
-    BIO_free_all(b64);
-    
-    return result;
-}
-
-string Auth::decode64(string s) {
-    BIO *b64, *bmem;
-    
-    char* buffer = static_cast<char*>(calloc(s.size(), sizeof(char)));
-    
-    b64 = BIO_new(BIO_f_base64());
-    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
-    bmem = BIO_new_mem_buf(const_cast<char*>(s.c_str()), s.size());
-    bmem = BIO_push(b64, bmem);
-    BIO_read(bmem, buffer, s.size());
-    BIO_free_all(bmem);
-    
-    string result(buffer);
-    free(buffer);
-    return result;
-}
-*/
-
 RequestHandler::RequestHandler(const string& doc_root) : _doc_root(doc_root) {
     registerMethod(method_ptr(new DirtyDocCache(*this)));
     registerMethod(method_ptr(new Help(*this)));
@@ -271,261 +231,124 @@ void RequestHandler::unregisterMethod(const string name) {
     _auths.erase(name);
 }
 
-void RequestHandler::handleGET(const Request& req, Reply& rep) {
-    // Decode url to path.
-    string request_path;
-    if (!urlDecode(req.uri, request_path)) {
-        rep = Reply::stock_reply(Reply::bad_request);
-        return;
-    }
-
-    // split in request path and query
-    string query;
-    size_t search_separator = request_path.find("?");
-    if (search_separator != string::npos) {
-        query = request_path.substr(search_separator + 1, string::npos); // exclude the '?'
-        request_path = request_path.substr(0, search_separator);
-    }
+void RequestHandler::async_exec(const Request& req, Reply& rep, const CompletionHandler& handler) {
+    // first check in async_exec is if we need to execute or just to access disk
+    // the methods takes precedense, they are installed in a path and and by name
+    // valid calls are:
+    // POST /myservice HTTP/1.1
+    // ...
+    // { "jsonrpc" : "2.0", "method" : "sum", "params" : [17, 25] }
+    // or
+    // GET /myservice/sum?a=17&b=25 HTTP/1.1 - note! not supported
+    // GET /myservice/sum?1=17&2=25 HTTP/1.1 - note! not supported 
+    // GET /myservice/sum?17&25 HTTP/1.1
+    // This means to parse this we need to check if this is a post or a get
+    // If it is a GET, we fill in the rpc stuff from the call line - i.e. path, method, we then check if it is an installed method, if so we call it, else we try to do a read from disk, and else we just reply 404
+    // If it is a POST, we fill in the rpc call from parsing the content, only then do we do a lookup for method, if found we call it, else 404
     
-    // Request path must be absolute and not contain "..".
-    if (request_path.empty() || request_path[0] != '/' || request_path.find("..") != string::npos) {
-        rep = Reply::stock_reply(Reply::bad_request);
-        return;
-    }
-    
-    // If path ends in slash (i.e. is a directory) then add "index.html".
-    if (request_path[request_path.size() - 1] == '/') {
-        request_path += "index.html";
-    }    
-    
-    // Determine the file extension - if there is no extension, first look up the request an RPC call
-    size_t last_slash_pos = request_path.find_last_of("/");
-    size_t last_dot_pos = request_path.find_last_of(".");
-    string extension;
-    if (last_dot_pos == string::npos) { // could be an RPC call - do a lookup in methods
-        string method;
-        size_t slash_separator = request_path.rfind("/");
-        if (slash_separator != string::npos) {
-            method = request_path.substr(slash_separator + 1, string::npos); // exclude the '/'
-                                                                             // Check if the method requires authorization
-                                                                             // Find method
-            Methods::iterator m = _methods.find(method);
-            if (m != _methods.end()) {
-                RPC rpc(req);
-                try {
-                    if(_auths.count(method)) {
-                        if(req.headers.count("Authorization") == 0)
-                            throw Reply::stock_reply(Reply::unauthorized);
-                        string basic_auth = req.headers.find("Authorization")->second;
-                        if (basic_auth.length() > 9 && basic_auth.substr(0,6) != "Basic ")
-                            throw Reply::stock_reply(Reply::unauthorized);
-                        if(!_auths[method].valid(basic_auth.substr(6)))
-                            throw Reply::stock_reply(Reply::unauthorized);                    
-                    }
-                    
-                    // parse the query
-                    vector<string> args;
-                    if (args.size())
-                        split(args, query, is_any_of("&"));
-                    rpc.parse(method, args);
-                    try {
-                        // Execute
-                        rpc.execute(*(m->second));                    
-                    }
-                    catch (std::exception& e) {
-                        rpc.setError(RPC::error(RPC::unknown_error, e.what()));
-                    }
-                }
-                catch (Object& err) {
-                    rpc.setError(err);
-                }
-                catch (std::exception& e) {
-                    rpc.setError(RPC::error(RPC::parse_error, e.what()));
-                }
-                catch (Reply err) {
-                    rep = err;
-                    return;
-                }
-                // Form reply header and content
-                rep.content = rpc.getContent();
-                // rpc.setContent(rep.content);                    
-                rep.headers["Content-Length"] = lexical_cast<string>(rep.content.size());
-                rep.headers["Content-Type"] = "application/json";
-                rep.status = rpc.getStatus();
-                return;                
-            }
+    try {
+        // try to resolve the method
+        RPC rpc(req); // this will parse the content / uri and return an RPC object - alternatively it will throw en rpc error object
+        
+        Methods::iterator m = _methods.find(rpc.method());
+        if (m != _methods.end()) {
+            // check authorization
+            if (_auths.count(rpc.method()) && !_auths[rpc.method()].valid(req.basic_auth()))
+                throw Reply::unauthorized;
+            
+            // prepare for deferred execution
+            rep.setMethod(m->second.get());
+            
+            // the method object also has a dispatch handler - we use this through rep.dispatch
+            
+            rep.dispatch(handler);
+            return;
         }
-        request_path += "/index.html";
-        last_slash_pos = request_path.find_last_of("/");
-        last_dot_pos = request_path.find_last_of(".");
-    }
-    if (last_dot_pos > last_slash_pos) {
-        extension = request_path.substr(last_dot_pos + 1);
-    }
-    
-    // First check the cache.
-    string& content = _doc_cache[request_path];
-    // We support one simple alternative - if the _doc_root begins with a "<" we assume it is not a 
-    // path but a html document it selves - then we simple return this!
-    if (_doc_root.size() > 0 && _doc_root[0] == '<')
-        content = _doc_root;
-
-    // Not cached - load and cache it
-    if(content.size() == 0) {
-        // Open the file to send back.
-        string full_path = _doc_root + request_path;
-        ifstream is(full_path.c_str(), ios::in | ios::binary);
-        if (is) {
-            char buf[512];
-            while (is.read(buf, sizeof(buf)).gcount() > 0)
-                content.append(buf, is.gcount());            
-        }
-        else {
-            // Check if the requested resource is stored as a collection of files - we encode collections by adding a trailing _ to the extension
-            string collection_name = full_path + "_";
-            ifstream collection(collection_name.c_str(), ios::in | ios::binary);
-            if(!collection) {
-                _doc_cache.erase(request_path);
-                rep = Reply::stock_reply(Reply::not_found);
-                return;
+        else if (!req.is_get())
+            throw rpc.response(RPC::method_not_found);
+        
+        // assume that it is a get looking for data
+        
+        // Request path must be absolute and not contain "..".
+        std::string path = req.path();
+        if (path.empty() || path[0] != '/' || path.find("..") != string::npos)
+            throw Reply::bad_request;
+        
+        
+        // Determine the file extension - if there is no extension, first look up the request an RPC call
+        size_t last_slash_pos = path.find_last_of("/");
+        size_t last_dot_pos = path.find_last_of(".");
+        string extension;
+        if (last_dot_pos == string::npos) { // could be an RPC call - do a lookup in methods
+            path += "/index.html";
+            last_slash_pos = path.find_last_of("/");
+            last_dot_pos = path.find_last_of(".");
+            if (last_dot_pos > last_slash_pos) {
+                extension = path.substr(last_dot_pos + 1);
             }
             
-            // "collection" points to a set of files that should be concatenated
-            while (!collection.eof()) {
-                string path_name = "";
-                getline(collection, path_name);
-                
-                // Construct file name.
-                string full_path = _doc_root + request_path.substr(0, last_slash_pos+1) + path_name;
-                ifstream part(full_path.c_str(), ios::in | ios::binary);
-                if (part) {
+            // First check the cache.
+            string& content = _doc_cache[path];
+            // We support one simple alternative - if the _doc_root begins with a "<" we assume it is not a
+            // path but a html document it selves - then we simple return this!
+            if (_doc_root.size() > 0 && _doc_root[0] == '<')
+                content = _doc_root;
+            
+            // Not cached - load and cache it
+            if(content.size() == 0) {
+                // Open the file to send back.
+                string full_path = _doc_root + path;
+                ifstream is(full_path.c_str(), ios::in | ios::binary);
+                if (is) {
                     char buf[512];
-                    while (part.read(buf, sizeof(buf)).gcount() > 0)
-                        content.append(buf, part.gcount());        
+                    while (is.read(buf, sizeof(buf)).gcount() > 0)
+                        content.append(buf, is.gcount());
                 }
-                else
-                    cerr << "Encountered no such file: " << full_path << ", In trying to read file collection: " << request_path << " - Ignoring" << endl;
-            }
-            
-        }
-    }
-    
-    // Fill out the reply to be sent to the client.
-    rep.status = Reply::ok;
-    rep.content = content;
-    rep.headers["Content-Length"] = lexical_cast<string>(rep.content.size());
-    rep.headers["Content-Type"] = MimeTypes::extension_to_type(extension);
-}
-
-void RequestHandler::handlePOST(const Request& req, Reply& rep) {
-    // use the header Content-Type to lookup a suitable application
-    if(req.headers.count("Content-Type")) {
-        const string mime = req.headers.find("Content-Type")->second;
-        if(mime.find("application/json") != string::npos) {
-            // This is a JSON RPC call - parse and execute!
-
-            RPC rpc(req);
-            try {
-                rpc.parse(req.payload);
-
-                // Check if the method requires authorization
-                if(_auths.count(rpc.method())) {
-                    if(req.headers.count("Authorization") == 0)
-                        throw Reply::stock_reply(Reply::unauthorized);
-                    string basic_auth = req.headers.find("Authorization")->second;
-                    if (basic_auth.length() > 9 && basic_auth.substr(0,6) != "Basic ")
-                        throw Reply::stock_reply(Reply::unauthorized);
-                    if(!_auths[rpc.method()].valid(basic_auth.substr(6)))
-                        throw Reply::stock_reply(Reply::unauthorized);                    
-                }
+                else {
+                    // Check if the requested resource is stored as a collection of files - we encode collections by adding a trailing _ to the extension
+                    string collection_name = full_path + "_";
+                    ifstream collection(collection_name.c_str(), ios::in | ios::binary);
+                    if(!collection) {
+                        _doc_cache.erase(path);
+                        throw Reply::not_found;
+                    }
                     
-                // Find method
-                Methods::iterator m = _methods.find(rpc.method());
-                if (m == _methods.end())
-                    throw RPC::error(RPC::method_not_found);
-                
-                try {
-                    // Execute
-                    rpc.execute(*(m->second));                    
+                    // "collection" points to a set of files that should be concatenated
+                    while (!collection.eof()) {
+                        string path_name = "";
+                        getline(collection, path_name);
+                        
+                        // Construct file name.
+                        string full_path = _doc_root + path.substr(0, last_slash_pos+1) + path_name;
+                        ifstream part(full_path.c_str(), ios::in | ios::binary);
+                        if (part) {
+                            char buf[512];
+                            while (part.read(buf, sizeof(buf)).gcount() > 0)
+                                content.append(buf, part.gcount());
+                        }
+                        else
+                            cerr << "Encountered no such file: " << full_path << ", In trying to read file collection: " << path << " - Ignoring" << endl;
+                    }
                 }
-                catch (std::exception& e) {
-                    rpc.setError(RPC::error(RPC::unknown_error, e.what()));
-                }
             }
-            catch (Object& err) {
-                rpc.setError(err);
-            }
-            catch (std::exception& e) {
-                rpc.setError(RPC::error(RPC::parse_error, e.what()));
-            }
-            catch (Reply err) {
-                rep = err;
-                return;
-            }
-            // Form reply header and content
-            rep.content = rpc.getContent();
-            // rpc.setContent(rep.content);                    
-            rep.headers["Content-Length"] = lexical_cast<string>(rep.content.size());
-            rep.headers["Content-Type"] = "application/json";
-            rep.status = rpc.getStatus();
-            return;
-        }
-        else if(mime.find("text/plain") != string::npos) {
-            // This is a form POST - action is method, content is "params=<params>" 
             
-            RPC rpc(req);
-            try {
-                size_t slash = req.uri.rfind("/");
-                string action; 
-                if (slash != string::npos) action = req.uri.substr(slash + 1);
-                
-                rpc.parse(action, req.payload);
-                
-                // Check if the method requires authorization
-                if(_auths.count(rpc.method())) {
-                    if(req.headers.count("Authorization") == 0)
-                        throw Reply::stock_reply(Reply::unauthorized);
-                    string basic_auth = req.headers.find("Authorization")->second;
-                    if (basic_auth.length() > 9 && basic_auth.substr(0,6) != "Basic ")
-                        throw Reply::stock_reply(Reply::unauthorized);
-                    if(!_auths[rpc.method()].valid(basic_auth.substr(6)))
-                        throw Reply::stock_reply(Reply::unauthorized);                    
-                }
-                
-                // Find method
-                Methods::iterator m = _methods.find(rpc.method());
-                if (m == _methods.end())
-                    throw RPC::error(RPC::method_not_found);
-                
-                try {
-                    rpc.execute(*(m->second));                    
-                }
-                catch (std::exception& e) {
-                    rpc.setError(RPC::error(RPC::unknown_error, e.what()));
-                }
-            }
-            catch (Object& err) {
-                rpc.setError(err);
-            }
-            catch (std::exception& e) {
-                rpc.setError(RPC::error(RPC::parse_error, e.what()));
-            }
-            catch (Reply err) {
-                rep = err;
-                return;
-            }
-            // Form reply header and content
-            rep.content = rpc.getPlainContent();
-            // rpc.setContent(rep.content);                    
-            rep.headers["Content-Length"] = lexical_cast<string>(rep.content.size());
-            rep.headers["Content-Type"] = "text/plain";
-            rep.status = rpc.getStatus();
-            return;
+            // Fill out the reply to be sent to the client.
+            rep.setContentAndMime(content, MimeTypes::extension_to_type(extension));
         }
-        rep = Reply::stock_reply(Reply::not_implemented);
-        return;
+        else
+            throw Reply::bad_request;
     }
-    rep = Reply::stock_reply(Reply::bad_request);
+    catch (Reply::Status status) {
+        rep.status(status);
+    }
+    catch (json_spirit::Object& err) {
+        rep.setContentAndMime(write(err), "application/json");
+    }
+    catch (...) {
+        rep.status(Reply::not_found);
+    }
+    handler();
+    return;
 }
 
 void RequestHandler::clearDocCache() {
@@ -557,36 +380,4 @@ std::string RequestHandler::getDocCacheStats(int level) {
             break;
     }
     return stats;
-}
-
-
-
-bool RequestHandler::urlDecode(const string& in, string& out) {
-    out.clear();
-    out.reserve(in.size());
-    for (size_t i = 0; i < in.size(); ++i) {
-        if (in[i] == '%') {
-            if (i + 3 <= in.size()) {
-                int value = 0;
-                istringstream is(in.substr(i + 1, 2));
-                if (is >> hex >> value) {
-                    out += static_cast<char>(value);
-                    i += 2;
-                }
-                else {
-                    return false;
-                }
-            }
-            else {
-                return false;
-            }
-        }
-        else if (in[i] == '+') {
-            out += ' ';
-        }
-        else {
-            out += in[i];
-        }
-    }
-    return true;
 }

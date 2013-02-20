@@ -19,15 +19,20 @@
 
 #include <coinHTTP/Export.h>
 #include <coinHTTP/Header.h>
+#include <coinHTTP/Method.h>
 
 #include <string>
+
 #include <boost/asio.hpp>
 
 /// A reply to be sent to a client.
-struct Reply
-{
+class Reply {
+    Reply& operator= (const Reply& rep);
+public:
+    Reply(const Request& request) : _request(request), _method(NULL) {}
+    
     /// The status of the reply.
-    enum status_type {
+    enum Status {
         ok = 200,
         created = 201,
         accepted = 202,
@@ -45,18 +50,41 @@ struct Reply
         bad_gateway = 502,
         service_unavailable = 503,
         gateway_timeout = 504
-    } status;
+    };
+
+    void status(Status s);
     
-    /// The headers to be included in the reply.
-    Headers headers;
+    Status status() const { return _status; }
     
-    /// The content to be sent in the reply.
-    std::string content;
+    std::string& content() {
+        return _content;
+    }
+    
+    size_t content_length() const {
+        return _content.size();
+    }
+    
+    Headers& headers() {
+        return _headers;
+    }
+
+    void setContentAndMime(const std::string& content, const std::string& mime);
+    
+    void setMethod(Method* method) {
+        _method = method;
+    }
+    
+    /// dispatch
+    typedef boost::function<void (void)> CompletionHandler;
+    void dispatch(const CompletionHandler& handler);
+    
+    void exec(const CompletionHandler& handler);
     
     /// reset the reply (used for keep_alive)
     void reset() {
-        headers.clear();
-        content.clear();
+        _method = NULL;
+        _headers.clear();
+        _content.clear();
     }
     
     /// Convert the reply into a vector of buffers. The buffers do not own the
@@ -65,7 +93,23 @@ struct Reply
     std::vector<boost::asio::const_buffer> to_buffers();
     
     /// Get a stock reply.
-    static Reply stock_reply(status_type status);
+    // static Reply stock_reply(status_type status);
+    
+private:
+    /// The status
+    Status _status;
+    
+    /// The Request generating this reply
+    const Request& _request;
+    
+    /// Optional method for creating the content of this reply
+    Method* _method;
+    
+    /// The headers to be included in the reply.
+    Headers _headers;
+
+    /// The content to be sent in the reply.
+    std::string _content;
 };
 
 #endif // HTTP_REPLY_H

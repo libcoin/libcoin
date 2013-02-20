@@ -36,13 +36,13 @@ public:
     virtual json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp, const Request& request) {
         return operator()(params, fHelp); // ignore the extra request
     }
-    virtual json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp) = 0;
+    virtual json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp) { return json_spirit::Value::null; };
     
-    typedef boost::function<void (json_spirit::Value)> MethodDone;
-
-    /// Non blocking version - pr. default it will be blocking, though
-    virtual void operator()(const json_spirit::Array& params, bool fHelp, MethodDone onDone) {
-        onDone(operator()(params, fHelp));
+    /// overload dispatch to enable dispatch from another thread
+    //    template <typename CompletionHandler>
+    typedef boost::function<void (void)> CompletionHandler;
+    virtual void dispatch(const CompletionHandler& f) {
+        f();
     }
     
     /// Get the name of the method. Default implemented by lowercase typeid name. - REQUIRED
@@ -64,6 +64,7 @@ public:
     
     virtual const std::string extractName() const;
 
+    virtual ~Method() {};
 private:
     std::string _name;
 };

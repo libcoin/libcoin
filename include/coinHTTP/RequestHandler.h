@@ -21,10 +21,12 @@
 #include <coinHTTP/Method.h>
 #include <coinHTTP/Header.h>
 
+#include <boost/system/error_code.hpp>
+
 #include <string>
 
-struct Reply;
-struct Request;
+class Reply;
+class Request;
 
 class COINHTTP_EXPORT Auth
 {
@@ -91,11 +93,9 @@ public:
     /// Const list of methods
     const Methods& getMethods() const { return _methods; }
     
-    /// Handle a GET request and produce a reply.
-    void handleGET(const Request& req, Reply& rep);
-    
-    /// Handle a POST request and produce a reply.
-    void handlePOST(const Request& req, Reply& rep);
+    /// Handle a POST request asyncronously
+    typedef boost::function<void (void)> CompletionHandler;
+    void async_exec(const Request& req, Reply& rep, const CompletionHandler& handler);
     
     /// Clear the document cache.
     void clearDocCache();
@@ -113,11 +113,7 @@ private:
     
     Methods _methods;
     
-    Auths _auths;
-    
-    /// Perform URL-decoding on a string. Returns false if the encoding was
-    /// invalid.
-    static bool urlDecode(const std::string& in, std::string& out);
+    Auths _auths;    
 };
 
 #endif // HTTP_REQUEST_HANDLER_HPP

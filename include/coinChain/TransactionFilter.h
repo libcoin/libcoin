@@ -42,6 +42,7 @@ public:
     class Listener : private boost::noncopyable {
     public:
         virtual void operator()(const Transaction&) = 0;
+        virtual ~Listener() {}
     };
     typedef boost::shared_ptr<Listener> listener_ptr;
     typedef std::set<listener_ptr> Listeners;

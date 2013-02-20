@@ -37,8 +37,7 @@ class Block;
 typedef std::vector<Transaction> TransactionList;
 typedef std::vector<uint256> MerkleBranch;
 
-class COIN_EXPORT Block
-{
+class COIN_EXPORT Block {
 public:
     Block() {
         setNull();
@@ -126,6 +125,8 @@ public:
     const uint256 getMerkleRoot() const { return _merkleRoot; }
 
     const int getTime() const { return _time; }
+    
+    void setTime(int time) { _time = time; }
     
     const int getBits() const { return _bits; }
     

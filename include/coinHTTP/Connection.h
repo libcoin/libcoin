@@ -18,8 +18,8 @@
 #define HTTP_CONNECTION_HPP
 
 #include <coinHTTP/Export.h>
-#include <coinHTTP/Reply.h>
 #include <coinHTTP/Request.h>
+#include <coinHTTP/Reply.h>
 #include <coinHTTP/RequestHandler.h>
 #include <coinHTTP/RequestParser.h>
 
@@ -63,7 +63,7 @@ private:
     void log_request() const;
 
     /// Secure connectiontions need to perform a handshake first.
-    virtual void handle_handshake(const boost::system::error_code& error);
+    void handle_handshake(const boost::system::error_code& error);
     
     /// Handle completion of a read operation.
     void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
@@ -71,7 +71,9 @@ private:
     /// Handle completion of a wait operation - some rpc methods support waiting for a certain state
     void handle_wait(const boost::system::error_code& e);
     
-    /// Handle completion of a write operation.
+    void handle_exec();
+
+        /// Handle completion of a write operation.
     void handle_write(const boost::system::error_code& e, std::size_t bytes_transferred);
     
     /// Handle keep alive timeouts

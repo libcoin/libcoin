@@ -272,7 +272,7 @@ std::pair<Claims::Spents, int64> BlockChain::try_claim(const Transaction& txn, b
             
             value_in += coin.output.value();
             
-            if (verify) // this is invocation only - the actual verification takes place in other threads
+            if (verify)
                 if(!VerifySignature(coin.output, txn, in_idx, strictPayToScriptHash, 0))
                     throw Error("Verify Signature failed with verifying: " + txn.getHash().toString());
         }
@@ -1098,6 +1098,8 @@ Block BlockChain::getBlockTemplate(Payees payees, Fractions fractions, Fractions
     
     for (Transactions::const_iterator tx = txns.begin(); tx != txns.end(); ++tx)
         block.addTransaction(*tx);
+    
+    block.updateMerkleTree();
     
     return block;
 }

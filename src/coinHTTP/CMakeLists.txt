@@ -50,6 +50,7 @@ SET(TARGET_SRC
     Method.cpp
     MimeTypes.cpp
     Reply.cpp
+    Request.cpp
     RequestHandler.cpp
     RequestParser.cpp
     RPC.cpp

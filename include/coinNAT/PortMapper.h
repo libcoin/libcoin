@@ -55,12 +55,6 @@ private:
     boost::tribool repPMPportmap();
     
 private:
-    enum PortMapState {
-        NONE = 0,
-        UPNPIDG,
-        NATPMP
-    } _portmap_state;
-
     enum State {
         IDGPORTMAP,
         IDGWAITPORTMAP,
