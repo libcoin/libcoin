@@ -45,6 +45,8 @@ public:
     /// Construct a secure connection with the given io_service and ssl context.
     explicit Connection(boost::asio::io_service& io_service, boost::asio::ssl::context& context, ConnectionManager& manager, RequestHandler& handler, std::ostream& access_log);
     
+    ~Connection() { }
+    
     /// Get the socket associated with the connection.
     boost::asio::ip::tcp::socket& socket();
     

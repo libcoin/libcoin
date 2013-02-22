@@ -162,6 +162,21 @@ bool Block::checkHeightInCoinbase(int height) const {
     return std::equal(expect.begin(), expect.end(), coinbase.begin());
 }
 
+int Block::getHeight() const {
+    Script coinbase = getTransaction(0).getInput(0).signature();
+    Script::const_iterator cbi = coinbase.begin();
+    opcodetype opcode;
+    std::vector<unsigned char> data;
+    // We simply ignore the first opcode and data, however, it is the height...
+    coinbase.getOp(cbi, opcode, data);
+    if (opcode < OP_PUSHDATA1) {
+        CBigNum height;
+        height.setvch(data);
+        return height.getint();
+    }
+    return 0;
+}
+
 bool Block::checkSpendablesRootInCoinbase(uint256 hash) const {
     try {
         Script coinbase = getTransaction(0).getInput(0).signature();
@@ -177,5 +192,23 @@ bool Block::checkSpendablesRootInCoinbase(uint256 hash) const {
         return (hash == hash_from_coinbase);
     } catch (...) {
         return false;
+    }
+}
+
+uint256 Block::getSpendablesRoot() const {
+    try {
+        Script coinbase = getTransaction(0).getInput(0).signature();
+        Script::const_iterator cbi = coinbase.begin();
+        opcodetype opcode;
+        std::vector<unsigned char> data;
+        // We simply ignore the first opcode and data, however, it is the height...
+        coinbase.getOp(cbi, opcode, data);
+        
+        // this should be an opcode for a number
+        coinbase.getOp(cbi, opcode, data);
+        uint256 hash_from_coinbase(data);
+        return hash_from_coinbase;
+    } catch (...) {
+        return uint256(0);
     }
 }

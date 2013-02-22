@@ -34,9 +34,9 @@ public:
     enum Error {
         unknown_error = -1,
         invalid_request = -32600,
-        method_not_found = -36001,
-        invalid_params = -36002,
-        internal_error = -36003,
+        method_not_found = -32601,
+        invalid_params = -32602,
+        internal_error = -32603,
         parse_error = -32700
     };
     

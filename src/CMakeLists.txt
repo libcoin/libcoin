@@ -13,8 +13,7 @@ FOREACH( mylibfolder
         coinHTTP
         coinNAT
         coinWallet 
-        coinMine 
-        coinStat 
+        coinPool 
     )
 
     ADD_SUBDIRECTORY(${mylibfolder})

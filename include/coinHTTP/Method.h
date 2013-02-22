@@ -41,6 +41,9 @@ public:
     /// overload dispatch to enable dispatch from another thread
     //    template <typename CompletionHandler>
     typedef boost::function<void (void)> CompletionHandler;
+    virtual void dispatch(const CompletionHandler& f, const Request& request) {
+        dispatch(f);
+    }
     virtual void dispatch(const CompletionHandler& f) {
         f();
     }

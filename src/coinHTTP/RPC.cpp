@@ -185,9 +185,18 @@ void RPC::parse(std::string action, std::vector<std::string> args) {
     _params = Array();
     BOOST_FOREACH(const string& arg, args) {
         _params.push_back(arg);
-    }    
+    }
 }
-
+/*
+void RPC::parse(std::string path, std::string query) {
+    // get the command
+    _method = action;
+    _params = Array();
+    BOOST_FOREACH(const string& arg, args) {
+        _params.push_back(arg);
+    }
+}
+*/
 /*
 void RPC::setContent(string& content) {
     // Generate JSON RPC 2.0 reply

@@ -114,9 +114,11 @@ public:
     
     /// Version 2 check according to BIP 0034: Height should be in the coinbase
     bool checkHeightInCoinbase(int height) const;
+    int getHeight() const;
 
     /// Version 3 check (no BIP): Root hash of all Spendables should be in the coinbase (following the height)
     bool checkSpendablesRootInCoinbase(uint256 hash) const;
+    uint256 getSpendablesRoot() const;
     
     const int getVersion() const { return _version; }
     

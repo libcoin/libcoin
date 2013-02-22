@@ -132,6 +132,10 @@ public:
 
     void claim(const Transaction& txn, bool verify = true);
     
+    size_t claim_count() const {
+        return _claims.count();
+    }
+    
     /// C O I N S
     
     bool isSpent(Coin coin) const;

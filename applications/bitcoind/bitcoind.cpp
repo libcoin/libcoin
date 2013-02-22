@@ -24,8 +24,9 @@
 #include <coinWallet/Wallet.h>
 #include <coinWallet/WalletRPC.h>
 
-//#include <coinMine/Miner.h>
-//#include <coinMine/MinerRPC.h>
+#include <coinPool/GetWork.h>
+#include <coinPool/GetBlockTemplate.h>
+#include <coinPool/SubmitBlock.h>
 
 #include <coinNAT/PortMapper.h>
 
@@ -42,311 +43,74 @@ using namespace boost;
 using namespace boost::program_options;
 using namespace json_spirit;
 
-/// Pool is an interface for running a pool. It is a basis for the pool rpc commands: 'getwork', 'getblocktemplate' and 'submitblock'
-/// The Pool requests a template from the blockchain - i.e. composes a block candidate from the unconfirmed transactions. It stores the
-/// candidate mapped by its merkletree root.
-/// A solved block submitted either using submitblock or getwork looks up the block and replaces the nonce/time/coinbase
-class Pool {
-public:
-    /// Initialize Pool with a node and a payee, i.e. an abstraction of a payee address generator
-    Pool(Node& node, Payee& payee) : _node(node), _blockChain(node.blockChain()), _payee(payee) {
-        // install a blockfilter to be notified each time a new block arrives invalidating the current mining effort
-    }
-
-    // map of merkletree hash to block templates
-    typedef std::map<uint256, Block> BlockTemplates;
-
-    virtual Block getBlockTemplate() {
-        BlockChain::Payees payees;
-        payees.push_back(_payee.current_script());
-        Block block = _blockChain.getBlockTemplate(payees);
-        // add the block to the list of work
-        return block;
-    }
-    
-    virtual bool submitBlock(const Block& header, const Script coinbase = Script()) {
-        // Get saved block
-        Pool::BlockTemplates::iterator templ = _templates.find(header.getMerkleRoot());
-        if (templ == _templates.end())
-            return false;
-        Block& block = templ->second;
-        
-        block.setTime(header.getTime());
-        block.setNonce(header.getNonce());
-
-        if (coinbase.size()) {
-            Input coinbase_input = block.getTransaction(0).getInput(0);
-            coinbase_input.signature(coinbase);
-            block.getTransaction(0).replaceInput(0, coinbase_input);
-            block.updateMerkleTree();
-        }
-        
-        // check that the work is indeed valid
-        uint256 hash = block.getHash();
-        
-        if (hash > target())
-            return false;
-        
-        cout << "Block with hash: " << hash.toString() << " mined" << endl;
-        
-        // else ... we got a valid block!
-        if (hash > CBigNum().SetCompact(block.getBits()).getuint256() )
-            _node.post(block);
-
-        return true;
-    }
-    
-    typedef pair<Block, uint256> Work;
-
-    virtual Work getWork() {
-        unsigned int now = GetTime();
-        uint256 prev = _blockChain.getBestChain();
-        if (_templates.empty() || prev != _latest_work->second.getPrevBlock() || _latest_work->second.getTime() + 30 > now) {
-            if (_templates.empty() || prev != _latest_work->second.getPrevBlock()) {
-                _templates.clear();
-                _latest_work = _templates.end(); // reset _latest_work
-            }
-            BlockChain::Payees payees;
-            payees.push_back(_payee.current_script());
-            Block block = _blockChain.getBlockTemplate(payees);
-            _latest_work = _templates.insert(make_pair(block.getMerkleRoot(), block)).first;
-        }
-        // note that if called more often that each second there will be dublicate searches
-        _latest_work->second.setTime(now);
-        _latest_work->second.setNonce(0);
-        
-        return Work(_latest_work->second, target());
-    }
-    
-    uint256 target() const {
-        CBigNum t = CBigNum().SetCompact(_latest_work->second.getBits());
-        t *= 10000000;
-        return t.getuint256();
-    }
-    
-    boost::asio::io_service& get_io_service() { return _node.get_io_service(); }
-    
-private:
-    Node& _node;
-    const BlockChain& _blockChain;
-    Payee& _payee;
-    BlockTemplates _templates;
-    BlockTemplates::iterator _latest_work;
-};
-
-class PoolMethod : public Method {
-public:
-    PoolMethod(Pool& pool) : _pool(pool) {}
-
-    virtual void dispatch(const CompletionHandler& f) {
-        _pool.get_io_service().dispatch(f);
-    }
-    
-    void formatHashBuffers(Block& block, char* pmidstate, char* pdata, char* phash1);
-    int formatHashBlocks(void* pbuffer, unsigned int len);
-    void sha256Transform(void* pstate, void* pinput, const void* pinit);
-    inline uint32_t byteReverse(uint32_t value) {
-        value = ((value & 0xFF00FF00) >> 8) | ((value & 0x00FF00FF) << 8);
-        return (value<<16) | (value>>16);
-    }
-
-protected:
-    Pool& _pool;
-};
-
-static const unsigned int pSHA256InitState[8] =
-{0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
-
-void PoolMethod::formatHashBuffers(Block& block, char* pmidstate, char* pdata, char* phash1)
-{
-    //
-    // Pre-build hash buffers
-    //
-    struct {
-        struct unnamed2 {
-            int nVersion;
-            uint256 hashPrevBlock;
-            uint256 hashMerkleRoot;
-            unsigned int nTime;
-            unsigned int nBits;
-            unsigned int nNonce;
-        }
-        block;
-        unsigned char pchPadding0[64];
-        uint256 hash1;
-        unsigned char pchPadding1[64];
-    }
-    tmp;
-    memset(&tmp, 0, sizeof(tmp));
-    
-    tmp.block.nVersion       = block.getVersion();
-    tmp.block.hashPrevBlock  = block.getPrevBlock();
-    tmp.block.hashMerkleRoot = block.getMerkleRoot();
-    tmp.block.nTime          = block.getTime();
-    tmp.block.nBits          = block.getBits();
-    tmp.block.nNonce         = block.getNonce();
-    
-    formatHashBlocks(&tmp.block, sizeof(tmp.block));
-    formatHashBlocks(&tmp.hash1, sizeof(tmp.hash1));
-    
-    // Byte swap all the input buffer
-    for (unsigned int i = 0; i < sizeof(tmp)/4; i++)
-        ((unsigned int*)&tmp)[i] = byteReverse(((unsigned int*)&tmp)[i]);
-    
-    // Precalc the first half of the first hash, which stays constant
-    sha256Transform(pmidstate, &tmp.block, pSHA256InitState);
-    
-    memcpy(pdata, &tmp.block, 128);
-    memcpy(phash1, &tmp.hash1, 64);
-}
-
-int PoolMethod::formatHashBlocks(void* pbuffer, unsigned int len) {
-    unsigned char* pdata = (unsigned char*)pbuffer;
-    unsigned int blocks = 1 + ((len + 8) / 64);
-    unsigned char* pend = pdata + 64 * blocks;
-    memset(pdata + len, 0, 64 * blocks - len);
-    pdata[len] = 0x80;
-    unsigned int bits = len * 8;
-    pend[-1] = (bits >> 0) & 0xff;
-    pend[-2] = (bits >> 8) & 0xff;
-    pend[-3] = (bits >> 16) & 0xff;
-    pend[-4] = (bits >> 24) & 0xff;
-    return blocks;
-}
-
-void PoolMethod::sha256Transform(void* pstate, void* pinput, const void* pinit) {
-    SHA256_CTX ctx;
-    unsigned char data[64];
-    
-    SHA256_Init(&ctx);
-    
-    for (int i = 0; i < 16; i++)
-        ((uint32_t*)data)[i] = byteReverse(((uint32_t*)pinput)[i]);
-    
-    for (int i = 0; i < 8; i++)
-        ctx.h[i] = ((uint32_t*)pinit)[i];
-    
-    SHA256_Update(&ctx, data, sizeof(data));
-    for (int i = 0; i < 8; i++)
-        ((uint32_t*)pstate)[i] = ctx.h[i];
-}
-
-
-class GetWork : public PoolMethod {
-public:
-    GetWork(Pool& pool) : PoolMethod(pool) {}
-    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
-};
-
-Value GetWork::operator()(const Array& params, bool fHelp) {
-    if (fHelp || params.size() > 1)
-        throw RPC::error(RPC::invalid_params, "getwork [data]\n"
-                         "If [data] is not specified, returns formatted hash data to work on:\n"
-                         "  \"midstate\" : precomputed hash state after hashing the first half of the data (DEPRECATED)\n" // deprecated
-                         "  \"data\" : block data\n"
-                         "  \"hash1\" : formatted hash buffer for second hash (DEPRECATED)\n" // deprecated
-                         "  \"target\" : little endian hash target\n"
-                         "If [data] is specified, tries to solve the block and returns true if it was successful.");
-
-    if (params.size() == 0) {
-        // Update block
-        Block block;
-        uint256 target;
-        tie(block, target) = _pool.getWork();
-        
-        // Pre-build hash buffers
-        char pmidstate[32];
-        char pdata[128];
-        char phash1[64];
-        formatHashBuffers(block, pmidstate, pdata, phash1);
-        
-        Object result;
-        result.push_back(Pair("midstate", HexStr(BEGIN(pmidstate), END(pmidstate)))); // deprecated
-        result.push_back(Pair("data",     HexStr(BEGIN(pdata), END(pdata))));
-        result.push_back(Pair("hash1",    HexStr(BEGIN(phash1), END(phash1)))); // deprecated
-        result.push_back(Pair("target",   HexStr(BEGIN(target), END(target))));
-        return result;
-    }
-    else {
-        // Parse parameters
-        vector<unsigned char> data = ParseHex(params[0].get_str());
-        if (data.size() != 128)
-            throw RPC::error(RPC::invalid_params, "Invalid parameter");
-        
-        Block* header = (Block*)&data[0];
-
-        // Byte reverse
-        for (int i = 0; i < 128/4; i++)
-            ((unsigned int*)header)[i] = byteReverse(((unsigned int*)header)[i]);
-        
-        return _pool.submitBlock(*header);
-    }
-}
-
-
-class GetBlockTemplate : public PoolMethod {
-public:
-    enum Mode {
-        Single,
-        Shared
-    };
-    GetBlockTemplate(Pool& pool, Mode mode) : PoolMethod(pool), _mode(mode) {}
-    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
-private:
-    Mode _mode;
-};
-
-Value GetBlockTemplate::operator()(const Array& params, bool fHelp) {
-    if (fHelp || params.size() != 0)
-        throw RPC::error(RPC::invalid_params, "getblocktemplate\n"
-                         "Returns an object containing various state info.");
-    
-    Block block;
-    // generate a block template - depending on the mode generate different coinbase output.
-    if (_mode == Single) {
-        BlockChain::Payees payees;
-        //        payees.push_back(_payee.current_script());
-        //        block = _pool.getBlockTemplate(payees);
-    }
-    else if (_mode == Shared) {
-        // get the last 100 blocks
-        //        _node.blockChain().;
-    }
-    
-    
-    
-    Object obj;
-
-    return obj;
-}
-/*
-class Tx5Method : public NodeMethod {
+class TxWait : public NodeMethod {
 public:
     class Listener : public TransactionFilter::Listener {
     public:
         Listener() : TransactionFilter::Listener(), _counter(0) {}
         
         virtual void operator()(const Transaction& txn) {
-            
+            ++_counter;
+            cout << "Got transaction with hash: " << txn.getHash().toString() << endl;
+            // search for a handler
+            HandlerRange range = _handlers.equal_range(_counter);
+            for (Handlers::const_iterator h = range.first; h != range.second; ++h) {
+                (h->second)();
+            }
+            _handlers.erase(_counter);
         }
         virtual ~Listener() {}
+
+        void install(const CompletionHandler& handler, size_t N = 5) {
+            // should add some thread guard!
+            _handlers.insert(make_pair(_counter + N, handler));
+        }
+
     private:
         size_t _counter;
-    };
 
-    
-    Tx5Method(Node& node) : NodeMethod(node) {}
-    
-    
+        typedef std::multimap<size_t, CompletionHandler> Handlers;
+        typedef pair<Handlers::const_iterator, Handlers::const_iterator> HandlerRange;
+        Handlers _handlers;        
+    };
+    typedef boost::shared_ptr<Listener> listener_ptr;
+
+    TxWait(Node& node) : NodeMethod(node), _listener(new Listener) {
+        _node.subscribe(_listener);
+    }
     
     /// dispatch installs a transaction filter that, after 5 transactions will call the handler
-    virtual void dispatch(const CompletionHandler& f) {
-        _pool.get_io_service().dispatch(f);
+    virtual void dispatch(const CompletionHandler& f, const Request& request) {
+        RPC rpc(request);
+        Array params = rpc.params();
+        if (params.size() > 0 && params[0].type() == int_type && params[0].get_int() > 0)
+            _listener->install(f, params[0].get_int());
+        else
+            _listener->install(f);
     }
-
     
-};
+    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp) {
+        return "DONE!\n";
+    }
+private:
+    listener_ptr _listener;
+
+/*
+    static string description =
+    json::obj(pair("name", "txwait"), pair("summery", "Waits for N (default 5) transactions"), pair("idempotent", false), pair("params", json::array( ) )
+        \"name\"    : \"txwait\",\
+        "summary" : "Waits for N (default 5) transactions.",\
+        "help"    : "http://www.example.com/service/sum.html",\
+        "idempotent" : false,\
+        "params"  : [\
+            { "name" : "txes", "type" : "num", "default" : 5 },\
+        "return" : {\
+            "type" : "nil"\
+        }\
+    "
 */
+};
+
 int main(int argc, char* argv[])
 {
     try {
@@ -540,6 +304,8 @@ int main(int argc, char* argv[])
         server.registerMethod(method_ptr(new GetDifficulty(node)));
         server.registerMethod(method_ptr(new GetInfo(node)));
 
+        //server.registerMethod(method_ptr(new TxWait(node)));
+
         /// The Pool enables you to run a backend for a miner, i.e. your private pool, it also enables you to participate in the "Name of Pool"
         // We need a list of blocks for the shared mining
         //
@@ -548,8 +314,8 @@ int main(int argc, char* argv[])
         Pool pool(node, payee);
         
         server.registerMethod(method_ptr(new GetWork(pool)));
-        //server.registerMethod(method_ptr(new GetBlockTemplate(pool)));
-        //server.registerMethod(method_ptr(new SubmitBlock(pool)));
+        server.registerMethod(method_ptr(new GetBlockTemplate(pool)));
+        server.registerMethod(method_ptr(new SubmitBlock(pool)));
         
         // Register Wallet methods.
         server.registerMethod(method_ptr(new GetBalance(wallet)), auth);
