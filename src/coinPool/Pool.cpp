@@ -30,7 +30,7 @@ Block Pool::getBlockTemplate() {
     return block;
 }
 
-bool Pool::submitBlock(const Block& stub, std::string workid) {
+std::string Pool::submitBlock(const Block& stub, std::string workid) {
     try {
         Block block;
         // check type of submission
@@ -38,7 +38,7 @@ bool Pool::submitBlock(const Block& stub, std::string workid) {
             case 0: { // pure header, probably from GetWork
                 Pool::BlockTemplates::iterator templ = _templates.find(stub.getMerkleRoot());
                 if (templ == _templates.end())
-                    return false;
+                    return "block template not found";
                 block = templ->second;
                 
                 block.setTime(stub.getTime());
@@ -47,9 +47,9 @@ bool Pool::submitBlock(const Block& stub, std::string workid) {
             }
             case 1: { // header and coinbase, we need a workid !
                 uint256 merkleroot(workid);
-                Pool::BlockTemplates::iterator templ = _templates.find(stub.getMerkleRoot());
+                Pool::BlockTemplates::iterator templ = _templates.find(merkleroot);
                 if (templ == _templates.end())
-                    return false;
+                    return "block template not found";
                 block = templ->second;
                 
                 block.setTime(stub.getTime()); // most likely not changed
@@ -70,7 +70,7 @@ bool Pool::submitBlock(const Block& stub, std::string workid) {
         uint256 hash = block.getHash();
         
         if (hash > target())
-            return false;
+            return "block hash did not meet target";
         
         cout << "Block with hash: " << hash.toString() << " mined" << endl;
         
@@ -78,10 +78,10 @@ bool Pool::submitBlock(const Block& stub, std::string workid) {
         if (hash > CBigNum().SetCompact(block.getBits()).getuint256() )
             _node.post(block);
         
-        return true;
+        return "";
     }
     catch (...) {
-        return false;
+        return "rejected";
     }
 }
 

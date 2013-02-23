@@ -32,8 +32,12 @@ json_spirit::Value SubmitBlock::operator()(const json_spirit::Array& params, boo
         throw RPC::error(RPC::parse_error, "Expect a string, hex encoded data, as the first param");
     
     string workid;
-    if (params.size() > 1 && params[1].type() == str_type)
-        workid = params[1].get_str();
+    if (params.size() > 1 && params[1].type() == obj_type) {
+        Object obj = params[1].get_obj();
+        Value workid_value = find_value(obj, "workid");
+        if (workid_value.type() == str_type)
+            workid = workid_value.get_str();
+    }
     
     vector<unsigned char> block_data(ParseHex(params[0].get_str()));
     CDataStream block_stream(block_data, SER_NETWORK, PROTOCOL_VERSION);
@@ -41,9 +45,17 @@ json_spirit::Value SubmitBlock::operator()(const json_spirit::Array& params, boo
     try {
         block_stream >> block;
     }
+    catch (std::ios_base::failure& f) { // in case of read errors we assume that it is due to a trunkated block, i.e. we just got the coinbase
+        block.keepOnlyCoinbase();
+    }
     catch (std::exception &e) {
         throw RPC::error(RPC::parse_error, "Block decode failed");
     }
     
-    return _pool.submitBlock(block, workid);
+    string result = _pool.submitBlock(block, workid);
+    
+    if (result.size())
+        return result;
+    else
+        return Value::null;
 }

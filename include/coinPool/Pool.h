@@ -45,7 +45,7 @@ public:
     
     virtual Block getBlockTemplate();
     
-    virtual bool submitBlock(const Block& stub, std::string workid = "");
+    virtual std::string submitBlock(const Block& stub, std::string workid = "");
     
     typedef std::pair<Block, uint256> Work;
     

@@ -63,6 +63,11 @@ Value GetWork::operator()(const Array& params, bool fHelp) {
         for (int i = 0; i < 128/4; i++)
             ((unsigned int*)header)[i] = byteReverse(((unsigned int*)header)[i]);
         
-        return _pool.submitBlock(*header);
+        string result = _pool.submitBlock(*header);
+        
+        if (result.size())
+            return false;
+        else
+            return true;
     }
 }

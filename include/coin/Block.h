@@ -97,6 +97,7 @@ public:
     TransactionList& getTransactions() { return _transactions; }
     Transaction& getTransaction(size_t i) { return _transactions[i]; }
     const Transaction& getTransaction(size_t i) const { return _transactions[i]; }
+    void keepOnlyCoinbase() { _transactions.resize(1); }
 
     uint256 buildMerkleTree() const;
 
