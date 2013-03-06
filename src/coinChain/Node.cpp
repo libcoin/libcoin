@@ -42,7 +42,7 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     _connection_deadline(_io_service),
     _messageHandler(),
     _endpointPool(chain.defaultPort(), _dataDir),
-    _chatClient(_io_service, bind(&Node::post_accept_or_connect, this), irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy),
+    _chatClient(_io_service, boost::bind(&Node::post_accept_or_connect, this), irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy),
     _proxy(proxy),
     _connection_timeout(timeout),
     _client_name("libcoin"),
@@ -258,11 +258,11 @@ void Node::start_connect() {
     _connection_deadline.expires_from_now(posix_time::milliseconds(_connection_timeout));
     // if using a socks4 proxy - we would here establish he connection to the socks server. 
     if(_proxy)
-        _proxy(_new_server->socket()).async_connect(ep, bind(&Node::handle_connect, this, placeholders::error));
+        _proxy(_new_server->socket()).async_connect(ep, boost::bind(&Node::handle_connect, this, asio::placeholders::error));
     else
-        _new_server->socket().async_connect(ep, bind(&Node::handle_connect, this, placeholders::error));
+        _new_server->socket().async_connect(ep, boost::bind(&Node::handle_connect, this, asio::placeholders::error));
     // start wait for deadline to expire.
-    _connection_deadline.async_wait(bind(&Node::check_deadline, this, placeholders::error));
+    _connection_deadline.async_wait(boost::bind(&Node::check_deadline, this, asio::placeholders::error));
 }
 
 void Node::check_deadline(const boost::system::error_code& e) {
@@ -308,7 +308,7 @@ void Node::handle_connect(const system::error_code& e) {
 
 void Node::start_accept() {
     _new_client.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, true, _proxy, _blockChain.getBestHeight(), getFullClientVersion())); // true means inbound
-    _acceptor.async_accept(_new_client->socket(), bind(&Node::handle_accept, this, placeholders::error));
+    _acceptor.async_accept(_new_client->socket(), boost::bind(&Node::handle_accept, this, asio::placeholders::error));
 }
 
 void Node::handle_accept(const system::error_code& e) {
@@ -352,15 +352,15 @@ void Node::peer_ready(peer_ptr p) {
 }
 
 void Node::post_accept_or_connect() {
-    _io_service.post(bind(&Node::accept_or_connect, this));
+    _io_service.post(boost::bind(&Node::accept_or_connect, this));
 }
 
 void Node::post_stop(peer_ptr p) {
-    _io_service.post(bind(&PeerManager::stop, &_peerManager, p));    
+    _io_service.post(boost::bind(&PeerManager::stop, &_peerManager, p));
 }
 
 void Node::post_ready(peer_ptr p) {
-    _io_service.post(bind(&Node::peer_ready, this, p));
+    _io_service.post(boost::bind(&Node::peer_ready, this, p));
 }
 
 void Node::handle_stop() {

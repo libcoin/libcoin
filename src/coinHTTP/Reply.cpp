@@ -270,7 +270,7 @@ void Reply::setContentAndMime(const std::string& content, const std::string& mim
 
 void Reply::dispatch(const CompletionHandler& handler) {
     if (_method)
-        _method->dispatch(bind(&Reply::exec, this, handler), _request);
+        _method->dispatch(boost::bind(&Reply::exec, this, handler), _request);
     else
         handler();
 }

@@ -46,7 +46,7 @@ void Verifier::reset() {
 
 void Verifier::verify(const Output& output, const Transaction& txn, unsigned int in_idx, bool strictPayToScriptHash, int hash_type) {
     typedef packaged_task<bool> bool_task;
-    shared_ptr<bool_task> task = make_shared<bool_task>(boost::bind(&Verifier::do_verify, this, output, txn, in_idx, strictPayToScriptHash, hash_type));
+    boost::shared_ptr<bool_task> task = boost::make_shared<bool_task>(boost::bind(&Verifier::do_verify, this, output, txn, in_idx, strictPayToScriptHash, hash_type));
     unique_future<bool> fut = task->get_future();
     _pending_verifications.push_back(boost::move(fut));
     _io_service.post(boost::bind(&bool_task::operator(), task));

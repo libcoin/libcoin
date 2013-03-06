@@ -40,7 +40,7 @@ ChatClient::ChatClient(boost::asio::io_service& io_service, function<void (void)
     // Start an asynchronous resolve to translate the server and service names
     // into a list of endpoints.
     tcp::resolver::query query(server, "irc"); // should we remove irc as service type ?
-    _resolver.async_resolve(query, bind(&ChatClient::handle_resolve, this, placeholders::error, placeholders::iterator));
+    _resolver.async_resolve(query, boost::bind(&ChatClient::handle_resolve, this, asio::placeholders::error, asio::placeholders::iterator));
 }
 
 void ChatClient::handle_resolve(const system::error_code& err, tcp::resolver::iterator endpoint_iterator) {
@@ -50,16 +50,16 @@ void ChatClient::handle_resolve(const system::error_code& err, tcp::resolver::it
         tcp::endpoint endpoint = *endpoint_iterator;
         endpoint.port(6667);
         if (_proxy)
-            _proxy(_socket).async_connect(endpoint, bind(&ChatClient::handle_connect, this, placeholders::error, ++endpoint_iterator));
+            _proxy(_socket).async_connect(endpoint, boost::bind(&ChatClient::handle_connect, this, asio::placeholders::error, ++endpoint_iterator));
         else
-            _socket.async_connect(endpoint, bind(&ChatClient::handle_connect, this, placeholders::error, ++endpoint_iterator));
+            _socket.async_connect(endpoint, boost::bind(&ChatClient::handle_connect, this, asio::placeholders::error, ++endpoint_iterator));
     }
     else {
         log_warn("Error: %s\n", err.message().c_str());
         _socket.close();
         _mode = wait_for_notice;
         tcp::resolver::query query(_server, "irc"); // should we remove irc as service type ?
-        _resolver.async_resolve(query, bind(&ChatClient::handle_resolve, this, placeholders::error, placeholders::iterator));
+        _resolver.async_resolve(query, boost::bind(&ChatClient::handle_resolve, this, asio::placeholders::error, asio::placeholders::iterator));
     }
 }
 
@@ -68,21 +68,21 @@ void ChatClient::handle_connect(const boost::system::error_code& err, tcp::resol
     if (!err) {
         // Register handle for a read line handler
         _mode = wait_for_notice;
-        async_read_until(_socket, _recv, "\r\n", bind(&ChatClient::handle_read_line, this, placeholders::error, placeholders::bytes_transferred));
+        async_read_until(_socket, _recv, "\r\n", boost::bind(&ChatClient::handle_read_line, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
     else if (endpoint_iterator != tcp::resolver::iterator()) {
         // The connection failed. Try the next endpoint in the list.
         _socket.close();
         tcp::endpoint endpoint = *endpoint_iterator;
         endpoint.port(6667);
-        _socket.async_connect(endpoint, bind(&ChatClient::handle_connect, this, placeholders::error, ++endpoint_iterator));
+        _socket.async_connect(endpoint, boost::bind(&ChatClient::handle_connect, this, asio::placeholders::error, ++endpoint_iterator));
     }
     else {
         log_warn("Error: %s\n", err.message().c_str());
         _socket.close();
         _mode = wait_for_notice;
         tcp::resolver::query query(_server, "irc"); // should we remove irc as service type ?
-        _resolver.async_resolve(query, bind(&ChatClient::handle_resolve, this, placeholders::error, placeholders::iterator));
+        _resolver.async_resolve(query, boost::bind(&ChatClient::handle_resolve, this, asio::placeholders::error, asio::placeholders::iterator));
     }
 }
 
@@ -138,7 +138,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                     _socket.close();
                     _mode = wait_for_notice;
                     tcp::resolver::query query(_server, "irc"); // should we remove irc as service type ?
-                    _resolver.async_resolve(query, bind(&ChatClient::handle_resolve, this, placeholders::error, placeholders::iterator));
+                    _resolver.async_resolve(query, boost::bind(&ChatClient::handle_resolve, this, asio::placeholders::error, asio::placeholders::iterator));
                     return;
                 }
                 break;
@@ -179,7 +179,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                                     txstream << "JOIN #" << _channel << "\r";
                                     txstream <<  "WHO #" << _channel << "\r";
                                 }                
-                                async_write(_socket, _send, boost::bind(&ChatClient::handle_write_request, this, placeholders::error));
+                                async_write(_socket, _send, boost::bind(&ChatClient::handle_write_request, this, asio::placeholders::error));
                                 break;
                             }
                         }
@@ -203,7 +203,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                     tx[1] = 'O'; // change line to PONG
                     tx += '\r';
                     txstream << tx;
-                    async_write(_socket, _send, boost::bind(&ChatClient::handle_write_request, this, placeholders::error));
+                    async_write(_socket, _send, boost::bind(&ChatClient::handle_write_request, this, asio::placeholders::error));
                     break;
                 }
                 
@@ -245,7 +245,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
             default:
                 break;
         }
-        async_read_until(_socket, _recv, "\r\n", bind(&ChatClient::handle_read_line, this, placeholders::error, placeholders::bytes_transferred));
+        async_read_until(_socket, _recv, "\r\n", boost::bind(&ChatClient::handle_read_line, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
     else {
         // check if we were kicked out, then rejoin
@@ -254,7 +254,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
         _socket.close();
         _mode = wait_for_notice;
         tcp::resolver::query query(_server, "irc"); // should we remove irc as service type ?
-        _resolver.async_resolve(query, bind(&ChatClient::handle_resolve, this, placeholders::error, placeholders::iterator));
+        _resolver.async_resolve(query, boost::bind(&ChatClient::handle_resolve, this, asio::placeholders::error, asio::placeholders::iterator));
     }
 }
 
@@ -266,7 +266,7 @@ void ChatClient::handle_write_request(const boost::system::error_code& err) {
         _socket.close();
         _mode = wait_for_notice;
         tcp::resolver::query query(_server, "irc"); // should we remove irc as service type ?
-        _resolver.async_resolve(query, bind(&ChatClient::handle_resolve, this, placeholders::error, placeholders::iterator));
+        _resolver.async_resolve(query, boost::bind(&ChatClient::handle_resolve, this, asio::placeholders::error, asio::placeholders::iterator));
     }
 }
 

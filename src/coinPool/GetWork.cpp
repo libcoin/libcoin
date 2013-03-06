@@ -36,7 +36,7 @@ Value GetWork::operator()(const Array& params, bool fHelp) {
         // Update block
         Block block;
         uint256 target;
-        tie(block, target) = _pool.getWork();
+        boost::tie(block, target) = _pool.getWork();
         
         // Pre-build hash buffers
         char pmidstate[32];

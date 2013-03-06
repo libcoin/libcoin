@@ -37,7 +37,6 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         data >> block;
         
         log_debug("received block %s\n", block.getHash().toString().substr(0,20).c_str());
-        // block.print();
         
         Inventory inv(MSG_BLOCK, block.getHash());
         origin->AddInventoryKnown(inv);

@@ -21,9 +21,10 @@
 
 #include <boost/asio.hpp>
 #include <boost/function.hpp>
+#include <boost/noncopyable.hpp>
+#include <boost/array.hpp>
 
 #include <string>
-#include <boost/noncopyable.hpp>
 
 namespace Socks4 {
     

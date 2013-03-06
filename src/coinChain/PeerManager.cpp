@@ -44,7 +44,7 @@ void PeerManager::stop(peer_ptr p) {
 }
 
 void PeerManager::stop_all() {
-    for_each(_peers.begin(), _peers.end(), bind(&Peer::stop, _1));
+    for_each(_peers.begin(), _peers.end(), boost::bind(&Peer::stop, _1));
     _peers.clear();
 }
 

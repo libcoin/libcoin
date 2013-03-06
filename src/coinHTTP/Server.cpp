@@ -46,7 +46,7 @@ _logger(log_dir) {
 #if defined(SIGQUIT)
     _signals.add(SIGQUIT);
 #endif // defined(SIGQUIT)
-    _signals.async_wait(bind(&Server::handle_stop, this));
+    _signals.async_wait(boost::bind(&Server::handle_stop, this));
     
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
     ip::tcp::resolver resolver(_io_service);
@@ -92,7 +92,7 @@ void Server::run() {
 }
 
 void Server::shutdown(){
-    _io_service.post(bind(&Server::handle_stop, this));
+    _io_service.post(boost::bind(&Server::handle_stop, this));
 }
 
 void Server::start_accept() {
@@ -101,7 +101,7 @@ void Server::start_accept() {
     else
         _new_connection.reset(new Connection(_io_service, _connectionManager, _requestHandler, _logger.access()));
         
-    _acceptor.async_accept(_new_connection->socket(), bind(&Server::handle_accept, this, placeholders::error));
+    _acceptor.async_accept(_new_connection->socket(), boost::bind(&Server::handle_accept, this, asio::placeholders::error));
 }
 
 void Server::handle_accept(const system::error_code& e) {

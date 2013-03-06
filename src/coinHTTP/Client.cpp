@@ -95,7 +95,7 @@ void Client::async_post(std::string url, std::string content, ClientCompletionHa
     // Start an asynchronous resolve to translate the server and service names
     // into a list of endpoints.
     tcp::resolver::query query(host, lexical_cast<string>(port));
-    _resolver.async_resolve(query, bind(&Client::handle_resolve, this, placeholders::error, placeholders::iterator));
+    _resolver.async_resolve(query, boost::bind(&Client::handle_resolve, this, asio::placeholders::error, asio::placeholders::iterator));
 }
 
 void Client::async_get(std::string url, ClientCompletionHandler& handler, Headers headers) {
@@ -143,7 +143,7 @@ void Client::async_get(std::string url, ClientCompletionHandler& handler, Header
     // Start an asynchronous resolve to translate the server and service names
     // into a list of endpoints.
     tcp::resolver::query query(host, lexical_cast<string>(port));
-    _resolver.async_resolve(query, bind(&Client::handle_resolve, this, placeholders::error, placeholders::iterator));
+    _resolver.async_resolve(query, boost::bind(&Client::handle_resolve, this, asio::placeholders::error, asio::placeholders::iterator));
 }
 
 void Client::handle_resolve(const system::error_code& err, tcp::resolver::iterator endpoint_iterator) {
@@ -152,9 +152,9 @@ void Client::handle_resolve(const system::error_code& err, tcp::resolver::iterat
         // will be tried until we successfully establish a connection.
         tcp::endpoint endpoint = *endpoint_iterator;
         if(isSecure())
-            _ssl_socket.lowest_layer().async_connect(endpoint, bind(&Client::handle_connect, this, placeholders::error, ++endpoint_iterator));
+            _ssl_socket.lowest_layer().async_connect(endpoint, boost::bind(&Client::handle_connect, this, asio::placeholders::error, ++endpoint_iterator));
         else
-            _socket.async_connect(endpoint, bind(&Client::handle_connect, this, placeholders::error, ++endpoint_iterator));
+            _socket.async_connect(endpoint, boost::bind(&Client::handle_connect, this, asio::placeholders::error, ++endpoint_iterator));
     }
     else {
         _completion_handler(err);
@@ -165,15 +165,15 @@ void Client::handle_connect(const system::error_code& err, tcp::resolver::iterat
     if (!err) {
         // The connection was successful. Send the handshake or request.
         if(isSecure())
-            _ssl_socket.async_handshake(ssl::stream_base::client, bind(&Client::handle_handshake, this, placeholders::error));
+            _ssl_socket.async_handshake(ssl::stream_base::client, boost::bind(&Client::handle_handshake, this, asio::placeholders::error));
         else
-            boost::asio::async_write(_socket, _request, bind(&Client::handle_write_request, this, placeholders::error));
+            boost::asio::async_write(_socket, _request, boost::bind(&Client::handle_write_request, this, asio::placeholders::error));
     }
     else if (endpoint_iterator != tcp::resolver::iterator()) {
         // The connection failed. Try the next endpoint in the list.
         _socket.close();
         tcp::endpoint endpoint = *endpoint_iterator;
-        _socket.async_connect(endpoint, bind(&Client::handle_connect, this, placeholders::error, ++endpoint_iterator));
+        _socket.async_connect(endpoint, boost::bind(&Client::handle_connect, this, asio::placeholders::error, ++endpoint_iterator));
     }
     else {
         _completion_handler(err);
@@ -184,9 +184,9 @@ void Client::handle_handshake(const boost::system::error_code& err) {
     if (!err) {
         // The connection was successful. Send the request.
         if(isSecure())
-            boost::asio::async_write(_ssl_socket, _request, bind(&Client::handle_write_request, this, placeholders::error));
+            boost::asio::async_write(_ssl_socket, _request, boost::bind(&Client::handle_write_request, this, asio::placeholders::error));
         else
-            boost::asio::async_write(_socket, _request, bind(&Client::handle_write_request, this, placeholders::error));
+            boost::asio::async_write(_socket, _request, boost::bind(&Client::handle_write_request, this, asio::placeholders::error));
     }
     else {
         std::cout << "Handshake failed: " << err.message() << "\n";
@@ -201,9 +201,9 @@ void Client::handle_write_request(const system::error_code& err) {
         // automatically grow to accommodate the entire line. The growth may be
         // limited by passing a maximum size to the streambuf constructor.
         if(isSecure())
-            async_read_until(_ssl_socket, _response, "\r\n", bind(&Client::handle_read_status_line, this, placeholders::error, placeholders::bytes_transferred));
+            async_read_until(_ssl_socket, _response, "\r\n", boost::bind(&Client::handle_read_status_line, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
         else
-            async_read_until(_socket, _response, "\r\n", bind(&Client::handle_read_status_line, this, placeholders::error, placeholders::bytes_transferred));
+            async_read_until(_socket, _response, "\r\n", boost::bind(&Client::handle_read_status_line, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
     else {
         _completion_handler(err);
@@ -233,9 +233,9 @@ void Client::handle_read_status_line(const system::error_code& err, std::size_t 
         
         // Read the response headers, which are terminated by a blank line.
         if(isSecure())
-            async_read_until(_ssl_socket, _response, "\r\n\r\n", bind(&Client::handle_read_headers, this, placeholders::error, placeholders::bytes_transferred));
+            async_read_until(_ssl_socket, _response, "\r\n\r\n", boost::bind(&Client::handle_read_headers, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
         else
-            async_read_until(_socket, _response, "\r\n\r\n", bind(&Client::handle_read_headers, this, placeholders::error, placeholders::bytes_transferred));
+            async_read_until(_socket, _response, "\r\n\r\n", boost::bind(&Client::handle_read_headers, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
     else if (bytes_transferred == 0) {
         boost::system::error_code e;
@@ -269,9 +269,9 @@ void Client::handle_read_headers(const system::error_code& err, std::size_t byte
         
         // Start reading remaining data until EOF.
         if(isSecure())
-            async_read(_ssl_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error, placeholders::bytes_transferred));
+            async_read(_ssl_socket, _response, transfer_at_least(1), boost::bind(&Client::handle_read_content, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
         else
-            async_read(_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error, placeholders::bytes_transferred));
+            async_read(_socket, _response, transfer_at_least(1), boost::bind(&Client::handle_read_content, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
     else if (bytes_transferred == 0) {
         boost::system::error_code e;
@@ -292,9 +292,9 @@ void Client::handle_read_content(const boost::system::error_code& err, std::size
         
         // Continue reading remaining data until EOF.
         if(isSecure())
-            async_read(_ssl_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error, placeholders::bytes_transferred));
+            async_read(_ssl_socket, _response, transfer_at_least(1), boost::bind(&Client::handle_read_content, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
         else
-            async_read(_socket, _response, transfer_at_least(1), bind(&Client::handle_read_content, this, placeholders::error, placeholders::bytes_transferred));
+            async_read(_socket, _response, transfer_at_least(1), boost::bind(&Client::handle_read_content, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
     else if (bytes_transferred == 0) {
         boost::system::error_code e;

@@ -18,6 +18,7 @@
 #include <vector>
 #include <coinHTTP/ConnectionManager.h>
 #include <coinHTTP/RequestHandler.h>
+#include <coinHTTP/RPC.h>
 
 #include <coin/Logger.h>
 
@@ -59,7 +60,7 @@ void Connection::start() {
                                                 boost::asio::placeholders::error));    
     else {
         _buffer_iterator = _buffer.begin();
-        _socket.async_read_some(buffer(_buffer), bind(&Connection::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+        _socket.async_read_some(buffer(_buffer), boost::bind(&Connection::handle_read, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
 }
 
@@ -70,7 +71,7 @@ void Connection::stop() {
 void Connection::handle_handshake(const boost::system::error_code& error) {
     if (!error) {        
         _buffer_iterator = _buffer.begin();
-        _ssl_socket.async_read_some(buffer(_buffer), bind(&Connection::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+        _ssl_socket.async_read_some(buffer(_buffer), boost::bind(&Connection::handle_read, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
     else {
         _connectionManager.stop(shared_from_this());;
@@ -117,6 +118,14 @@ void Connection::log_request() const {
     else
         _access_log << "-";
     //    _access_log << " " << hex << (long) this << dec;
+    // finally, if POST, log the rpc method if present
+    if (_request.method() == "POST") {
+        RPC rpc(_request);
+        string rpc_method = rpc.method();
+        if (rpc_method.size())
+            _access_log << " " << rpc_method;
+    }
+    
     _access_log << endl;
 }
 
@@ -126,7 +135,7 @@ void Connection::handle_read(const system::error_code& e, std::size_t bytes_tran
         tribool result;
         // loop over all this to get all the data...
         _bytes_read = bytes_transferred;
-        tie(result, _buffer_iterator) = _requestParser.parse(_request, _buffer_iterator, _buffer.begin() + bytes_transferred);
+        boost::tie(result, _buffer_iterator) = _requestParser.parse(_request, _buffer_iterator, _buffer.begin() + bytes_transferred);
         
         if (result) {
             // fill in the extra field of the Request
@@ -142,7 +151,7 @@ void Connection::handle_read(const system::error_code& e, std::size_t bytes_tran
                     handle_exec();
                 }
                 else
-                    _requestHandler.async_exec(_request, _reply, bind(&Connection::handle_exec, shared_from_this()));
+                    _requestHandler.async_exec(_request, _reply, boost::bind(&Connection::handle_exec, shared_from_this()));
             }
         }
         else if (!result) {
@@ -150,16 +159,16 @@ void Connection::handle_read(const system::error_code& e, std::size_t bytes_tran
             log_request();
             _request.reset();
             if(_secure)
-                async_write(_ssl_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+                async_write(_ssl_socket, _reply.to_buffers(), boost::bind(&Connection::handle_write, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
             else
-                async_write(_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+                async_write(_socket, _reply.to_buffers(), boost::bind(&Connection::handle_write, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
         }
         else {
             _buffer_iterator = _buffer.begin();
             if(_secure)
-                _ssl_socket.async_read_some(buffer(_buffer), bind(&Connection::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+                _ssl_socket.async_read_some(buffer(_buffer), boost::bind(&Connection::handle_read, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
             else
-                _socket.async_read_some(buffer(_buffer), bind(&Connection::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+                _socket.async_read_some(buffer(_buffer), boost::bind(&Connection::handle_read, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
         }
     }
     else if (e != error::operation_aborted) {
@@ -172,9 +181,9 @@ void Connection::handle_exec() {
     log_request();
     _request.reset();
     if(_secure)
-        async_write(_ssl_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+        async_write(_ssl_socket, _reply.to_buffers(), boost::bind(&Connection::handle_write, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     else
-        async_write(_socket, _reply.to_buffers(), bind(&Connection::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+        async_write(_socket, _reply.to_buffers(), boost::bind(&Connection::handle_write, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
 }
 
 void Connection::handle_write(const system::error_code& e, size_t bytes_transferred) {
@@ -188,7 +197,7 @@ void Connection::handle_write(const system::error_code& e, size_t bytes_transfer
     if (!e) {
         if (keep_alive) { // read again, start deadline timer
             _keep_alive.expires_from_now(_exec_retry_duration); // 2 seconds
-            _keep_alive.async_wait(bind(&Connection::handle_timeout, this, placeholders::error));
+            _keep_alive.async_wait(boost::bind(&Connection::handle_timeout, this, asio::placeholders::error));
             // we need to enpty the buffer first:
             if (_buffer_iterator < _buffer.begin() + _bytes_read) { // call handle_read again
                 handle_read(e, _bytes_read); 
@@ -196,9 +205,9 @@ void Connection::handle_write(const system::error_code& e, size_t bytes_transfer
             else {
                 _buffer_iterator = _buffer.begin();
                 if(_secure)
-                    _ssl_socket.async_read_some(buffer(_buffer), bind(&Connection::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+                    _ssl_socket.async_read_some(buffer(_buffer), boost::bind(&Connection::handle_read, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
                 else
-                    _socket.async_read_some(buffer(_buffer), bind(&Connection::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));   
+                    _socket.async_read_some(buffer(_buffer), boost::bind(&Connection::handle_read, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
             }
         }
         else { // Initiate graceful connection closure.

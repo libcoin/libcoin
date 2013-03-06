@@ -263,7 +263,7 @@ void RPC::execute(Method& method) {
 }
 
 void RPC::dispatch(const CompletionHandler& handler) {
-    _call_method->dispatch(boost::bind(&RPC::async_execute, this, handler));
+    _call_method->dispatch(boost::boost::(&RPC::async_execute, this, handler));
 }
 
 void RPC::async_execute(const CompletionHandler& handler) {

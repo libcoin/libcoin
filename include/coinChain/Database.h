@@ -295,9 +295,9 @@ namespace sqliterate {
         sqlite3_int64 stat_count() const { return _->stat_count; }
         
         void bind(sqlite3_int64 arg, int col) const;
-        void bind(size_t arg, int col) const { bind((sqlite3_int64)arg, col); }
+        void bind(uint64_t arg, int col) const { bind((sqlite3_int64)arg, col); }
         void bind(int arg, int col) const { bind((sqlite3_int64)arg, col); }
-        void bind(unsigned int arg, int col) const { bind((sqlite3_int64)arg, col); }
+        void bind(uint32_t arg, int col) const { bind((sqlite3_int64)arg, col); }
         void bind(double arg, int col) const;
         void bind(const std::string& arg, int col) const;
         void bind(const blob& arg, int col) const;

@@ -81,15 +81,15 @@ void Peer::start() {
         for(CDataStream::iterator c = vSend.begin(); c != vSend.end(); ++c)
             _send.sputc(*c);
         vSend.clear();
-        async_write(_socket, _send, bind(&Peer::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+        async_write(_socket, _send, boost::bind(&Peer::handle_write, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
 
-    //    async_read(_socket, _recv, bind(&Peer::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+    //    async_read(_socket, _recv, boost::bind(&Peer::handle_read, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     _suicide.expires_from_now(posix_time::seconds(_initial_timeout)); // no activity the first 60 seconds means disconnect
-    _socket.async_read_some(buffer(_buffer), bind(&Peer::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+    _socket.async_read_some(buffer(_buffer), boost::bind(&Peer::handle_read, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     
     // and start the deadline timer
-    _suicide.async_wait(bind(&Peer::check_activity, this, placeholders::error));
+    _suicide.async_wait(boost::bind(&Peer::check_activity, this, asio::placeholders::error));
 }
 
 void Peer::check_activity(const system::error_code& e) {
@@ -99,7 +99,7 @@ void Peer::check_activity(const system::error_code& e) {
         else {
             _activity = false;
             _suicide.expires_from_now(posix_time::seconds(_heartbeat_timeout)); // 90 minutes of activity once we have started up
-            _suicide.async_wait(bind(&Peer::check_activity, this, placeholders::error)); 
+            _suicide.async_wait(boost::bind(&Peer::check_activity, this, asio::placeholders::error));
         }
     }
     else if (e != error::operation_aborted) {
@@ -164,8 +164,8 @@ void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferre
         }
         
         // then wait for more data
-        _socket.async_read_some(buffer(_buffer), bind(&Peer::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
-        //        async_read(_socket, _recv, bind(&Peer::handle_read, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+        _socket.async_read_some(buffer(_buffer), boost::bind(&Peer::handle_read, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
+        //        async_read(_socket, _recv, boost::bind(&Peer::handle_read, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
     else if (e != error::operation_aborted) {
         log_error("Read error %s, disconnecting... (read %d bytes though) \n", e.message().c_str(), bytes_transferred);
@@ -275,7 +275,7 @@ void Peer::flush() {
         for(CDataStream::iterator c = vSend.begin(); c != vSend.end(); ++c)
             _send.sputc(*c);
         vSend.clear();
-        async_write(_socket, _send, bind(&Peer::handle_write, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+        async_write(_socket, _send, boost::bind(&Peer::handle_write, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
 }
 

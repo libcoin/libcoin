@@ -37,12 +37,12 @@ class COINPOOL_EXPORT Pool {
 public:
     /// Initialize Pool with a node and a payee, i.e. an abstraction of a payee address generator
     Pool(Node& node, Payee& payee) : _node(node), _blockChain(node.blockChain()), _payee(payee) {
-        // install a blockfilter to be notified each time a new block arrives invalidating the current mining effort
     }
     
     // map of merkletree hash to block templates
     typedef std::map<uint256, Block> BlockTemplates;
     
+    /// subclass this to implement other schemes for coinbase payout
     virtual Block getBlockTemplate();
     
     virtual std::string submitBlock(const Block& stub, std::string workid = "");
@@ -58,7 +58,7 @@ public:
     const BlockChain& blockChain() { return _blockChain; }
     
     Node& node() { return _node; }
-private:
+protected:
     Node& _node;
     const BlockChain& _blockChain;
     Payee& _payee;

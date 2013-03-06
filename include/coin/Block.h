@@ -133,6 +133,62 @@ public:
     
     const int getBits() const { return _bits; }
     
+    const uint256 getTarget() const {
+        return CBigNum().SetCompact(getBits()).getuint256();
+    }
+    
+    int getShareBits() const {
+        try {
+            Script coinbase = getTransaction(0).getInput(0).signature();
+            Script::const_iterator cbi = coinbase.begin();
+            opcodetype opcode;
+            std::vector<unsigned char> data;
+            // We simply ignore the first opcode and data, however, it is the height...
+            coinbase.getOp(cbi, opcode, data);
+            
+            // this should be an opcode for a uint256 (i.e. number of 32 bytes)
+            coinbase.getOp(cbi, opcode, data);
+            
+            // now parse the prev share
+            coinbase.getOp(cbi, opcode, data);
+            
+            // now parse the target
+            coinbase.getOp(cbi, opcode, data);
+            
+            if (opcode < OP_PUSHDATA1) {
+                CBigNum height;
+                height.setvch(data);
+                return height.getint();
+            }
+        } catch (...) {
+        }
+        return 0;
+    }
+
+    const uint256 getShareTarget() const {
+        return CBigNum().SetCompact(getShareBits()).getuint256();
+    }
+    
+    uint256 getPrevShare() const {
+        try {
+            Script coinbase = getTransaction(0).getInput(0).signature();
+            Script::const_iterator cbi = coinbase.begin();
+            opcodetype opcode;
+            std::vector<unsigned char> data;
+            // We simply ignore the first opcode and data, however, it is the height...
+            coinbase.getOp(cbi, opcode, data);
+            
+            // this should be an opcode for a uint256 (i.e. number of 32 bytes)
+            coinbase.getOp(cbi, opcode, data);
+            
+            // and the prev share (also 32 bytes)
+            uint256 hash_from_coinbase(data);
+            return hash_from_coinbase;
+        } catch (...) {
+        }
+        return uint256(0);
+    }
+    
     const int getNonce() const { return _nonce; }
 
     void setNonce(unsigned int nonce) { _nonce = nonce; }

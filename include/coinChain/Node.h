@@ -138,7 +138,14 @@ public:
     void post(const Transaction& tx, size_t n = 0);
         
     /// Post a Block to the Node. (Note that we use dispatch - no need to post if we are already in the same thread)
-    void post(const Block& block) { _io_service.dispatch(boost::bind(&BlockFilter::process, static_cast<BlockFilter*>(_blockFilter.get()), block, _peerManager.getAllPeers())); }
+    void post(const Block& block) {
+        uint256 hash = block.getHash();
+        
+        if (hash < block.getTarget() )
+            _io_service.dispatch(boost::bind(&BlockFilter::process, static_cast<BlockFilter*>(_blockFilter.get()), block, _peerManager.getAllPeers()));
+        else if (hash < block.getShareTarget() )
+            _io_service.dispatch(boost::bind(&ShareFilter::process, static_cast<ShareFilter*>(_shareFilter.get()), block, _peerManager.getAllPeers()));
+    }
         
     /// Subscribe to Transaction accept notifications
     void subscribe(TransactionFilter::listener_ptr listener) { static_cast<TransactionFilter*>(_transactionFilter.get())->subscribe(listener); }

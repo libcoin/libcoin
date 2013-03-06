@@ -75,8 +75,12 @@ std::string Pool::submitBlock(const Block& stub, std::string workid) {
         cout << "Block with hash: " << hash.toString() << " mined" << endl;
         
         // else ... we got a valid block!
-        if (hash > CBigNum().SetCompact(block.getBits()).getuint256() )
-            _node.post(block);
+        if (hash < block.getTarget() )
+            _node.post(block); // _node.processBlock(block);
+        else if (hash < block.getShareTarget() )
+            _node.post(block); // will call the ShareFilter
+        else
+            throw;
         
         return "";
     }
@@ -93,9 +97,7 @@ Pool::Work Pool::getWork() {
             _templates.clear();
             _latest_work = _templates.end(); // reset _latest_work
         }
-        BlockChain::Payees payees;
-        payees.push_back(_payee.current_script());
-        Block block = _blockChain.getBlockTemplate(payees);
+        Block block = getBlockTemplate();
         _latest_work = _templates.insert(make_pair(block.getMerkleRoot(), block)).first;
     }
     // note that if called more often that each second there will be dublicate searches

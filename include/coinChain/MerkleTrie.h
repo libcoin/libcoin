@@ -713,21 +713,21 @@ private:
 };
 
 template <class Elem, class Key, class Hash>
-void MerkleTrie<Elem, Key, Hash>::Node::accept(MerkleTrie::Visitor &v) {
+void MerkleTrie<Elem, Key, Hash>::Node::accept(typename MerkleTrie::Visitor &v) {
     v.push(this);
     v.apply(*this);
     v.pop();
 }
 
 template <class Elem, class Key, class Hash>
-void MerkleTrie<Elem, Key, Hash>::BranchNode::accept(MerkleTrie::Visitor &v) {
+void MerkleTrie<Elem, Key, Hash>::BranchNode::accept(typename MerkleTrie::Visitor &v) {
     v.push(this);
     v.apply(*this);
     v.pop();
 }
 
 template <class Elem, class Key, class Hash>
-void MerkleTrie<Elem, Key, Hash>::LeafNode::accept(MerkleTrie::Visitor &v) {
+void MerkleTrie<Elem, Key, Hash>::LeafNode::accept(typename MerkleTrie::Visitor &v) {
     v.push(this);
     v.apply(*this);
     v.pop();

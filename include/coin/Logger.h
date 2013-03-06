@@ -57,12 +57,12 @@ private:
 class COIN_EXPORT Logger {
 public: // enums
     enum Level {
-        TRACE = 1,
-        DEBUG,
-        INFO,
-        WARN,
-        ERROR,
-        FATAL
+        trace = 1,
+        debug,
+        info,
+        warn,
+        error,
+        fatal
     };
     
 public: // static
@@ -70,7 +70,7 @@ public: // static
     
     static std::ostream& log(Level level, std::string file, int line, std::string function = "");
     
-    static void instantiate(std::ostream& log_stream, Level log_level = INFO);
+    static void instantiate(std::ostream& log_stream, Level log_level = info);
     
     static void label_thread(std::string label);
     
@@ -103,16 +103,22 @@ private:
     void operator=(Logger const&);
 };
 
-#define log_fatal(...) Logger::log(Logger::FATAL, __FILE__, __LINE__, __PRETTY_FUNCTION__) << cformat(__VA_ARGS__) << std::endl
-#define log_error(...) Logger::log(Logger::ERROR, __FILE__, __LINE__, __PRETTY_FUNCTION__) << cformat(__VA_ARGS__) << std::endl
-#define log_warn(...) Logger::log(Logger::WARN, __FILE__, __LINE__, __PRETTY_FUNCTION__) << cformat(__VA_ARGS__) << std::endl
-#define log_info(...) Logger::log(Logger::INFO, __FILE__, __LINE__, __PRETTY_FUNCTION__) << cformat(__VA_ARGS__) << std::endl
+#define log_fatal(fmt, ...) Logger::log(Logger::fatal, __FILE__, __LINE__, __PRETTY_FUNCTION__) << cformat(fmt, ##__VA_ARGS__) << std::endl
+#define log_error(fmt, ...) Logger::log(Logger::error, __FILE__, __LINE__, __PRETTY_FUNCTION__) << cformat(fmt, ##__VA_ARGS__) << std::endl
+#define log_warn(fmt, ...) Logger::log(Logger::warn, __FILE__, __LINE__, __PRETTY_FUNCTION__) << cformat(fmt, ##__VA_ARGS__) << std::endl
+#define log_info(fmt, ...) Logger::log(Logger::info, __FILE__, __LINE__, __PRETTY_FUNCTION__) << cformat(fmt, ##__VA_ARGS__) << std::endl
 
 //#define log_debug(...) Logger::log(Logger::DEBUG, __FILE__, __LINE__, __PRETTY_FUNCTION__) << cformat(__VA_ARGS__) << std::endl
 //#define log_trace(...) Logger::log(Logger::TRACE, __FILE__, __LINE__, __PRETTY_FUNCTION__) << cformat(__VA_ARGS__) << std::endl
 
 #define log_debug(...) do {} while(0)
 #define log_trace(...) do {} while(0)
+
+// MSVC++ has a bug in the interpretation of VA_ARGS so:
+// #define F(x, ...) X = x and VA_ARGS = __VA_ARGS__
+// #define G(...) F(__VA_ARGS__)
+// G(1, 2, 3) -> X = 1, 2, 3
+// i.e. VA_ARGS is interpretated as one argument not multiple and hence a VA_ARGS cannot be forwarded - hence we use (fmt, ...) throughout
 
 #define cformat(fmt, ...) (Format(fmt), ##__VA_ARGS__)
 

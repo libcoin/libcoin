@@ -42,7 +42,7 @@ void Proxy::async_connect(ip::tcp::endpoint ep, boost::function<void (const syst
     _endpoint = ep;
     _connection_handler = connection_handler;
     
-    _socket->async_connect(_server, bind(&Proxy::handle_proxy_connect, this, placeholders::error));
+    _socket->async_connect(_server, boost::bind(&Proxy::handle_proxy_connect, this, asio::placeholders::error));
 }
 
 void Proxy::handle_proxy_connect(const system::error_code& e) {
@@ -50,9 +50,9 @@ void Proxy::handle_proxy_connect(const system::error_code& e) {
     if (!e && _socket->is_open()) { // connected successfully to the proxy server
 
         Socks4::Request req(Socks4::Request::connect, _endpoint, "");
-        async_write(*_socket, req.buffers(), bind(&Proxy::handle_write, this, placeholders::error, placeholders::bytes_transferred));
+        async_write(*_socket, req.buffers(), boost::bind(&Proxy::handle_write, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
         // this async_read returns only when the buffer has been filled
-        async_read(*_socket, _reply.buffers(), bind(&Proxy::handle_proxy_reply, this, placeholders::error, placeholders::bytes_transferred));
+        async_read(*_socket, _reply.buffers(), boost::bind(&Proxy::handle_proxy_reply, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
     else {
         log_error("Failed connect to proxy server: \"%s\" to: %s\n", e.message().c_str(), lexical_cast<string>(_server).c_str());
