@@ -10,6 +10,7 @@ SET(LIB_NAME coinNAT)
 
 SET(HEADER_PATH ${PROJECT_SOURCE_DIR}/include/${LIB_NAME})
 SET(TARGET_H
+    miniupnpc/bsdqueue.h
     miniupnpc/connecthostport.h
     miniupnpc/igd_desc_parse.h
     miniupnpc/minisoap.h
@@ -66,6 +67,7 @@ SET(TARGET_SRC
 )
 
 SOURCE_GROUP("miniupnpc" FILES
+    miniupnpc/bsdqueue.h
     miniupnpc/connecthostport.h
     miniupnpc/igd_desc_parse.h
     miniupnpc/minisoap.h

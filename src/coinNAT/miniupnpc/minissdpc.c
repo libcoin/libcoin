@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <sys/types.h>
 #if defined(WIN32) || defined(__amigaos__) || defined(__amigaos4__)
 #ifdef WIN32
@@ -31,6 +30,7 @@ struct sockaddr_un {
   char     sun_path[UNIX_PATH_LEN];
 };
 #else
+#include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #endif
