@@ -54,6 +54,7 @@ struct Unspent {
     
     bool operator!() { return !is_valid(); }
     
+#ifndef _WIN32
     static inline uint32_t log2(const uint32_t x) {
         uint32_t y;
         asm ( "\tbsr %1, %0\n"
@@ -62,6 +63,16 @@ struct Unspent {
              );
         return y;
     }
+#else
+    static inline uint32_t log2(uint32_t x) {
+        uint32_t y = -1;
+        while (x != 0) {
+            x >>= 1;
+            y++;
+        }
+        return y;
+    }
+#endif
 
     static std::string key_str(const Key& k, size_t a = 0, size_t b = 0) {
         if (a == 0 && b == 0) b = 8*sizeof(Key);

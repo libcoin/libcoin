@@ -177,6 +177,13 @@ public:
 
     void getBlock(int count, Block& block) const;
     
+    /// S H A R E S
+    bool checkShare(const Block& block) const;
+    
+    ShareTree::Dividend getDividend() const {
+        return _share_tree.dividend();
+    }
+    
     /// Get height of block of transaction by its hash
     int getHeight(const uint256 hash) const;
     
@@ -282,6 +289,7 @@ private:
     BlockLocator _bestLocator;
     
     BlockTree _tree;
+    ShareTree _share_tree;
     
     Branches _branches;
 
@@ -291,6 +299,8 @@ private:
     
     Spendables _spendables;
     Spendables _immature_coinbases;
+    
+    Spendables _share_spendables;
     
     Claims _claims;
     

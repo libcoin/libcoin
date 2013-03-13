@@ -35,7 +35,7 @@ using namespace boost;
 using namespace boost::asio;
 using namespace boost::asio::ip;
 
-ChatClient::ChatClient(boost::asio::io_service& io_service, function<void (void)> new_endpoint_notifier, const std::string& server, EndpointPool& endpointPool, string channel, unsigned int channels, tcp::endpoint proxy) : _resolver(io_service), _socket(io_service), _notifier(new_endpoint_notifier), _name_in_use(false), _server(server), _endpointPool(endpointPool), _channel(channel), _channels(channels), _proxy(proxy) {
+ChatClient::ChatClient(boost::asio::io_service& io_service, boost::function<void (void)> new_endpoint_notifier, const std::string& server, EndpointPool& endpointPool, string channel, unsigned int channels, tcp::endpoint proxy) : _resolver(io_service), _socket(io_service), _notifier(new_endpoint_notifier), _name_in_use(false), _server(server), _endpointPool(endpointPool), _channel(channel), _channels(channels), _proxy(proxy) {
     
     // Start an asynchronous resolve to translate the server and service names
     // into a list of endpoints.

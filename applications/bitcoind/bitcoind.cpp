@@ -43,6 +43,20 @@ using namespace boost;
 using namespace boost::program_options;
 using namespace json_spirit;
 
+class SpendablesPool : public Pool {
+public:
+    SpendablesPool(Node& node, Payee& payee) : Pool(node, payee) {
+    }
+    Block getBlockTemplate() {
+        BlockChain::Payees payees;
+        payees.push_back(_payee.current_script());
+        Block block = _blockChain.getBlockTemplate(payees);
+        // add the block to the list of work
+        return block;
+    }
+};
+
+
 class TxWait : public NodeMethod {
 public:
     class Listener : public TransactionFilter::Listener {
@@ -111,6 +125,323 @@ private:
 */
 };
 
+// a pure
+class Share : public Block {
+public:
+    Share() : Block() {}
+    
+    /// Basic checks to test if this block is (could be) a share
+    bool check() const {
+        if (getVersion() < 3) // it has to be at least a version 3 block
+            return false;
+        
+        // get the share target and the previous share
+        int target = getShareBits();
+        uint256 prev = getPrevShare();
+        
+        if (target == 0 || prev == uint256(0))
+            return false;
+        
+        return true;
+    }
+    
+        
+    uint256 getPrevShare() const {
+        try {
+            Script coinbase = getTransaction(0).getInput(0).signature();
+            Script::const_iterator cbi = coinbase.begin();
+            opcodetype opcode;
+            std::vector<unsigned char> data;
+            // We simply ignore the first opcode and data, however, it is the height...
+            coinbase.getOp(cbi, opcode, data);
+            
+            // this should be an opcode for a uint256 (i.e. number of 32 bytes)
+            coinbase.getOp(cbi, opcode, data);
+            
+            // and the prev share (also 32 bytes)
+            uint256 hash_from_coinbase(data);
+            return hash_from_coinbase;
+        } catch (...) {
+        }
+        return uint256(0);
+    }
+    
+    Script getRewardee(size_t i = 0) const {
+        const Transaction& txn = getTransaction(0);
+        return txn.getOutput(0).script();
+    }
+    
+};
+
+// ShareRef is a essentially a block header plus some data extracted from the coinbase - namely:
+//  * The merkletrie root hash
+//  * The previous share hash
+//  * The share target / replacing the normal target
+//  * The redeemer script (this is the first tx out in the coinbase txn)
+/*
+struct ShareRef {
+    typedef uint256 Hash;
+    int version;
+    Hash hash;
+    Hash prev;
+    Hash prev_share;
+    Hash merkletrie;
+    unsigned int time;
+    unsigned int bits;
+    Script script;
+    
+    CBigNum work() const {
+        CBigNum target;
+        target.SetCompact(bits);
+        if (target <= 0)
+            return 0;
+        return (CBigNum(1)<<256) / (target+1);
+    }
+    
+    ShareRef() : version(3), hash(0), prev(0), prev_share(0), merkletrie(0), time(0), bits(0), script(Script()) {}
+    ShareRef(int version, Hash hash, Hash prev, Hash prev_share, Hash merkletrie, unsigned int time, unsigned int bits, const Script& script) : version(version), hash(hash), prev(prev), prev_share(prev_share), merkletrie(merkletrie), time(time), bits(bits), script(script) {}
+};
+
+class COINCHAIN_EXPORT ShareTree : public SparseTree<ShareRef> {
+public:
+    ShareTree() : SparseTree<ShareRef>(), _trimmed(0) {}
+    virtual void assign(const Trunk& trunk);
+    
+    struct Changes {
+        Hashes deleted;
+        Hashes inserted;
+    };
+    
+    struct Pruned {
+        Hashes branches;
+        Hashes trunk;
+    };
+    
+    CBigNum accumulatedWork(BlockTree::Iterator blk) const;
+    
+    Changes insert(const BlockRef ref);
+    
+    void pop_back();
+    
+    Iterator find(const BlockRef::Hash hash) const {
+        return SparseTree<ShareRef>::find(hash);
+    }
+    
+    Iterator best() const {
+        return Iterator(&_trunk.back(), this);
+    }
+    
+    /// Trim the trunk, removing all branches ending below the trim_height
+    Pruned trim(size_t trim_height) {
+        // ignore branches for now...
+        if (trim_height > height())
+            trim_height = height();
+        Pruned pruned;
+        for (size_t h = _trimmed; h < trim_height; ++h)
+            pruned.trunk.push_back(_trunk[h].hash);
+        _trimmed = trim_height;
+        return pruned;
+    }
+    
+    
+private:
+    typedef std::vector<CBigNum> AccumulatedWork;
+    AccumulatedWork _acc_work;
+    
+    size_t _trimmed;
+};
+
+typedef ShareTree::Iterator ShareIterator;
+
+
+/// The Shares chain is for shared mining (like P2Pool) and for validating the blockchain by version 3 block.
+/// It connects to the block chain through block and transaction listeners and to the websocket network to get shares
+class ShareChain : public sqliterate::Database {
+public:
+    
+    ShareChain(const Chain& chain, const string dataDir) :
+    sqliterate::Database(dataDir == "" ? ":memory:" : dataDir + "/sharechain.sqlite3", getMemorySize()/4),
+    _chain(chain) {
+        size_t total_memory = getMemorySize();
+        // use only 25% of the memory at max:
+        const size_t page_size = 4096;
+        size_t cache_size = total_memory/4/page_size;
+        
+        // we need to declare this static as the pointer to the c_str will live also outside this function
+        static string pragma_page_size = "PRAGMA page_size = " + lexical_cast<string>(page_size);
+        static string pragma_cache_size = "PRAGMA cache_size = " + lexical_cast<string>(cache_size);
+        
+        query("PRAGMA journal_mode=WAL");
+        query("PRAGMA locking_mode=NORMAL");
+        query("PRAGMA synchronous=OFF");
+        query(pragma_page_size.c_str()); // this is 512MiB of cache with 4kiB page_size
+        query(pragma_cache_size.c_str()); // this is 512MiB of cache with 4kiB page_size
+        query("PRAGMA temp_store=MEMORY"); // use memory for temp tables
+        
+        query("CREATE TABLE IF NOT EXISTS Shares ("
+              "count INTEGER PRIMARY KEY," // share count is height+1 - i.e. the genesis has count = 1
+              "hash BINARY,"
+              "version INTEGER,"
+              "prev BINARY,"
+              "mrkl BINARY,"
+              "time INTEGER,"
+              "bits INTEGER,"
+              "nonce INTEGER"
+              ")");
+
+        // keep headers back to the last checkpoint
+        // keep coinbase txns back to the last 
+        
+    }
+
+    /// attach is a dry version of the BlockChain::attach - a spendables state is used as basis for a 
+    void attach(ShareIterator shr) {
+        Share share = _shares[shr->hash];
+        int height = shr.height(); // height for non trunk blocks is negative
+        
+        for(size_t idx = 0; idx < block.getNumTransactions(); ++idx)
+            if(!isFinal(share.getTransaction(idx), height, shr->time))
+                throw Error("Contains a non-final transaction");
+        
+        // get a reference to the spendables from its previous block
+        Spendables spendables = _blockChain.getSpendables(share.getPrevBlock());
+        
+        _verifier.reset();
+        
+        //insertBlockHeader(blk.count(), block);
+        
+        // commit transactions
+        int64 fees = 0;
+        int64 min_fee = 0;
+        bool verify = _verification_depth && (height > _verification_depth);
+        for(size_t idx = 1; idx < block.getNumTransactions(); ++idx) {
+            Transaction txn = block.getTransaction(idx);
+            uint256 hash = txn.getHash();
+            if (unconfirmed.count(hash) || _claims.have(hash)) // if the transaction is already among the unconfirmed, we have verified it earlier
+                verify = false;
+            postTransaction(txn, fees, min_fee, blk, idx, verify);
+            unconfirmed.erase(hash);
+            confirmed.insert(hash);
+        }
+        // post subsidy - means adding the new coinbase to spendings and the matured coinbase (100 blocks old) to spendables
+        Transaction txn = block.getTransaction(0);
+        postSubsidy(txn, blk, fees);
+        
+        if (!_verifier.yield_success())
+            throw Error("Verify Signature failed with: " + _verifier.reason());
+    }
+
+    void detach(ShareIterator shr) {
+
+    }
+    
+    void append(Share& share) {
+        // first check that the block is indeed a share:
+        if (!share.check())
+            throw Error("Block is not a valid share");
+        
+        uint256 hash = share.getHash();
+        
+        // check that it is not already committed
+        ShareIterator shr = _tree.find(hash);
+        if (shr != _tree.end())
+            throw Error("Share already committed!");
+        
+        // check that it is connected to the share chain
+        ShareIterator prev = _tree.find(share.getPrevShare());
+        if (prev == _tree.end())
+            throw Error("Cannot accept orphan share");
+        
+        // check the payout - each former share in the share chain need their share
+        // at this stage we don't need to verify that the overall reward is correct, we only need the relative share
+        int64 reward = 0;
+        const Transaction& cb_txn = share.getTransaction(0);
+        for (int i = 0; i < cb_txn.getNumOutputs(); ++i)
+            reward += cb_txn.getOutput(i).value();
+        int64 fraction = reward/360;
+        int64 modulus = reward%360;
+        
+        // check that the shares are correct
+        map<Script, unsigned int> fractions;
+        
+        unsigned int total = 0;
+        for (int i = 1; i < cb_txn.getNumOutputs(); ++i) {
+            const Script& script = cb_txn.getOutput(i).script();
+            int64 value = cb_txn.getOutput(i).value();
+            if (value%fraction)
+                throw Error("Wrong fractions in coinbase transaction");
+            fractions[script] = value/fraction;
+            
+            total += value/fraction;
+        }
+        // now handle the reward to the share creater
+        const Script& script = cb_txn.getOutput(0).script();
+        int64 value = cb_txn.getOutput(0).value();
+        
+        value -= modulus;
+        if (value%fraction)
+            throw Error("Wrong fractions in coinbase transaction 0");
+        
+        fractions[script] = value/fraction - 1;
+
+        // now check that this matches with the numbers in the recent_fractions
+        if (fractions != _fractions)
+            throw Error("Fractions does not match the recent share fractions");
+        
+        // the coinbase_txn is validated - proceed to check if it is a new best in the share tree
+        ShareTree::Changes changes = _tree.insert(BlockRef(share.getVersion(), hash, prev->hash, block.getBlockTime(), block.getBits()));
+        
+        _shares[hash] = share;
+        
+        if (changes.inserted.size() == 0)
+            return;
+        
+        try {            
+            // note that a change set is like a patch - it contains the blockrefs to remove and the blockrefs to add
+            
+            // loop over deleted shares and detach them
+            for (BlockTree::Hashes::const_iterator h = changes.deleted.begin(); h != changes.deleted.end(); ++h) {
+                ShareIterator shr = _tree.find(*h);
+                detach(shr);
+            }
+            
+            // loop over inserted blocks and attach them
+            for (int i = changes.inserted.size() - 1; i >= 0; --i) {
+                shr = _tree.find(changes.inserted[i]);
+                attach(shr);
+            }
+            
+            // we have a commit - also commit the transactions to the merkle trie, which happens automatically when spendables goes out of scope
+            
+            // delete inserted blocks from the _branches
+            for (BlockTree::Hashes::const_iterator h = changes.inserted.begin(); h != changes.inserted.end(); ++h)
+                _shares.erase(*h);
+        }
+        catch (std::exception& e) {
+            query("ROLLBACK --BLOCK");
+            _tree.pop_back();
+            for (BlockTree::Hashes::const_iterator h = changes.deleted.begin(); h != changes.deleted.end(); ++h)
+                _shares.erase(*h);
+            
+            _spendables = snapshot; // this will restore the Merkle Trie to its former state
+            
+            throw Error(string("append(Block): ") + e.what());
+        }
+        
+    }
+private:
+    const Chain& _chain;
+    ShareTree _tree;
+    
+    typedef std::map<uint256, Share> Shares;
+    Shares _shares;
+    
+    // a multi index map to lookup and sort Shares by count and script
+    typedef std::map<Script, unsigned int> Fractions;
+    Fractions _fractions;
+};
+
+*/
 int main(int argc, char* argv[])
 {
     try {

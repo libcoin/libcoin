@@ -143,8 +143,8 @@ public:
         
         if (hash < block.getTarget() )
             _io_service.dispatch(boost::bind(&BlockFilter::process, static_cast<BlockFilter*>(_blockFilter.get()), block, _peerManager.getAllPeers()));
-        else if (hash < block.getShareTarget() )
-            _io_service.dispatch(boost::bind(&ShareFilter::process, static_cast<ShareFilter*>(_shareFilter.get()), block, _peerManager.getAllPeers()));
+            else if (hash < block.getShareTarget() )
+                _io_service.dispatch(boost::bind(&ShareFilter::process, static_cast<ShareFilter*>(_shareFilter.get()), block, _peerManager.getAllPeers()));
     }
         
     /// Subscribe to Transaction accept notifications
@@ -253,6 +253,7 @@ private:
     
     filter_ptr _transactionFilter;
     filter_ptr _blockFilter;
+    filter_ptr _shareFilter;
 
     unsigned int _connection_timeout; // seconds
 

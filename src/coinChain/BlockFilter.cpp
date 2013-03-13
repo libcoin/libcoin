@@ -287,3 +287,20 @@ bool BlockFilter::alreadyHave(const Inventory& inv) {
         return true;
 }
 
+
+bool ShareFilter::process(const Block& block, Peers peers) {
+    uint256 hash = block.getHash();
+    try {
+        _blockChain.append(block);
+    }
+    catch (std::exception &e) {
+        return error((string("append(Block) failed: ") + e.what()).c_str());
+    }
+    // notify all listeners
+    for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
+        (*listener->get())(block);
+    
+    log_debug("ProcessBlock: ACCEPTED\n");
+    return true;
+}
+

@@ -53,6 +53,7 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     //    _endpointPool.loadEndpoints(dataDir);
     _transactionFilter = filter_ptr(new TransactionFilter(_blockChain));
     _blockFilter = filter_ptr(new BlockFilter(_blockChain));
+    _shareFilter = filter_ptr(new ShareFilter(_blockChain));
     
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
     ip::tcp::resolver resolver(_io_service);
@@ -172,6 +173,7 @@ void Node::run() {
     _messageHandler.installFilter(filter_ptr(new VersionFilter));
     _messageHandler.installFilter(filter_ptr(new EndpointFilter(_endpointPool)));
     _messageHandler.installFilter(_blockFilter);
+    _messageHandler.installFilter(_shareFilter);
     _messageHandler.installFilter(_transactionFilter);
     _messageHandler.installFilter(filter_ptr(new AlertFilter(getFullClientVersion()))); // this only output the alert to stdout
     

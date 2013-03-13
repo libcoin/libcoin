@@ -65,10 +65,18 @@ MACRO(SEARCH_3RDPARTY LIBCOIN_3RDPARTY_BIN)
 #        FIND_DEPENDENCY(BOOST_SYSTEM boost/foreach.h libboost_system-vc90-mt-1_48.lib ${LIBCOIN_3RDPARTY_BIN} "D" "")
 #        FIND_DEPENDENCY(BOOST_THREAD boost/foreach.h libboost_thread-vc90-mt-1_48.lib ${LIBCOIN_3RDPARTY_BIN} "D" "")
         
-#        FIND_DEPENDENCY(CRYPTO openssl/ecdsa.h "libeay32.lib" ${LIBCOIN_3RDPARTY_BIN} "D" "")
-#        FIND_DEPENDENCY(SSL openssl/ecdsa.h "ssleay32.lib" ${LIBCOIN_3RDPARTY_BIN} "D" "")
-        
+#        FIND_DEPENDENCY(BOOST boost/version.hpp libboost_date_time ${LIBCOIN_3RDPARTY_BIN} "-gd" "")
+
+        FIND_DEPENDENCY(OPENSSL openssl/ecdsa.h "ssleay32.lib" ${LIBCOIN_3RDPARTY_BIN} "D" "")
+	IF(OPENSSL_FOUND)
+	    SET(LIB_EAY_RELEASE libeay32.lib CACHE FILEPATH "")
+	    SET(SSL_EAY_RELEASE ssleay32.lib CACHE FILEPATH "")
+	ENDIF(OPENSSL_FOUND)
+
+        FIND_DEPENDENCY(SQLITE3 sqlite3.h "sqlite3.lib" ${LIBCOIN_3RDPARTY_BIN} "D" "")
+
         FIND_DEPENDENCY(BDB db_cxx.h "libdb53.lib" ${LIBCOIN_3RDPARTY_BIN} "D" "")
+
 ENDMACRO(SEARCH_3RDPARTY LIBCOIN_3RDPARTY_BIN)
 
 

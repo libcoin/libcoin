@@ -583,11 +583,105 @@ void BlockChain::detach(BlockIterator &blk, Txns& unconfirmed) {
     _branches[blk->hash] = block; // store it in the branches map
 }
 
+// check if this is a share - it is not checked if the transactions in the share can be validated/verified etc,
+// but at least it need to fit into the share chain
+bool BlockChain::checkShare(const Block& share) const {
+    uint256 hash = share.getHash();
+    
+    if (share.getVersion() < 3)
+        return false;
+    
+    if (hash > share.getShareTarget())
+        return false;
+    
+    // now check that it points to a block in the share chain
+    ShareIterator prev = _share_tree.find(share.getPrevShare());
+    
+    if (prev == _share_tree.end() )
+        return false;
+
+    /*
+    // check the next work required
+    if (block.getHeight()%144) {
+        if (block.getShareBits() != prev->bits)
+            return false;
+    }
+    else { // time to adjust the work
+        // count number of shares since last %144
+        //
+        
+        
+    }
+    */
+    
+    try {
+        if (share.getShareBits() != 0x1d00ffff)
+            throw Error("Incorrect proof of work target");
+
+        ShareTree::Dividend dividend;
+        
+        // check that the dividend in this share matches the one in the chain
+        int64 reward = 0;
+        const Transaction& cb_txn = share.getTransaction(0);
+        for (int i = 0; i < cb_txn.getNumOutputs(); ++i)
+            reward += cb_txn.getOutput(i).value();
+        int64 fraction = reward/360;
+        int64 modulus = reward%360;
+        
+        unsigned int total = 0;
+        for (int i = 1; i < cb_txn.getNumOutputs(); ++i) {
+            const Script& script = cb_txn.getOutput(i).script();
+            int64 value = cb_txn.getOutput(i).value();
+            if (value%fraction)
+                throw Error("Wrong fractions in coinbase transaction");
+            dividend[script] = value/fraction;
+            
+            total += value/fraction;
+        }
+        // now handle the reward to the share creater
+        const Script& script = cb_txn.getOutput(0).script();
+        int64 value = cb_txn.getOutput(0).value();
+        
+        value -= modulus;
+        if (value%fraction)
+            throw Error("Wrong fractions in coinbase transaction 0");
+        
+        dividend[script] = value/fraction - 1;
+        
+        // now check that this matches with the numbers in the recent_fractions
+        if (dividend != _share_tree.dividend(hash))
+            throw Error("Fractions does not match the recent share fractions");
+    }
+    catch (Error& e) {
+        log_info("checkShare: %s", e.what());
+    }
+    catch (...) {
+    }
+    return false;
+}
+
 // append(block)
+// A block can be either a normal block or a "share", a share is used to bootstrap the block v3 network, providing a merkletrie root validation for all spendables.
+// A share is a block candidate, and bound by the same rules, however, with the following exceptions:
+// * must be a version 3 block
+// * The hash does not fulfill the hash<target(bits), but only the relaxed hash<target(share_bits)
+// * The best share is the one that forms the longest chain ~144 blocks back (360 shares) (hence the last share hash is part of the coinbase)
+// * The coinbase transaction outputs follows a rule that the miner of the share is the first txout and the following 359 transactions are the miners of the last 360 shares (however, payouts to the same scripts is collapsed to save block space)
+// When appending blocks normal procedures are followed, except checking if the block is also a share - if so, it is added to the share tree
+// When appending shares (that are not valid blocks) the commit is canceled at its final state and the share is only added to the shares tree
+// What to do if a share references a orphaned block - will it become invalidated ? - I think yes - so on reconstructs we need to find the best share as well
+
+// as share means that the block will not be committed (well, unless it is already a valid block)
 void BlockChain::append(const Block &block) {
 
     uint256 hash = block.getHash();
 
+    bool valid_share = checkShare(block);
+    bool invalid_block = (hash > block.getTarget());
+    
+    if (invalid_block && !valid_share)
+        throw Error("Block hash does not meet target and Block is not a Share either");
+    
     Txns unconfirmed;
     Hashes confirmed;
     
@@ -604,14 +698,14 @@ void BlockChain::append(const Block &block) {
     
     if (prev == _tree.end())
         throw Error("Cannot accept orphan block");
-    
+
     if (block.getBits() != _chain.nextWorkRequired(prev))
         throw Error("Incorrect proof of work");
     
     if (block.getBlockTime() <= getMedianTimePast(prev))
         throw Error("Block's timestamp is too early");
 
-    int prev_height = prev.height(); // we need to store this as the prev iterator will be invalid after insert.
+    int prev_height = abs(prev.height()); // we need to store this as the prev iterator will be invalid after insert.
     
     BlockTree::Changes changes = _tree.insert(BlockRef(block.getVersion(), hash, prev->hash, block.getBlockTime(), block.getBits()));
     // keep a snapshot of the spendables trie if we need to rollback, however, don't use it during download.
@@ -631,6 +725,11 @@ void BlockChain::append(const Block &block) {
         // now we need to check if the insertion of the new block will change the work
         // note that a change set is like a patch - it contains the blockrefs to remove and the blockrefs to add
 
+        if (changes.deleted.size()) {
+            // reorganization:
+            log_info("Reorganizing at height %d: deleting %d blocks, inserting %d blocks", prev_height + 1, changes.deleted.size(), changes.inserted.size());
+        }
+        
         // loop over deleted blocks and detach them
         for (BlockTree::Hashes::const_iterator h = changes.deleted.begin(); h != changes.deleted.end(); ++h) {
             BlockIterator blk = _tree.find(*h);
@@ -654,14 +753,35 @@ void BlockChain::append(const Block &block) {
         switch (min_enforced_version > 0 ? min_enforced_version : 0) {
             default:
             case 3:
-                if (block.getVersion() >= 3 && block.checkSpendablesRootInCoinbase(_spendables.root()->hash()))
+                if (block.getVersion() >= 3 && block.getSpendablesRoot() != _spendables.root()->hash())
                     throw Error("Version 3(or more) block with wrong or missing Spendable Root hash in coinbase rejected!");
             case 2:
-                if (block.getVersion() >= 2 && block.checkHeightInCoinbase(prev_height + 1))
+                if (block.getVersion() >= 2 && block.getHeight() != prev_height + 1)
                     throw Error("Version 2(or more) block with wrong or missing height in coinbase rejected!");
             case 1: // nothing to enforce
             case 0: // nothing to enforce
                 break;
+        }
+        
+        // last check is if this block is also a share or only a share
+        if (valid_share) {
+            if(_share_tree.insert(ShareRef(block.getVersion(), hash, block.getPrevBlock(), block.getPrevShare(), block.getSpendablesRoot(), block.getTime(), block.getShareBits(), block.getRewardee())))
+                _share_spendables = _spendables;
+        }
+        else { // check that the latest block commitment (reorganizaion) did not invalidate any shares
+               //            while (!_tree.in_trunk(_share_tree.best()->getPrevHash())
+               //                   _share_tree.pop_back();
+        }
+
+        if (invalid_block) {
+            query("ROLLBACK --BLOCK");
+            _tree.pop_back();
+            for (BlockTree::Hashes::const_iterator h = changes.deleted.begin(); h != changes.deleted.end(); ++h)
+                _branches.erase(*h);
+            
+            _spendables = snapshot; // this will restore the Merkle Trie to its former state
+
+            return;
         }
         
         // if we reach here, everything went as it should and we can commit.

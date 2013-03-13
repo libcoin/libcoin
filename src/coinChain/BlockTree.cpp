@@ -160,3 +160,7 @@ void BlockTree::pop_back() {
 bool operator==(const BlockLocator& a, const BlockLocator& b) {
     return a.have == b.have;
 }
+
+bool ShareTree::insert(const ShareRef ref) {
+    return true;
+}

@@ -1,0 +1,143 @@
+Ttest_claims
+v5
+r1
+cCheck dependencies
+cCompileC tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claims.o /Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+cLd /Users/gronager/Development/libcoin/libcoin/bin/claimsd normal x86_64
+cPhaseScriptExecution "CMake PostBuild Rules" /Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Script-7CC9B0A3C6054650810B5785.sh
+
+N/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk
+c0000000050B326CE00000000000000AA
+t1353918158
+s170
+
+N/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/4.1/include/stdint.h
+c00000000506E93FE00000000000056A4
+t1349424126
+s22180
+
+N/Users/gronager/Development/libcoin/libcoin/bin/claimsd
+t2
+s0
+
+N/Users/gronager/Development/libcoin/libcoin/include/coin/uint256.h
+c0000000050AB8DC50000000000006247
+t1353420229
+s25159
+
+N/Users/gronager/Development/libcoin/libcoin/include/coin/util.h
+c000000005118F9D600000000000051A3
+t1360591318
+s20899
+
+N/Users/gronager/Development/libcoin/libcoin/include/coinChain/BlockTree.h
+c000000005114B6890000000000002BE1
+t1360311945
+s11233
+
+N/Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp
+c0000000051124D510000000000001243
+t1360153937
+s4675
+i<coinChain/BlockTree.h>
+i<coin/uint256.h>
+i<coin/util.h>
+i<string>
+i<iostream>
+i<boost/lexical_cast.hpp>
+i<stdint.h>
+
+N/Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claims.o
+t2
+s0
+
+N/Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claimsd.LinkFileList
+c00000000511F583A000000000000007E
+t1361008698
+s126
+
+N/Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Script-7CC9B0A3C6054650810B5785.sh
+c00000000511F583A00000000000000C6
+t1361008698
+s198
+
+N/usr/local/include/boost/lexical_cast.hpp
+c000000004E6524B2000000000000F3B3
+t1315251378
+s62387
+
+CBuild AST from /Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp
+r0
+
+CCheck dependencies
+r0
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection18"Check dependenciesf4a420ba8fcfb641^04e621ba8fcfb641^---0#1#0#--18"Check dependencies36"4D3F8606-72B4-404C-A08C-79CE1937BAD1-
+
+CCompileC tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claims.o /Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+s382701498.137213
+e382701501.427965
+r1
+xCompileC
+xtests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claims.o
+x/Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp
+xnormal
+xx86_64
+xc++
+xcom.apple.compilers.llvm.clang.1_0.compiler
+oclang: warning: argument unused during compilation: '-ftree-vectorize'
+oIn file included from /Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp:18:
+oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coinChain/BlockTree.h:20:
+oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/BigNum.h:12:
+oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/util.h:23:
+oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Logger.h:22:
+oIn file included from /usr/local/include/boost/thread/thread.hpp:17:
+oIn file included from /usr/local/include/boost/thread/pthread/thread_data.hpp:10:
+oIn file included from /usr/local/include/boost/shared_ptr.hpp:17:
+oIn file included from /usr/local/include/boost/smart_ptr/shared_ptr.hpp:30:
+o/usr/local/include/boost/checked_delete.hpp:34:5: warning: delete called on 'boost::error_info<boost::tag_original_exception_type, const std::type_info *>' that has virtual functions but non-virtual destructor [-Wdelete-non-virtual-dtor]
+o    delete x;
+o    ^
+o/usr/local/include/boost/smart_ptr/detail/shared_count.hpp:95:13: note: in instantiation of function template specialization 'boost::checked_delete<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here
+o            boost::checked_delete( p );
+o            ^
+o/usr/local/include/boost/smart_ptr/shared_ptr.hpp:183:44: note: in instantiation of function template specialization 'boost::detail::shared_count::shared_count<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here
+o    explicit shared_ptr( Y * p ): px( p ), pn( p ) // Y must be complete
+o                                           ^
+o/usr/local/include/boost/exception/info.hpp:170:42: note: in instantiation of function template specialization 'boost::shared_ptr<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >::shared_ptr<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here
+o            shared_ptr<error_info_tag_t> p( new error_info_tag_t(v) );
+o                                         ^
+o/usr/local/include/boost/exception/info.hpp:191:16: note: in instantiation of function template specialization 'boost::exception_detail::set_info<boost::unknown_exception, boost::tag_original_exception_type, const std::type_info *>' requested here
+o        return exception_detail::set_info(x,v);
+o               ^
+o/usr/local/include/boost/exception/detail/exception_ptr.hpp:181:21: note: in instantiation of function template specialization 'boost::operator<<<boost::unknown_exception, boost::tag_original_exception_type, const std::type_info *>' requested here
+o            (*this) << original_exception_type(&typeid(e));
+o                    ^
+o/usr/local/include/boost/exception/detail/exception_ptr.hpp:160:13: note: in instantiation of function template specialization 'boost::unknown_exception::add_original_type<std::exception>' requested here
+o            add_original_type(e);
+o            ^
+o1 warning generated.
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection75"Compile /Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cppd7be24ba8fcfb641^5f9a6ebd8fcfb641^-3110"clang: warning: argument unused during compilation: '-ftree-vectorize'In file included from /Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp:18:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinChain/BlockTree.h:20:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/BigNum.h:12:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/util.h:23:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Logger.h:22:In file included from /usr/local/include/boost/thread/thread.hpp:17:In file included from /usr/local/include/boost/thread/pthread/thread_data.hpp:10:In file included from /usr/local/include/boost/shared_ptr.hpp:17:In file included from /usr/local/include/boost/smart_ptr/shared_ptr.hpp:30:/usr/local/include/boost/checked_delete.hpp:34:5: warning: delete called on 'boost::error_info<boost::tag_original_exception_type, const std::type_info *>' that has virtual functions but non-virtual destructor [-Wdelete-non-virtual-dtor]    delete x;    ^/usr/local/include/boost/smart_ptr/detail/shared_count.hpp:95:13: note: in instantiation of function template specialization 'boost::checked_delete<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here            boost::checked_delete( p );            ^/usr/local/include/boost/smart_ptr/shared_ptr.hpp:183:44: note: in instantiation of function template specialization 'boost::detail::shared_count::shared_count<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here    explicit shared_ptr( Y * p ): px( p ), pn( p ) // Y must be complete                                           ^/usr/local/include/boost/exception/info.hpp:170:42: note: in instantiation of function template specialization 'boost::shared_ptr<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >::shared_ptr<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here            shared_ptr<error_info_tag_t> p( new error_info_tag_t(v) );                                         ^/usr/local/include/boost/exception/info.hpp:191:16: note: in instantiation of function template specialization 'boost::exception_detail::set_info<boost::unknown_exception, boost::tag_original_exception_type, const std::type_info *>' requested here        return exception_detail::set_info(x,v);               ^/usr/local/include/boost/exception/detail/exception_ptr.hpp:181:21: note: in instantiation of function template specialization 'boost::operator<<<boost::unknown_exception, boost::tag_original_exception_type, const std::type_info *>' requested here            (*this) << original_exception_type(&typeid(e));                    ^/usr/local/include/boost/exception/detail/exception_ptr.hpp:160:13: note: in instantiation of function template specialization 'boost::unknown_exception::add_original_type<std::exception>' requested here            add_original_type(e);            ^1 warning generated.1(36%IDEClangDiagnosticActivityLogMessage2@150"Delete called on 'boost::error_info<boost::tag_original_exception_type, const std::type_info *>' that has virtual functions but non-virtual destructor-382701501#18446744073709551615#0#15(2@93"In file included from /Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp:18:-382701501#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic23%DVTTextDocumentLocation3@83"file://localhost/Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp0000000000000000^17#9#17#9#721#0#21"Clang LLVM 1.0 Notice--2@99"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinChain/BlockTree.h:20:-382701501#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@89"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinChain/BlockTree.h0000000000000000^19#9#19#9#731#0#21"Clang LLVM 1.0 Notice--2@91"In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/BigNum.h:12:-382701501#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@81"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/BigNum.h0000000000000000^11#9#11#9#360#0#21"Clang LLVM 1.0 Notice--2@89"In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/util.h:23:-382701501#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@79"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/util.h0000000000000000^22#9#22#9#536#0#21"Clang LLVM 1.0 Notice--2@91"In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Logger.h:22:-382701501#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@81"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/Logger.h0000000000000000^21#9#21#9#761#0#21"Clang LLVM 1.0 Notice--2@68"In file included from /usr/local/include/boost/thread/thread.hpp:17:-382701501#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@58"file://localhost/usr/local/include/boost/thread/thread.hpp0000000000000000^16#9#16#9#475#0#21"Clang LLVM 1.0 Notice--2@81"In file included from /usr/local/include/boost/thread/pthread/thread_data.hpp:10:-382701501#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@71"file://localhost/usr/local/include/boost/thread/pthread/thread_data.hpp0000000000000000^9#9#9#9#376#0#21"Clang LLVM 1.0 Notice--2@65"In file included from /usr/local/include/boost/shared_ptr.hpp:17:-382701501#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@55"file://localhost/usr/local/include/boost/shared_ptr.hpp0000000000000000^16#9#16#9#456#0#21"Clang LLVM 1.0 Notice--2@75"In file included from /usr/local/include/boost/smart_ptr/shared_ptr.hpp:30:-382701501#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@65"file://localhost/usr/local/include/boost/smart_ptr/shared_ptr.hpp0000000000000000^29#9#29#9#993#0#21"Clang LLVM 1.0 Notice--2@171"In instantiation of function template specialization 'boost::checked_delete<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here-382701501#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@74"file://localhost/usr/local/include/boost/smart_ptr/detail/shared_count.hpp0000000000000000^94#12#94#12#2149#0#14"Semantic Issue--2@191"In instantiation of function template specialization 'boost::detail::shared_count::shared_count<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here-382701501#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@65"file://localhost/usr/local/include/boost/smart_ptr/shared_ptr.hpp0000000000000000^182#43#182#43#4426#0#14"Semantic Issue--2@259"In instantiation of function template specialization 'boost::shared_ptr<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >::shared_ptr<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here-382701501#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@59"file://localhost/usr/local/include/boost/exception/info.hpp0000000000000000^169#41#169#41#4846#0#14"Semantic Issue--2@189"In instantiation of function template specialization 'boost::exception_detail::set_info<boost::unknown_exception, boost::tag_original_exception_type, const std::type_info *>' requested here-382701501#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@59"file://localhost/usr/local/include/boost/exception/info.hpp0000000000000000^190#15#190#15#5586#0#14"Semantic Issue--2@173"In instantiation of function template specialization 'boost::operator<<<boost::unknown_exception, boost::tag_original_exception_type, const std::type_info *>' requested here-382701501#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@75"file://localhost/usr/local/include/boost/exception/detail/exception_ptr.hpp0000000000000000^180#20#180#20#4684#0#14"Semantic Issue--2@129"In instantiation of function template specialization 'boost::unknown_exception::add_original_type<std::exception>' requested here-382701501#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@75"file://localhost/usr/local/include/boost/exception/detail/exception_ptr.hpp0000000000000000^159#12#159#12#4257#0#14"Semantic Issue--1#27"com.apple.dt.IDE.diagnostic3@59"file://localhost/usr/local/include/boost/checked_delete.hpp0000000000000000^33#4#33#4#899#0#14"Semantic Issue--0#0#0#-19%DVTDocumentLocation4@83"file://localhost/Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp0000000000000000^2216"CompileC tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claims.o tests/claims/claims.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -DLIBCOIN_LIBRARY_STATIC -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/bin/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/bin -mmacosx-version-min=10.8 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claims.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claims.dia -c /Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp -o /Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claims.o36"1CF0AAC4-42C6-4EF0-AABD-542EFF328BE8-
+
+CLd /Users/gronager/Development/libcoin/libcoin/bin/claimsd normal x86_64
+s382701501.434470
+e382701501.705153
+r1
+xLd
+x/Users/gronager/Development/libcoin/libcoin/bin/claimsd
+xnormal
+xx86_64
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection60"Link /Users/gronager/Development/libcoin/libcoin/bin/claimsd13616fbd8fcfb641^6f82cfbd8fcfb641^---0#0#0#--1369"Ld bin/claimsd normal x86_64    cd /Users/gronager/Development/libcoin/libcoin    setenv MACOSX_DEPLOYMENT_TARGET 10.8    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++ -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -L/Users/gronager/Development/libcoin/libcoin/bin -F/Users/gronager/Development/libcoin/libcoin/bin -filelist /Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claimsd.LinkFileList -mmacosx-version-min=10.8 -Wl,-search_paths_first -Wl,-headerpad_max_install_names /Users/gronager/Development/libcoin/libcoin/lib/libcoind.a /Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPd.a /Users/gronager/Development/libcoin/libcoin/lib/libcoinChaind.a /usr/lib/libm.dylib /usr/local/lib/libcrypto.a /usr/local/lib/libssl.a /usr/local/lib/libboost_date_time.dylib /usr/local/lib/libboost_regex.dylib /usr/local/lib/libboost_system.dylib /usr/local/lib/libboost_filesystem.dylib /usr/local/lib/libboost_thread.dylib /usr/local/lib/libboost_program_options.dylib /usr/lib/libdl.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPd.a /Users/gronager/Development/libcoin/libcoin/lib/libcoind.a -o /Users/gronager/Development/libcoin/libcoin/bin/claimsd36"DD551D1B-79A9-49D5-9678-20C17E3FF0C9-
+
+CPhaseScriptExecution "CMake PostBuild Rules" /Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Script-7CC9B0A3C6054650810B5785.sh
+s382701501.714219
+e382701501.816252
+r1
+xPhaseScriptExecution
+xCMake PostBuild Rules
+x/Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Script-7CC9B0A3C6054650810B5785.sh
+oecho "Depend check for xcode"
+oDepend check for xcode
+ocd /Users/gronager/Development/libcoin/libcoin && make -C /Users/gronager/Development/libcoin/libcoin -f /Users/gronager/Development/libcoin/libcoin/CMakeScripts/XCODE_DEPEND_HELPER.make PostBuild.test_claims.Debug
+omake[1]: Nothing to be done for `PostBuild.test_claims.Debug'.
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection47"Run custom shell script 'CMake PostBuild Rules'fca7b7bd8fcfb641^033ef3bd8fcfb641^-331"echo "Depend check for xcode"Depend check for xcodecd /Users/gronager/Development/libcoin/libcoin && make -C /Users/gronager/Development/libcoin/libcoin -f /Users/gronager/Development/libcoin/libcoin/CMakeScripts/XCODE_DEPEND_HELPER.make PostBuild.test_claims.Debugmake[1]: Nothing to be done for `PostBuild.test_claims.Debug'.4(21%IDEActivityLogMessage2@30"echo "Depend check for xcode"-382701501#0#30#-0#-----2@23"Depend check for xcode-382701501#30#23#-0#-----2@215"cd /Users/gronager/Development/libcoin/libcoin && make -C /Users/gronager/Development/libcoin/libcoin -f /Users/gronager/Development/libcoin/libcoin/CMakeScripts/XCODE_DEPEND_HELPER.make PostBuild.test_claims.Debug-382701501#53#215#-0#-----2@63"make[1]: Nothing to be done for `PostBuild.test_claims.Debug'.-382701501#268#63#-0#-----0#0#0#--327"PhaseScriptExecution "CMake PostBuild Rules" tests/claims/libcoin.build/Debug/test_claims.build/Script-7CC9B0A3C6054650810B5785.sh    cd /Users/gronager/Development/libcoin/libcoin    /bin/sh -c /Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Script-7CC9B0A3C6054650810B5785.sh36"00E0DA2D-DAAA-48E2-BEA4-950528987E4C-
+

@@ -66,6 +66,31 @@ protected:
     BlockTemplates::iterator _latest_work;
 };
 
+class COINPOOL_EXPORT SharePool : public Pool {
+public:
+    /// Initialize Pool with a node and a payee, i.e. an abstraction of a payee address generator
+    SharePool(Node& node, Payee& payee) : Pool(node, payee) {
+    }
+    
+    /// generate a block template that adheres to the current share chain, i.e. pays out dividend to the other share holders
+    virtual Block getBlockTemplate() {
+        // iterate over all dividend and add
+        BlockChain::Payees payees;
+        payees.push_back(_payee.current_script());
+        BlockChain::Fractions fractions;
+        fractions.push_back(1);
+        ShareTree::Dividend divi = _blockChain.getDividend();
+        for (ShareTree::Dividend::const_iterator d = divi.begin(); d != divi.end(); ++d) {
+            payees.push_back(d->first);
+            fractions.push_back(d->second);
+        }
+        Block block = _blockChain.getBlockTemplate(payees, fractions);
+        // add the block to the list of work
+        return block;
+    }
+    
+};
+
 class COINPOOL_EXPORT PoolMethod : public Method {
 public:
     PoolMethod(Pool& pool) : _pool(pool) {}

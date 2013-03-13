@@ -30,9 +30,8 @@ class Block;
 class BlockChain;
 class Inventory;
 
-class COINCHAIN_EXPORT BlockFilter : public Filter
-{
-public:    
+class COINCHAIN_EXPORT BlockFilter : public Filter {
+public:
     BlockFilter(BlockChain& bc) : _blockChain(bc) {}
     
     class Listener : private boost::noncopyable {
@@ -48,7 +47,7 @@ public:
     virtual bool operator()(Peer* origin, Message& msg);
     
     virtual std::set<std::string> commands() {
-        std::set<std::string> c; 
+        std::set<std::string> c;
         c.insert("block");
         c.insert("getblocks");
         c.insert("getheaders");
@@ -57,7 +56,7 @@ public:
         c.insert("version");
         return c;
     }
-
+    
     /// Call process to get a hook into the block processing, e.g. if for injecting mining generated blocks
     bool process(const Block& block, Peers peers);
     
@@ -65,13 +64,54 @@ private:
     uint256 getOrphanRoot(const Block* pblock);
     
     bool alreadyHave(const Inventory& inv);
-
+    
 private:
     BlockChain& _blockChain;
     Listeners _listeners;
     
     std::map<uint256, Block*> _orphanBlocks;
     std::multimap<uint256, Block*> _orphanBlocksByPrev;
+    
+    std::map<Inventory, int64> _alreadyAskedFor;
+};
+
+class COINCHAIN_EXPORT ShareFilter : public Filter {
+public:
+    ShareFilter(BlockChain& bc) : _blockChain(bc) {}
+    
+    class Listener : private boost::noncopyable {
+    public:
+        virtual void operator()(const Block&) = 0;
+        virtual ~Listener() {}
+    };
+    typedef boost::shared_ptr<Listener> listener_ptr;
+    typedef std::set<listener_ptr> Listeners;
+    
+    void subscribe(listener_ptr listener) { _listeners.insert(listener); }
+    
+    virtual bool operator()(Peer* origin, Message& msg) { return false; }
+    
+    virtual std::set<std::string> commands() {
+        std::set<std::string> c;
+        c.insert("share");
+        c.insert("version");
+        return c;
+    }
+    
+    /// Call process to get a hook into the share processing, e.g. if for injecting mining generated blocks
+    bool process(const Block& block, Peers peers);
+    
+private:
+    uint256 getOrphanRoot(const Block* pblock);
+    
+    bool alreadyHave(const Inventory& inv);
+    
+private:
+    BlockChain& _blockChain;
+    Listeners _listeners;
+    
+    std::map<uint256, Block*> _orphanShares;
+    std::multimap<uint256, Block*> _orphanSharesByPrev;
     
     std::map<Inventory, int64> _alreadyAskedFor;
 };

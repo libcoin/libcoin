@@ -18,6 +18,7 @@
 #define BLOCKTREE_H
 
 #include <coin/BigNum.h>
+#include <coin/Script.h>
 
 #include <coinChain/Export.h>
 
@@ -346,5 +347,102 @@ public:
     
     friend bool operator==(const BlockLocator& a, const BlockLocator& b);
 };
-                        
+
+struct ShareRef {
+    typedef uint256 Hash;
+    int version;
+    Hash hash;
+    Hash prev;
+    Hash prev_share;
+    Hash merkletrie;
+    unsigned int time;
+    unsigned int bits;
+    Script rewardee;
+    
+    CBigNum work() const {
+        CBigNum target;
+        target.SetCompact(bits);
+        if (target <= 0)
+            return 0;
+        return (CBigNum(1)<<256) / (target+1);
+    }
+    
+    ShareRef() : version(3), hash(0), prev(0), prev_share(0), merkletrie(0), time(0), bits(0), rewardee(Script()) {}
+    ShareRef(int version, Hash hash, Hash prev, Hash prev_share, Hash merkletrie, unsigned int time, unsigned int bits, const Script& rewardee) : version(version), hash(hash), prev(prev), prev_share(prev_share), merkletrie(merkletrie), time(time), bits(bits), rewardee(rewardee) {}
+};
+
+class COINCHAIN_EXPORT ShareTree : public SparseTree<ShareRef> {
+public:
+    ShareTree() : SparseTree<ShareRef>(), _trimmed(0) {}
+    //    virtual void assign(const Trunk& trunk);
+    
+    struct Pruned {
+        Hashes branches;
+        Hashes trunk;
+    };
+    
+    CBigNum accumulatedWork(BlockTree::Iterator blk) const;
+    
+    bool insert(const ShareRef ref);
+    
+    void pop_back();
+    
+    Iterator find(const ShareRef::Hash hash) const {
+        return SparseTree<ShareRef>::find(hash);
+    }
+    
+    Iterator best() const {
+        return Iterator(&_trunk.back(), this);
+    }
+    
+    typedef std::map<Script, unsigned int> Dividend;
+
+    Dividend dividend(ShareRef::Hash hash = uint256(0)) const {
+        if (hash == uint256(0))
+            hash = best()->hash;
+        Dividend divi;
+        // step backwards 359 shares and add the dividend into bins keyed by the payout script
+        // what if you do not have 359 shares in the tree ?
+        // just use the ones that is there ? ask for more ?
+        Iterator shr = find(hash);
+        if (shr == end())
+            return divi;
+        
+        // step backwards either 360 steps or to the oldest share:
+        for (int i = 0; i < 359; ++i) {
+            Script rewardee = shr->rewardee;
+            if (!divi.count(rewardee))
+                divi[rewardee] = 1;
+            else
+                divi[rewardee] += 1;
+            if (!--shr)
+                break;
+        }
+        return divi;
+    }
+    
+    /// Trim the trunk, removing all branches ending below the trim_height
+    Pruned trim(size_t trim_height) {
+        // ignore branches for now...
+        if (trim_height > height())
+            trim_height = height();
+        Pruned pruned;
+        for (size_t h = _trimmed; h < trim_height; ++h)
+            pruned.trunk.push_back(_trunk[h].hash);
+        _trimmed = trim_height;
+        return pruned;
+    }
+    
+    
+private:
+    typedef std::vector<CBigNum> AccumulatedWork;
+    AccumulatedWork _acc_work;
+    
+    size_t _trimmed;
+};
+
+typedef ShareTree::Iterator ShareIterator;
+
+
+
 #endif // BLOCKTREE_H

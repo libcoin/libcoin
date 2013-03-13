@@ -189,6 +189,12 @@ public:
         return uint256(0);
     }
     
+    Script getRewardee(size_t i = 0) const {
+        const Transaction& txn = getTransaction(0);
+        return txn.getOutput(0).script();
+    }
+
+    
     const int getNonce() const { return _nonce; }
 
     void setNonce(unsigned int nonce) { _nonce = nonce; }

@@ -172,7 +172,8 @@ int Block::getHeight() const {
     if (opcode < OP_PUSHDATA1) {
         CBigNum height;
         height.setvch(data);
-        return height.getint();
+        int h = height.getint();
+        return h;
     }
     return 0;
 }
