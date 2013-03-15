@@ -120,10 +120,15 @@ void Connection::log_request() const {
     //    _access_log << " " << hex << (long) this << dec;
     // finally, if POST, log the rpc method if present
     if (_request.method() == "POST") {
-        RPC rpc(_request);
-        string rpc_method = rpc.method();
-        if (rpc_method.size())
-            _access_log << " " << rpc_method;
+        try {
+            RPC rpc(_request);
+            string rpc_method = rpc.method();
+            if (rpc_method.size())
+                _access_log << " " << rpc_method;
+        }
+        catch (...) {
+            _access_log << " " << "Malformed RPC call";
+        }
     }
     
     _access_log << endl;

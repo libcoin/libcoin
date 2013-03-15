@@ -65,12 +65,20 @@ namespace sqliterate {
     }
     void StatementBase::get(std::string& arg, int col) const {
         int storage_class = sqlite3_column_type(_->stmt, col);
+        if (storage_class == SQLITE_NULL) {
+            arg.clear();
+            return;
+        }
         if (storage_class != SQLITE3_TEXT)
             throw Database::Error("StatementBase::get(" + lexical_cast<string>(col) + ") : storage class error, expected SQLITE_TEXT got: " + lexical_cast<string>(storage_class));
         arg = string((const char*)sqlite3_column_text(_->stmt, col));
     }
     void StatementBase::get(blob& arg, int col) const {
         int storage_class = sqlite3_column_type(_->stmt, col);
+        if (storage_class == SQLITE_NULL) {
+            arg.clear();
+            return;
+        }
         if (storage_class != SQLITE_BLOB)
             throw Database::Error("StatementBase::get(" + lexical_cast<string>(col) + ") : storage class error, expected SQLITE_BLOB got: " + lexical_cast<string>(storage_class));
         int bytes = sqlite3_column_bytes(_->stmt, col);
@@ -151,6 +159,7 @@ namespace sqliterate {
         for (Stats::const_reverse_iterator s = stats.rbegin(); s != stats.rend(); ++s) {
             oss << cformat("%4.1f%% ", 100.*s->first/total_time).text() << s->second << "\n";
         }
+        oss << cformat("SQL MEMORYSTATUS: USED: %dMB HIGHWATER: %dMB\n", sqlite3_memory_used()/1024/1024, sqlite3_memory_highwater(1)/1024/1024);
         oss << std::endl;
         return oss.str();
     }
