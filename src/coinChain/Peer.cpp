@@ -132,8 +132,10 @@ void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferre
             if (result) {
                 if (_messageHandler.handleMessage(this, _message) ) fRet = true;
             }
-            else if (!result)
-                continue;
+            else if (!result) {
+                log_warn("Peer sending bogus - disconnecting: %s", addr.toString());
+                _peerManager.post_stop(shared_from_this());
+            }//                continue; // basically, if we get a false result, we should consider to disconnect from the Peer!
             else
                 break;
         }

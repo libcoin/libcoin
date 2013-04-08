@@ -163,12 +163,12 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
         _validation_depth = _chain.totalBlocksEstimate();
 
         // load the elements - i.e. the spendables
-        Unspents spendables = queryColRow<Unspent(int64, uint256, unsigned int, int64, Script, int64, int64)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count >= -?", _tree.count()-COINBASE_MATURITY);
+        Unspents spendables = queryColRow<Unspent(int64, uint256, unsigned int, int64, Script, int64, int64)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count >= -?", _tree.count()-COINBASE_MATURITY+1);
         
         for (Unspents::const_iterator u = spendables.begin(); u != spendables.end(); ++u)
             _spendables.insert(*u);
         
-        Unspents immatures = queryColRow<Unspent(int64, uint256, unsigned int, int64, Script, int64, int64)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count < -?", _tree.count()-COINBASE_MATURITY);
+        Unspents immatures = queryColRow<Unspent(int64, uint256, unsigned int, int64, Script, int64, int64)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count < -?", _tree.count()-COINBASE_MATURITY+1);
 
         for (Unspents::const_iterator u = immatures.begin(); u != immatures.end(); ++u)
             _immature_coinbases.insert(*u);
@@ -323,7 +323,7 @@ Output BlockChain::redeem(const Input& input, Confirmation iconf) {
         if (!!is)
             coin = *is;
         else
-            throw Error("Spent coin not found or immature coinbase");
+            throw Error("Spent coin: " + input.prevout().toString() + " not found or immature coinbase");
         
         _spendables.remove(is);
         _redeemStats.stop();
@@ -469,7 +469,7 @@ void BlockChain::postSubsidy(const Transaction txn, BlockIterator blk, int64 fee
         issue(outputs[out_idx], hash, out_idx, conf, unique);
 
     if (_validation_depth > 0 && blk.count() > COINBASE_MATURITY)
-        maturate(blk.count()-COINBASE_MATURITY);
+        maturate(blk.count()-COINBASE_MATURITY+1);
 }
 
 void BlockChain::rollbackConfirmation(int64 cnf) {
