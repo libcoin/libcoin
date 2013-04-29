@@ -46,7 +46,7 @@ PortMapper::PortMapper(boost::asio::io_service& io_service, unsigned short port,
 
 void PortMapper::start() {
     _repeat_timer.expires_from_now(boost::posix_time::seconds(0));
-    _repeat_timer.async_wait(bind(&PortMapper::handle_mapping, this, placeholders::error));
+    _repeat_timer.async_wait(boost::bind(&PortMapper::handle_mapping, this, boost::asio::placeholders::error));
 }
 
 void PortMapper::stop() {
@@ -112,7 +112,7 @@ void PortMapper::handle_mapping(const boost::system::error_code& e) {
                 break;
         }
     }
-    _repeat_timer.async_wait(bind(&PortMapper::handle_mapping, this, placeholders::error));
+    _repeat_timer.async_wait(boost::bind(&PortMapper::handle_mapping, this, boost::asio::placeholders::error));
 }
         
 void PortMapper::reqIDGportmap(unsigned short p) {
@@ -149,7 +149,7 @@ void PortMapper::reqIDGportmap(unsigned short p) {
     _idg_trying = false;
     if(_idg_mapping) {
         _repeat_timer.expires_from_now(boost::posix_time::seconds(0));
-        _repeat_timer.async_wait(bind(&PortMapper::handle_mapping, this, placeholders::error));        
+        _repeat_timer.async_wait(boost::bind(&PortMapper::handle_mapping, this, boost::asio::placeholders::error));
     }
 }
 

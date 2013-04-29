@@ -16,6 +16,7 @@
 #include <io.h>
 #include <winsock.h>
 #include <stdint.h>
+#define ssize_t int
 #endif
 #if defined(__amigaos__) || defined(__amigaos4__)
 #include <sys/socket.h>

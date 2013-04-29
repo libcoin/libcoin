@@ -597,9 +597,21 @@ bool BlockChain::checkShare(const Block& share) const {
     // now check that it points to a block in the share chain
     ShareIterator prev = _share_tree.find(share.getPrevShare());
     
-    if (prev == _share_tree.end() )
+    if (prev == _share_tree.end() ) // this is not needed, however, if it does not point to a block in the share chain, it need to be a new share genesis, and if so it need to build up work over time - so we choose the best work from the last 24hr (144 blocks) to be our "best" chain.
         return false;
 
+    // work required: if height%144 == 0 calculate - else choose last, if no last choose default
+    int height = share.getHeight();
+    int target = 0x1d00ffff;
+    if (height%144) {
+        target = prev->bits;
+    }
+    else {
+        // iterate backwards to find the last 144 block
+        ShareIterator blk = prev;
+        //        while (
+    }
+    
     /*
     // check the next work required
     if (block.getHeight()%144) {

@@ -39,7 +39,6 @@ public:
     virtual json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp) { return json_spirit::Value::null; };
     
     /// overload dispatch to enable dispatch from another thread
-    //    template <typename CompletionHandler>
     typedef boost::function<void (void)> CompletionHandler;
     virtual void dispatch(const CompletionHandler& f, const Request& request) {
         dispatch(f);

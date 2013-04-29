@@ -139,8 +139,6 @@ public:
     /// C O I N S
     
     bool isSpent(Coin coin) const;
-    /// This rather strange name refers to this coin included in a transaction in the memorypool
-    bool beingSpent(Coin coin) const;
     
     /// getUnspents return unspent coins and values before a certain timestamp.
     /// If the timestamp is less than 500.000.000 it is assumed that it refers to a certain block,

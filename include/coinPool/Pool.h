@@ -76,7 +76,7 @@ public:
     virtual Block getBlockTemplate() {
         // iterate over all dividend and add
         BlockChain::Payees payees;
-        payees.push_back(_payee.current_script());
+        payees.push_back(_payee.current_script()); // insert our script as the first
         BlockChain::Fractions fractions;
         fractions.push_back(1);
         ShareTree::Dividend divi = _blockChain.getDividend();

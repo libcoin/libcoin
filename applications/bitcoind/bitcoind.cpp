@@ -442,6 +442,227 @@ private:
 };
 
 */
+
+class Miner : private boost::noncopyable {
+public:
+    Miner(Pool& pool) : _pool(pool), _io_service(), _generate(true) {}
+    
+    // run the miner
+    void run() {
+        // get a block candidate
+        _io_service.run();
+    }
+    
+    void setGenerate(bool gen) {
+        if (gen^_generate) {
+            _generate = gen;
+            if (_generate)
+                _io_service.post(boost::bind(&Miner::mine, this));
+        }
+    }
+    
+    bool getGenerate() const {
+        return _generate;
+    }
+    
+    /// Shutdown the Node.
+    void shutdown() { _io_service.dispatch(boost::bind(&Miner::handle_stop, this)); }
+    
+private:
+    void handle_stop() {
+        _io_service.stop();
+    }
+    
+    // return true on success
+    bool mine() {
+        int tries = 65536;
+        
+        Block block = _pool.getBlockTemplate();
+
+        uint256 target = _pool.target();
+        
+        // mine - i.e. adjust the nonce and calculate the hash - note this is a totally crappy mining implementation! Don't used except for testing
+        while (block.getHash() > target && tries--)
+            block.setNonce(block.getNonce() + 1);
+
+        if (block.getHash() <= target)
+            _pool.submitBlock(block);
+
+        if (_generate)
+            _io_service.post(boost::bind(&Miner::mine, this));
+    }
+    
+protected:
+    Pool& _pool;
+    
+    boost::asio::io_service _io_service;
+            
+    bool _generate;
+};
+
+void calcDividend () {
+    // test function
+    // we maintain a sharetree for the last 144 blocks
+    // the sharetree is up to 1440 blocks long (could be longer, but only 1440 is used)
+    // the sharetree has two targets before and after the block%144
+    // work is the accumulated work for the last 144 blocks
+    // there can be several sharetrees - the longest is considered the "best"
+    // the sharetrees can be multirooted!
+    // each new share attaches to the share tree as insert(share), which might result in a reorg of the sharetree, but that dosn't matter for the transactions
+    // we calc the dividend as: all, up to 1440 blocks, of the sharetree
+    // The sharetree is only stored in memory
+    // The sharetree can also use the sparse tree (keeping only the best chain indexed) ?
+    
+}
+
+// A structure to hold the ShareChains - First a ShareTree:
+class ShareTree {
+public:
+    typedef std::list<ShareRef> Container;
+    typedef std::map<uint256, Container::const_iterator> Index;
+
+    ShareTree(ShareRef share) : _work(0){
+        append(share);
+    }
+
+    ShareTree(Container::const_iterator shr, Container::const_iterator last) {
+        do {
+            append(*shr);
+        } while(shr++ != last);
+    }
+    
+    Container::const_iterator find(const uint256 hash) {
+        return _index.find(hash);
+    }
+    
+    void append(ShareRef share) {
+        _container.push_back(share);
+        _index[share.hash] = _container.end() - 1;
+        _work += share.work();
+    }
+    
+    CBigNum work() const {
+        return _work;
+    }
+    
+    // delete all shares pointing the the old block and update the work
+    void prune(uint256 old) {
+        while (_container.front().prev == old) {
+            _index.erase(_container.front().hash);
+            _work -= _container.front().work();
+            _container.pop_front();
+        }
+    }
+    
+    // to check that a new share is valid we need to compare it to the share chain it references
+    // we can hence get a set of outputs transactions should adhere
+    
+    // further we need logic to do manage the target adjustment
+    // target adjustment follows a rule that each 144 blocks an ajustment is made so that
+    // if we had more than 360 shares we adjust the difficulty up, and down otherwise.
+    // However, we never adjust by more than a factor of 4 and minimum diffiulty is that of
+    // main chain.
+    // will be called from the check share method of BlockChain, hence we have easy access to the blockchain - we need to figure out if work is same as before or should be recalculated - recalculate iff prev->height()%144 == 0 && current->height()%144 != 0
+    unsigned int nextWork(uint256 prev, int height) const {
+        // locate the hash
+        Container::const_iterator prv = find(prev);
+        if (prv != _container.end()) {
+            CBigInt work = prv->work();
+            // get height of share - if %144 +1 react!
+            if (height%144 == 0 && prv->height%144 != 0) {
+                // work needs adjustment - step backwards a day
+                int shares = 0;
+                while (--prv != _container.end() && prv->height != height - 145 && ++shares < 1440);
+                if (prv != _container.end()) { // only adjust if we have enough blocks to do the adjustment
+                    if (shares < 90) shares = 90;
+                    work *= 360;
+                    work /= shares; // shares == 360 nothing happens
+                }
+                return work.GetCompact();
+            }
+            else // previous work - no adjustment
+                return prv->bits;
+        }
+        return 0;
+    }
+private:
+    Container _container;
+    Index _index;
+    CBigNum _work;
+};
+
+class ShareTrees {
+public:
+    void insert(ShareRef share, bool accept_as_genesis) { // accept as genesis means that it points to block -144
+        // first do a quick search to see if we are just appending
+        Trees::iterator tr = _trees.find(share.prev_share);
+        if (tr != _trees.end()) {
+            tr->second->append(share);
+            _trees[share.hash] = tr.second.release();
+            _trees.erase(share.prev_share);
+            if (_best == share.prev_share)
+                return; // was best, is best
+        }
+        else {
+            // do a lineary search over all trees and clone if found
+            bool cloned = false;
+            for (tr = _trees.begin(); tr != _trees.end(); ++tr) {
+                Container::const_iterator shr = tr->second->find(share.prev_share);
+                if (shr != tr->second->end()) { // clone, insert and exit
+                    _trees[share.hash] = new ShareTree(tr->second->begin(), shr);
+                    cloned = true;
+                    break;
+                }
+            }
+            if (!cloned && accept_as_genesis) {
+                _trees[share.hash] = new ShareTree(share);
+            }
+            else if (!cloned)
+                return;
+        }
+        // set new best!
+        CBigInt best = 0;
+        for (tr = _trees.begin(); tr != _trees.end(); ++tr) {
+            if (tr->second->work() > best) {
+                best = tr->second->work();
+                _best = tr->second->first;
+            }
+        }
+    }
+    
+    void prune(uint256 old) {
+        CBigInt best = 0;
+        for (tr = _trees.begin(); tr != _trees.end(); ++tr) {
+            tr->second->prune(old);
+            if (tr->second->work() > best) {
+                best = tr->second->work();
+                _best = tr->second->first;
+            }
+        }        
+    }
+    
+    unsigned int nextWork(uint256 prev, int height) const {
+        // first search for tree tops:
+        Trees::const_iterator tr = _trees.find(prev);
+        if (tr != _trees.end())
+            return tr->nextWork(prev, height);
+        
+        // do a search in each tree:
+        for (tr = _trees.begin(); tr != _trees.end(); ++tr) {
+            unsigned int work = tr->nextWork();
+            if (work) return work;
+        }
+        return 0;
+    }
+    
+private:
+    // keep a container of all the ShareTrees - could be a map of the top hashes
+    // keep a ref to the best chain
+    typedef std::map<uint256, auto_ptr<ShareTree> > Trees;;
+    Trees _trees;
+    uint256 _best;
+};
+
 int main(int argc, char* argv[])
 {
     try {
@@ -647,6 +868,10 @@ int main(int argc, char* argv[])
         server.registerMethod(method_ptr(new GetWork(pool)));
         server.registerMethod(method_ptr(new GetBlockTemplate(pool)));
         server.registerMethod(method_ptr(new SubmitBlock(pool)));
+
+        Miner miner(pool);
+        miner.setGenerate(gen);
+        thread miningThread(&Miner::run, &miner);
         
         // Register Wallet methods.
         server.registerMethod(method_ptr(new GetBalance(wallet)), auth);
@@ -690,8 +915,8 @@ int main(int argc, char* argv[])
         log_info("Server exited, shutting down Node and Miner...\n");
         // getting here means that we have exited from the server (e.g. by the quit method)
         
-        //miner.shutdown();
-        //miningThread.join();
+        miner.shutdown();
+        miningThread.join();
         
         node.shutdown();
         nodeThread.join();

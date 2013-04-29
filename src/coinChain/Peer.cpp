@@ -111,6 +111,11 @@ void Peer::check_activity(const system::error_code& e) {
 
 void Peer::stop() {
     _suicide.cancel(); // no need to commit suicide when being killed
+    boost::system::error_code ec;
+    _socket.shutdown(ip::tcp::socket::shutdown_both, ec);
+    if (ec) {
+        log_warn("socket shutdown error: %s", ec.message()); // An error occurred.
+    }
     _socket.close();
 }
 

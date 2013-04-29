@@ -351,6 +351,7 @@ public:
 struct ShareRef {
     typedef uint256 Hash;
     int version;
+    int height;
     Hash hash;
     Hash prev;
     Hash prev_share;
@@ -367,8 +368,8 @@ struct ShareRef {
         return (CBigNum(1)<<256) / (target+1);
     }
     
-    ShareRef() : version(3), hash(0), prev(0), prev_share(0), merkletrie(0), time(0), bits(0), rewardee(Script()) {}
-    ShareRef(int version, Hash hash, Hash prev, Hash prev_share, Hash merkletrie, unsigned int time, unsigned int bits, const Script& rewardee) : version(version), hash(hash), prev(prev), prev_share(prev_share), merkletrie(merkletrie), time(time), bits(bits), rewardee(rewardee) {}
+    ShareRef() : version(3), height(0), hash(0), prev(0), prev_share(0), merkletrie(0), time(0), bits(0), rewardee(Script()) {}
+    ShareRef(int version, int height, Hash hash, Hash prev, Hash prev_share, Hash merkletrie, unsigned int time, unsigned int bits, const Script& rewardee) : version(version), height(height), hash(hash), prev(prev), prev_share(prev_share), merkletrie(merkletrie), time(time), bits(bits), rewardee(rewardee) {}
 };
 
 class COINCHAIN_EXPORT ShareTree : public SparseTree<ShareRef> {
