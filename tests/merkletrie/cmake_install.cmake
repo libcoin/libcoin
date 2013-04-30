@@ -32,6 +32,11 @@ IF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspeci
     FILE(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/libcoin/bin" TYPE EXECUTABLE FILES "/Users/gronager/Development/libcoin/libcoin/bin/merkletried")
     IF(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/merkletried" AND
        NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/merkletried")
+      EXECUTE_PROCESS(COMMAND "/usr/bin/install_name_tool"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinChaind.dylib" "libcoinChaind.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPd.dylib" "libcoinHTTPd.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoind.dylib" "libcoind.dylib"
+        "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/merkletried")
       IF(CMAKE_INSTALL_DO_STRIP)
         EXECUTE_PROCESS(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/merkletried")
       ENDIF(CMAKE_INSTALL_DO_STRIP)
@@ -40,6 +45,11 @@ IF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspeci
     FILE(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/libcoin/bin" TYPE EXECUTABLE FILES "/Users/gronager/Development/libcoin/libcoin/bin/merkletrie")
     IF(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/merkletrie" AND
        NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/merkletrie")
+      EXECUTE_PROCESS(COMMAND "/usr/bin/install_name_tool"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoin.dylib" "libcoin.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinChain.dylib" "libcoinChain.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTP.dylib" "libcoinHTTP.dylib"
+        "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/merkletrie")
       IF(CMAKE_INSTALL_DO_STRIP)
         EXECUTE_PROCESS(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/merkletrie")
       ENDIF(CMAKE_INSTALL_DO_STRIP)
@@ -48,6 +58,11 @@ IF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspeci
     FILE(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/libcoin/bin" TYPE EXECUTABLE FILES "/Users/gronager/Development/libcoin/libcoin/bin/merkletries")
     IF(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/merkletries" AND
        NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/merkletries")
+      EXECUTE_PROCESS(COMMAND "/usr/bin/install_name_tool"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinChains.dylib" "libcoinChains.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPs.dylib" "libcoinHTTPs.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoins.dylib" "libcoins.dylib"
+        "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/merkletries")
       IF(CMAKE_INSTALL_DO_STRIP)
         EXECUTE_PROCESS(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/merkletries")
       ENDIF(CMAKE_INSTALL_DO_STRIP)
@@ -56,6 +71,11 @@ IF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspeci
     FILE(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/libcoin/bin" TYPE EXECUTABLE FILES "/Users/gronager/Development/libcoin/libcoin/bin/merkletrierd")
     IF(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/merkletrierd" AND
        NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/merkletrierd")
+      EXECUTE_PROCESS(COMMAND "/usr/bin/install_name_tool"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinChainrd.dylib" "libcoinChainrd.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPrd.dylib" "libcoinHTTPrd.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinrd.dylib" "libcoinrd.dylib"
+        "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/merkletrierd")
       IF(CMAKE_INSTALL_DO_STRIP)
         EXECUTE_PROCESS(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/merkletrierd")
       ENDIF(CMAKE_INSTALL_DO_STRIP)

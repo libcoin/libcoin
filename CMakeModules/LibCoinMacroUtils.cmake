@@ -446,9 +446,9 @@ MACRO(SETUP_EXAMPLE EXAMPLE_NAME)
         SET_TARGET_PROPERTIES(${TARGET_TARGETNAME} PROPERTIES FOLDER "Examples")
         
         IF(APPLE)
-            INSTALL(TARGETS ${TARGET_TARGETNAME} RUNTIME DESTINATION share/bitcoin/bin BUNDLE DESTINATION share/bitcoin/bin )            
+            INSTALL(TARGETS ${TARGET_TARGETNAME} RUNTIME DESTINATION share/libcoin/bin BUNDLE DESTINATION share/libcoin/bin )
         ELSE(APPLE)
-            INSTALL(TARGETS ${TARGET_TARGETNAME} RUNTIME DESTINATION share/bitcoin/bin COMPONENT libcoin-examples )
+            INSTALL(TARGETS ${TARGET_TARGETNAME} RUNTIME DESTINATION share/libcoin/bin COMPONENT libcoin-examples )
         ENDIF(APPLE)
 
 ENDMACRO(SETUP_EXAMPLE)
@@ -484,20 +484,20 @@ MACRO(SETUP_COMMANDLINE_EXAMPLE EXAMPLE_NAME)
 
 ENDMACRO(SETUP_COMMANDLINE_EXAMPLE)
 
-# Takes two optional arguments -- coin prefix and coin version
+# Takes two optional arguments -- lib prefix and lib version
 MACRO(HANDLE_MSVC_DLL)
         #this is a hack... the build place is set to lib/<debug or release> by LIBARARY_OUTPUT_PATH equal to OUTPUT_LIBDIR
         #the .lib will be crated in ../ so going straight in lib by the IMPORT_PREFIX property
         #because we want dll placed in OUTPUT_BINDIR ie the bin folder sibling of lib, we can use ../../bin to go there,
         #it is hardcoded, we should compute OUTPUT_BINDIR position relative to OUTPUT_LIBDIR ... to be implemented
         #changing bin to something else breaks this hack
-        #the dll are versioned by prefixing the name with coin${LIBCOIN_SOVERSION}-
+        #the dll are versioned by prefixing the name with lib${LIBCOIN_SOVERSION}-
 
-        # LIB_PREFIX: use "coin" by default, else whatever we've been given.
+        # LIB_PREFIX: use "lib" by default, else whatever we've been given.
         IF(${ARGC} GREATER 0)
                 SET(LIB_PREFIX ${ARGV0})
         ELSE(${ARGC} GREATER 0)
-                SET(LIB_PREFIX coin)
+                SET(LIB_PREFIX lib)
         ENDIF(${ARGC} GREATER 0)
 
         # LIB_SOVERSION: use LIBCOIN's soversion by default, else whatever we've been given

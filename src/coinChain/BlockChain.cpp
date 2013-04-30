@@ -776,6 +776,7 @@ void BlockChain::append(const Block &block) {
         }
         
         // last check is if this block is also a share or only a share
+        /*
         if (valid_share) {
             if(_share_tree.insert(ShareRef(block.getVersion(), hash, block.getPrevBlock(), block.getPrevShare(), block.getSpendablesRoot(), block.getTime(), block.getShareBits(), block.getRewardee())))
                 _share_spendables = _spendables;
@@ -784,7 +785,7 @@ void BlockChain::append(const Block &block) {
                //            while (!_tree.in_trunk(_share_tree.best()->getPrevHash())
                //                   _share_tree.pop_back();
         }
-
+*/
         if (invalid_block) {
             query("ROLLBACK --BLOCK");
             _tree.pop_back();
