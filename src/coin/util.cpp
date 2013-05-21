@@ -49,12 +49,12 @@ string default_data_dir(std::string suffix) {
 #if (defined _WIN32 || defined __MACH__) // convert first letter to upper case
     std::transform(suffix.begin(), suffix.begin()+1, suffix.begin(), ::toupper);
 #else // prepend a "."
-    suffix = "." + suffix;
+      //    suffix = "." + suffix;
 #endif
     
 #ifdef _WIN32
     // Windows
-    return MyGetSpecialFolderPath(CSIDL_APPDATA, true) + "\\" + suffix;
+    return MyGetSpecialFolderPath(CSIDL_APPDATA, true) + "\\LibCoin\\" + suffix;
 #else
     char* pszHome = getenv("HOME");
     if (pszHome == NULL || strlen(pszHome) == 0)
@@ -64,7 +64,10 @@ string default_data_dir(std::string suffix) {
         strHome += '/';
 #ifdef __MACH__
     // Mac
-    strHome += "Library/Application Support/";
+    strHome += "Library/Application Support/LibCoin/";
+    boost::filesystem::create_directory(strHome.c_str());
+#else // unix
+    strHome += ".libcoin/";
     boost::filesystem::create_directory(strHome.c_str());
 #endif
     
@@ -603,93 +606,6 @@ string MyGetSpecialFolderPath(int nFolder, bool fCreate)
 }
 
 #endif
-
-/*
-string GetConfigFile()
-{
-    namespace fs = boost::filesystem;
-    fs::path pathConfig(GetArg("-conf", "bitcoin.conf"));
-    if (!pathConfig.is_complete())
-        pathConfig = fs::path(GetDataDir()) / pathConfig;
-    return pathConfig.string();
-}
-
-void ReadConfigFile(map<string, string>& mapSettingsRet,
-                    map<string, vector<string> >& mapMultiSettingsRet)
-{
-    namespace fs = boost::filesystem;
-    namespace pod = boost::program_options::detail;
-
-    fs::ifstream streamConfig(GetConfigFile());
-    if (!streamConfig.good())
-        return;
-
-    set<string> setOptions;
-    setOptions.insert("*");
-    
-    for (pod::config_file_iterator it(streamConfig, setOptions), end; it != end; ++it)
-    {
-        // Don't overwrite existing settings so command line settings override bitcoin.conf
-        string strKey = string("-") + it->string_key;
-        if (mapSettingsRet.count(strKey) == 0)
-            mapSettingsRet[strKey] = it->value[0];
-        mapMultiSettingsRet[strKey].push_back(it->value[0]);
-    }
-}
-
-string GetPidFile()
-{
-    namespace fs = boost::filesystem;
-    fs::path pathConfig(GetArg("-pid", "bitcoind.pid"));
-    if (!pathConfig.is_complete())
-        pathConfig = fs::path(GetDataDir()) / pathConfig;
-    return pathConfig.string();
-}
-
-void CreatePidFile(string pidFile, pid_t pid)
-{
-    FILE* file = fopen(pidFile.c_str(), "w");
-    if (file)
-    {
-        fprintf(file, "%d\n", pid);
-        fclose(file);
-    }
-}
-
-int GetFilesize(FILE* file)
-{
-    int nSavePos = ftell(file);
-    int nFilesize = -1;
-    if (fseek(file, 0, SEEK_END) == 0)
-        nFilesize = ftell(file);
-    fseek(file, nSavePos, SEEK_SET);
-    return nFilesize;
-}
-
-void ShrinkDebugFile()
-{
-    // Scroll debug.log if it's getting too big
-    string strFile = GetDataDir() + "/debug.log";
-    FILE* file = fopen(strFile.c_str(), "r");
-    if (file && GetFilesize(file) > 10 * 1000000)
-    {
-        // Restart the file with some of the end
-        char pch[200000];
-        fseek(file, -sizeof(pch), SEEK_END);
-        int nBytes = fread(pch, 1, sizeof(pch), file);
-        fclose(file);
-
-        file = fopen(strFile.c_str(), "w");
-        if (file)
-        {
-            fwrite(pch, 1, nBytes, file);
-            fclose(file);
-        }
-    }
-}
-
-*/
-
 
 
 

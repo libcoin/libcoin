@@ -141,7 +141,7 @@ public:
     void post(const Block& block) {
         uint256 hash = block.getHash();
         
-        if (hash < block.getTarget() )
+        if (_blockChain.chain().checkProofOfWork(block))
             _io_service.dispatch(boost::bind(&BlockFilter::process, static_cast<BlockFilter*>(_blockFilter.get()), block, _peerManager.getAllPeers()));
             else if (hash < block.getShareTarget() )
                 _io_service.dispatch(boost::bind(&ShareFilter::process, static_cast<ShareFilter*>(_shareFilter.get()), block, _peerManager.getAllPeers()));

@@ -109,6 +109,26 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
             }
         }
     }
+    else if (msg.command() == "ping") {
+        if (origin->nVersion > BIP0031_VERSION) {
+            uint64 nonce = 0;
+            CDataStream data(msg.payload());
+            data >> nonce;
+            // Echo the message back with the nonce. This allows for two useful features:
+            //
+            // 1) A remote node can quickly check if the connection is operational
+            // 2) Remote nodes can measure the latency of the network thread. If this node
+            //    is overloaded it won't respond to pings quickly and the remote node can
+            //    avoid sending us more work, like chain download requests.
+            //
+            // The nonce stops the remote getting confused between different pings: without
+            // it, if the remote node sends a ping once per second and this node takes 5
+            // seconds to respond to each, the 5th ping the remote sends would appear to
+            // return very quickly.
+            origin->PushMessage("pong", nonce);
+        }
+    }
+    
     
     // Update the last seen time for this node's address
     if (origin->fNetworkNode)

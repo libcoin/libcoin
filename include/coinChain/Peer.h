@@ -50,6 +50,9 @@ public:
     }
 };
 
+// BIP 0031, pong message, is enabled for all versions AFTER this one
+static const int BIP0031_VERSION = 60000;
+
 class COINCHAIN_EXPORT Peer : public boost::enable_shared_from_this<Peer>, private boost::noncopyable
 {
 public:
@@ -96,6 +99,7 @@ private:
     void broadcast();
 
     void check_activity(const boost::system::error_code& e);
+    void show_activity(const boost::system::error_code& e);
     
 public:
     // socket
@@ -277,6 +281,9 @@ private:
     /// Suicide timer
     boost::asio::deadline_timer _suicide;
     
+    /// Keep alive timer
+    boost::asio::deadline_timer _keep_alive;
+    
     /// Use proxy or not - this is just the flag - we need to carry around the address too
     bool _proxy;
     
@@ -291,7 +298,8 @@ private:
     boost::array<char, 8192> _buffer;
     
     static const unsigned int _initial_timeout = 60; // seconds. Initial timeout if no read activity
-    static const unsigned int _heartbeat_timeout = 90*60; // seconds. Heartbeat timeout if no read activity
+    static const unsigned int _suicide_timeout = 90*60; // seconds. Suicide timeout if no read activity
+    static const unsigned int _heartbeat_timeout = 30*60; // seconds. Heartbeat timeout to show activity
 };
 
 #endif // PEER_H

@@ -283,7 +283,7 @@ int main(int argc, char* argv[])
         generic.add_options()
             ("help,?", "Show help messages")
             ("version,v", "print version string")
-            ("conf,c", value<string>(&config_file)->default_value("bitcoin.conf"), "Specify configuration file")
+            ("conf,c", value<string>(&config_file)->default_value("libcoin.conf"), "Specify configuration file")
             ("datadir", value<string>(&data_dir), "Specify non default data directory")
         ;
         
@@ -294,6 +294,7 @@ int main(int argc, char* argv[])
             ("portmap", value<bool>(&portmap)->default_value(true), "Use IGD-UPnP or NATPMP to map the listening port")
             ("upnp", value<bool>(&portmap), "Use UPnP to map the listening port - deprecated, use portmap")
             ("testnet", "Use the test network")
+            ("litecoin", "RUn as a litecoin client")
             ("proxy", value<string>(&proxy), "Connect through socks4 proxy")
             ("timeout", value<unsigned int>(&timeout)->default_value(5000), "Specify connection timeout (in milliseconds)")
             ("addnode", value<strings>(&add_peers), "Add a node to connect to")
@@ -342,10 +343,6 @@ int main(int argc, char* argv[])
         if(!args.count("datadir"))
             data_dir = default_data_dir(bitcoin.dataDirSuffix());
         
-        std::ofstream olog((data_dir + "/debug.log").c_str(), std::ios_base::out|std::ios_base::app);
-        Logger::instantiate(olog);
-        Logger::label_thread("main");
-
         // if present, parse the config file - if no data dir is specified we always assume bitcoin chain at this stage
         string config_path = data_dir + "/" + config_file;
         ifstream ifs(config_path.c_str());
@@ -361,6 +358,8 @@ int main(int argc, char* argv[])
         const Chain* chain_chooser;
         if(args.count("testnet"))
             chain_chooser = &testnet;
+        else if(args.count("litecoin"))
+            chain_chooser = &litecoin;
         else
             chain_chooser = &bitcoin;
         const Chain& chain(*chain_chooser);
@@ -368,7 +367,11 @@ int main(int argc, char* argv[])
         if(!args.count("datadir"))
             data_dir = default_data_dir(chain.dataDirSuffix());
         
-        logfile = data_dir + "/debug.log";
+        std::ofstream olog((data_dir + "/debug.log").c_str(), std::ios_base::out|std::ios_base::app);
+        Logger::instantiate(olog, Logger::debug);
+        Logger::label_thread("main");
+        
+        //        logfile = data_dir + "/debug.log";
         
         asio::ip::tcp::endpoint proxy_server;
         if(proxy.size()) {
@@ -377,7 +380,7 @@ int main(int argc, char* argv[])
             proxy_server = asio::ip::tcp::endpoint(asio::ip::address_v4::from_string(host_port[0]), lexical_cast<short>(host_port[1]));
         }
         Node node(chain, data_dir, args.count("nolisten") ? "" : "0.0.0.0", lexical_cast<string>(port), proxy_server, timeout); // it is also here we specify the use of a proxy!
-        node.setClientVersion("libcoin/coinexplorer", vector<string>(), 59100);
+        node.setClientVersion("libcoin/coinexplorer", vector<string>());
         node.verification(Node::MINIMAL);
         node.validation(Node::MINIMAL);
         node.persistence(Node::LAZY);

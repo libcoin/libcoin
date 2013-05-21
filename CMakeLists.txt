@@ -627,7 +627,7 @@ ENDIF()
 
 
 # Dynamic vs Static Linking
-OPTION(DYNAMIC_LIBCOIN "Set to ON to build libcoin for dynamic linking.  Use OFF for static." OFF)
+OPTION(DYNAMIC_LIBCOIN "Set to ON to build libcoin for dynamic linking.  Use OFF for static." ON)
 IF   (DYNAMIC_LIBCOIN)
     SET(LIBCOIN_USER_DEFINED_DYNAMIC_OR_STATIC "SHARED")
 ELSE ()

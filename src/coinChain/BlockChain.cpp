@@ -689,7 +689,7 @@ void BlockChain::append(const Block &block) {
     uint256 hash = block.getHash();
 
     bool valid_share = checkShare(block);
-    bool invalid_block = (hash > block.getTarget());
+    bool invalid_block = !_chain.checkProofOfWork(block); //(hash > block.getTarget());
     
     if (invalid_block && !valid_share)
         throw Error("Block hash does not meet target and Block is not a Share either");

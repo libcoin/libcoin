@@ -141,16 +141,10 @@ std::string FormatMoney(int64 n, bool fPlus=false);
 //bool ParseMoney(const char* pszIn, int64& nRet);
 std::vector<unsigned char> ParseHex(const char* psz);
 std::vector<unsigned char> ParseHex(const std::string& str);
-//void ParseParameters(int argc, char* argv[]);
 const char* wxGetTranslation(const char* psz);
-//bool WildcardMatch(const char* psz, const char* mask);
-//bool WildcardMatch(const std::string& str, const std::string& mask);
 int GetFilesize(FILE* file);
-//void GetDataDir(char* pszDirRet);
-//std::string GetConfigFile();
 std::string GetPidFile();
-//void CreatePidFile(std::string pidFile, pid_t pid);
-//void ReadConfigFile(std::map<std::string, std::string>& mapSettingsRet, std::map<std::string, std::vector<std::string> >& mapMultiSettingsRet);
+
 #ifdef _WIN32
 std::string MyGetSpecialFolderPath(int nFolder, bool fCreate);
 #endif
@@ -623,112 +617,17 @@ public:
     }
 };
 
+// litecoin stuff
 
-
-
-/*
-// Note: It turns out we might have been able to use boost::thread
-// by using TerminateThread(boost::thread.native_handle(), 0);
-#ifdef _WIN32
-typedef HANDLE pthread_t;
-
-inline pthread_t CreateThread(void(*pfn)(void*), void* parg, bool fWantHandle=false)
-{
-    DWORD nUnused = 0;
-    HANDLE hthread =
-        CreateThread(
-            NULL,                        // default security
-            0,                           // inherit stack size from parent
-            (LPTHREAD_START_ROUTINE)pfn, // function pointer
-            parg,                        // argument
-            0,                           // creation option, start immediately
-            &nUnused);                   // thread identifier
-    if (hthread == NULL)
-    {
-        printf("Error: CreateThread() returned %d\n", GetLastError());
-        return (pthread_t)0;
-    }
-    if (!fWantHandle)
-    {
-        CloseHandle(hthread);
-        return (pthread_t)-1;
-    }
-    return hthread;
-}
-
-inline void SetThreadPriority(int nPriority)
-{
-    SetThreadPriority(GetCurrentThread(), nPriority);
-}
-#else
-inline pthread_t CreateThread(void(*pfn)(void*), void* parg, bool fWantHandle=false)
-{
-    pthread_t hthread = 0;
-    int ret = pthread_create(&hthread, NULL, (void*(*)(void*))pfn, parg);
-    if (ret != 0)
-    {
-        printf("Error: pthread_create() returned %d\n", ret);
-        return (pthread_t)0;
-    }
-    if (!fWantHandle)
-    {
-        pthread_detach(hthread);
-        return (pthread_t)-1;
-    }
-    return hthread;
-}
-
-#define THREAD_PRIORITY_LOWEST          PRIO_MAX
-#define THREAD_PRIORITY_BELOW_NORMAL    2
-#define THREAD_PRIORITY_NORMAL          0
-#define THREAD_PRIORITY_ABOVE_NORMAL    0
-
-inline void SetThreadPriority(int nPriority)
-{
-    // It's unclear if it's even possible to change thread priorities on Linux,
-    // but we really and truly need it for the generation threads.
-#ifdef PRIO_THREAD
-    setpriority(PRIO_THREAD, 0, nPriority);
-#else
-    setpriority(PRIO_PROCESS, 0, nPriority);
+#ifdef __cplusplus
+extern "C" {
 #endif
-}
-
-inline bool TerminateThread(pthread_t hthread, unsigned int nExitCode)
-{
-    return (pthread_cancel(hthread) == 0);
-}
-
-inline void ExitThread(size_t nExitCode)
-{
-    pthread_exit((void*)nExitCode);
+    void scrypt_1024_1_1_256_sp(const char *input, char *output, char *scratchpad);
+    void scrypt_1024_1_1_256(const char *input, char *output);
+#ifdef __cplusplus
 }
 #endif
 
-
-
-
-
-inline bool AffinityBugWorkaround(void(*pfn)(void*))
-{
-#ifdef _WIN32
-    // Sometimes after a few hours affinity gets stuck on one processor
-    DWORD dwProcessAffinityMask = -1;
-    DWORD dwSystemAffinityMask = -1;
-    GetProcessAffinityMask(GetCurrentProcess(), &dwProcessAffinityMask, &dwSystemAffinityMask);
-    DWORD dwPrev1 = SetThreadAffinityMask(GetCurrentThread(), dwProcessAffinityMask);
-    DWORD dwPrev2 = SetThreadAffinityMask(GetCurrentThread(), dwProcessAffinityMask);
-    if (dwPrev2 != dwProcessAffinityMask)
-    {
-        printf("AffinityBugWorkaround() : SetThreadAffinityMask=%d, ProcessAffinityMask=%d, restarting thread\n", dwPrev2, dwProcessAffinityMask);
-        if (!CreateThread(pfn, NULL))
-            printf("Error: CreateThread() failed\n");
-        return true;
-    }
-#endif
-    return false;
-}
-*/
 
 size_t getMemorySize();
 

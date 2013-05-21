@@ -255,7 +255,7 @@ int main(int argc, char* argv[])
         }
         
         if(!args.count("datadir"))
-            data_dir = CDB::dataDir(ponzicoin.dataDirSuffix());
+            data_dir = default_data_dir(ponzicoin.dataDirSuffix());
         
         // if present, parse the config file - if no data dir is specified we always assume bitcoin chain at this stage 
         string config_path = data_dir + "/" + config_file;
@@ -297,7 +297,7 @@ int main(int argc, char* argv[])
         // Else we start the bitcoin node and server!
         
         if(!args.count("datadir"))
-            data_dir = CDB::dataDir(ponzicoin.dataDirSuffix());
+            data_dir = default_data_dir(ponzicoin.dataDirSuffix());
         
         logfile = data_dir + "/debug.log";
         

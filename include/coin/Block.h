@@ -111,7 +111,8 @@ public:
 
     void print() const;
 
-    bool checkBlock(const CBigNum& proofOfWorkLimit) const;
+    //    bool checkBlock(const CBigNum& proofOfWorkLimit) const;
+    bool checkBlock() const;
     
     /// Version 2 check according to BIP 0034: Height should be in the coinbase
     bool checkHeightInCoinbase(int height) const;
@@ -199,24 +200,6 @@ public:
 
     void setNonce(unsigned int nonce) { _nonce = nonce; }
     
-    /// This function has changed as it served two purposes: sanity check for headers and real proof of work check. We only need the proofOfWorkLimit for the latter
-    const bool checkProofOfWork(const CBigNum& proofOfWorkLimit = 0) const {
-        uint256 hash = getHash();
-        unsigned int nBits = _bits;
-        CBigNum bnTarget;
-        bnTarget.SetCompact(nBits);
-        
-        // Check range
-        if (proofOfWorkLimit != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit))
-            return error("CheckProofOfWork() : nBits below minimum work");
-        
-        // Check proof of work matches claimed amount
-        if (hash > bnTarget.getuint256())
-            return error("CheckProofOfWork() : hash doesn't match nBits");
-        
-        return true;
-    }
-
 private:
     // header
     int _version;

@@ -32,6 +32,7 @@ SET(TARGET_H
 #    ${LIBCOIN_USER_DEFINED_DYNAMIC_OR_STATIC}
 #    ${LIB_PUBLIC_HEADERS}
 SET(TARGET_SRC
+    scrypt.c
     util.cpp
     
     Address.cpp

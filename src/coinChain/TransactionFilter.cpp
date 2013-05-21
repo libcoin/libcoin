@@ -30,7 +30,7 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
     }    
     if (msg.command() == "tx") {        
         CDataStream data(msg.payload());
-        CDataStream payload(msg.payload());
+        //        CDataStream payload(msg.payload());
         Transaction tx;
         data >> tx;
         

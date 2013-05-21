@@ -75,7 +75,7 @@ std::string Pool::submitBlock(const Block& stub, std::string workid) {
         cout << "Block with hash: " << hash.toString() << " mined" << endl;
         
         // else ... we got a valid block!
-        if (hash < block.getTarget() )
+        if (_node.blockChain().chain().checkProofOfWork(block) )
             _node.post(block); // _node.processBlock(block);
         else if (hash < block.getShareTarget() )
             _node.post(block); // will call the ShareFilter

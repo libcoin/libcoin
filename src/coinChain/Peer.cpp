@@ -30,7 +30,7 @@ using namespace asio;
 
 static map<Inventory, int64> mapAlreadyAskedFor;
 
-Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, int bestHeight, std::string sub_version) : _chain(chain),_socket(io_service), _peerManager(manager), _messageHandler(handler), _msgParser(), _suicide(io_service) {
+Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, int bestHeight, std::string sub_version) : _chain(chain),_socket(io_service), _peerManager(manager), _messageHandler(handler), _msgParser(), _suicide(io_service), _keep_alive(io_service) {
     nServices = 0;
 
     vSend.SetType(SER_NETWORK);
@@ -86,10 +86,12 @@ void Peer::start() {
 
     //    async_read(_socket, _recv, boost::bind(&Peer::handle_read, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     _suicide.expires_from_now(posix_time::seconds(_initial_timeout)); // no activity the first 60 seconds means disconnect
+    _keep_alive.expires_from_now(posix_time::seconds(_heartbeat_timeout)); // no activity the first 60 seconds means disconnect
     _socket.async_read_some(buffer(_buffer), boost::bind(&Peer::handle_read, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     
     // and start the deadline timer
     _suicide.async_wait(boost::bind(&Peer::check_activity, this, asio::placeholders::error));
+    _keep_alive.async_wait(boost::bind(&Peer::show_activity, this, asio::placeholders::error));
 }
 
 void Peer::check_activity(const system::error_code& e) {
@@ -98,15 +100,36 @@ void Peer::check_activity(const system::error_code& e) {
             _peerManager.post_stop(shared_from_this());
         else {
             _activity = false;
-            _suicide.expires_from_now(posix_time::seconds(_heartbeat_timeout)); // 90 minutes of activity once we have started up
+            _suicide.expires_from_now(posix_time::seconds(_suicide_timeout)); // 90 minutes of activity once we have started up
             _suicide.async_wait(boost::bind(&Peer::check_activity, this, asio::placeholders::error));
         }
     }
     else if (e != error::operation_aborted) {
         log_info("Boost deadline timer error in Peer: %s\n", e.message().c_str());
     }
+    
+    // we ignore abort errors - they are generated due to timer cancels
+}
 
-    // we ignore abort errors - they are generated due to timer cancels 
+void Peer::show_activity(const system::error_code& e) {
+    if (!e) {
+        if(!_activity) { // send a ping - we might get a pong then
+            // Keep-alive ping. We send a nonce of zero because we don't use it anywhere
+            // right now.
+            uint64 nonce = 0;
+            if (nVersion > BIP0031_VERSION)
+                PushMessage("ping", nonce);
+            else
+                PushMessage("ping");
+        }
+        _suicide.expires_from_now(posix_time::seconds(_heartbeat_timeout)); // show activity each 30 minutes
+        _suicide.async_wait(boost::bind(&Peer::show_activity, this, asio::placeholders::error));
+    }
+    else if (e != error::operation_aborted) {
+        log_info("Boost deadline timer error in Peer: %s\n", e.message().c_str());
+    }
+    
+    // we ignore abort errors - they are generated due to timer cancels
 }
 
 void Peer::stop() {

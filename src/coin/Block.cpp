@@ -116,7 +116,8 @@ void Block::print() const
     log_info("\n");
 }
 
-bool Block::checkBlock(const CBigNum& proofOfWorkLimit) const
+//bool Block::checkBlock(const CBigNum& proofOfWorkLimit) const
+bool Block::checkBlock() const
 {
     // These are checks that are independent of context
     // that can be verified before saving an orphan block.
@@ -124,10 +125,6 @@ bool Block::checkBlock(const CBigNum& proofOfWorkLimit) const
     // Size limits
     if (_transactions.empty() || _transactions.size() > MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK) > MAX_BLOCK_SIZE)
         return error("CheckBlock() : size limits failed");
-    
-    // Check proof of work matches claimed amount
-    if (!checkProofOfWork(proofOfWorkLimit))
-        return error("CheckBlock() : proof of work failed");
     
     // Check timestamp
     if (getBlockTime() > GetAdjustedTime() + 2 * 60 * 60)

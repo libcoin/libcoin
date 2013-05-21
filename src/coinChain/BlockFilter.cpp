@@ -50,8 +50,12 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
             return error("ProcessBlock() : already have block (orphan) %s", hash.toString().substr(0,20).c_str());
         
         // Preliminary checks
-        if (!block.checkBlock(_blockChain.chain().proofOfWorkLimit()))
+        //        if (!block.checkBlock(_blockChain.chain().proofOfWorkLimit()))
+        if (!block.checkBlock())
             return error("ProcessBlock() : CheckBlock FAILED");
+        
+        if (!_blockChain.chain().checkProofOfWork(block))
+            return error("ProcessBlock() : CheckProofOfWork FAILED");
         
         // If don't already have its previous block, shunt it off to holding area until we get it
         if (!_blockChain.haveBlock(block.getPrevBlock())) {

@@ -86,6 +86,24 @@ bool BitcoinChain::isStandard(const Transaction& tx) const {
     return true;
 }
 
+/// This function has changed as it served two purposes: sanity check for headers and real proof of work check. We only need the proofOfWorkLimit for the latter
+const bool BitcoinChain::checkProofOfWork(const Block& block) const {
+    uint256 hash = block.getHash();
+    unsigned int nBits = block.getBits();
+    CBigNum bnTarget;
+    bnTarget.SetCompact(nBits);
+    
+    // Check range
+    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit()))
+        return error("CheckProofOfWork() : nBits below minimum work");
+    
+    // Check proof of work matches claimed amount
+    if (hash > bnTarget.getuint256())
+        return error("CheckProofOfWork() : hash doesn't match nBits");
+    
+    return true;
+}
+
 unsigned int BitcoinChain::nextWorkRequired(BlockIterator blk) const {
     const int64 nTargetTimespan = 14 * 24 * 60 * 60; // two weeks
     const int64 nTargetSpacing = 10 * 60;
@@ -177,6 +195,24 @@ bool TestNetChain::isStandard(const Transaction& tx) const {
     return true;
 }
 
+const bool TestNetChain::checkProofOfWork(const Block& block) const {
+    uint256 hash = block.getHash();
+    unsigned int nBits = block.getBits();
+    CBigNum bnTarget;
+    bnTarget.SetCompact(nBits);
+    
+    // Check range
+    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit()))
+        return error("CheckProofOfWork() : nBits below minimum work");
+    
+    // Check proof of work matches claimed amount
+    if (hash > bnTarget.getuint256())
+        return error("CheckProofOfWork() : hash doesn't match nBits");
+    
+    return true;
+}
+
+
 unsigned int TestNetChain::nextWorkRequired(BlockIterator blk) const {
     const int64 nTargetTimespan = 14 * 24 * 60 * 60; // two weeks
     const int64 nTargetSpacing = 10 * 60;
@@ -222,3 +258,150 @@ unsigned int TestNetChain::nextWorkRequired(BlockIterator blk) const {
 
 // global const definition of the testnet chain
 const TestNetChain testnet;
+
+LitecoinChain::LitecoinChain() : _genesis("0x12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2") {
+    _messageStart[0] = 0xfb; _messageStart[1] = 0xc0; _messageStart[2] = 0xb6; _messageStart[3] = 0xdb; // Litecoin: increase each by adding 2 to bitcoin's value.
+
+    const char* pszTimestamp = "NY Times 05/Oct/2011 Steve Jobs, Apple’s Visionary, Dies at 56";
+    Transaction txNew;
+    
+    Script signature = Script() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
+    txNew.addInput(Input(Coin(), signature));
+    Script script = Script() << ParseHex("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9") << OP_CHECKSIG;
+    txNew.addOutput(Output(50 * COIN, script));
+    
+    _genesisBlock = Block(1, uint256(0), uint256(0), 1317972665, 0x1e0ffff0, 2084524493);
+    _genesisBlock.addTransaction(txNew);
+    _genesisBlock.updateMerkleTree(); // genesisBlock
+    assert(_genesisBlock.getHash() == _genesis);
+
+    _checkpoints = boost::assign::map_list_of
+    (     1, uint256("0x80ca095ed10b02e53d769eb6eaf92cd04e9e0759e5be4a8477b42911ba49c78f"))
+    (     2, uint256("0x13957807cdd1d02f993909fa59510e318763f99a506c4c426e3b254af09f40d7"))
+    (  1500, uint256("0x841a2965955dd288cfa707a755d05a54e45f8bd476835ec9af4402a2b59a2967"))
+    (  4032, uint256("0x9ce90e427198fc0ef05e5905ce3503725b80e26afd35a987965fd7e3d9cf0846"))
+    (  8064, uint256("0xeb984353fc5190f210651f150c40b8a4bab9eeeff0b729fcb3987da694430d70"))
+    ( 16128, uint256("0x602edf1859b7f9a6af809f1d9b0e6cb66fdc1d4d9dcd7a4bec03e12a1ccd153d"))
+    ( 23420, uint256("0xd80fdf9ca81afd0bd2b2a90ac3a9fe547da58f2530ec874e978fce0b5101b507"))
+    ( 50000, uint256("0x69dc37eb029b68f075a5012dcc0419c127672adb4f3a32882b2b3e71d07a20a6"))
+    ( 80000, uint256("0x4fcb7c02f676a300503f49c764a89955a8f920b46a8cbecb4867182ecdb2e90a"))
+    (120000, uint256("0xbd9d26924f05f6daa7f0155f32828ec89e8e29cee9e7121b026a7a3552ac6131"))
+    (161500, uint256("0xdbe89880474f4bb4f75c227c77ba1cdc024991123b28b8418dbbf7798471ff43"))
+    (179620, uint256("0x2ad9c65c990ac00426d18e446e0fd7be2ffa69e9a7dcb28358a50b2b78b9f709"))
+    ;
+}
+
+unsigned int LitecoinChain::totalBlocksEstimate() const {
+    return _checkpoints.rbegin()->first;
+}
+
+bool LitecoinChain::checkPoints(const unsigned int height, const uint256& hash) const {
+    Checkpoints::const_iterator i = _checkpoints.find(height);
+    if (i == _checkpoints.end())
+        return true;
+    
+    return hash == i->second;
+}
+
+const Block& LitecoinChain::genesisBlock() const {
+    return _genesisBlock;
+}
+
+const int64 LitecoinChain::subsidy(unsigned int height) const {
+    int64 s = 50 * COIN;
+    
+    // Subsidy is cut in half every 4 years
+    s >>= (height / 840000);
+    
+    return s;
+}
+
+bool LitecoinChain::isStandard(const Transaction& tx) const {
+    // on the test net everything is allowed
+    return true;
+}
+
+const bool LitecoinChain::checkProofOfWork(const Block& block) const {
+    uint256 hash = getPoWHash(block);
+    
+    unsigned int nBits = block.getBits();
+    CBigNum bnTarget;
+    bnTarget.SetCompact(nBits);
+    
+    // Check range
+    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit()))
+        return error("CheckProofOfWork() : nBits below minimum work");
+    
+    // Check proof of work matches claimed amount
+    if (hash > bnTarget.getuint256())
+        return error("CheckProofOfWork() : hash doesn't match nBits");
+    
+    return true;
+}
+
+unsigned int LitecoinChain::nextWorkRequired(BlockIterator blk) const {
+    const int64 nTargetTimespan = 3.5 * 24 * 60 * 60; // two weeks
+    const int64 nTargetSpacing = 2.5 * 60;
+    const int64 nInterval = nTargetTimespan / nTargetSpacing;
+    
+    // Genesis block
+    int h = blk.height();
+    if (h == 0) // trick to test that it is asking for the genesis block
+        return _genesisBlock.getBits(); // proofOfWorkLimit().GetCompact(); Actually not for the genesisblock - here it is 0x1e0ffff0, not 0x1e0fffff
+    
+    // Only change once per interval
+    if ((h + 1) % nInterval != 0)
+        return blk->bits;
+    
+    // Litecoin: This fixes an issue where a 51% attack can change difficulty at will.
+    // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
+    int blockstogoback = nInterval-1;
+    if ((h + 1) != nInterval)
+        blockstogoback = nInterval;
+    
+    // Go back by what we want to be 3.5 days worth of blocks
+    BlockIterator former = blk - blockstogoback;
+    
+    // Limit adjustment step
+    int nActualTimespan = blk->time - former->time;
+    log_debug("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
+    if (nActualTimespan < nTargetTimespan/4)
+        nActualTimespan = nTargetTimespan/4;
+    if (nActualTimespan > nTargetTimespan*4)
+        nActualTimespan = nTargetTimespan*4;
+    
+    // Retarget
+    CBigNum bnNew;
+    bnNew.SetCompact(blk->bits);
+    bnNew *= nActualTimespan;
+    bnNew /= nTargetTimespan;
+    
+    if (bnNew > proofOfWorkLimit())
+        bnNew = proofOfWorkLimit();
+    
+    /// debug print
+    log_debug("GetNextWorkRequired RETARGET\n");
+    log_debug("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
+    log_debug("Before: %08x  %s\n", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
+    log_debug("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
+    
+    return bnNew.GetCompact();
+}
+
+
+const uint256 LitecoinChain::getPoWHash(const Block& block) const {
+    uint256 hash;
+    scrypt_1024_1_1_256(BEGIN(block), BEGIN(hash));
+    return hash;
+}
+
+
+const LitecoinChain litecoin;
+
+/* LITECOIN TESTNET
+ pchMessageStart[0] = 0xfc;
+ pchMessageStart[1] = 0xc1;
+ pchMessageStart[2] = 0xb7;
+ pchMessageStart[3] = 0xdc;
+ hashGenesisBlock = uint256("0xf5ae71e26c74beacc88382716aced69cddf3dffff24f384e1808905e0188f68f");
+*/

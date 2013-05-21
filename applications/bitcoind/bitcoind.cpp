@@ -746,7 +746,7 @@ int main(int argc, char* argv[])
         }
 
         if(!args.count("datadir"))
-            data_dir = CDB::dataDir(bitcoin.dataDirSuffix());
+            data_dir = default_data_dir(bitcoin.dataDirSuffix());
         
         std::ofstream olog((data_dir + "/debug.log").c_str(), std::ios_base::out|std::ios_base::app);
         Logger::instantiate(olog);
@@ -803,7 +803,7 @@ int main(int argc, char* argv[])
         const Chain& chain(*chain_chooser);
 
         if(!args.count("datadir"))
-            data_dir = CDB::dataDir(chain.dataDirSuffix());
+            data_dir = default_data_dir(chain.dataDirSuffix());
         
         logfile = data_dir + "/debug.log";
         
@@ -814,7 +814,7 @@ int main(int argc, char* argv[])
             proxy_server = asio::ip::tcp::endpoint(asio::ip::address_v4::from_string(host_port[0]), lexical_cast<short>(host_port[1]));
         }
         Node node(chain, data_dir, args.count("nolisten") ? "" : "0.0.0.0", lexical_cast<string>(port), proxy_server, timeout); // it is also here we specify the use of a proxy!
-        node.setClientVersion("libcoin/bitcoind", vector<string>(), 59100);
+        node.setClientVersion("libcoin/bitcoind", vector<string>());
         node.verification(Node::MINIMAL);
         node.validation(Node::NONE);
         node.persistence(Node::LAZY);

@@ -43,6 +43,7 @@ public:
 }
 instance_of_cdbinit;
 
+/*
 string CDB::dataDir(string suffix) {
     // Windows: C:\Documents and Settings\username\Application Data\Libcoin
     // Mac: ~/Library/Application Support/Libcoin
@@ -73,6 +74,7 @@ string CDB::dataDir(string suffix) {
     return strHome + suffix;
 #endif
 }
+*/
 
 CDB::CDB(const std::string dataDir, const char* pszFile, const char* pszMode) : pdb(NULL)
 {

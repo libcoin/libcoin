@@ -76,7 +76,7 @@ public:
         if(walletFile == "NOTFILEBACKED")
             fFileBacked = false;
         else {
-            _dataDir = (dataDir == "") ? CDB::dataDir(_blockChain.chain().dataDirSuffix()) : dataDir;
+            _dataDir = (dataDir == "") ? default_data_dir(_blockChain.chain().dataDirSuffix()) : dataDir;
             strWalletFile = (walletFile == "") ? strWalletFile = "wallet.dat" : walletFile;
             fFileBacked = true;
         }

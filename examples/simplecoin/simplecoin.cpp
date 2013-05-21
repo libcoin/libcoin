@@ -29,7 +29,7 @@ using namespace boost;
 
 int main(int argc, char* argv[])
 {    
-    logfile = CDB::dataDir(bitcoin.dataDirSuffix()) + "/debug.log";
+    logfile = default_data_dir(bitcoin.dataDirSuffix()) + "/debug.log";
     
     Node node; // deafult chain is bitcoin
     
