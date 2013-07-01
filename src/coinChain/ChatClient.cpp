@@ -78,8 +78,11 @@ void ChatClient::handle_connect(const boost::system::error_code& err, tcp::resol
         _socket.async_connect(endpoint, boost::bind(&ChatClient::handle_connect, this, asio::placeholders::error, ++endpoint_iterator));
     }
     else {
-        log_warn("Error: %s\n", err.message().c_str());
-        _socket.close();
+        log_warn("Error: %s\n", err.message());
+        boost::system::error_code ec;
+        _socket.close(ec);
+        if (ec)
+            log_warn("socket shutdown error: %s", ec.message()); // An error occurred.
         _mode = wait_for_notice;
         tcp::resolver::query query(_server, "irc"); // should we remove irc as service type ?
         _resolver.async_resolve(query, boost::bind(&ChatClient::handle_resolve, this, asio::placeholders::error, asio::placeholders::iterator));
@@ -248,7 +251,8 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
     }
     else {
         // check if we were kicked out, then rejoin
-        std::cout << "Error: " << err.message() << "\n";
+        log_warn("Error: %s\n", err.message());
+        //        std::cout << "Error: " << err.message() << "\n";
         // close and rejoin
         _socket.close();
         _mode = wait_for_notice;

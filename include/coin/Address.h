@@ -30,8 +30,8 @@
 // - Doubleclicking selects the whole number as one word if it's all alphanumeric.
 
 /// Utility functions
-std::string EncodeBase58Check(const std::vector<unsigned char>& vchIn);
-bool DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vchRet);
+std::string EncodeBase58Check(const std::vector<unsigned char>& vchIn, const char* alphabet = NULL);
+bool DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vchRet, const char* alphabet = NULL);
 
 // This is the raw PubKeyHash - the BitcoinAddress or more correctly the ChainAddress includes the netword Id and is hence better suited for communicating with the outside. For backwards compatability we do, however, need to use the ChainAddress in e.g. the wallet. 
 
@@ -92,17 +92,6 @@ protected:
     // the actually encoded data
     std::vector<unsigned char> _data;
     
-    Base58Data() {
-        _version = 0;
-        _data.clear();
-    }
-    
-    ~Base58Data() {
-        // zero the memory, as it may contain sensitive data
-        if(!_data.empty())
-            memset(&_data[0], 0, _data.size());
-    }
-    
     void setData(int version, const void* data, size_t size) {
         _version = version;
         _data.resize(size);
@@ -115,6 +104,20 @@ protected:
     }
     
 public:
+    Base58Data() {
+        _version = 0;
+        _data.clear();
+    }
+    
+    ~Base58Data() {
+        // zero the memory, as it may contain sensitive data
+        if(!_data.empty())
+            memset(&_data[0], 0, _data.size());
+    }
+    
+    Base58Data(unsigned char version, std::vector<unsigned char> data) : _version(version), _data(data) {
+    }
+    
     bool setString(const std::string& str) {
         std::vector<unsigned char> temp;
         DecodeBase58Check(str, temp);
@@ -209,9 +212,9 @@ public:
     }
     
     PubKeyHash getPubKeyHash() const {
-        if(!isPubKeyHash())
-            return 0;
-        else
+        //        if(!isPubKeyHash())
+        //            return 0;
+        //else
             return getHash();
     }
     

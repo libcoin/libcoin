@@ -114,6 +114,7 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
               "script BINARY,"
               "signature BINARY,"
               "sequence INTEGER,"
+              "iidx INTEGER," // this is the input index - to ensure proper ordering of the inputs
               "icnf INTEGER REFERENCES Confirmations(cnf)" // icnf is the confirmation that spent the coin
           ")");
 
@@ -273,7 +274,8 @@ std::pair<Claims::Spents, int64> BlockChain::try_claim(const Transaction& txn, b
             value_in += coin.output.value();
             
             if (verify)
-                if(!VerifySignature(coin.output, txn, in_idx, strictPayToScriptHash, 0))
+                if(!txn.verify(in_idx, coin.output.script(), 0, strictPayToScriptHash))
+                    //                if(!VerifySignature(coin.output, txn, in_idx, strictPayToScriptHash, 0))
                     throw Error("Verify Signature failed with verifying: " + txn.getHash().toString());
         }
         
@@ -303,7 +305,7 @@ void BlockChain::claim(const Transaction& txn, bool verify) {
     _claims.insert(txn, res.first, res.second);
 }
 
-Output BlockChain::redeem(const Input& input, Confirmation iconf) {
+Output BlockChain::redeem(const Input& input, int iidx, Confirmation iconf) {
     Unspent coin;
     
     if (_validation_depth == 0) {
@@ -336,7 +338,7 @@ Output BlockChain::redeem(const Input& input, Confirmation iconf) {
         throw Error("Input values out of range");
 
     if (iconf.count >= _purge_depth)
-        query("INSERT INTO Spendings (coin, ocnf, hash, idx, value, script, signature, sequence, icnf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", coin.coin, coin.cnf, input.prevout().hash, input.prevout().index, coin.output.value(), coin.output.script(), input.signature(), input.sequence(), iconf.cnf);
+        query("INSERT INTO Spendings (coin, ocnf, hash, idx, value, script, signature, sequence, iidx, icnf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", coin.coin, coin.cnf, input.prevout().hash, input.prevout().index, coin.output.value(), coin.output.script(), input.signature(), input.sequence(), iidx, iconf.cnf);
     query("DELETE FROM Unspents WHERE coin = ?", coin.coin);
     
     return coin.output;
@@ -408,7 +410,7 @@ void BlockChain::postTransaction(const Transaction txn, int64& fees, int64 min_f
     int64 value_in = 0;
     for (size_t in_idx = 0; in_idx < inputs.size(); ++in_idx) {
         const Input& input = inputs[in_idx];
-        Output coin = redeem(input, conf); // this will throw in case of doublespend attempts
+        Output coin = redeem(input, in_idx, conf); // this will throw in case of doublespend attempts
         value_in += coin.value();
         
         _verifySignatureTimer -= GetTimeMicros();
@@ -457,7 +459,7 @@ void BlockChain::postSubsidy(const Transaction txn, BlockIterator blk, int64 fee
     if (value_in < txn.getValueOut())
         throw Error("value in < value out");
     if (blk.count() >= _purge_depth)
-        query("INSERT INTO Spendings (ocnf, coin, hash, idx, value, script, signature, sequence, icnf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", 0, -blk.count(), uint256(0), 0, value_in, Script(), input.signature(), input.sequence(), blk.count());
+        query("INSERT INTO Spendings (ocnf, coin, hash, idx, value, script, signature, sequence, iidx, icnf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)", 0, -blk.count(), uint256(0), -1, value_in, Script(), input.signature(), input.sequence(), blk.count());
     
     // issue the outputs
     
@@ -525,16 +527,25 @@ void BlockChain::getBlock(int count, Block& block) const {
     getBlockHeader(count, block);
     
     // now get the transactions
-    vector<Confirmation> confs = queryColRow<Confirmation(int, unsigned int, int64, int64)>("SELECT version, locktime, cnf, count FROM Confirmations WHERE count = ? ORDER BY idx", count);
+    vector<Confirmation> confs = queryColRow<Confirmation(int, unsigned int, int64, int64)>("SELECT cnf, version, locktime, count FROM Confirmations WHERE count = ? ORDER BY idx", count);
     
     for (size_t idx = 0; idx < confs.size(); idx++) {
-        Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY idx", confs[idx].cnf);
-        Outputs outputs = queryColRow<Output(int64, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE icnf = ?1 ORDER BY idx ASC);", confs[idx].cnf);
+        //        Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY idx", abs(confs[idx].cnf)); // note that "ABS" as cnf for coinbases is negative!
+
+        Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY iidx", abs(confs[idx].cnf)); // note that "ABS" as cnf for coinbases is negative!
+        
+        Outputs outputs = queryColRow<Output(int64, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1) ORDER BY idx", confs[idx].cnf);
+        //        Outputs outputs = queryColRow<Output(int64, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE icnf = ?1 ORDER BY idx ASC);", confs[idx].cnf);
         Transaction txn = confs[idx];
         txn.setInputs(inputs);
         txn.setOutputs(outputs);
         block.addTransaction(txn);
     }
+    block.updateMerkleTree();
+    if (!block.checkBlock()) {
+        log_warn("getBlock failed for count= %i", count);
+    }
+    //    cout << block.getHash().toString() << endl;
 }
 
 void BlockChain::attach(BlockIterator &blk, Txns& unconfirmed, Hashes& confirmed) {
@@ -912,17 +923,17 @@ void BlockChain::getBlock(const uint256 hash, Block& block) const
 }
 
 void BlockChain::getTransaction(const int64 cnf, Transaction &txn) const {
-    Confirmation conf = queryRow<Confirmation(int, unsigned int, int64, int64)>("SELECT (version, locktime, cnf, count) FROM Confirmations WHERE cnf = ?", cnf);
+    Confirmation conf = queryRow<Confirmation(int, unsigned int, int64, int64)>("SELECT (cnf, version, locktime, count) FROM Confirmations WHERE cnf = ?", cnf);
     
-    Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT (hash, idx, signature, sequence) FROM Spendings WHERE cin = ? ORDER BY idx", cnf);
-    Outputs outputs = queryColRow<Output(int64, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE icnf = ?1 ORDER BY idx ASC);", cnf);
+    Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT (hash, idx, signature, sequence) FROM Spendings WHERE cin = ? ORDER BY iidx", cnf);
+    Outputs outputs = queryColRow<Output(int64, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1 ORDER BY idx ASC);", cnf);
     txn = conf;
     txn.setInputs(inputs);
     txn.setOutputs(outputs);
 }
 
 void BlockChain::getTransaction(const int64 cnf, Transaction &txn, int64& height, int64& time) const {
-    Confirmation conf = queryRow<Confirmation(int, unsigned int, int64, int64)>("SELECT (version, locktime, cnf, count) FROM Confirmations WHERE cnf = ?", cnf);
+    Confirmation conf = queryRow<Confirmation(int, unsigned int, int64, int64)>("SELECT (cnf, version, locktime, count) FROM Confirmations WHERE cnf = ?", cnf);
  
     if (conf.count > LOCKTIME_THRESHOLD) {
         height = -1;
@@ -934,8 +945,8 @@ void BlockChain::getTransaction(const int64 cnf, Transaction &txn, int64& height
         time = blk->time;
     }
     
-    Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT (hash, idx, signature, sequence) FROM Spendings WHERE cin = ? ORDER BY idx", cnf);
-    Outputs outputs = queryColRow<Output(int64, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE icnf = ?1 ORDER BY idx ASC);", cnf);
+    Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT (hash, idx, signature, sequence) FROM Spendings WHERE cin = ? ORDER BY iidx", cnf);
+    Outputs outputs = queryColRow<Output(int64, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1 ORDER BY idx ASC);", cnf);
     txn = conf;
     txn.setInputs(inputs);
     txn.setOutputs(outputs);

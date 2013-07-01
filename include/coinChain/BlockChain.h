@@ -263,7 +263,7 @@ private:
     void insertBlockHeader(int64 count, const Block& block);
 
     /// Mark a spendable spent - throw if already spent (or immature in case of database mode)
-    Output redeem(const Input& input, Confirmation conf);
+    Output redeem(const Input& input, int iidx, Confirmation conf);
     
     /// Issue a new spendable
     void issue(const Output& output, uint256 hash, unsigned int out_idx, Confirmation conf, bool unique = true);

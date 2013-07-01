@@ -261,3 +261,212 @@ uint256 Transaction::getSignatureHash(Script scriptCode, unsigned int n, int typ
     return Hash(ss.begin(), ss.end());
 }
 
+static bool CastToBool(const valtype& vch) {
+    for (int i = 0; i < vch.size(); i++)
+        {
+        if (vch[i] != 0)
+            {
+            // Can be negative zero
+            if (i == vch.size()-1 && vch[i] == 0x80)
+                return false;
+            return true;
+            }
+        }
+    return false;
+}
+
+
+bool Transaction::verify(unsigned int n, Script script, int type, bool strictPayToScriptHash) const {
+    Evaluator::Stack stackCopy;
+    
+    const Input& input = getInput(n);
+    const Script& scriptSig = input.signature();
+    
+    TransactionEvaluator eval(*this, n, type);
+    
+    if (!eval(scriptSig) || eval.stack().empty())
+        return false;
+    if (strictPayToScriptHash)
+        stackCopy = eval.stack();
+    if (!eval(script) || eval.stack().empty())
+        return false;
+    
+    if (CastToBool(eval.stack().back()) == false)
+        return false;
+    
+    // Additional validation for spend-to-script-hash transactions:
+    if (strictPayToScriptHash && script.isPayToScriptHash()) {
+        if (!scriptSig.isPushOnly()) // scriptSig must be literals-only
+            return false;            // or validation fails
+        
+        const Evaluator::Value& pubKeySerialized = stackCopy.back();
+        Script pubKey2(pubKeySerialized.begin(), pubKeySerialized.end());
+        stackCopy.pop_back();
+        
+        eval.stack(stackCopy);
+        
+        if (!eval(pubKey2) || eval.stack().empty())
+            return false;
+        return CastToBool(eval.stack().back());
+    }
+    
+    return true;
+}
+
+static const size_t nMaxNumSize = 4;
+static CBigNum CastToBigNum(const valtype& vch)
+{
+    if (vch.size() > nMaxNumSize)
+        throw runtime_error("CastToBigNum() : overflow");
+    // Get rid of extra leading zeros
+    return CBigNum(CBigNum(vch).getvch());
+}
+
+boost::tribool TransactionEvaluator::eval(opcodetype opcode) {
+    boost::tribool result = Evaluator::eval(opcode);
+    if (result || !result)
+        return result;
+    
+    if (needContext())
+        std::runtime_error("Trying to use TransactionEvaluator without a Transaction context!");
+    
+    const Value False(0);
+    const Value True(1, 1);
+    
+    switch (opcode) {
+        case OP_CODESEPARATOR: {
+            // Hash starts after the code separator
+            _codehash = _current;
+            _code_separator = true;
+            break;
+        }
+        case OP_CHECKSIG:
+        case OP_CHECKSIGVERIFY: {
+            // (sig pubkey -- bool)
+            if (_stack.size() < 2)
+                return false;
+            
+            Value& vchSig    = top(-2);
+            Value& vchPubKey = top(-1);
+            
+            ////// debug print
+            //PrintHex(vchSig.begin(), vchSig.end(), "sig: %s\n");
+            //PrintHex(vchPubKey.begin(), vchPubKey.end(), "pubkey: %s\n");
+            
+            // Subset of script starting at the most recent codeseparator
+            if (!_code_separator)
+                _codehash = _begin;
+            Script scriptCode(_codehash, _end);
+            
+            // Drop the signature, since there's no way for a signature to sign itself
+            scriptCode.findAndDelete(Script(vchSig));
+            
+            bool fSuccess = checkSig(vchSig, vchPubKey, scriptCode);
+            
+            pop(_stack);
+            pop(_stack);
+            _stack.push_back(fSuccess ? True : False);
+            if (opcode == OP_CHECKSIGVERIFY) {
+                if (fSuccess)
+                    pop(_stack);
+                else
+                    return false;
+            }
+            break;
+        }
+            
+        case OP_CHECKMULTISIG:
+        case OP_CHECKMULTISIGVERIFY: {
+            // ([sig ...] num_of_signatures [pubkey ...] num_of_pubkeys -- bool)
+            
+            int i = 1;
+            if (_stack.size() < i)
+                return false;
+            
+            int nKeysCount = CastToBigNum(top(-i)).getint();
+            if (nKeysCount < 0 || nKeysCount > 20)
+                return false;
+            _op_count += nKeysCount;
+            if (_op_count > 201)
+                return false;
+            int ikey = ++i;
+            i += nKeysCount;
+            if (_stack.size() < i)
+                return false;
+            
+            int nSigsCount = CastToBigNum(top(-i)).getint();
+            if (nSigsCount < 0 || nSigsCount > nKeysCount)
+                return false;
+            int isig = ++i;
+            i += nSigsCount;
+            if (_stack.size() < i)
+                return false;
+            
+            // Subset of script starting at the most recent codeseparator
+            if (!_code_separator)
+                _codehash = _begin;
+            Script scriptCode(_codehash, _end);
+            
+            // Drop the signatures, since there's no way for a signature to sign itself
+            for (int k = 0; k < nSigsCount; k++) {
+                Value& vchSig = top(-isig-k);
+                scriptCode.findAndDelete(Script(vchSig));
+            }
+            
+            bool fSuccess = true;
+            while (fSuccess && nSigsCount > 0) {
+                Value& vchSig    = top(-isig);
+                Value& vchPubKey = top(-ikey);
+                
+                // Check signature
+                if (checkSig(vchSig, vchPubKey, scriptCode)) {
+                    isig++;
+                    nSigsCount--;
+                }
+                ikey++;
+                nKeysCount--;
+                
+                // If there are more signatures left than keys left,
+                // then too many signatures have failed
+                if (nSigsCount > nKeysCount)
+                    fSuccess = false;
+            }
+            
+            while (i-- > 0)
+                pop(_stack);
+            _stack.push_back(fSuccess ? True : False);
+            
+            if (opcode == OP_CHECKMULTISIGVERIFY) {
+                if (fSuccess)
+                    pop(_stack);
+                else
+                    return false;
+            }
+            break;
+        }
+        default:
+            break;
+    }
+    return indeterminate;
+}
+
+bool TransactionEvaluator::checkSig(std::vector<unsigned char> vchSig, std::vector<unsigned char> vchPubKey, Script scriptCode)
+{
+    CKey key;
+    int hashtype = _hash_type;
+
+    if (!key.SetPubKey(vchPubKey))
+        return false;
+    
+    // Hash type is one byte tacked on to the end of the signature
+    if (vchSig.empty())
+        return false;
+    if (hashtype == 0)
+        hashtype = vchSig.back();
+    else if (hashtype != vchSig.back())
+        return false;
+    vchSig.pop_back();
+    
+    return key.Verify(_txn.getSignatureHash(scriptCode, _in, hashtype), vchSig);
+}
+

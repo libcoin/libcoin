@@ -10,6 +10,7 @@
 #include <openssl/bn.h>
 
 #include <coin/util.h>
+#include <coin/serialize.h>
 
 class bignum_error : public std::runtime_error
 {
@@ -65,6 +66,14 @@ public:
         }
     }
 
+    CBigNum(const BIGNUM* bn) {
+        BN_init(this);
+        if (!BN_copy(this, bn)) {
+            BN_clear_free(this);
+            throw bignum_error("CBigNum::CBigNum(const BIGNUM* bn) : BN_copy failed");
+        }
+    }
+    
     CBigNum& operator=(const CBigNum& b)
     {
         if (!BN_copy(this, &b))
@@ -93,6 +102,10 @@ public:
     {
         BN_init(this);
         setvch(vch);
+    }
+    
+    int bits() const {
+        return BN_num_bits(this);
     }
 
     void setulong(unsigned long n)
@@ -527,7 +540,32 @@ inline const CBigNum operator>>(const CBigNum& a, unsigned int shift)
     r >>= shift;
     return r;
 }
+    
+    inline const CBigNum GCD(const CBigNum& a, const CBigNum& b) {
+        CAutoBN_CTX pctx;
+        CBigNum r;
+        if (!BN_gcd(&r, &a, &b, pctx))
+            throw bignum_error("CBigNum::GCD : BN_gcd failed");
+        return r;
+    }
 
+    inline const CBigNum ModPow(const CBigNum& a, const CBigNum& p, const CBigNum& m) {
+        CAutoBN_CTX pctx;
+        CBigNum r;
+        if (!BN_mod_exp(&r, &a, &p, &m, pctx))
+            throw bignum_error("CBigNum::GCD : BN_gcd failed");
+        return r;
+    }
+    
+    inline const CBigNum ModInverse(const CBigNum& a, const CBigNum& n) {        
+        CAutoBN_CTX pctx;
+        CBigNum r;
+        if (!BN_mod_inverse(&r, &a, &n, pctx))
+            throw bignum_error("CBigNum::GCD : BN_gcd failed");
+        return r;
+    }
+    
+    
 inline bool operator==(const CBigNum& a, const CBigNum& b) { return (BN_cmp(&a, &b) == 0); }
 inline bool operator!=(const CBigNum& a, const CBigNum& b) { return (BN_cmp(&a, &b) != 0); }
 inline bool operator<=(const CBigNum& a, const CBigNum& b) { return (BN_cmp(&a, &b) <= 0); }

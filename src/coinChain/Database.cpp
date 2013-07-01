@@ -49,10 +49,19 @@ namespace sqliterate {
         reverse(b.begin(), b.end());
         bind(b, col);
     }
+    void StatementBase::bind(const uint160& arg, int col) const {
+        blob b((const char*) arg.begin(), (const char*) arg.end());
+        reverse(b.begin(), b.end());
+        bind(b, col);
+    }
     
     
     void StatementBase::get(sqlite3_int64& arg, int col) const {
         int storage_class = sqlite3_column_type(_->stmt, col);
+        if (storage_class == SQLITE_NULL) {
+            arg = 0;
+            return;
+        }
         if (storage_class != SQLITE_INTEGER)
             throw Database::Error("StatementBase::get(" + lexical_cast<string>(col) + ") : storage class error, expected SQLITE_INTEGER got: " + lexical_cast<string>(storage_class));
         arg = sqlite3_column_int64(_->stmt, col);
@@ -90,6 +99,12 @@ namespace sqliterate {
         get(a, col);
         reverse(a.begin(), a.end());
         arg = uint256(a);
+    }
+    void StatementBase::get(uint160& arg, int col) const {
+        vector<unsigned char> a;
+        get(a, col);
+        reverse(a.begin(), a.end());
+        arg = uint160(a);
     }
     
     Database::Database(const string filename, sqlite3_int64 heap_limit) {

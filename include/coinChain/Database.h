@@ -302,6 +302,7 @@ namespace sqliterate {
         void bind(const std::string& arg, int col) const;
         void bind(const blob& arg, int col) const;
         void bind(const uint256& arg, int col) const;
+        void bind(const uint160& arg, int col) const;
         
         sqlite3_stmt *stmt() { return _->stmt; }
     protected:
@@ -314,6 +315,7 @@ namespace sqliterate {
         void get(std::string& arg, int col) const;
         void get(blob& arg, int col) const;
         void get(uint256& arg, int col) const;
+        void get(uint160& arg, int col) const;
 
         void get(undefined, int) const {}
         

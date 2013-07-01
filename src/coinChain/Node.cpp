@@ -203,7 +203,7 @@ void Node::addPeer(string hostport) {
     // split by the colon
     size_t colon = hostport.find(':');
     string address = hostport.substr(0, colon);
-    string port = (colon == string::npos) ? lexical_cast<string>(_blockChain.chain().defaultPort()) : hostport.substr(colon);
+    string port = (colon == string::npos) ? lexical_cast<string>(_blockChain.chain().defaultPort()) : hostport.substr(colon+1);
     ip::tcp::resolver resolver(_io_service);
     ip::tcp::resolver::query query(address, port);
     ip::tcp::endpoint ep = *resolver.resolve(query);
@@ -218,7 +218,7 @@ void Node::connectPeer(std::string hostport) {
     // split by the colon
     size_t colon = hostport.find(':');
     string address = hostport.substr(0, colon);
-    string port = (colon == string::npos) ? lexical_cast<string>(_blockChain.chain().defaultPort()) : hostport.substr(colon);
+    string port = (colon == string::npos) ? lexical_cast<string>(_blockChain.chain().defaultPort()) : hostport.substr(colon+1);
     ip::tcp::resolver resolver(_io_service);
     ip::tcp::resolver::query query(address, port);
     ip::tcp::endpoint ep = *resolver.resolve(query);

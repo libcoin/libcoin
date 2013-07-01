@@ -7,7 +7,6 @@
 
 #include <coin/Key.h>
 #include <coin/Transaction.h>
-#include <coin/Asset.h>
 
 #include <coinChain/Export.h>
 

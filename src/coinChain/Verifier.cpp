@@ -55,8 +55,9 @@ void Verifier::verify(const Output& output, const Transaction& txn, unsigned int
 bool Verifier::do_verify(const Output& output, const Transaction& txn, unsigned int in_idx, bool strictPayToScriptHash, int hash_type) {
     if (already_failed()) // no reason to waste time on a loosing tx
         return true;
-    
-    if (!VerifySignature(output, txn, in_idx, strictPayToScriptHash, hash_type)) {
+
+    if (!txn.verify(in_idx, output.script(), hash_type, strictPayToScriptHash)) {
+        //    if (!VerifySignature(output, txn, in_idx, strictPayToScriptHash, hash_type)) {
         failed_with_reason("Transaction hash: " + txn.getHash().toString());
         return false;
     }

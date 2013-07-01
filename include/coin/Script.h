@@ -13,6 +13,7 @@
 #include <vector>
 
 #include <boost/foreach.hpp>
+#include <boost/logic/tribool.hpp>
 
 class Transaction;
 class Output;
@@ -170,12 +171,18 @@ enum opcodetype
     OP_NOP9,
     OP_NOP10,
     
-    
+    // this is for handling hieraical wallets, as well as partly signed transactions
+    OP_SIGHASH = 0xea, // this will generate a signature hash from 
+    OP_RESOLVE = 0xeb,
+    OP_SIGN = 0xec,
+    OP_RESOLVEANDSIGN = 0xed,
+    //    OP_VALUE = 0xee, // used for template matching - deprecating the stuff below
     
     // template matching params
     OP_SMALLINTEGER = 0xfa,
     OP_PUBKEYS = 0xfb,
     OP_PUBKEYHASH = 0xfd,
+    OP_SCRIPTHASH = 0xfd,
     OP_PUBKEY = 0xfe,
     
     OP_INVALIDOPCODE = 0xff,
@@ -316,9 +323,15 @@ inline const char* GetOpName(opcodetype opcode)
         case OP_NOP9                   : return "OP_NOP9";
         case OP_NOP10                  : return "OP_NOP10";
             
-            
+            // ExtendedKey stuff
+        case OP_SIGHASH                : return "OP_SIGHASH";
+        case OP_RESOLVE                : return "OP_RESOLVE";
+        case OP_SIGN                   : return "OP_SIGN";
+        case OP_RESOLVEANDSIGN         : return "OP_RESOLVEANDSIGN";
             
             // template matching params
+        case OP_SMALLINTEGER           : return "OP_SMALLINTEGER";
+        case OP_PUBKEYS                : return "OP_PUBKEYS";
         case OP_PUBKEYHASH             : return "OP_PUBKEYHASH";
         case OP_PUBKEY                 : return "OP_PUBKEY";
             
@@ -709,21 +722,163 @@ public:
     }
 };
 
+/// Evaluator is the base functor for script evaluation
+class Evaluator {
+public:
+    typedef std::vector<unsigned char> Value;
+    typedef std::vector<Value> Stack;
+    
+    /// Evaluate a script
+    bool operator()(const Script& script);
+
+    /// Evaluate a script against a template - returns true if matching, and false otherwise.
+    /// If matching the extracted values are pushed to the stack
+    // bool operator()(const Script& script, const Script& tmpl);
+
+    void stack(const Stack& s) {
+        _stack.insert(_stack.end(), s.begin(), s.end());
+    }
+    
+    const Stack& stack() const { return _stack; }
+    
+    Script stack_as_script() const {
+        Script script;
+        for (Stack::const_iterator val = _stack.begin(); val != _stack.end(); ++val)
+            script << *val;
+        return script;
+    }
+    
+protected:
+    /// Subclass Evaluator to implement eval, enbaling evaluation of context dependent operations
+    virtual boost::tribool eval(opcodetype opcode);
+    
+    Value& top(int i = -1) {
+        return _stack.at(_stack.size() + i);
+    }
+
+    Value& alttop(int i = -1) {
+        return _alt_stack.at(_alt_stack.size()+i);
+    }
+
+    static inline void pop(Stack& stack) {
+        if (stack.empty())
+            throw std::runtime_error("pop() : stack empty");
+        stack.pop_back();
+    }
+
+protected:
+    Script::const_iterator _begin;
+    Script::const_iterator _current;
+    Script::const_iterator _end;
+    
+    int _op_count;
+
+    bool _exec;
+    std::vector<bool> _exec_stack;
+    
+    Stack _stack;
+    Stack _alt_stack;
+};
 
 
+/// TemplateEvaluator matches a script against a template. The stack is then populated with the template values of the script.
+/// True is returned on match, false if no match
+class Template : public Evaluator {
+public:
+    Template(const Script& script) : Evaluator(), _template(script), _it(_template.begin()), _values(0) {}
 
+public:
+    /// pubKey does a match against a standard pubkey template and returns the pubkey
+    static PubKey pubKey(const Script& script) {
+        Template eval(Script() << OP_PUBKEY << OP_CHECKSIG);
+        if (eval(script))
+            return eval.top();
+        else
+            return PubKey();
+    }
+    
+    /// pubKeyHash does a match against a standard pubkeyhash template and returns the pubkeyhash
+    static PubKeyHash pubKeyHash(const Script& script) {
+        return script.getAddress();
+        Template eval(Script() << OP_DUP << OP_HASH160 << OP_PUBKEYHASH << OP_EQUALVERIFY << OP_CHECKSIG);
+        if (eval(script))
+            return uint160(eval.top());
+        else
+            return uint160(0);
+    }
+    
+    /// pubKey does a match against a standard P2SH template and returns the script hash
+    static ScriptHash scriptHash(const Script& script) {
+        Template eval(Script() << OP_HASH160 << OP_SCRIPTHASH << OP_EQUAL);
+        if (eval(script))
+            return uint160(eval.top());
+        else
+            return uint160(0);
+    }
 
+protected:
+    /// Subclass Evaluator to implement eval, enbaling evaluation of context dependent operations
+    virtual boost::tribool eval(opcodetype opcode) {
+        opcodetype tmpl_opcode;
+        Value val;
+        _template.getOp(_it, tmpl_opcode, val);
+        if (tmpl_opcode == opcode)
+            return boost::logic::indeterminate;
+        else if (val.size()) {
+            if (top() == val) {
+                pop(_stack);
+                return boost::logic::indeterminate;
+            }
+            else
+                return false;
+        }
+        else {
+            switch (tmpl_opcode) {
+                case OP_PUBKEYHASH:
+                case OP_PUBKEY:
+                case OP_PUBKEYS:
+                case OP_SMALLINTEGER: {
+                    // check that the latest stuff on the stack matches
+                    if(_stack.size() == ++_values) {
+                        // do a check of the value
+                        const Value& value = top();
+                        switch (tmpl_opcode) {
+                            case OP_PUBKEYHASH:
+                                if (value.size() == sizeof(uint160))
+                                    return boost::logic::indeterminate;
+                                break;
+                            case OP_PUBKEY:
+                                if (value.size() >= 33 && value.size() <= 120)
+                                    return boost::logic::indeterminate;
+                                break;
+                            case OP_PUBKEYS:
+                            case OP_SMALLINTEGER:
+                            default:
+                                break;
+                        }
+                        return false;
+                    }
+                    else
+                        return false;
+                }
+                default:
+                    return false;
+            }
+        }
+    }
+
+private:
+    Script _template;
+    Script::const_iterator _it;
+    size_t _values;
+};
 
 bool Solver(const Script& scriptPubKey, std::vector<std::pair<opcodetype, std::vector<unsigned char> > >& vSolutionRet);
-bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const Script& script, const Transaction& txTo, unsigned int nIn, int nHashType);
 
 bool IsMine(const KeyStore& keystore, const Script& scriptPubKey);
-//bool ExtractAddress(const Script& scriptPubKey, const KeyStore* pkeystore, PubKeyHash& addressRet);
+
 bool SignSignature(const KeyStore &keystore, const Output& txout, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL);
 bool SignSignature(const KeyStore& keystore, const Transaction& txFrom, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL);
-
-bool VerifySignature(const Output& output, const Transaction& txTo, unsigned int nIn, bool fValidatePayToScriptHash, int nHashType=0);
-bool VerifySignature(const Transaction& txFrom, const Transaction& txTo, unsigned int nIn, bool fValidatePayToScriptHash, int nHashType=0);
 
 bool ExtractAddress(const Script& scriptPubKey, PubKeyHash& pubKeyHash, ScriptHash& scriptHash);
 

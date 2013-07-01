@@ -52,7 +52,7 @@ ScriptHash toScriptHash(const Script& vch)
 }
 
 
-inline string EncodeBase58(const unsigned char* pbegin, const unsigned char* pend)
+inline string EncodeBase58(const unsigned char* pbegin, const unsigned char* pend, const char* alphabet = pszBase58)
 {
     CAutoBN_CTX pctx;
     CBigNum bn58 = 58;
@@ -80,24 +80,24 @@ inline string EncodeBase58(const unsigned char* pbegin, const unsigned char* pen
             throw bignum_error("EncodeBase58 : BN_div failed");
         bn = dv;
         unsigned int c = rem.getulong();
-        str += pszBase58[c];
+        str += alphabet[c];
         }
     
     // Leading zeroes encoded as base58 zeros
     for (const unsigned char* p = pbegin; p < pend && *p == 0; p++)
-        str += pszBase58[0];
+        str += alphabet[0];
     
     // Convert little endian string to big endian
     reverse(str.begin(), str.end());
     return str;
 }
 
-inline string EncodeBase58(const vector<unsigned char>& vch)
+inline string EncodeBase58(const vector<unsigned char>& vch, const char* alphabet = pszBase58)
 {
-    return EncodeBase58(&vch[0], &vch[0] + vch.size());
+    return EncodeBase58(&vch[0], &vch[0] + vch.size(), alphabet);
 }
 
-inline bool DecodeBase58(const char* psz, vector<unsigned char>& vchRet)
+inline bool DecodeBase58(const char* psz, vector<unsigned char>& vchRet, const char* alphabet = pszBase58)
 {
     CAutoBN_CTX pctx;
     vchRet.clear();
@@ -110,7 +110,7 @@ inline bool DecodeBase58(const char* psz, vector<unsigned char>& vchRet)
     // Convert big endian string to bignum
     for (const char* p = psz; *p; p++)
         {
-        const char* p1 = strchr(pszBase58, *p);
+        const char* p1 = strchr(alphabet, *p);
         if (p1 == NULL)
             {
             while (isspace(*p))
@@ -119,7 +119,7 @@ inline bool DecodeBase58(const char* psz, vector<unsigned char>& vchRet)
                 return false;
             break;
             }
-        bnChar.setulong(p1 - pszBase58);
+        bnChar.setulong(p1 - alphabet);
         if (!BN_mul(&bn, &bn, &bn58, pctx))
             throw bignum_error("DecodeBase58 : BN_mul failed");
         bn += bnChar;
@@ -134,7 +134,7 @@ inline bool DecodeBase58(const char* psz, vector<unsigned char>& vchRet)
     
     // Restore leading zeros
     int nLeadingZeros = 0;
-    for (const char* p = psz; *p == pszBase58[0]; p++)
+    for (const char* p = psz; *p == alphabet[0]; p++)
         nLeadingZeros++;
     vchRet.assign(nLeadingZeros + vchTmp.size(), 0);
     
@@ -148,18 +148,20 @@ inline bool DecodeBase58(const string& str, vector<unsigned char>& vchRet)
     return DecodeBase58(str.c_str(), vchRet);
 }
 
-string EncodeBase58Check(const vector<unsigned char>& vchIn)
+string EncodeBase58Check(const vector<unsigned char>& vchIn, const char* alphabet)
 {
+    if (!alphabet) alphabet = pszBase58;
     // add 4-byte hash check to the end
     vector<unsigned char> vch(vchIn);
     uint256 hash = Hash(vch.begin(), vch.end());
     vch.insert(vch.end(), (unsigned char*)&hash, (unsigned char*)&hash + 4);
-    return EncodeBase58(vch);
+    return EncodeBase58(vch, alphabet);
 }
 
-inline bool DecodeBase58Check(const char* psz, vector<unsigned char>& vchRet)
+inline bool DecodeBase58Check(const char* psz, vector<unsigned char>& vchRet, const char* alphabet)
 {
-    if (!DecodeBase58(psz, vchRet))
+    if (!alphabet) alphabet = pszBase58;
+    if (!DecodeBase58(psz, vchRet, alphabet))
         return false;
     if (vchRet.size() < 4)
         {
@@ -176,9 +178,10 @@ inline bool DecodeBase58Check(const char* psz, vector<unsigned char>& vchRet)
     return true;
 }
 
-bool DecodeBase58Check(const string& str, vector<unsigned char>& vchRet)
+bool DecodeBase58Check(const string& str, vector<unsigned char>& vchRet, const char* alphabet)
 {
-    return DecodeBase58Check(str.c_str(), vchRet);
+    if (!alphabet) alphabet = pszBase58;
+    return DecodeBase58Check(str.c_str(), vchRet, alphabet);
 }
 
 /*

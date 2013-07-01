@@ -236,5 +236,60 @@ private:
 
 extern const LitecoinChain litecoin;
 
+class COINCHAIN_EXPORT TerracoinChain : public Chain
+{
+public:
+    TerracoinChain();
+    virtual const Block& genesisBlock() const ;
+    virtual const uint256& genesisHash() const { return _genesis; }
+    virtual const int64 subsidy(unsigned int height) const ;
+    virtual bool isStandard(const Transaction& tx) const ;
+    virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 32); } 
+    virtual const bool checkProofOfWork(const Block& block) const;
+    virtual unsigned int nextWorkRequired(BlockIterator blk) const;
+    //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const;
+    virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
+    virtual unsigned int totalBlocksEstimate() const;
+    
+    virtual const std::string dataDirSuffix() const { return "litecoin"; }
+    
+    virtual unsigned int timeStamp(ChangeIdentifier id) const {
+        switch(id) {
+            case BIP0016: return 1349049600; // April 1st
+            case BIP0030: return 1349049600; // 03/15/2012 12:00am GMT.
+        }
+        return 0;
+    }
+    
+    //    virtual char networkId() const { return 0x00; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
+    virtual ChainAddress getAddress(PubKeyHash hash) const { return ChainAddress(0x30, hash); }
+    virtual ChainAddress getAddress(ScriptHash hash) const { return ChainAddress(0x05, hash); }
+    virtual ChainAddress getAddress(std::string str) const {
+        ChainAddress addr(str);
+        if(addr.version() == 0x30)
+            addr.setType(ChainAddress::PUBKEYHASH);
+        else if (addr.version() == 0x05)
+            addr.setType(ChainAddress::SCRIPTHASH);
+        return addr;
+    }
+    
+    virtual const MessageStart& messageStart() const { return _messageStart; };
+    virtual short defaultPort() const { return 9333; }
+    
+    virtual std::string ircChannel() const { return "litecoin"; }
+    virtual unsigned int ircChannels() const { return 1; } // number of groups to try (100 for bitcoin, 2 for litecoin)
+    
+private:
+    const uint256 getPoWHash(const Block& block) const;
+private:
+    Block _genesisBlock;
+    uint256 _genesis;
+    MessageStart _messageStart;
+    typedef std::map<int, uint256> Checkpoints;
+    Checkpoints _checkpoints;
+};
+
+extern const TerracoinChain terracoin;
+
 
 #endif // CHAIN_H

@@ -300,6 +300,7 @@ public:
     bool Verify(uint256 hash, const std::vector<unsigned char>& vchSig)
     {
         // -1 = error, 0 = bad sig, 1 = good
+    int check = ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey);
         if (ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey) != 1)
             return false;
         return true;
