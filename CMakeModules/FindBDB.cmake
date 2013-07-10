@@ -17,6 +17,8 @@ FIND_PATH(BDB_INCLUDE_DIR db_cxx.h
     /Library/Frameworks
     /usr/local/include
     /usr/include
+    /usr/local/opt/berkeley-db/include  # HomeBrew
+    /usr/local/opt/berkeley-db4/include # HomeBrew, BDB4
     /sw/include # Fink
     /opt/local/include # DarwinPorts
     /opt/csw/include # Blastwave
@@ -33,6 +35,8 @@ FIND_LIBRARY(BDB_LIBRARY
     /Library/Frameworks
     /usr/local/lib
     /usr/lib
+    /usr/local/opt/berkeley-db/lib  # HomeBrew
+    /usr/local/opt/berkeley-db4/lib # HomeBrew, BDB4
     /sw/lib
     /opt/local/lib
     /opt/csw/lib
