@@ -398,36 +398,6 @@ ENDIF()
 # Include macro utilities here
 INCLUDE(LibCoinMacroUtils)
 
-IF(NOT ANDROID)
-# To select a specific version of QT define DESIRED_QT_VERSION
-# via cmake -DDESIRED_QT_VERSION=4
-    IF  (DESIRED_QT_VERSION)
-
-        IF  (DESIRED_QT_VERSION MATCHES 4)
-              FIND_PACKAGE(Qt4)
-        ELSE()
-              FIND_PACKAGE(Qt3)
-        ENDIF()
-
-    ELSE()
-
-        FIND_PACKAGE(Qt4)
-
-        IF  (NOT QT4_FOUND)
-            FIND_PACKAGE(Qt3)
-        ENDIF()
-
-    ENDIF()
-ENDIF(NOT ANDROID)
-#optional example related dependencies
-IF   (BUILD_LIBCOIN_EXAMPLES AND NOT ANDROID)
-
-    SET(wxWidgets_USE_LIBS base core gl net)
-    FIND_PACKAGE(wxWidgets)
-
-ENDIF(BUILD_LIBCOIN_EXAMPLES AND NOT ANDROID)
-
-
 ################################################################################
 # Create bin and lib directories if required
 
@@ -825,11 +795,6 @@ SET(PKGCONFIG_FILES
 #  libcoin-coinWallet
 #  libcoin-coinMine
 )
-
-#This generates an error on machines with Qt installed!
-#IF(QT4_FOUND)
-#  SET(PKGCONFIG_FILES ${PKGCONFIG_FILES} libcoin-coinQt)
-#ENDIF(QT4_FOUND)
 
 FOREACH(PKGCONFIG_FILE ${PKGCONFIG_FILES})
   CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/packaging/pkgconfig/${PKGCONFIG_FILE}.pc.in

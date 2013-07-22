@@ -14,6 +14,9 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _COINHTTP_CLIENT_H_
+#define _COINHTTP_CLIENT_H_
+
 #include <coinHTTP/Export.h>
 #include <coinHTTP/Reply.h>
 
@@ -26,12 +29,7 @@
 #include <boost/function.hpp>
 #include <boost/asio/ssl.hpp>
 
-class COINHTTP_EXPORT ClientCompletionHandler {
-public:
-    virtual void operator()(const boost::system::error_code& err) = 0;
-};
-
-class COINHTTP_EXPORT Client : public ClientCompletionHandler
+class COINHTTP_EXPORT Client
 {
 public:
     Client();
@@ -40,32 +38,33 @@ public:
     void setSecure(bool secure) { _secure = secure; }
     bool isSecure() const { return _secure; }
     
-    virtual void operator()(const boost::system::error_code& err) { _error = err; }
-    
     /// Blocking post.
+    /*
     Reply post(std::string url, std::string content, Headers headers = Headers()) {
-        async_post(url, content, *this, headers);
+        async_post(url, content, boost::bind(&Client::handle_reply, this), headers);
         _io_service.run();
         if(_error)
             _reply.content() += _error.message();
         // parse the reply
         return _reply;
     }
+    */
+    typedef boost::function< void(Reply& reply) > ReplyHandler;
     
     /// Non-blocking post. Requires definition of a callback.
-    void async_post(std::string url, std::string content, ClientCompletionHandler& handler, Headers headers = Headers());
+    void async_post(std::string url, std::string content, ReplyHandler handler, Headers headers = Headers());
     
     /// Blocking get.
+    /*
     Reply get(std::string url, Headers headers = Headers()) {
-        async_get(url, *this, headers);
+        async_get(url, boost::bind(&Client::handle_reply, this), headers);
         _io_service.run();
         // parse the reply
         return _reply;
     }
-    
+    */
     /// Non-blocking get. Requires definition of a callback.
-    void async_get(std::string url, ClientCompletionHandler& handler, Headers headers = Headers());
-    
+    void async_get(std::string url, ReplyHandler handler, Headers headers = Headers());
 
 private:
     void handle_resolve(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
@@ -75,6 +74,8 @@ private:
     void handle_read_status_line(const boost::system::error_code& err, std::size_t bytes_transferred);
     void handle_read_headers(const boost::system::error_code& err, std::size_t bytes_transferred);
     void handle_read_content(const boost::system::error_code& err, std::size_t bytes_transferred);
+    void handle_done(const boost::system::error_code& err);
+    void handle_reply(Reply& reply) {}
 
 private:
     boost::asio::io_service _io_service;
@@ -86,6 +87,8 @@ private:
     boost::asio::streambuf _request;
     boost::asio::streambuf _response;
     Reply _reply;
-    ClientCompletionHandler& _completion_handler;
+    ReplyHandler _reply_handler;
     boost::system::error_code _error;
 };
+
+#endif // _COINHTTP_CLIENT_H_

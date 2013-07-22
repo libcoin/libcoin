@@ -66,11 +66,15 @@ public:
 
     Point(Infinity inf, int curve = NID_secp256k1);
     
+    Point(const CBigNum& x, const CBigNum& y, int curve = NID_secp256k1);
+    
     ~Point();
 
     Point& operator=(const Point& point);
     
     CBigNum X() const;
+
+    CBigNum Y() const;
     
     Point& operator+=(const Point& point);
     
@@ -92,7 +96,14 @@ inline Point operator+(const Point& lhs, const Point& rhs)
 
 Point operator*(const CBigNum& m, const Point& Q);
 
+/// A Key can be in 3 states: pure public key, pure private key (with public key derived from the private key) and separate private and public keys. The latter is hidden as a protected constructor for the Key class, but exposed for the ExtendedKey
+
 class COIN_EXPORT Key {
+protected:
+    Key(const CBigNum& private_number, const Point& public_point);
+
+    void reset(const CBigNum& private_number, const Point& public_point);
+
 public:
     /// Generate a void key
     Key();
@@ -137,6 +148,13 @@ public:
     
     /// return the private number
     CBigNum number() const;
+
+    /// Sign a hash using ECDSA
+    Data sign(uint256 hash) const;
+    
+    /// Verify an ECDSA signature on a hash
+    bool verify(uint256 hash, const Data& signature) const;
+    
 protected:
     const BIGNUM* private_number() const;
     
@@ -144,7 +162,7 @@ private:
     EC_KEY* _ec_key; // Note this can contain both a public and a private key    
 };
 
-/// The ExtendedKey class
+/// The ExtendedKey class - an extended key is a Key that also holds a chain_code, which enables different schemes for deterministic wallets
 class COIN_EXPORT ExtendedKey : public Key {
 public:
     /// Generate the Master key - if called with no argument, a seed is generated
@@ -158,6 +176,8 @@ public:
     
     ExtendedKey(const Point& public_point, const SecureData& chain_code);
 
+    ExtendedKey(const CBigNum& private_number, const Point& public_point, const SecureData& chain_code) : Key(private_number, public_point), _chain_code(chain_code) {}
+    
     /// Retrun the chain code
     const SecureData& chain_code() const;
 
@@ -166,79 +186,119 @@ public:
     
     /// fingerprint of the chain and the public key - this is a more precise identification (less collisions) than the 4byte hash.
     uint160 fingerprint() const;
-    
-    /// derive a new extended key
-    ExtendedKey derive(unsigned int i, bool multiply = false) const;
-
-    /// delegate to get a new isolated private key hieracy
-    ExtendedKey delegate(unsigned int i) const;
-
-    typedef std::vector<unsigned int> Derivatives;
-    Derivatives parse(const std::string tree) const;
-    
-    ExtendedKey path(const std::string tree, unsigned char& depth, unsigned int& hash, unsigned int& child_number) const;
-    
-    ExtendedKey path(const std::string tree) const;
-
-    /// get the key (private or public) represented by this extended key
-    CKey key() const;
-    
-    Data serialize(bool serialize_private = false, unsigned int version = 0, unsigned char depth = 0, unsigned int hash = 0, unsigned int child_number = 0) const;
-    
-    /// The Generator class enables serialization to and from Scripts. It is an easy way to handle Extended Keys.
-    class Generator {
+  
+    /// The Derivation class enables derivation of keys, and can check that it is indeed the proper key that is derived by comparing fingerprints.
+    /// It enables easy serialization of extended key derivations
+    /// The Derivation class is virtual, and a method of dereivation should be implemented in derived classes (see BIP 0032)
+    class Derivation {
     public:
-        Generator() {}
+        typedef std::vector<unsigned int> Path;
         
-        Generator(std::vector<unsigned char> script_data);
+        Derivation() {}
         
-        Generator& operator++();
+        /// Copy constructor
+        Derivation(const Derivation& generator) : _fingerprint(generator._fingerprint), _path(generator._path){ }
+        
+        /// Construct from a fingerprint and a path
+        Derivation(uint160 fp, Path d = Path()) : _fingerprint(fp), _path(d) {}
+        
+        /// Construct from a script
+        Derivation(std::vector<unsigned char> script_data);
+        
+        /// Construct from a string of the form: "m/3/5/11"
+        Derivation(const std::string tree);
+        
+        /// simple generation
+        Derivation(unsigned int i) :_fingerprint(0) {
+            _path.push_back(i);
+        }
+        
+        virtual ~Derivation() {}
+        
+        Path parse(const std::string tree) const;
+        
+        Derivation& operator++();
         
         std::vector<unsigned char> serialize() const;
         
         uint160 fingerprint() const {
             return _fingerprint;
         }
-
+        
         void fingerprint(uint160 fp) {
             _fingerprint = fp;
         }
-
         
-        const Derivatives& derivatives() const {
-            return _derivatives;
+        const Path& path() const {
+            return _path;
         }
-        
-        //        typedef std::vector<unsigned int> Path;
+
+        /// invoke one generator step on an extended key - will generate a new extended key.
+        virtual ExtendedKey operator()(const ExtendedKey& parent, unsigned int i) const {
+            throw std::runtime_error("only call generator from a derived class!");
+        };
+
     private:
         uint160 _fingerprint;
-        Derivatives _derivatives;
+        Path _path;
     };
     
-    /// Interface to CKey - create from an extended key and a generator a public/private key
-    CKey operator()(const Generator& generator) const;
+    ExtendedKey operator()(const Derivation& generator, unsigned int upto = 0) const;
+    
+    Data serialize(const Derivation& generator, bool serialize_private = false, unsigned int version = 0) const;
+    
+    /// get the key (private or public) represented by this extended key
+    //CKey key() const;
+
+protected:
+    /// override this routine to change how to derive a new public point from a number - default is : P' = number*G + P
+    /// other schemes could be P' = number*P
+    //virtual Point dPoint(const CBigNum& number) const;
+
+    //virtual CBigNum dNumber(const CBigNum& number) const;
     
 private:
     SecureData _chain_code;
 };
 
-/// Serialize a generator to a Script
-inline Script& operator<<(Script& script, const ExtendedKey::Generator& generator) {
-    return script << generator.serialize();
-}
-    
 
-/// Enhance the script Evaluator with capabilities to handle OP codes for resolving and resolving and signing using an extended key denoted by its generator
-class ExtendedKeyEvaluator : public TransactionEvaluator {
-public:
-    ExtendedKeyEvaluator(const ExtendedKey& exkey) : TransactionEvaluator(), _exkey(exkey) {}
-    
-protected:
-    virtual boost::tribool eval(opcodetype opcode);
-    
-private:
-    const ExtendedKey& _exkey;
-};
+namespace BIP0032 {
+    /// Derivation a key according to BIP-0032
+    class Derivation : public ExtendedKey::Derivation {
+    public:
+        Derivation() {}
+        
+        Derivation(const Derivation& generator) : ExtendedKey::Derivation(generator) { }
+        
+        Derivation(uint160 fp, Path d = Path()) : ExtendedKey::Derivation(fp, d) {}
+        
+        Derivation(std::vector<unsigned char> script_data) : ExtendedKey::Derivation(script_data) {}
+        
+        Derivation(const std::string tree) : ExtendedKey::Derivation(tree) {}
+
+        Derivation(unsigned int i) : ExtendedKey::Derivation(i) {}
+        
+        virtual ExtendedKey operator()(const ExtendedKey& parent, unsigned int i) const;
+    };
+
+    /// Delegation a key according to BIP-0032
+    class Delegation : public ExtendedKey::Derivation {
+    public:
+        Delegation() {}
+        
+        Delegation(const Derivation& generator) : ExtendedKey::Derivation(generator) { }
+        
+        Delegation(uint160 fp, Path d = Path()) : ExtendedKey::Derivation(fp, d) {}
+        
+        Delegation(std::vector<unsigned char> script_data) : ExtendedKey::Derivation(script_data) {}
+        
+        Delegation(const std::string tree) : ExtendedKey::Derivation(tree) {}
+        
+        Delegation(unsigned int i) : ExtendedKey::Derivation(i) {}
+
+        virtual ExtendedKey operator()(const ExtendedKey& parent, unsigned int i) const;
+    };
+}
 
 #endif // _COIN_EXTENDEDKEY_H_
 

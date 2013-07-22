@@ -33,19 +33,20 @@ using namespace boost;
 using namespace boost::asio;
 using namespace boost::asio::ip;
 
-Client::Client() : _context(_io_service, ssl::context::sslv23), _resolver(_io_service), _socket(_io_service), _ssl_socket(_io_service, _context), _reply(Request()), _completion_handler(*this) {
+Client::Client() : _context(_io_service, ssl::context::sslv23), _resolver(_io_service), _socket(_io_service), _ssl_socket(_io_service, _context), _reply(Request()) {
     _context.set_options(ssl::context::no_sslv2);
     //    _ssl_socket.set_verify_mode(ssl::verify_none);
     _context.set_verify_mode(ssl::context_base::verify_none);
 }
 
-Client::Client(io_service& io_service) : _context(io_service, ssl::context::sslv23), _resolver(io_service), _socket(io_service), _ssl_socket(io_service, _context), _reply(Request()), _completion_handler(*this) {
+Client::Client(io_service& io_service) : _context(io_service, ssl::context::sslv23), _resolver(io_service), _socket(io_service), _ssl_socket(io_service, _context), _reply(Request()) {
     _context.set_options(ssl::context::no_sslv2);
     //    _ssl_socket.set_verify_mode(ssl::verify_none);
     _context.set_verify_mode(ssl::context_base::verify_none);
 }
 
-void Client::async_post(std::string url, std::string content, ClientCompletionHandler& handler, Headers headers) {
+void Client::async_post(std::string url, std::string content, ReplyHandler handler, Headers headers) {
+    _reply_handler = handler;
     // Form the request. We specify the "Connection: close" header so that the
     // server will close the socket after transmitting the response. This will
     // allow us to treat all data up until the EOF as the content.
@@ -98,7 +99,8 @@ void Client::async_post(std::string url, std::string content, ClientCompletionHa
     _resolver.async_resolve(query, boost::bind(&Client::handle_resolve, this, asio::placeholders::error, asio::placeholders::iterator));
 }
 
-void Client::async_get(std::string url, ClientCompletionHandler& handler, Headers headers) {
+void Client::async_get(std::string url, ReplyHandler handler, Headers headers) {
+    _reply_handler = handler;
     // Form the request. We specify the "Connection: close" header so that the
     // server will close the socket after transmitting the response. This will
     // allow us to treat all data up until the EOF as the content.
@@ -157,7 +159,7 @@ void Client::handle_resolve(const system::error_code& err, tcp::resolver::iterat
             _socket.async_connect(endpoint, boost::bind(&Client::handle_connect, this, asio::placeholders::error, ++endpoint_iterator));
     }
     else {
-        _completion_handler(err);
+        handle_done(err);
     }
 }
 
@@ -176,7 +178,7 @@ void Client::handle_connect(const system::error_code& err, tcp::resolver::iterat
         _socket.async_connect(endpoint, boost::bind(&Client::handle_connect, this, asio::placeholders::error, ++endpoint_iterator));
     }
     else {
-        _completion_handler(err);
+        handle_done(err);
     }
 }
 
@@ -191,7 +193,7 @@ void Client::handle_handshake(const boost::system::error_code& err) {
     else {
         std::cout << "Handshake failed: " << err.message() << "\n";
 
-        _completion_handler(err);
+        handle_done(err);
     }    
 }
 
@@ -206,7 +208,7 @@ void Client::handle_write_request(const system::error_code& err) {
             async_read_until(_socket, _response, "\r\n", boost::bind(&Client::handle_read_status_line, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
     else {
-        _completion_handler(err);
+        handle_done(err);
     }
 }
 
@@ -239,12 +241,12 @@ void Client::handle_read_status_line(const system::error_code& err, std::size_t 
     }
     else if (bytes_transferred == 0) {
         boost::system::error_code e;
-        _completion_handler(e);
+        handle_done(e);
     }
     else {
         cout << "read_statusline" << endl;
 
-        _completion_handler(err);
+        handle_done(err);
     }
 }
 
@@ -275,11 +277,11 @@ void Client::handle_read_headers(const system::error_code& err, std::size_t byte
     }
     else if (bytes_transferred == 0) {
         boost::system::error_code e;
-        _completion_handler(e);
+        handle_done(e);
     }
     else {
         cout << "read_headers" << endl;
-        _completion_handler(err);
+        handle_done(err);
     }
 }
 
@@ -298,10 +300,16 @@ void Client::handle_read_content(const boost::system::error_code& err, std::size
     }
     else if (bytes_transferred == 0) {
         boost::system::error_code e;
-        _completion_handler(e);
+        handle_done(e);
     }
     else {
         cout << "read_content" << endl;
-        _completion_handler(err);
+        handle_done(err);
     }
 }
+
+void Client::handle_done(const boost::system::error_code& err) {
+    _error = err;
+    _reply_handler(_reply);
+}
+

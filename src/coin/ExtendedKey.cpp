@@ -79,6 +79,12 @@ Point::Point(Infinity inf, int curve) : _ec_group(EC_GROUP_new_by_curve_name(cur
     EC_POINT_set_to_infinity(_ec_group, _ec_point);
 }
 
+Point::Point(const CBigNum& x, const CBigNum& y, int curve) : _ec_group(EC_GROUP_new_by_curve_name(curve)) {
+    _ec_point = EC_POINT_new(_ec_group);
+    if(!EC_POINT_set_affine_coordinates_GFp(_ec_group, _ec_point, &x, &y, NULL))
+        throw runtime_error("Trying to set ec point, but it might not be on curve!");
+}
+
 Point::~Point() {
     EC_POINT_clear_free(_ec_point);
     EC_GROUP_clear_free(_ec_group);
@@ -98,6 +104,13 @@ CBigNum Point::X() const {
     CBigNum y;
     EC_POINT_get_affine_coordinates_GFp(_ec_group, _ec_point, &x, &y, NULL);
     return x;
+}
+
+CBigNum Point::Y() const {
+    CBigNum x;
+    CBigNum y;
+    EC_POINT_get_affine_coordinates_GFp(_ec_group, _ec_point, &x, &y, NULL);
+    return y;
 }
 
 Point& Point::operator+=(const Point& point) {
@@ -148,6 +161,14 @@ Key::Key(const Point& public_point) : _ec_key(NULL) {
     EC_KEY_set_conv_form(_ec_key, POINT_CONVERSION_COMPRESSED);
 }
 
+Key::Key(const CBigNum& private_number, const Point& public_point) : _ec_key(NULL) {
+    _ec_key = EC_KEY_new_by_curve_name(NID_secp256k1);
+    EC_KEY_set_private_key(_ec_key, &private_number);
+    EC_KEY_set_group(_ec_key, public_point.ec_group());
+    EC_KEY_set_public_key(_ec_key, public_point.ec_point());
+    EC_KEY_set_conv_form(_ec_key, POINT_CONVERSION_COMPRESSED);
+}
+
 bool Key::isPrivate() const {
     return EC_KEY_get0_private_key(_ec_key);
 }
@@ -166,6 +187,14 @@ void Key::reset(const Point& public_point) {
     EC_KEY_set_group(_ec_key, public_point.ec_group());
     EC_KEY_set_conv_form(_ec_key, POINT_CONVERSION_COMPRESSED);
     EC_KEY_set_public_key(_ec_key, public_point.ec_point());
+}
+
+void Key::reset(const CBigNum& private_number, const Point& public_point) {
+    _ec_key = EC_KEY_new_by_curve_name(NID_secp256k1);
+    EC_KEY_set_private_key(_ec_key, &private_number);
+    EC_KEY_set_group(_ec_key, public_point.ec_group());
+    EC_KEY_set_public_key(_ec_key, public_point.ec_point());
+    EC_KEY_set_conv_form(_ec_key, POINT_CONVERSION_COMPRESSED);
 }
 
 Data Key::serialized_pubkey() const {
@@ -216,6 +245,22 @@ CBigNum Key::order() const {
 CBigNum Key::number() const {
     CBigNum bn;
     return CBigNum(EC_KEY_get0_private_key(_ec_key));
+}
+
+Data Key::sign(uint256 hash) const {
+    Data signature;
+    unsigned int size = ECDSA_size(_ec_key);
+    signature.resize(size); // Make sure it is big enough
+    if (!ECDSA_sign(0, (unsigned char*)&hash, sizeof(hash), &signature[0], &size, _ec_key))
+        throw runtime_error("Could not sign!");
+    signature.resize(size); // Shrink to fit actual size
+    return signature;
+}
+
+bool Key::verify(uint256 hash, const Data& signature) const {
+    // -1 = error, 0 = bad sig, 1 = good
+    int check = ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &signature[0], signature.size(), _ec_key);
+    return (check == 1);
 }
 
 const BIGNUM* Key::private_number() const {
@@ -326,83 +371,133 @@ uint160 ExtendedKey::fingerprint() const {
     return md;
 }
 
-// derive a new extended key
-ExtendedKey ExtendedKey::derive(unsigned int i, bool multiply) const {
-    if (i & 0x80000000) // BIP0032 compatability
-        return delegate(i & 0x7fffffff);
+ExtendedKey ExtendedKey::operator()(const ExtendedKey::Derivation& generator, unsigned int skip) const {
+    unsigned int upto = generator.path().size() - skip;
     
-    // K concat i
-    Data data = serialized_pubkey();
-    unsigned char* pi = (unsigned char*)&i;
-    data.push_back(pi[3]);
-    data.push_back(pi[2]);
-    data.push_back(pi[1]);
-    data.push_back(pi[0]);
+    // check that the generator fingerprint matches ours:
+    if (generator.fingerprint() != uint160(0) && generator.fingerprint() != fingerprint())
+        throw runtime_error("Request for derivative of another convoluted key!");
     
-    class HMAC hmac(HMAC::SHA512);
-    SecureData I = hmac(_chain_code, data);
+    // now run through the derivatives:
+    ExtendedKey ek(*this);
+    size_t depth = 0;
+    for (Derivation::Path::const_iterator d = generator.path().begin(); d != generator.path().end(); ++d) {
+        unsigned int child_number = *d;
+        if (depth++ == upto)
+            break;
+        ek = generator(ek, child_number); // note ! the generator uses multiply instead of add!
+    }
     
-    SecureData I_L(I.begin(), I.begin() + 256/8);
-    SecureData I_R(I.begin() + 256/8, I.end());
-    
-    if (isPrivate()) {
-        CBigNum k(private_number());
+    return ek;
+}
+
+namespace BIP0032 {
+    ExtendedKey Derivation::operator()(const ExtendedKey& parent, unsigned int i) const {
+        if (i & 0x80000000)  { // BIP0032 compatability
+            Delegation delegate(dynamic_cast<const Derivation&>(*this));
+            return delegate(parent, i & 0x7fffffff);
+        }
+        // K concat i
+        Data data = parent.serialized_pubkey();
+        unsigned char* pi = (unsigned char*)&i;
+        data.push_back(pi[3]);
+        data.push_back(pi[2]);
+        data.push_back(pi[1]);
+        data.push_back(pi[0]);
+        
+        class HMAC hmac(HMAC::SHA512);
+        SecureData I = hmac(parent.chain_code(), data);
+        
+        SecureData I_L(I.begin(), I.begin() + 256/8);
+        SecureData I_R(I.begin() + 256/8, I.end());
+        
+        if (parent.isPrivate()) {
+            CBigNum k(parent.number());
+            BIGNUM* bn = BN_bin2bn(&I_L[0], 32, NULL);
+            CBigNum k_i = (k + bn) % parent.order();
+            return ExtendedKey(k_i, I_R);
+        }
+        
+        // calculate I_L*G - analogue to create a key with the secret I_L and get its EC_POINT pubkey, then add it to this EC_POINT pubkey;
         BIGNUM* bn = BN_bin2bn(&I_L[0], 32, NULL);
-        CBigNum k_i;
-        if (multiply)
-            k_i = k * CBigNum(bn);
-        else
-            k_i = k + CBigNum(bn);
-        CBigNum n = order();
-        //            n.SetHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
-        return ExtendedKey(k_i % n, I_R);
-    }
-    
-    // calculate I_L*G - analogue to create a key with the secret I_L and get its EC_POINT pubkey, then add it to this EC_POINT pubkey;
-    BIGNUM* bn = BN_bin2bn(&I_L[0], 32, NULL);
-    if (multiply) {
-        Point mult = CBigNum(bn) * public_point();
-        return ExtendedKey(mult, I_R);
-    }
-    else {
         Key d((CBigNum(bn)));
-        Point sum = public_point() + d.public_point();
+        Point sum = parent.public_point() + d.public_point();
         return ExtendedKey(sum, I_R);
     }
-}
 
-// delegate to get a new isolated private key hieracy
-ExtendedKey ExtendedKey::delegate(unsigned int i) const {
-    i |= 0x80000000;
-    // 0x0000000 concat k concat i
-    SecureData data = serialized_privkey();
-    data.insert(data.begin(), 1, 0x00);
-    unsigned char* pi = (unsigned char*)&i;
-    data.push_back(pi[3]);
-    data.push_back(pi[2]);
-    data.push_back(pi[1]);
-    data.push_back(pi[0]);
-    
-    class HMAC hmac(HMAC::SHA512);
-    SecureData I = hmac(_chain_code, data);
-    
-    SecureData I_L(I.begin(), I.begin() + 256/8);
-    SecureData I_R(I.begin() + 256/8, I.end());
-    
-    if (isPrivate()) {
-        CBigNum k(private_number());
-        BIGNUM* bn = BN_bin2bn(&I_L[0], 32, NULL);
-        CBigNum k_i = k + CBigNum(bn);
-        CBigNum n = order();
-        //            n.SetHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
-        return ExtendedKey(k_i % n, I_R);
+    ExtendedKey Delegation::operator()(const ExtendedKey& parent, unsigned int i) const {
+        i |= 0x80000000;
+        // 0x0000000 concat k concat i
+        SecureData data = parent.serialized_privkey();
+        data.insert(data.begin(), 1, 0x00);
+        unsigned char* pi = (unsigned char*)&i;
+        data.push_back(pi[3]);
+        data.push_back(pi[2]);
+        data.push_back(pi[1]);
+        data.push_back(pi[0]);
+        
+        class HMAC hmac(HMAC::SHA512);
+        SecureData I = hmac(parent.chain_code(), data);
+        
+        SecureData I_L(I.begin(), I.begin() + 256/8);
+        SecureData I_R(I.begin() + 256/8, I.end());
+        
+        if (parent.isPrivate()) {
+            CBigNum k(parent.number());
+            BIGNUM* bn = BN_bin2bn(&I_L[0], 32, NULL);
+            CBigNum k_i = k + CBigNum(bn);
+            CBigNum n = parent.order();
+            return ExtendedKey(k_i % n, I_R);
+        }
+        throw "Cannot delegate a public key";
     }
-    throw "Cannot delegate a public key";
 }
 
-ExtendedKey::Derivatives ExtendedKey::parse(const std::string tree) const {
+Data ExtendedKey::serialize(const Derivation& generator, bool serialize_private, unsigned int version) const {
+    Data data;
+    if (version > 0) {
+        unsigned char* p = (unsigned char*)&version;
+        data.push_back(p[3]);
+        data.push_back(p[2]);
+        data.push_back(p[1]);
+        data.push_back(p[0]);
+        data.push_back(generator.path().size());
+        // derive parent to get the hash:
+        ExtendedKey parent = (*this)(generator, 1);
+        unsigned int hash = 0;
+        unsigned int child_number = 0;
+        if (generator.path().size()) {
+            child_number = generator.path().back();
+            hash = parent.hash();
+        }
+        p = (unsigned char*)&hash;
+        data.push_back(p[3]);
+        data.push_back(p[2]);
+        data.push_back(p[1]);
+        data.push_back(p[0]);
+        p = (unsigned char*)&child_number;
+        data.push_back(p[3]);
+        data.push_back(p[2]);
+        data.push_back(p[1]);
+        data.push_back(p[0]);
+    }
+    ExtendedKey ek = (*this)(generator);
+    data.insert(data.end(), ek._chain_code.begin(), ek._chain_code.end());
+    if (serialize_private) {
+        SecureData priv = ek.serialized_privkey();
+        data.push_back(0);
+        data.insert(data.end(), priv.begin(), priv.end());
+    }
+    else {
+        Data pub = ek.serialized_pubkey();
+        data.insert(data.end(), pub.begin(), pub.end());
+    }
+    return data;
+}
+
+ExtendedKey::Derivation::Path ExtendedKey::Derivation::parse(const std::string tree) const {
     // first skip all non number stuff - it is nice to be able to keep it there to e.g. write m/0'/1 - i.e. keep an m
-    Derivatives derivatives;
+    Path path;
     std::string::const_iterator c = tree.begin();
     // skip anything that is not a digit or '
     while (c != tree.end() && !isdigit(*c)) ++c;
@@ -418,200 +513,53 @@ ExtendedKey::Derivatives ExtendedKey::parse(const std::string tree) const {
                 i |= 0x80000000;
                 ++c;
             }
-            derivatives.push_back(i);
+            path.push_back(i);
         }
         while (c != tree.end() && !isdigit(*c)) ++c; // skip '/'
     }
-    return derivatives;
+    return path;
 }
 
-ExtendedKey ExtendedKey::path(const std::string tree, unsigned char& depth, unsigned int& hash, unsigned int& child_number) const {
-    // num(delegate=')/num(delegate=')/...
-    Derivatives derivatives = parse(tree);
-    ExtendedKey ek(*this);
-    hash = 0;
-    depth = 0;
-    child_number = 0;
-    for (Derivatives::const_iterator d = derivatives.begin(); d != derivatives.end(); ++d) {
-        child_number = *d;
-        hash = ek.hash();
-        depth++;
-        ek = ek.derive(child_number);
-    }
-    
-    return ek;
+ExtendedKey::Derivation::Derivation(const std::string tree) : _fingerprint(0), _path(parse(tree)) {
 }
 
-ExtendedKey ExtendedKey::path(const std::string tree) const {
-    unsigned char depth;
-    unsigned int hash;
-    unsigned int child_number;
-    return path(tree, depth, hash, child_number);
-}
-
-CKey ExtendedKey::key() const {
-    if (isPrivate()) {
-        SecureData prv = serialized_privkey();
-        CKey key;
-        key.SetSecret(prv, true); // we use compressed public keys!
-        return key;
-    }
-    else {
-        Data pub = serialized_pubkey();
-        CKey key;
-        key.SetPubKey(pub);
-        return key;
-    }
-}
-
-Data ExtendedKey::serialize(bool serialize_private, unsigned int version, unsigned char depth, unsigned int hash, unsigned int child_number) const {
-    Data data;
-    if (version > 0) {
-        unsigned char* p = (unsigned char*)&version;
-        data.push_back(p[3]);
-        data.push_back(p[2]);
-        data.push_back(p[1]);
-        data.push_back(p[0]);
-        data.push_back(depth);
-        p = (unsigned char*)&hash;
-        data.push_back(p[3]);
-        data.push_back(p[2]);
-        data.push_back(p[1]);
-        data.push_back(p[0]);
-        p = (unsigned char*)&child_number;
-        data.push_back(p[3]);
-        data.push_back(p[2]);
-        data.push_back(p[1]);
-        data.push_back(p[0]);
-    }
-    data.insert(data.end(), _chain_code.begin(), _chain_code.end());
-    if (serialize_private) {
-        SecureData priv = serialized_privkey();
-        data.push_back(0);
-        data.insert(data.end(), priv.begin(), priv.end());
-    }
-    else {
-        Data pub = serialized_pubkey();
-        data.insert(data.end(), pub.begin(), pub.end());
-    }
-    return data;
-}
-
-
-
-CKey ExtendedKey::operator()(const ExtendedKey::Generator& generator) const {
-    CKey key;
-    
-    // check that the generator fingerprint matches ours:
-    if (generator.fingerprint() != fingerprint())
-        throw runtime_error("Request for derivative of another extended key!");
-
-    // now run through the derivatives:
-    ExtendedKey ek(*this);
-    size_t depth = 0;
-    for (Derivatives::const_iterator d = generator.derivatives().begin(); d != generator.derivatives().end(); ++d) {
-        unsigned int child_number = *d;
-        depth++;
-        ek = ek.derive(child_number, true); // note ! the generator uses multiply instead of add!
-    }
-    
-    // now extract the Key from the ExtendedKey
-    
-    return ek.key();
-}
-
-ExtendedKey::Generator::Generator(std::vector<unsigned char> script_data) {
+ExtendedKey::Derivation::Derivation(std::vector<unsigned char> script_data) {
     Script script(script_data.begin(), script_data.end());
-
+    
     Evaluator eval;
     eval(script);
     Evaluator::Stack stack = eval.stack();
     
     if (stack.size() < 2)
-        throw runtime_error("Generator - need at least one derivative to make a Key");
-
+        throw runtime_error("Derivation - need at least one derivative to make a Key");
+    
     if (stack[0].size() != 20)
-        throw runtime_error("Generator - expects a script starting with a fingerprint");
-
+        throw runtime_error("Derivation - expects a script starting with a fingerprint");
+    
     _fingerprint = uint160(stack[0]);
     
     for (size_t i = 1; i < stack.size(); ++i) {
         CBigNum bn(stack[i]);
         unsigned int n = bn.getuint();
-        _derivatives.push_back(n);
+        _path.push_back(n);
     }
 }
 
-ExtendedKey::Generator& ExtendedKey::Generator::operator++() {
+ExtendedKey::Derivation& ExtendedKey::Derivation::operator++() {
     // first check that the last path is not a delegation (generators only work through derivation)
-    if (_derivatives.empty() || 0x80000000 & _derivatives.back() || _derivatives.back() == 0x7fffffff )
-        _derivatives.push_back(0);
+    if (_path.empty() || 0x80000000 & _path.back() || _path.back() == 0x7fffffff )
+        _path.push_back(0);
     else
-        _derivatives.back()++;
+        _path.back()++;
     
     return *this;
 }
 
-std::vector<unsigned char> ExtendedKey::Generator::serialize() const {
+std::vector<unsigned char> ExtendedKey::Derivation::serialize() const {
     Script script;
     script << _fingerprint;
-    for (Derivatives::const_iterator n = _derivatives.begin(); n != _derivatives.end(); ++n)
+    for (Path::const_iterator n = _path.begin(); n != _path.end(); ++n)
         script << *n;
     
     return script;
 }
-
-boost::tribool ExtendedKeyEvaluator::eval(opcodetype opcode) {
-    boost::tribool result = TransactionEvaluator::eval(opcode);
-    if (result || !result)
-        return result;
-    switch (opcode) {
-        case OP_RESOLVE: {
-            // resolve the key - assuming that the stack contains a generator
-            if (_stack.size() < 1)
-                return false;
-            
-            ExtendedKey::Generator generator(top(-1));
-            
-            CKey key = _exkey(generator);
-            
-            pop(_stack);
-            
-            PubKey pk = key.GetPubKey();
-            
-            _stack.push_back(pk);
-            
-            break;
-        }
-        case OP_RESOLVEANDSIGN: {
-            // resolve the key - assuming that the stack contains a generator, and a serialized script
-            if (_stack.size() < 2)
-                return false;
-            
-            ExtendedKey::Generator generator(top(-1));
-            
-            CKey key = _exkey(generator);
-            
-            Script script(top(-2));
-            
-            uint256 hash = _txn.getSignatureHash(script, _in, _hash_type);
-            
-            Value signature;
-            if (!key.Sign(hash, signature))
-                return false;
-            
-            pop(_stack);
-            pop(_stack);
-            
-            signature.push_back(_hash_type);
-            
-            _stack.push_back(signature);
-            
-            break;
-        }
-        default:
-            break;
-    }
-    return boost::indeterminate;
-}
-

@@ -65,20 +65,14 @@ std::map<string, string> test2_public = boost::assign::map_list_of
 
 
 std::string serialize_private(const ExtendedKey& master, std::string tree) {
-    unsigned char depth;
-    unsigned int finger_print;
-    unsigned int child_number;
-    ExtendedKey ek = master.path(tree, depth, finger_print, child_number);
-    Data data = ek.serialize(true, 0x0488ADE4, depth, finger_print, child_number);
+    BIP0032::Derivation derive(tree);
+    Data data = master.serialize(derive, true, 0x0488ADE4);
     return EncodeBase58Check(data);
 }
 
 std::string serialize_public(const ExtendedKey& master, std::string tree) {
-    unsigned char depth;
-    unsigned int finger_print;
-    unsigned int child_number;
-    ExtendedKey ek = master.path(tree, depth, finger_print, child_number);
-    Data data = ek.serialize(false, 0x0488B21E, depth, finger_print, child_number);
+    BIP0032::Derivation derive(tree);
+    Data data = master.serialize(derive, false, 0x0488B21E);
     return EncodeBase58Check(data);
 }
 
@@ -250,19 +244,31 @@ int main(int argc, char* argv[])
 
             // derive a key using multiply
             ExtendedKey derived = master;
-            derived = derived.derive(1, true);
-            derived = derived.derive(2, true);
-            derived = derived.derive(3, true);
+            ExtendedKey::Derivation::Path path;
+            path.push_back(1);
+            path.push_back(2);
+            path.push_back(3);
+            BIP0032::Derivation derive(derived.fingerprint(), path);
+            // Derivation derive = Derivation(fingerprint)[1][2][3];
+            // derived = derived<Derivation>(1)
+            // derived = derived(Derivation(1))
+            derived = derived(derive);
+            //derived = derived.derive(1);
+            //derived = derived.derive(2);
+            //derived = derived.derive(3);
             
             // now do it with a neutered key:
             ExtendedKey neutered(master.public_point(), master.chain_code());
-            neutered = neutered.derive(1, true);
-            neutered = neutered.derive(2, true);
-            neutered = neutered.derive(3, true);
+            neutered = neutered(BIP0032::Derivation(1));
+            neutered = neutered(BIP0032::Derivation(2));
+            neutered = neutered(BIP0032::Derivation(3));
+            //            neutered = neutered(derive);
+            //neutered = neutered.derive(1);
+            //neutered = neutered.derive(2);
+            //neutered = neutered.derive(3);
             
             // get public key:
-            CKey pub_key = neutered.key();
-            PubKeyHash pkh = toPubKeyHash(pub_key.GetPubKey());
+            PubKeyHash pkh = toPubKeyHash(neutered.serialized_pubkey());
             
             Script script = Script() << OP_DUP << OP_HASH160 << pkh << OP_EQUALVERIFY << OP_CHECKSIG;
             Output from(100000000, script); // One btc
@@ -278,14 +284,11 @@ int main(int argc, char* argv[])
             // now sign the transaction:
             uint256 hash = txn.getSignatureHash(script, 0, SIGHASH_ALL);
             
-            vector<unsigned char> sig;
-            // for this we need the private key
-            CKey key = derived.key();
-            if (!key.Sign(hash, sig))
-                throw runtime_error("couldn't sign!");
+            vector<unsigned char> sig = derived.sign(hash);
+
             sig.push_back((unsigned char)SIGHASH_ALL);
             
-            Script signature = Script() << sig << key.GetPubKey();
+            Script signature = Script() << sig << derived.serialized_pubkey();
             
             Input input(prevout, signature);
             
