@@ -105,6 +105,21 @@ protected:
     void reset(const CBigNum& private_number, const Point& public_point);
 
 public:
+    class PassphraseFunctor {
+    public:
+        virtual SecureString operator()(bool verify = false) = 0;
+    };
+    
+    class GetPassFunctor : public PassphraseFunctor {
+    public:
+        GetPassFunctor(std::string prompt = "Enter passphrase: ") : _prompt(prompt) {}
+
+        virtual SecureString operator()(bool verify = false);
+    private:
+        std::string _prompt;
+    };
+
+public:
     /// Generate a void key
     Key();
  
@@ -121,6 +136,9 @@ public:
     Key(const CBigNum& private_number);
     
     Key(const Point& public_point);
+    
+    Key(const std::string& filename);
+    Key(const std::string& filename, PassphraseFunctor& pf);
     
     /// Check if the key is private or only contains the public key data
     bool isPrivate() const;
@@ -246,17 +264,7 @@ public:
     ExtendedKey operator()(const Derivation& generator, unsigned int upto = 0) const;
     
     Data serialize(const Derivation& generator, bool serialize_private = false, unsigned int version = 0) const;
-    
-    /// get the key (private or public) represented by this extended key
-    //CKey key() const;
-
-protected:
-    /// override this routine to change how to derive a new public point from a number - default is : P' = number*G + P
-    /// other schemes could be P' = number*P
-    //virtual Point dPoint(const CBigNum& number) const;
-
-    //virtual CBigNum dNumber(const CBigNum& number) const;
-    
+        
 private:
     SecureData _chain_code;
 };

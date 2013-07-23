@@ -20,6 +20,9 @@
 
 #include <vector>
 
+#include <openssl/evp.h>
+#include <openssl/pem.h>
+
 using namespace std;
 
 // Generate a private key from just the secret parameter
@@ -57,6 +60,21 @@ err:
         BN_CTX_free(ctx);
     
     return(ok);
+}
+
+int __pass_cb(char *buf, int size, int rwflag, void *u) {
+    Key::PassphraseFunctor* pf = (Key::PassphraseFunctor*)u;
+    bool verify = (rwflag == 1);
+    
+    SecureString ss = (*pf)(verify);
+    
+    int len;
+    len = ss.size();
+    if (len <= 0) return 0;
+    // if too long, truncate
+    if (len > size) len = size;
+    memcpy(buf, ss.c_str(), len);
+    return len;
 }
 
 Point::Point(int curve) : _ec_point(NULL), _ec_group(EC_GROUP_new_by_curve_name(curve)) {
@@ -167,6 +185,48 @@ Key::Key(const CBigNum& private_number, const Point& public_point) : _ec_key(NUL
     EC_KEY_set_group(_ec_key, public_point.ec_group());
     EC_KEY_set_public_key(_ec_key, public_point.ec_point());
     EC_KEY_set_conv_form(_ec_key, POINT_CONVERSION_COMPRESSED);
+}
+
+SecureString Key::GetPassFunctor::operator()(bool verify) {
+    SecureString passphrase = getpass(_prompt.c_str());
+    return passphrase;
+}
+
+Key::Key(const std::string& filename) : _ec_key(NULL) {
+    EVP_PKEY* pkey;
+    FILE* f = fopen(filename.c_str(), "r");
+    if (!f)
+        throw runtime_error(filename + " not found, or access not permitted!");
+    GetPassFunctor pf;
+    PEM_read_PrivateKey(f, &pkey, &__pass_cb, (void*) &pf);
+    if (pkey)
+        _ec_key = EVP_PKEY_get1_EC_KEY(pkey);
+    else {
+        PEM_read_PUBKEY(f, &pkey, &__pass_cb, (void*) &pf);
+        _ec_key = EVP_PKEY_get1_EC_KEY(pkey);
+    }
+    if(f) fclose(f);
+
+    if (!_ec_key)
+        throw runtime_error(filename + " did not cointain a valid PEM formatted key");
+}
+
+Key::Key(const std::string& filename, PassphraseFunctor& pf) : _ec_key(NULL) {
+    EVP_PKEY* pkey;
+    FILE* f = fopen(filename.c_str(), "r");
+    if (!f)
+        throw runtime_error(filename + " not found, or access not permitted!");
+    PEM_read_PrivateKey(f, &pkey, &__pass_cb, (void*) &pf);
+    if (pkey)
+        _ec_key = EVP_PKEY_get1_EC_KEY(pkey);
+    else {
+        PEM_read_PUBKEY(f, &pkey, &__pass_cb, (void*) &pf);
+        _ec_key = EVP_PKEY_get1_EC_KEY(pkey);
+    }
+    if(f) fclose(f);
+    
+    if (!_ec_key)
+        throw runtime_error(filename + " did not cointain a valid PEM formatted key");
 }
 
 bool Key::isPrivate() const {

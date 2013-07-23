@@ -66,6 +66,10 @@ public:
     /// Non-blocking get. Requires definition of a callback.
     void async_get(std::string url, ReplyHandler handler, Headers headers = Headers());
 
+    void cancel() {
+        _socket.close();
+    }
+    
 private:
     void handle_resolve(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
     void handle_connect(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
