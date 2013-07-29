@@ -60,7 +60,7 @@ typedef std::vector<unsigned char, secure_allocator<unsigned char> > CSecret;
 typedef std::vector<unsigned char> PubKey;
 
 // specialization of hexify to ensure that the byteorder matches the one chosen in blockexplorer.org
-std::string hexify(const PubKey& t);
+//std::string hexify(const PubKey& t);
 
 class CKey
 {

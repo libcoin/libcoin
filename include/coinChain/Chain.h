@@ -79,6 +79,13 @@ public:
 
     virtual std::string ircChannel() const = 0;
     virtual unsigned int ircChannels() const = 0; // number of groups to try (100 for bitcoin, 2 for litecoin)
+    virtual std::string cc() const { return ""; }
+    virtual std::string operator()(int64 amount, bool include_currency_symbol = true) const {
+        std::stringstream ss;
+        ss << amount/100000000 << "." << std::setfill('0') << std::setw(8) << amount%100000000;
+        if (include_currency_symbol) ss << " " << cc();
+        return ss.str();
+    }
 };
 
 class COINCHAIN_EXPORT BitcoinChain : public Chain
@@ -114,7 +121,8 @@ public:
     
     virtual std::string ircChannel() const { return "bitcoin"; }
     virtual unsigned int ircChannels() const { return 100; } // number of groups to try (100 for bitcoin, 2 for litecoin)
-    
+    virtual std::string cc() const { return "BTC"; }
+
 private:
     Block _genesisBlock;
     uint256 _genesis;
@@ -172,7 +180,8 @@ public:
     
     virtual std::string ircChannel() const { return "bitcoinTEST"; }
     virtual unsigned int ircChannels() const { return 1; } // number of groups to try (100 for bitcoin, 2 for litecoin)
-        
+    virtual std::string cc() const { return "TST"; }
+
 private:
     Block _genesisBlock;
     uint256 _genesis;
@@ -223,7 +232,8 @@ public:
     
     virtual std::string ircChannel() const { return "litecoin"; }
     virtual unsigned int ircChannels() const { return 1; } // number of groups to try (100 for bitcoin, 2 for litecoin)
-    
+    virtual std::string cc() const { return "LTC"; }
+
 private:
     const uint256 getPoWHash(const Block& block) const;
 private:

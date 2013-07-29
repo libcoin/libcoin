@@ -48,6 +48,24 @@ void PeerManager::stop_all() {
     _peers.clear();
 }
 
+int PeerManager::prioritize(const Inventory& inv) {
+    Priorities::const_iterator req = _priorities.find(inv);
+    int at = GetTime();
+    if (req != _priorities.end())
+        at = req->second + _retry_delay;
+    _priorities[inv] = at;
+    return at;
+}
+
+void PeerManager::dequeue(const Inventory& inv) {
+    _priorities.erase(inv);
+}
+
+bool PeerManager::queued(const Inventory& inv) const {
+    return ( _priorities.find(inv) != _priorities.end());
+}
+
+
 void PeerManager::ready(peer_ptr peer) {
     _node.post_ready(peer);
 }

@@ -35,6 +35,9 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
         data >> tx;
         
         Inventory inv(MSG_TX, tx.getHash());
+
+        origin->dequeue(inv);
+
         origin->AddInventoryKnown(inv);
         
         process(tx, origin->getAllPeers());
@@ -76,7 +79,8 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
                 log_debug("  got inventory: %s  %s\n", inv.toString().c_str(), fAlreadyHave ? "have" : "new");
                 
                 if (!fAlreadyHave)
-                    origin->AskFor(inv);
+                    origin->queue(inv);
+                    //                    origin->AskFor(inv);
             }            
         }
     }
@@ -99,7 +103,6 @@ void TransactionFilter::process(Transaction& tx, Peers peers) {
         for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
             (*listener->get())(tx);
         relayMessage(peers, inv, payload);
-        _alreadyAskedFor.erase(inv);
         workQueue.push_back(inv.getHash());
         
         // Recursively process any orphan transactions that depended on this one
@@ -120,7 +123,6 @@ void TransactionFilter::process(Transaction& tx, Peers peers) {
                     log_info("   accepted orphan tx %s", inv.getHash().toString().substr(0,10).c_str());
                     //                        SyncWithWallets(tx, NULL, true);
                     relayMessage(peers, inv, payload);
-                    _alreadyAskedFor.erase(inv);
                     workQueue.push_back(inv.getHash());
                 }
                 catch (...) {

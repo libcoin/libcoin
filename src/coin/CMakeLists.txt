@@ -14,7 +14,6 @@ SET(TARGET_H
     ${HEADER_PATH}/uint256.h
     ${HEADER_PATH}/util.h
     
-    ${HEADER_PATH}/Asset.h
     ${HEADER_PATH}/Address.h
     ${HEADER_PATH}/BigNum.h
     ${HEADER_PATH}/Block.h
@@ -37,7 +36,6 @@ SET(TARGET_SRC
     util.cpp
     
     Address.cpp
-    Asset.cpp
     Block.cpp
     ExtendedKey.cpp
     Key.cpp

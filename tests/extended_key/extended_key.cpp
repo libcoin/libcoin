@@ -14,6 +14,7 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <coin/util.h>
 #include <coin/ExtendedKey.h>
 #include <coin/Address.h>
 #include <coin/Script.h>
@@ -91,6 +92,28 @@ Data passphrase2seed(const std::string& pass_phrase) {
 
 int main(int argc, char* argv[])
 {
+    ExtendedKey alice;
+    alice.reset();
+
+    ExtendedKey bob;
+    bob.reset();
+    
+    alice.file("/Users/gronager/alice.pem");
+    
+    ExtendedKey alicebob(alice.number(), alice.number()*bob.public_point(), alice.chain_code());
+    alicebob.file("/Users/gronager/alicebob.pem");
+    
+    Key alice1("/Users/gronager/alice.pem");
+    
+    Key alicebob1("/Users/gronager/alicebob.pem");
+
+    cout << hexify(alice.serialized_pubkey()) << endl;
+    cout << hexify(alice1.serialized_pubkey()) << endl;
+    cout << hexify(alicebob.serialized_pubkey()) << endl;
+    cout << hexify(alicebob1.serialized_pubkey()) << endl;
+    
+    return 0;
+    
     try {
         cout << "TESTING: ExtendedKey class" << endl << endl;
         

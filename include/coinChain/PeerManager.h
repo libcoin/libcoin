@@ -19,8 +19,10 @@
 
 #include <coin/util.h>
 #include <coinChain/Export.h>
+#include <coinChain/Inventory.h>
 
 #include <set>
+#include <map>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -63,6 +65,15 @@ public:
     /// Returns all the peers
     Peers getAllPeers() const { return _peers; }
 
+    /// Prioritize when to request this inventory - if already requested the returned time will be last queued request + 2min,  else it is now
+    int prioritize(const Inventory& inv);
+    
+    /// Dequeue an inventory request, most like called when the inventory was received
+    void dequeue(const Inventory& inv);
+    
+    /// Query if this inventory is already requested
+    bool queued(const Inventory& inv) const;
+    
     /// Get the median count of blocks in the last five connected peers.
     int getPeerMedianNumBlocks() const { return _peerBlockCounts.median(); }
 
@@ -76,11 +87,17 @@ private:
     /// The managed connections.
     Peers _peers;
     
+    /// The pending inventory
+    typedef std::map<Inventory, int> Priorities;
+    Priorities _priorities;
+    
     /// Amount of blocks that the Peers claim to have.
     CMedianFilter<int> _peerBlockCounts;
     
     /// The delegate
-    Node& _node; 
+    Node& _node;
+    
+    static const int _retry_delay = 45;
 };
 
 #endif // PEER_MANAGER_H

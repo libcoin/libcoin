@@ -71,8 +71,6 @@ private:
     
     std::map<uint256, Block*> _orphanBlocks;
     std::multimap<uint256, Block*> _orphanBlocksByPrev;
-    
-    std::map<Inventory, int64> _alreadyAskedFor;
 };
 
 class COINCHAIN_EXPORT ShareFilter : public Filter {
@@ -112,8 +110,6 @@ private:
     
     std::map<uint256, Block*> _orphanShares;
     std::multimap<uint256, Block*> _orphanSharesByPrev;
-    
-    std::map<Inventory, int64> _alreadyAskedFor;
 };
 
 #endif // BLOCKFILTER_H

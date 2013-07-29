@@ -136,6 +136,11 @@ public:
         _requestHandler.unregisterMethod(name);
     }
 
+    /// Query if the server has any methods registered
+    bool methods() const {
+        return _requestHandler.getMethods().size() > 2; // there is pr default two methods registered!
+    }
+    
     /// Get a handle to the io_service used by the Server
     boost::asio::io_service& get_io_service() { return _io_service; }
     

@@ -54,6 +54,9 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         if (!block.checkBlock())
             return error("ProcessBlock() : CheckBlock FAILED");
         
+        // as the block is valid we obviously got what we asked for and we can delete the request (no matter if the block was useful or not)
+        origin->dequeue(inv);
+        
         if (!_blockChain.chain().checkProofOfWork(block))
             return error("ProcessBlock() : CheckProofOfWork FAILED");
         
@@ -69,8 +72,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                 origin->PushGetBlocks(_blockChain.getBestLocator(), getOrphanRoot(block_copy));            
         }
         
-        if (process(block, origin->getAllPeers()))
-            _alreadyAskedFor.erase(inv);
+        process(block, origin->getAllPeers());
     }
     else if (msg.command() == "getblocks") {
         BlockLocator locator;
@@ -187,7 +189,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                 log_debug("  got inventory: %s  %s\n", inv.toString().c_str(), fAlreadyHave ? "have" : "new");
                 
                 if (!fAlreadyHave)
-                    origin->AskFor(inv);
+                    origin->queue(inv);
                 else if (_orphanBlocks.count(inv.getHash()))
                     origin->PushGetBlocks(_blockChain.getBestLocator(), getOrphanRoot(_orphanBlocks[inv.getHash()]));
             }

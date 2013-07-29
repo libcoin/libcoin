@@ -98,13 +98,16 @@ public:
     
     std::string getFullClientVersion() const;
 
-    /// Add an endpoint to the endpoool (endpoint or "host:port" versions)
+    /// Add an endpoint to the endpool (endpoint or "host:port" versions)
     void addPeer(std::string);
     void addPeer(boost::asio::ip::tcp::endpoint ep);
     
     /// Add an endpoint to the connect list - if this is used the endpointpool is disabled! (endpoint or "host:port" versions)
     void connectPeer(std::string);
     void connectPeer(boost::asio::ip::tcp::endpoint ep);    
+    
+    /// Update the peer list - note all existing peers will be deleted!
+    void updatePeers(const std::vector<std::string>& eps);
     
     typedef std::set<boost::asio::ip::tcp::endpoint> endpoints;
     

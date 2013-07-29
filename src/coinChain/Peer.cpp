@@ -28,8 +28,6 @@ using namespace std;
 using namespace boost;
 using namespace asio;
 
-static map<Inventory, int64> mapAlreadyAskedFor;
-
 Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, int bestHeight, std::string sub_version) : _chain(chain),_socket(io_service), _peerManager(manager), _messageHandler(handler), _msgParser(), _suicide(io_service), _keep_alive(io_service) {
     nServices = 0;
 
@@ -203,25 +201,34 @@ void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferre
     }
 }
 
+void Peer::queue(const Inventory& inv) {
+    int at = _peerManager.prioritize(inv);
+    _queue.insert(make_pair(at, inv));
+}
+
+void Peer::dequeue(const Inventory& inv) {
+    _peerManager.dequeue(inv);
+}
+
 void Peer::reply() {
-        //      Message: getdata
-        vector<Inventory> vGetData;
-        int64 nNow = GetTime() * 1000000;
-        
-        while (!mapAskFor.empty() && (*mapAskFor.begin()).first <= nNow)  {
-            const Inventory& inv = (*mapAskFor.begin()).second;
-            // we have already checkked for this (I think???)            if (!AlreadyHave(inv))
+    vector<Inventory> get_data;
+
+    int now = GetTime();
+    
+    while (!_queue.empty() && _queue.begin()->first <= now) {
+        const Inventory& inv = _queue.begin()->second;
+        if (_peerManager.queued(inv)) { // will check that this is really pending (as opposed to downloaded)
             log_debug("sending getdata: %s\n", inv.toString().c_str());
-            vGetData.push_back(inv);
-            if (vGetData.size() >= 1000) {
-                PushMessage("getdata", vGetData);
-                vGetData.clear();
+            get_data.push_back(inv);
+            if (get_data.size() >= 1000) {
+                PushMessage("getdata", get_data);
+                get_data.clear();
             }
-            mapAlreadyAskedFor[inv] = nNow;
-            mapAskFor.erase(mapAskFor.begin());
         }
-        if (!vGetData.empty())
-            PushMessage("getdata", vGetData);
+        _queue.erase(_queue.begin());
+    }
+    if (!get_data.empty())
+        PushMessage("getdata", get_data);
 }
 
 void Peer::trickle() {
@@ -351,22 +358,6 @@ void Peer::AddInventoryKnown(const Inventory& inv) {
 void Peer::PushInventory(const Inventory& inv) {
     if (!setInventoryKnown.count(inv))
         vInventoryToSend.push_back(inv);
-}
-
-void Peer::AskFor(const Inventory& inv) {
-    // We're using mapAskFor as a priority queue,
-    // the key is the earliest time the request can be sent
-    int64& nRequestTime = mapAlreadyAskedFor[inv];
-    log_debug("askfor %s   %"PRI64d"\n", inv.toString().c_str(), nRequestTime);
-    
-    // Make sure not to reuse time indexes to keep things in the same order
-    int64 nNow = (GetTime() - 1) * 1000000;
-    static int64 nLastTime;
-    nLastTime = nNow = std::max(nNow, ++nLastTime);
-    
-    // Each retry is 2 minutes after the last
-    nRequestTime = std::max(nRequestTime + 2 * 60 * 1000000, nNow);
-    mapAskFor.insert(std::make_pair(nRequestTime, inv));
 }
 
 void Peer::BeginMessage(const char* pszCommand) {

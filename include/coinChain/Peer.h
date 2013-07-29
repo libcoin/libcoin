@@ -32,24 +32,6 @@
 
 #include <openssl/rand.h>
 
-class COINCHAIN_EXPORT CRequestTracker
-{
-public:
-    void (*fn)(void*, CDataStream&);
-    void* param1;
-    
-    explicit CRequestTracker(void (*fnIn)(void*, CDataStream&)=NULL, void* param1In=NULL)
-    {
-    fn = fnIn;
-    param1 = param1In;
-    }
-    
-    bool IsNull()
-    {
-    return fn == NULL;
-    }
-};
-
 // BIP 0031, pong message, is enabled for all versions AFTER this one
 static const int BIP0031_VERSION = 60000;
 
@@ -89,6 +71,12 @@ public:
     /// Successfully connected - notify the PeerManager
     void successfullyConnected();
     
+    /// queue inventory request to peer
+    void queue(const Inventory& inv);
+    
+    /// dequeue inventory request - indirectly affecting all peers
+    void dequeue(const Inventory& inv);
+    
 private:
     void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
     void handle_write(const boost::system::error_code& e, std::size_t bytes_transferred);
@@ -123,7 +111,6 @@ public:
     
 public:
     int64 nReleaseTime;
-    std::map<uint256, CRequestTracker> mapRequests;
     uint256 hashContinue;
     BlockLocator locatorLastGetBlocksBegin;
     uint256 hashLastGetBlocksEnd;
@@ -136,10 +123,7 @@ public:
     
     // inventory based relay
     std::set<Inventory> setInventoryKnown;
-    std::vector<Inventory> vInventoryToSend;
-
-    std::multimap<int64, Inventory> mapAskFor;
-    
+    std::vector<Inventory> vInventoryToSend;    
 public:
         
     void AddAddressKnown(const Endpoint& addr);
@@ -199,35 +183,6 @@ public:
         }
     }
     
-    void PushRequest(const char* pszCommand, void (*fn)(void*, CDataStream&), void* param1) {
-        uint256 hashReply;
-        RAND_bytes((unsigned char*)&hashReply, sizeof(hashReply));
-        
-        mapRequests[hashReply] = CRequestTracker(fn, param1);
-        
-        PushMessage(pszCommand, hashReply);
-    }
-    
-    template<typename T1>
-    void PushRequest(const char* pszCommand, const T1& a1, void (*fn)(void*, CDataStream&), void* param1) {
-        uint256 hashReply;
-        RAND_bytes((unsigned char*)&hashReply, sizeof(hashReply));
-        
-        mapRequests[hashReply] = CRequestTracker(fn, param1);
-        
-        PushMessage(pszCommand, hashReply, a1);
-    }
-    
-    template<typename T1, typename T2>
-    void PushRequest(const char* pszCommand, const T1& a1, const T2& a2, void (*fn)(void*, CDataStream&), void* param1) {
-        uint256 hashReply;
-        RAND_bytes((unsigned char*)&hashReply, sizeof(hashReply));
-        
-        mapRequests[hashReply] = CRequestTracker(fn, param1);
-        
-        PushMessage(pszCommand, hashReply, a1, a2);
-    }
-    
     template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
     void PushMessage(const char* pszCommand, const T1& a1, const T2& a2, const T3& a3, const T4& a4, const T5& a5, const T6& a6, const T7& a7, const T8& a8) {
         try {
@@ -262,6 +217,10 @@ private:
     
     /// The manager for this connection.
     PeerManager& _peerManager;
+    
+    /// The inventory priority queue
+    typedef std::multimap<int, Inventory> RequestQueue;
+    RequestQueue _queue;
     
     /// The handler delegated from Node.
     MessageHandler& _messageHandler;

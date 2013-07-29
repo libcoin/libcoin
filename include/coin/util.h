@@ -200,7 +200,13 @@ std::string hexify(const T& t) {
     return ss.str();
 }
 
-
+template <typename T>
+std::string hexify(const std::vector<T>& t) {
+    std::ostringstream ss;
+    for (size_t i = 0; i < t.size(); i++)
+        ss << hexify(t[i]);
+    return ss.str();
+}
 
 // Wrapper to automatically initialize mutex
 class CCriticalSection

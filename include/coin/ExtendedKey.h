@@ -96,14 +96,11 @@ inline Point operator+(const Point& lhs, const Point& rhs)
 
 Point operator*(const CBigNum& m, const Point& Q);
 
+bool operator==(const Point& P, const Point& Q);
+
 /// A Key can be in 3 states: pure public key, pure private key (with public key derived from the private key) and separate private and public keys. The latter is hidden as a protected constructor for the Key class, but exposed for the ExtendedKey
 
 class COIN_EXPORT Key {
-protected:
-    Key(const CBigNum& private_number, const Point& public_point);
-
-    void reset(const CBigNum& private_number, const Point& public_point);
-
 public:
     class PassphraseFunctor {
     public:
@@ -123,25 +120,27 @@ public:
     /// Generate a void key
     Key();
  
-    Key(const SecureData& private_number) {
-        EC_KEY_free(_ec_key);
-        _ec_key = EC_KEY_new_by_curve_name(NID_secp256k1);
-        if (private_number.size() != 32)
-            throw key_error("Key::Key : private number must be 32 bytes");
-        CBigNum prv;
-        BN_bin2bn(&private_number[0], 32, &prv);
-        reset(prv);
-    }
+    Key(const Key& key);
+    
+    Key(const SecureData& serialized_key);
 
     Key(const CBigNum& private_number);
     
     Key(const Point& public_point);
+
+    Key(const CBigNum& private_number, const Point& public_point);
     
     Key(const std::string& filename);
     Key(const std::string& filename, PassphraseFunctor& pf);
     
+    void file(const std::string& filename, bool overwrite = false);
+    
     /// Check if the key is private or only contains the public key data
     bool isPrivate() const;
+    
+    /// Keys can contain a public point P which is not consistent with the private key p : P != p*G
+    /// This is a feature used for saving public ExtendedKeys, as well as for split key pairs
+    bool isConsistent() const;
 
     /// Reset to random
     void reset();
@@ -151,6 +150,8 @@ public:
 
     /// Reset to new public key
     void reset(const Point& public_point);
+    
+    void reset(const CBigNum& private_number, const Point& public_point);
     
     Data serialized_pubkey() const;
     
@@ -186,15 +187,24 @@ public:
     /// Generate the Master key - if called with no argument, a seed is generated
     ExtendedKey(SecureData seed = SecureData());
     
-    ExtendedKey(const Data& private_number, const Data& chain_code) : Key(SecureData(private_number.begin(), private_number.end())), _chain_code(SecureData(chain_code.begin(), chain_code.end())) {
+    ExtendedKey(const ExtendedKey& key) : Key(key), _chain_code(key._chain_code) {}
+    
+    ExtendedKey(const Data& serialized_key, const Data& chain_code) : Key(SecureData(serialized_key.begin(), serialized_key.end())), _chain_code(SecureData(chain_code.begin(), chain_code.end())) {
     }
-    ExtendedKey(const SecureData& private_number, const SecureData& chain_code) : Key(private_number), _chain_code(chain_code) { }
+    ExtendedKey(const SecureData& serialized_key, const SecureData& chain_code) : Key(serialized_key), _chain_code(chain_code) { }
 
     ExtendedKey(const CBigNum& private_number, const SecureData& chain_code);
     
     ExtendedKey(const Point& public_point, const SecureData& chain_code);
 
     ExtendedKey(const CBigNum& private_number, const Point& public_point, const SecureData& chain_code) : Key(private_number, public_point), _chain_code(chain_code) {}
+
+    // Load a private Key as a public ExtendedKey - public key is public key, private key is the chain_code
+    ExtendedKey(const std::string& filename) : Key() {
+        Key key(filename);
+        reset(key.public_point());
+        _chain_code = key.serialized_privkey();
+    }
     
     /// Retrun the chain code
     const SecureData& chain_code() const;
@@ -271,7 +281,7 @@ private:
 
 
 namespace BIP0032 {
-    /// Derivation a key according to BIP-0032
+    /// Derivation of a key according to BIP-0032
     class Derivation : public ExtendedKey::Derivation {
     public:
         Derivation() {}
@@ -289,7 +299,7 @@ namespace BIP0032 {
         virtual ExtendedKey operator()(const ExtendedKey& parent, unsigned int i) const;
     };
 
-    /// Delegation a key according to BIP-0032
+    /// Delegation of a key according to BIP-0032
     class Delegation : public ExtendedKey::Derivation {
     public:
         Delegation() {}

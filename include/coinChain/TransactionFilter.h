@@ -85,8 +85,6 @@ private:
     
     bool alreadyHave(const Inventory& inv);
     
-    std::map<Inventory, int64> _alreadyAskedFor;
-    
     /// The Relay system is only used for Transactions - hence we put it here.
     
     std::map<Inventory, CDataStream> _relay;

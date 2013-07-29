@@ -140,6 +140,8 @@ void Node::persistence(Strictness p) {
     update_persistence();
 }
 
+// we set the purge depth, if last check point, just last checkpoint
+// if minimal/lazy: never purge more than 100 blocks back.
 void Node::update_persistence() {
     _blockChain.lazy_purging(false);
     switch (_persistence) {
@@ -229,6 +231,22 @@ void Node::connectPeer(boost::asio::ip::tcp::endpoint ep) {
     _connection_list.insert(ep);
 }
 
+void Node::updatePeers(const vector<string>& eps) {
+    _connection_list.clear();
+    for (vector<string>::const_iterator hostport = eps.begin(); hostport != eps.end(); ++hostport) {
+        // split by the colon
+        size_t colon = hostport->find(':');
+        string address = hostport->substr(0, colon);
+        string port = (colon == string::npos) ? lexical_cast<string>(_blockChain.chain().defaultPort()) : hostport->substr(colon+1);
+        ip::tcp::resolver resolver(_io_service);
+        ip::tcp::resolver::query query(address, port);
+        ip::tcp::endpoint ep = *resolver.resolve(query);
+        
+        connectPeer(ep);
+    }
+}
+
+
 Endpoint Node::getCandidate(const set<unsigned int>& not_in) {
     Endpoint ep;
     for (endpoints::iterator candidate = _connection_list.begin(); candidate != _connection_list.end(); ++candidate) {
@@ -253,7 +271,7 @@ void Node::start_connect() {
     // TODO: we should check for validity of the candidate - if not valid we could retry later, give up or wait for a new Peer before we try a new connect. 
     stringstream ss;
     ss << ep;
-    log_info("Trying connect to: %s\n", ss.str().c_str());
+    log_info("Trying connect to: %s\n", ss.str());
     _new_server.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, false, _proxy, _blockChain.getBestHeight(), getFullClientVersion())); // false means outbound
     _new_server->addr = ep;
     // Set a deadline for the connect operation.

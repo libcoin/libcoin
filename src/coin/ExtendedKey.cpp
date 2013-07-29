@@ -22,6 +22,7 @@
 
 #include <openssl/evp.h>
 #include <openssl/pem.h>
+#include <openssl/ec.h>
 
 using namespace std;
 
@@ -159,11 +160,39 @@ Point operator*(const CBigNum& m, const Point& Q) {
     return R;
 }
 
+bool operator==(const Point& P, const Point& Q) {
+    return (EC_POINT_cmp(P.ec_group(), P.ec_point(), Q.ec_point(), NULL) == 0);
+}
 
 
 Key::Key() : _ec_key(NULL) {
     _ec_key = EC_KEY_new_by_curve_name(NID_secp256k1);
     EC_KEY_set_conv_form(_ec_key, POINT_CONVERSION_COMPRESSED);
+}
+
+Key::Key(const Key& key) : _ec_key(NULL) {
+    _ec_key = EC_KEY_new_by_curve_name(NID_secp256k1);
+    if (key.isPrivate())
+        reset(key.number(), key.public_point());
+    else
+        reset(key.public_point());
+}
+
+Key::Key(const SecureData& serialized_key) {
+    EC_KEY_free(_ec_key);
+    _ec_key = EC_KEY_new_by_curve_name(NID_secp256k1);
+    if (serialized_key.size() == 32) { // private key
+        CBigNum prv;
+        BN_bin2bn(&serialized_key[0], serialized_key.size(), &prv);
+        reset(prv);
+    }
+    else if (serialized_key.size() == 33) { // public key
+        const unsigned char* p = &serialized_key[0];
+        if (!o2i_ECPublicKey(&_ec_key, &p, serialized_key.size()))
+            throw runtime_error("Could not set public key");
+    }
+    else
+        throw runtime_error("Key initialized with wrong length data");
 }
 
 Key::Key(const CBigNum& private_number) : _ec_key(NULL) {
@@ -193,7 +222,7 @@ SecureString Key::GetPassFunctor::operator()(bool verify) {
 }
 
 Key::Key(const std::string& filename) : _ec_key(NULL) {
-    EVP_PKEY* pkey;
+    EVP_PKEY* pkey = EVP_PKEY_new();;
     FILE* f = fopen(filename.c_str(), "r");
     if (!f)
         throw runtime_error(filename + " not found, or access not permitted!");
@@ -212,7 +241,7 @@ Key::Key(const std::string& filename) : _ec_key(NULL) {
 }
 
 Key::Key(const std::string& filename, PassphraseFunctor& pf) : _ec_key(NULL) {
-    EVP_PKEY* pkey;
+    EVP_PKEY* pkey = EVP_PKEY_new();;
     FILE* f = fopen(filename.c_str(), "r");
     if (!f)
         throw runtime_error(filename + " not found, or access not permitted!");
@@ -229,8 +258,43 @@ Key::Key(const std::string& filename, PassphraseFunctor& pf) : _ec_key(NULL) {
         throw runtime_error(filename + " did not cointain a valid PEM formatted key");
 }
 
+void Key::file(const std::string& filename, bool overwrite) {
+    if (!overwrite) {
+        FILE* f = fopen(filename.c_str(), "r");
+        if (f) {
+            fclose(f);
+            return; // exit silently
+        }
+    }
+    EVP_PKEY* pkey = EVP_PKEY_new();
+    EVP_PKEY_set1_EC_KEY(pkey, _ec_key);
+    FILE* f = fopen(filename.c_str(), "w");
+    if (!f)
+        throw runtime_error("attempt to write to " + filename + " failed");
+    int success = 0;
+    if (isPrivate()) {
+        GetPassFunctor pf;
+        //success = PEM_write_PrivateKey(f, pkey, EVP_aes_256_cbc(), NULL, 0, &__pass_cb, (void*) &pf);
+        
+        //success = PEM_write_PrivateKey(f, pkey, NULL, NULL, 0, NULL, NULL);
+        success = PEM_write_ECPrivateKey(f, _ec_key, NULL, NULL, 0, NULL, NULL);
+    }
+    else
+        success = PEM_write_PUBKEY(f, pkey);
+    if (f) fclose(f);
+    if (!success)
+        throw runtime_error("attempt to output PEM to " + filename + " failed");
+    
+}
+
 bool Key::isPrivate() const {
     return EC_KEY_get0_private_key(_ec_key);
+}
+
+bool Key::isConsistent() const {
+    if (!isPrivate()) return true;
+    Key key(number());
+    return (public_point() == key.public_point());
 }
 
 void Key::reset() {
@@ -436,7 +500,7 @@ ExtendedKey ExtendedKey::operator()(const ExtendedKey::Derivation& generator, un
     
     // check that the generator fingerprint matches ours:
     if (generator.fingerprint() != uint160(0) && generator.fingerprint() != fingerprint())
-        throw runtime_error("Request for derivative of another convoluted key!");
+        throw runtime_error("Request for derivative of another extended key!");
     
     // now run through the derivatives:
     ExtendedKey ek(*this);
