@@ -271,7 +271,7 @@ void Node::start_connect() {
     // TODO: we should check for validity of the candidate - if not valid we could retry later, give up or wait for a new Peer before we try a new connect. 
     stringstream ss;
     ss << ep;
-    log_info("Trying connect to: %s\n", ss.str());
+    log_debug("Trying connect to: %s", ss.str());
     _new_server.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, false, _proxy, _blockChain.getBestHeight(), getFullClientVersion())); // false means outbound
     _new_server->addr = ep;
     // Set a deadline for the connect operation.
@@ -293,7 +293,7 @@ void Node::check_deadline(const boost::system::error_code& e) {
             // The deadline has passed. The socket is closed so that any outstanding
             // asynchronous operations are cancelled.
             if(_new_server) {
-                log_info("Closing socket of: %s\n", _new_server->addr.toString().c_str());
+                log_debug("Closing socket of: %s", _new_server->addr.toString().c_str());
                 _new_server->socket().close();
             }
             
@@ -303,7 +303,7 @@ void Node::check_deadline(const boost::system::error_code& e) {
         }        
     }
     else if (e != error::operation_aborted) {
-        log_info("Boost deadline timer error in Node: %s\n", e.message().c_str());
+        log_warn("Boost deadline timer error in Node: %s", e.message().c_str());
     }
 }
 
@@ -314,7 +314,7 @@ void Node::handle_connect(const system::error_code& e) {
         _peerManager.start(_new_server);
     }
     else {
-        log_info("Failed connect: \"%s\" to: %s\n", e.message().c_str(), _new_server->addr.toString().c_str());
+        log_debug("Failed connect: \"%s\" to: %s", e.message().c_str(), _new_server->addr.toString().c_str());
     }
     
     //    _endpointPool.getEndpoint(_new_server->addr.getKey()).setLastTry(GetAdjustedTime());
@@ -350,14 +350,14 @@ void Node::handle_accept(const system::error_code& e) {
 void Node::accept_or_connect() {
     // only start a connect or accept if we have not one pending already
     if (!_new_client) {
-        log_debug("Inbound connections are now: %d\n", _peerManager.getNumInbound());
+        log_debug("Inbound connections are now: %d", _peerManager.getNumInbound());
         
         if (_peerManager.getNumInbound() < _max_inbound) // start_accept will not be called again before we get a read/write error on a socket
             if(_acceptor.is_open()) start_accept();
     }
         
     if (!_new_server) {
-        log_debug("Outbound connections are now: %d\n", _peerManager.getNumOutbound());
+        log_debug("Outbound connections are now: %d", _peerManager.getNumOutbound());
         
         if (_peerManager.getNumOutbound() < _max_outbound) // start_accept will not be called again before we get a read/write error on a socket
             start_connect();         
@@ -368,7 +368,8 @@ void Node::peer_ready(peer_ptr p) {
     update_persistence();
     update_validation();
     update_verification();
-    log_info("version message: version %d, blocks=%d\n", p->nVersion, p->getStartingHeight());
+    log_info("PEER: #%d %s %s", (p->fInbound)?_peerManager.getNumInbound():_peerManager.getNumOutbound(), p->addr.toString(), (p->fInbound)?"inbound":"outbound");
+    log_info("\tversion: %d, blocks: %d", p->nVersion, p->getStartingHeight());
 }
 
 void Node::post_accept_or_connect() {

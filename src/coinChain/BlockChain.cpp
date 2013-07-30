@@ -155,6 +155,7 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
     
     // determine purge_depth from database:
     _purge_depth = query<int64>("SELECT CASE WHEN COUNT(*)=0 THEN 0 ELSE MIN(count) END FROM Confirmations");
+    _deepest_depth = _purge_depth + 1;
     
     // determine validation index type from database:
     bool coin_index = query<int64>("SELECT COUNT(*) FROM SQLITE_MASTER WHERE name='UnspentIndex'");
@@ -184,6 +185,7 @@ void BlockChain::purge_depth(unsigned int purge_depth) {
     _purge_depth = purge_depth;
     query("DELETE FROM Spendings WHERE icnf IN (SELECT cnf FROM Confirmations WHERE count <= ?)", _purge_depth);
     query("DELETE FROM Confirmations WHERE count <= ?", _purge_depth);
+    _deepest_depth = _purge_depth + 1;
 }
 
 void BlockChain::validation_depth(unsigned int v) {
@@ -524,6 +526,9 @@ void BlockChain::getBlockHeader(int count, Block& block) const {
 void BlockChain::getBlock(int count, Block& block) const {
     block.setNull();
 
+    if (count < _deepest_depth)
+        return;
+    
     getBlockHeader(count, block);
     
     // now get the transactions
@@ -742,6 +747,9 @@ void BlockChain::append(const Block &block) {
     if (changes.inserted.size() == 0)
         return;
     
+    // for statistics - record the size of the claims now
+    size_t claims_before = _claims.count();
+    
     try {
         query("BEGIN --BLOCK");
 
@@ -769,6 +777,7 @@ void BlockChain::append(const Block &block) {
         if (!_lazy_purging && blk.count() >= _purge_depth) { // no need to purge during download as we don't store spendings anyway
             query("DELETE FROM Spendings WHERE icnf IN (SELECT cnf FROM Confirmations WHERE count <= ?)", _purge_depth);
             query("DELETE FROM Confirmations WHERE count <= ?", _purge_depth);
+            _deepest_depth = _purge_depth + 1;
         }
         
         // Check that the block is conforming to its block version constraints
@@ -843,8 +852,12 @@ void BlockChain::append(const Block &block) {
     // Claim transactions that didn't make it into a block, however, don't vaste time verifying, as we have done so already
     for (Txns::iterator tx = unconfirmed.begin(); tx != unconfirmed.end(); ++tx)
         claim(tx->second, false);
-    
-    log_info("ACCEPT: New best=%s  height=%d", blk->hash.toString().substr(0,20), prev_height + 1);
+
+    size_t claims_after = _claims.count();
+
+    log_info("BLOCK: %s", blk->hash.toString());
+    log_info("\theight: %d, txns: %d", prev_height + 1, block.getNumTransactions());
+    log_info("\tclaims: %d --> %d (resolved: %d)", claims_before, claims_after, claims_before-claims_after);
     if ((prev_height + 1)%1000 == 0) {
         log_info(statistics());
         log_info(_spendables.statistics());

@@ -203,6 +203,11 @@ public:
         return _tree.height();
     }
     
+    /// Get the deepest block height, that have not been purged
+    int getDeepestDepth() const {
+        return _deepest_depth;
+    }
+    
     BlockIterator getBest() const {
         return _tree.best();
     }
@@ -281,8 +286,10 @@ private:
     bool _lazy_purging; 
     
     unsigned int _purge_depth;
-    
+
     unsigned int _verification_depth;
+    
+    unsigned int _deepest_depth;
     
     BlockLocator _bestLocator;
     

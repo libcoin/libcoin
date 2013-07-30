@@ -35,7 +35,7 @@ void BlockTree::assign(const Trunk& trunk) {
         _acc_work.push_back(_acc_work[h-1] + _trunk[h].work());
     }
     
-    log_info("_heights.size() = %i", _heights.size());
+    log_debug("_heights.size() = %i", _heights.size());
 }
 
 CBigNum BlockTree::accumulatedWork(BlockIterator blk) const {

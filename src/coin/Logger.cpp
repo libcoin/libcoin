@@ -76,10 +76,12 @@ std::ostream& Logger::log(Level level, std::string file, int line, std::string f
     }
     os << self.timestamp() << " ";
     os << self.label(level) << "(" << self.label() << ") ";
-    os << "[" << file << ":" << line;
-    if (function.size())
-        os << " " << function;
-    os << "] ";
+    if (level < info) {
+        os << "[" << file << ":" << line;
+        if (function.size())
+            os << " " << function;
+        os << "] ";
+    }
     return os;
 }
     

@@ -36,7 +36,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         CDataStream data(msg.payload());
         data >> block;
         
-        log_debug("received block %s\n", block.getHash().toString().substr(0,20).c_str());
+        log_debug("received block %s", block.getHash().toString().substr(0,20).c_str());
         
         Inventory inv(MSG_BLOCK, block.getHash());
         origin->AddInventoryKnown(inv);
@@ -62,7 +62,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         
         // If don't already have its previous block, shunt it off to holding area until we get it
         if (!_blockChain.haveBlock(block.getPrevBlock())) {
-            log_info("ProcessBlock: ORPHAN BLOCK, prev=%s\n", block.getPrevBlock().toString().substr(0,20).c_str());
+            log_debug("ProcessBlock: ORPHAN BLOCK, prev=%s", block.getPrevBlock().toString().substr(0,20).c_str());
             Block* block_copy = new Block(block);
             _orphanBlocks.insert(make_pair(hash, block_copy));
             _orphanBlocksByPrev.insert(make_pair(block_copy->getPrevBlock(), block_copy));
@@ -88,12 +88,16 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         int nLimit = 500 + _blockChain.getDistanceBack(locator);
         unsigned int nBytes = 0;
         int height = blk.height() + 1;
-        log_debug("getblocks %d to %s limit %d\n", height, hashStop.toString().substr(0,20).c_str(), nLimit);
+        log_debug("getblocks %d to %s limit %d", height, hashStop.toString().substr(0,20).c_str(), nLimit);
         for (++blk; !!blk; ++blk) {
             uint256 hash = blk->hash;
             height = blk.height();
+            if (height < _blockChain.getDeepestDepth()) {
+                log_debug("  getblocks stopping at %d - no more blocks", height);
+                break;
+            }
             if (hash == hashStop) {
-                log_debug("  getblocks stopping at %d %s (%u bytes)\n", height, hash.toString().substr(0,20).c_str(), nBytes);
+                log_debug("  getblocks stopping at %d %s (%u bytes)", height, hash.toString().substr(0,20).c_str(), nBytes);
                 break;
             }
             origin->PushInventory(Inventory(MSG_BLOCK, hash));
@@ -103,7 +107,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
             if (--nLimit <= 0 || nBytes >= SendBufferSize()/2) {
                 // When this block is requested, we'll send an inv that'll make them
                 // getblocks the next batch of inventory.
-                log_debug("  getblocks stopping at limit %d %s (%u bytes)\n", height, hash.toString().substr(0,20).c_str(), nBytes);
+                log_debug("  getblocks stopping at limit %d %s (%u bytes)", height, hash.toString().substr(0,20).c_str(), nBytes);
                 origin->hashContinue = hash;
                 break;
             }
@@ -131,7 +135,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         vector<Block> vHeaders;
         int nLimit = 2000 + _blockChain.getDistanceBack(locator);
         int height = blk.height();
-        log_debug("getheaders %d to %s limit %d\n", (!!blk ? height : -1), hashStop.toString().substr(0,20).c_str(), nLimit);
+        log_debug("getheaders %d to %s limit %d", (!!blk ? height : -1), hashStop.toString().substr(0,20).c_str(), nLimit);
         for (; !!blk; ++blk) {
             Block block;
             _blockChain.getBlockHeader(blk, block);
@@ -149,7 +153,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
             return error("message getdata size() = %d", vInv.size());
         
         BOOST_FOREACH(const Inventory& inv, vInv) {
-            log_debug("received getdata for: %s\n", inv.toString().c_str());
+            log_debug("received getdata for: %s", inv.toString().c_str());
             
             if (inv.getType() == MSG_BLOCK) {
                 // Send block from disk
@@ -186,7 +190,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                 origin->AddInventoryKnown(inv);
                 
                 bool fAlreadyHave = alreadyHave(inv);
-                log_debug("  got inventory: %s  %s\n", inv.toString().c_str(), fAlreadyHave ? "have" : "new");
+                log_debug("  got inventory: %s  %s", inv.toString().c_str(), fAlreadyHave ? "have" : "new");
                 
                 if (!fAlreadyHave)
                     origin->queue(inv);
@@ -273,7 +277,7 @@ bool BlockFilter::process(const Block& block, Peers peers) {
         _orphanBlocksByPrev.erase(hashPrev);
     }
     //    _blockChain.outputPerformanceTimings();
-    log_debug("ProcessBlock: ACCEPTED\n");
+    log_debug("ProcessBlock: ACCEPTED");
     return true;
 }
 
@@ -306,7 +310,7 @@ bool ShareFilter::process(const Block& block, Peers peers) {
     for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
         (*listener->get())(block);
     
-    log_debug("ProcessBlock: ACCEPTED\n");
+    log_debug("ProcessShare: ACCEPTED");
     return true;
 }
 

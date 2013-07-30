@@ -71,7 +71,7 @@ ip::tcp::socket& Peer::socket() {
 }
 
 void Peer::start() {
-    log_info("Starting Peer: %s\n", addr.toString().c_str());
+    log_debug("Starting Peer: %s", addr.toString());
     // Be shy and don't send version until we hear
     if (!fInbound) {
         PushVersion();
