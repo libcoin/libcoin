@@ -5,11 +5,13 @@
 #ifndef BITCOIN_UINT256_H
 #define BITCOIN_UINT256_H
 
-#include <coin/version.h>
+#include <coin/Version.h>
 
 #include <limits.h>
 #include <string>
 #include <vector>
+#include <cstring> // memcpy!
+#include <cstdio> // sprintf!
 
 #if defined(_MSC_VER) || defined(__BORLANDC__)
 typedef __int64  int64;

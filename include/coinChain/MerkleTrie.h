@@ -20,6 +20,8 @@
 #include <coinChain/Referenced.h>
 #include <coinChain/ref_ptr.h>
 
+#include <coin/util.h>
+
 #include <boost/lexical_cast.hpp>
 #include <boost/pool/singleton_pool.hpp>
 
@@ -704,7 +706,7 @@ public:
         return  grapher.str();
     }
 
-    inline int64_t now() const { return time_microseconds(); }
+    inline int64_t now() const { return UnixTime::us(); }
     
 private:
     mutable Node* _root;

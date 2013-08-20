@@ -28,12 +28,12 @@ public:
     
     CKeyPool()
     {
-        nTime = GetTime();
+        nTime = UnixTime::s();
     }
     
     CKeyPool(const PubKey& vchPubKeyIn)
     {
-        nTime = GetTime();
+        nTime = UnixTime::s();
         vchPubKey = vchPubKeyIn;
     }
     

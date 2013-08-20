@@ -525,7 +525,7 @@ void Wallet::resend() {
     static int64 nLastTime;
     if (_blockChain.getBestReceivedTime() < nLastTime)
         return;
-    nLastTime = GetTime();
+    nLastTime = UnixTime::s();
 
     // Rebroadcast any of our txes that aren't in a block yet
     log_info("ResendWalletTransactions()\n");
@@ -1181,7 +1181,7 @@ int64 Wallet::GetOldestKeyPoolTime()
     CKeyPool keypool;
     ReserveKeyFromKeyPool(nIndex, keypool);
     if (nIndex == -1)
-        return GetTime();
+        return UnixTime::s();
     ReturnKey(nIndex);
     return keypool.nTime;
 }

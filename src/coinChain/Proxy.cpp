@@ -55,7 +55,7 @@ void Proxy::handle_proxy_connect(const system::error_code& e) {
         async_read(*_socket, _reply.buffers(), boost::bind(&Proxy::handle_proxy_reply, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
     else {
-        log_error("Failed connect to proxy server: \"%s\" to: %s\n", e.message().c_str(), lexical_cast<string>(_server).c_str());
+        log_error("Failed connect to proxy server: \"%s\" to: %s", e.message(), lexical_cast<string>(_server));
         _connection_handler(e);
     }
 
@@ -66,7 +66,7 @@ void Proxy::handle_write(const system::error_code& e, size_t bytes_transferred) 
         // ignore
     }
     else if (e != error::operation_aborted) {
-        log_error("Proxy write error %s, disconnecting...\n", e.message().c_str());
+        log_error("Proxy write error %s, disconnecting...", e.message());
         // forward the error to the connection handler callback
         _connection_handler(e);
     }
@@ -78,12 +78,12 @@ void Proxy::handle_proxy_reply(const system::error_code& e, size_t bytes_transfe
         _connection_handler(e);
     }
     else if (e != error::operation_aborted) {
-        log_error("Proxy write error %s, disconnecting...\n", e.message().c_str());
+        log_error("Proxy write error %s, disconnecting...", e.message());
         // forward the error to the connection handler callback
         _connection_handler(e);
     }
     else if (!_reply.success()) {
-        log_error("Proxy connection error - status code %d...\n", _reply.status());
+        log_error("Proxy connection error - status code %d...", _reply.status());
         system::error_code err(_reply.status(), __application_category);
         _connection_handler(err);
     }

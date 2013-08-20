@@ -201,14 +201,14 @@ template<typename T> void TransactionFilter::relayMessage(const Peers& peers, co
 
 template<> inline void TransactionFilter::relayMessage<>(const Peers& peers, const Inventory& inv, const CDataStream& ss) {
     // Expire old relay messages
-    while (!_relayExpiration.empty() && _relayExpiration.front().first < GetTime()) {
+    while (!_relayExpiration.empty() && _relayExpiration.front().first < UnixTime::s()) {
         _relay.erase(_relayExpiration.front().second);
         _relayExpiration.pop_front();
     }
     
     // Save original serialized message so newer versions are preserved
     _relay[inv] = ss;
-    _relayExpiration.push_back(std::make_pair(GetTime() + 15 * 60, inv));
+    _relayExpiration.push_back(std::make_pair(UnixTime::s() + 15 * 60, inv));
     
     relayInventory(peers, inv);
 }

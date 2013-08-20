@@ -82,7 +82,7 @@ public:
     virtual std::string cc() const { return ""; }
     virtual std::string operator()(int64 amount, bool include_currency_symbol = true) const {
         std::stringstream ss;
-        ss << amount/100000000 << "." << std::setfill('0') << std::setw(8) << amount%100000000;
+        ss << amount/100000000 << "." << std::setfill('0') << std::setw(8) << abs(amount%100000000);
         if (include_currency_symbol) ss << " " << cc();
         return ss.str();
     }

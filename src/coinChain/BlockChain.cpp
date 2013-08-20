@@ -25,6 +25,7 @@
 #include <coin/Logger.h>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <numeric>
 
@@ -231,7 +232,7 @@ std::pair<Claims::Spents, int64> BlockChain::try_claim(const Transaction& txn, b
     try {
         
         // BIP0016 check - if the time is newer than the BIP0016 date enforce strictPayToScriptHash
-        bool strictPayToScriptHash = (GetTime() > _chain.timeStamp(Chain::BIP0016));
+        bool strictPayToScriptHash = (UnixTime::s() > _chain.timeStamp(Chain::BIP0016));
         
         // redeem the inputs
         const Inputs& inputs = txn.getInputs();
@@ -415,12 +416,12 @@ void BlockChain::postTransaction(const Transaction txn, int64& fees, int64 min_f
         Output coin = redeem(input, in_idx, conf); // this will throw in case of doublespend attempts
         value_in += coin.value();
         
-        _verifySignatureTimer -= GetTimeMicros();
+        _verifySignatureTimer -= UnixTime::us();
         
         if (verify) // this is invocation only - the actual verification takes place in other threads
             _verifier.verify(coin, txn, in_idx, strictPayToScriptHash, 0);
         
-        _verifySignatureTimer += GetTimeMicros();
+        _verifySignatureTimer += UnixTime::us();
     }
     
     // verify outputs
@@ -847,7 +848,7 @@ void BlockChain::append(const Block &block) {
         _claims.erase(*h);
 
     // delete all transactions more than 24 hrs old
-    _claims.purge(GetTime() - 24*60*60);
+    _claims.purge(UnixTime::s() - 24*60*60);
     
     // Claim transactions that didn't make it into a block, however, don't vaste time verifying, as we have done so already
     for (Txns::iterator tx = unconfirmed.begin(); tx != unconfirmed.end(); ++tx)
@@ -856,7 +857,7 @@ void BlockChain::append(const Block &block) {
     size_t claims_after = _claims.count();
 
     log_info("BLOCK: %s", blk->hash.toString());
-    log_info("\theight: %d, txns: %d", prev_height + 1, block.getNumTransactions());
+    log_info("\theight: %d @ %s, txns: %d", prev_height + 1, posix_time::to_simple_string(posix_time::from_time_t(block.getTime())), block.getNumTransactions());
     log_info("\tclaims: %d --> %d (resolved: %d)", claims_before, claims_after, claims_before-claims_after);
     if ((prev_height + 1)%1000 == 0) {
         log_info(statistics());
@@ -1193,7 +1194,7 @@ Block BlockChain::getBlockTemplate(Payees payees, Fractions fractions, Fractions
     if (fee_fractions.size() > 0 && fee_fractions.size() != payees.size()) throw Error("Fee fractions should be either 0 or match the number of payees and fractions");
     
     const int version = 3; // version 3 stores the block height as well as the merkle trie root hash in the coinbase
-    const int timestamp = GetTime();
+    const int timestamp = UnixTime::s();
     const unsigned int bits = _chain.nextWorkRequired(_tree.best());
     const int nonce = 0;
     Block block(version, _tree.best()->hash, uint256(0), timestamp, bits, nonce);

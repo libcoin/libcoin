@@ -44,11 +44,11 @@ class Stats {
 public:
     Stats() : _timer(0), _counter(0), _running(false) {}
     
-    void start() { _running = true; ++_counter; _timer -= GetTimeMicros(); }
-    void stop() { _timer += GetTimeMicros(); _running = false; }
+    void start() { _running = true; ++_counter; _timer -= UnixTime::us(); }
+    void stop() { _timer += UnixTime::us(); _running = false; }
     
     std::string str() const {
-        int64 timer = _timer + (_running ? GetTimeMicros() : 0);
+        int64 timer = _timer + (_running ? UnixTime::us() : 0);
         double avg = 1./_counter*timer;
         std::string s = cformat("%9.3fs / #%6d = %6.3fus : \"%s\"", 0.000001*timer, _counter, avg).text();
         return s;

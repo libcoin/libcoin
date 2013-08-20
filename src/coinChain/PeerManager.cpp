@@ -50,7 +50,7 @@ void PeerManager::stop_all() {
 
 int PeerManager::prioritize(const Inventory& inv) {
     Priorities::const_iterator req = _priorities.find(inv);
-    int at = GetTime();
+    int at = UnixTime::s();
     if (req != _priorities.end())
         at = req->second + _retry_delay;
     _priorities[inv] = at;

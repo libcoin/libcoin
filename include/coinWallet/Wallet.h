@@ -347,7 +347,7 @@ public:
 
     CWalletKey(int64 nExpires=0)
     {
-        nTimeCreated = (nExpires ? GetTime() : 0);
+        nTimeCreated = (nExpires ? UnixTime::s() : 0);
         nTimeExpires = nExpires;
     }
 

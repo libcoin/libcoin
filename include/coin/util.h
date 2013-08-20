@@ -179,7 +179,7 @@ std::string MyGetSpecialFolderPath(int nFolder, bool fCreate);
 void ShrinkDebugFile();
 int GetRandInt(int nMax);
 uint64 GetRand(uint64 nMax);
-int64 GetTime();
+
 int64 GetAdjustedTime();
 void AddTimeData(unsigned int ip, int64 nTime);
 std::string FormatVersion(int nVersion);
@@ -430,16 +430,40 @@ inline int64 GetPerformanceCounter()
     return nCounter;
 }
 
+class UnixTime {
+public:
+    inline static int s() {
+        return (boost::posix_time::ptime(boost::posix_time::second_clock::universal_time()) -
+                boost::posix_time::ptime(boost::gregorian::date(1970,1,1))).total_seconds();
+    }
+    inline static int64_t ms() {
+        return us()/1000;
+    }
+    inline static int64_t us() {
+        return (boost::posix_time::ptime(boost::posix_time::microsec_clock::universal_time()) -
+                boost::posix_time::ptime(boost::gregorian::date(1970,1,1))).total_microseconds();
+    }
+    inline static int64_t ns() {
+        boost::chrono::high_resolution_clock::time_point now = boost::chrono::high_resolution_clock::now();
+        boost::chrono::nanoseconds nano = now.time_since_epoch();
+        return nano.count()+adjust();
+    }
+    static int64 adjust() {
+        static int64 zero = 0;
+        if (zero == 0) {
+            boost::chrono::high_resolution_clock::time_point now = boost::chrono::high_resolution_clock::now();
+            boost::chrono::nanoseconds nano = now.time_since_epoch();
+            zero = us()*1000-nano.count();
+        }
+        return zero;
+    }
+};
+
+
 inline int64 GetTimeMillis()
 {
     return (boost::posix_time::ptime(boost::posix_time::microsec_clock::universal_time()) -
             boost::posix_time::ptime(boost::gregorian::date(1970,1,1))).total_milliseconds();
-}
-
-inline int64 GetTimeMicros()
-{
-    return (boost::posix_time::ptime(boost::posix_time::microsec_clock::universal_time()) -
-            boost::posix_time::ptime(boost::gregorian::date(1970,1,1))).total_microseconds();
 }
 
 inline std::string DateTimeStrFormat(const char* pszFormat, int64 nTime)

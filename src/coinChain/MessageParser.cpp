@@ -84,7 +84,7 @@ tribool MessageParser::consume(const Chain& chain, Message& msg, char input)
                 return indeterminate;
             else {
                 // Version 0.2 obsoletes 20 Feb 2012
-                if (GetTime() > 1329696000)
+                if (UnixTime::s() > 1329696000)
                     _checksum = true;
                 else
                     _checksum = (msg.command() != "version" && msg.command() != "verack");

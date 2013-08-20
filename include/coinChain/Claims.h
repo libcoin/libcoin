@@ -29,7 +29,7 @@ public:
         Claim(const Transaction& txn, int64 fee, unsigned int ts = 0) : Transaction(txn), fee(fee) {
             size = ::GetSerializeSize(txn, SER_NETWORK);
             delta_spendables = txn.getNumOutputs()-txn.getNumInputs();
-            timestamp = ts ? ts : GetTime();
+            timestamp = ts ? ts : UnixTime::s();
         }
         unsigned int timestamp;
         unsigned int size;

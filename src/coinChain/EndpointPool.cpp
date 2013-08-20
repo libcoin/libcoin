@@ -39,10 +39,10 @@ EndpointPool::EndpointPool(short defaultPort, const std::string dataDir, const c
 void EndpointPool::purge()
 {    
     if (_lastPurgeTime == 0)
-        _lastPurgeTime = GetTime();
+        _lastPurgeTime = UnixTime::s();
     
-    if (GetTime() - _lastPurgeTime > 10 * 60) {
-        _lastPurgeTime = GetTime();
+    if (UnixTime::s() - _lastPurgeTime > 10 * 60) {
+        _lastPurgeTime = UnixTime::s();
 
         // remove endpoints older than 14 days:
         int64 since = GetAdjustedTime() - 14 * 24 * 60 * 60;

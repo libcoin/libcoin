@@ -303,7 +303,7 @@ void ThreadFlushWalletDB(void* parg)
 
     unsigned int nLastSeen = nWalletDBUpdated;
     unsigned int nLastFlushed = nWalletDBUpdated;
-    int64 nLastWalletUpdate = GetTime();
+    int64 nLastWalletUpdate = UnixTime::s();
     while (!fShutdown)
     {
         Sleep(500);
@@ -311,10 +311,10 @@ void ThreadFlushWalletDB(void* parg)
         if (nLastSeen != nWalletDBUpdated)
         {
             nLastSeen = nWalletDBUpdated;
-            nLastWalletUpdate = GetTime();
+            nLastWalletUpdate = UnixTime::s();
         }
 
-        if (nLastFlushed != nWalletDBUpdated && GetTime() - nLastWalletUpdate >= 2)
+        if (nLastFlushed != nWalletDBUpdated && UnixTime::s() - nLastWalletUpdate >= 2)
         {
             TRY_CRITICAL_BLOCK(cs_db)
             {
@@ -332,7 +332,7 @@ void ThreadFlushWalletDB(void* parg)
                     map<string, int>::iterator mi = mapFileUseCount.find(strFile);
                     if (mi != mapFileUseCount.end())
                     {
-                        printf("%s ", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());
+                        printf("%s ", DateTimeStrFormat("%x %H:%M:%S", UnixTime::s()).c_str());
                         printf("Flushing wallet.dat\n");
                         nLastFlushed = nWalletDBUpdated;
                         int64 nStart = GetTimeMillis();

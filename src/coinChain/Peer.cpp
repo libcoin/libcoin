@@ -36,14 +36,14 @@ Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, Mes
     vRecv.SetType(SER_NETWORK);
     vRecv.SetVersion(0);
     // Version 0.2 obsoletes 20 Feb 2012
-    if (GetTime() > 1329696000) {
+    if (UnixTime::s() > 1329696000) {
         vSend.SetVersion(209);
         vRecv.SetVersion(209);
     }
     nLastSend = 0;
     nLastRecv = 0;
-    nLastSendEmpty = GetTime();
-    nTimeConnected = GetTime();
+    nLastSendEmpty = UnixTime::s();
+    nTimeConnected = UnixTime::s();
     nHeaderStart = -1;
     nMessageStart = -1;
     //    addr = addrIn;
@@ -135,7 +135,7 @@ void Peer::stop() {
     boost::system::error_code ec;
     _socket.shutdown(ip::tcp::socket::shutdown_both, ec);
     if (ec) {
-        log_warn("socket shutdown error: %s", ec.message()); // An error occurred.
+        log_debug("socket shutdown error: %s", ec.message()); // An error occurred.
     }
     _socket.close();
 }
@@ -159,7 +159,7 @@ void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferre
                 if (_messageHandler.handleMessage(this, _message) ) fRet = true;
             }
             else if (!result) {
-                log_warn("Peer sending bogus - disconnecting: %s", addr.toString());
+                log_warn("Peer %s sending bogus - disconnecting", addr.toString());
                 _peerManager.post_stop(shared_from_this());
             }//                continue; // basically, if we get a false result, we should consider to disconnect from the Peer!
             else
@@ -196,7 +196,7 @@ void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferre
         //        async_read(_socket, _recv, boost::bind(&Peer::handle_read, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
     else if (e != error::operation_aborted) {
-        log_error("Read error %s, disconnecting... (read %d bytes though) \n", e.message().c_str(), bytes_transferred);
+        log_debug("Read error %s, disconnecting... (read %d bytes though) \n", e.message().c_str(), bytes_transferred);
         _peerManager.post_stop(shared_from_this());
     }
 }
@@ -213,7 +213,7 @@ void Peer::dequeue(const Inventory& inv) {
 void Peer::reply() {
     vector<Inventory> get_data;
 
-    int now = GetTime();
+    int now = UnixTime::s();
     
     while (!_queue.empty() && _queue.begin()->first <= now) {
         const Inventory& inv = _queue.begin()->second;
@@ -329,7 +329,7 @@ void Peer::handle_write(const system::error_code& e, size_t bytes_transferred) {
         //        _activity = true;
     }
     else if (e != error::operation_aborted) {
-        log_info("Write error %s, disconnecting...\n", e.message().c_str());
+        log_debug("Write error %s, disconnecting...\n", e.message().c_str());
         _peerManager.post_stop(shared_from_this());
     }
 }
@@ -367,7 +367,7 @@ void Peer::BeginMessage(const char* pszCommand) {
     vSend << MessageHeader(_chain, pszCommand, 0);
     nMessageStart = vSend.size();
     if (fDebug)
-        log_debug("%s ", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());
+        log_debug("%s ", DateTimeStrFormat("%x %H:%M:%S", UnixTime::s()).c_str());
     log_debug("sending: %s ", pszCommand);
 }
 
@@ -424,7 +424,7 @@ void Peer::EndMessageAbortIfEmpty() {
 
 void Peer::PushVersion() {
     /// when NTP implemented, change to just nTime = GetAdjustedTime()
-    int64 nTime = (fInbound ? GetAdjustedTime() : GetTime());
+    int64 nTime = (fInbound ? GetAdjustedTime() : UnixTime::s());
     //    Endpoint remote = _socket.remote_endpoint();
     Endpoint local = _socket.local_endpoint();
     Endpoint addrYou = (_proxy ? Endpoint("0.0.0.0") : addr);

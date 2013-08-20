@@ -64,7 +64,7 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
                 static uint256 hashSalt; // belongs to the Handler/Node...
                 if (hashSalt == 0)
                     RAND_bytes((unsigned char*)&hashSalt, sizeof(hashSalt));
-                uint256 hashRand = hashSalt ^ uint256(((int64)ep.getIP())<<32) ^ uint256((GetTime() + ep.getIP())/(24*60*60));
+                uint256 hashRand = hashSalt ^ uint256(((int64)ep.getIP())<<32) ^ uint256((UnixTime::s() + ep.getIP())/(24*60*60));
                 hashRand = Hash(BEGIN(hashRand), END(hashRand));
                 multimap<uint256, Peer*> mapMix;
                 Peers peers = origin->getAllPeers();
@@ -137,8 +137,8 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
     
     // Endpoint refresh broadcast - has been moved into the EndpointFilter... - this means that it is only induced by some of the commands registered to this filter, but it is a 24hours recheck, so it should not matter.
     static int64 nLastRebroadcast;
-    if (GetTime() - nLastRebroadcast > 24 * 60 * 60) {
-        nLastRebroadcast = GetTime();
+    if (UnixTime::s() - nLastRebroadcast > 24 * 60 * 60) {
+        nLastRebroadcast = UnixTime::s();
         // Periodically clear setAddrKnown to allow refresh broadcasts
         origin->setAddrKnown.clear();
         

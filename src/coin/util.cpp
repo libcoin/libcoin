@@ -140,9 +140,9 @@ void RandAddSeedPerfmon()
 
     // This can take up to 2 seconds, so only do it every 10 minutes
     static int64 nLastPerfmon;
-    if (GetTime() < nLastPerfmon + 10 * 60)
+    if (UnixTime::s() < nLastPerfmon + 10 * 60)
         return;
-    nLastPerfmon = GetTime();
+    nLastPerfmon = UnixTime::s();
 
 #ifdef _WIN32
     // Don't need this on Linux, OpenSSL automatically uses /dev/urandom
@@ -156,7 +156,7 @@ void RandAddSeedPerfmon()
     {
         RAND_add(pdata, nSize, nSize/100.0);
         memset(pdata, 0, nSize);
-        log_debug("%s RandAddSeed() %d bytes\n", DateTimeStrFormat("%x %H:%M", GetTime()).c_str(), nSize);
+        log_debug("%s RandAddSeed() %d bytes\n", DateTimeStrFormat("%x %H:%M", UnixTime::s()).c_str(), nSize);
     }
 #endif
 }
@@ -211,7 +211,7 @@ inline int OutputDebugStringF(const char* pszFormat, ...)
 
             // Debug print useful for profiling
             if (fLogTimestamps && fStartedNewLine)
-                fprintf(fileout, "%s ", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());
+                fprintf(fileout, "%s ", DateTimeStrFormat("%x %H:%M:%S", UnixTime::s()).c_str());
             if (pszFormat[strlen(pszFormat) - 1] == '\n')
                 fStartedNewLine = true;
             else
@@ -609,8 +609,6 @@ string MyGetSpecialFolderPath(int nFolder, bool fCreate)
 
 
 
-
-
 //
 // "Never go to sea with two chronometers; take one or three."
 // Our three time sources are:
@@ -618,21 +616,22 @@ string MyGetSpecialFolderPath(int nFolder, bool fCreate)
 //  - Median of other nodes's clocks
 //  - The user (asking the user to fix the system clock if the first two disagree)
 //
-int64 GetTime()
+/*
+int64 UnixTime::s()
 {
     return time(NULL);
 }
-
+*/
 static int64 nTimeOffset = 0;
 
 int64 GetAdjustedTime()
 {
-    return GetTime() + nTimeOffset;
+    return UnixTime::s() + nTimeOffset;
 }
 
 void AddTimeData(unsigned int ip, int64 nTime)
 {
-    int64 nOffsetSample = nTime - GetTime();
+    int64 nOffsetSample = nTime - UnixTime::s();
 
     // Ignore duplicates
     static set<unsigned int> setKnown;
