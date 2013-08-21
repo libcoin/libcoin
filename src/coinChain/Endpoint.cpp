@@ -187,7 +187,7 @@ std::vector<unsigned char> Endpoint::getKey() const
 {
     CDataStream ss;
     ss.reserve(18);
-    ss << FLATDATA(_ipv6) << address().to_v4().to_ulong() << port();
+    ss << FLATDATA(_ipv6) << (uint32_t) address().to_v4().to_ulong() << port();
 
     #if defined(_MSC_VER) && _MSC_VER < 1300
     return std::vector<unsigned char>((unsigned char*)&ss.begin()[0], (unsigned char*)&ss.end()[0]);
