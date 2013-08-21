@@ -2,13 +2,13 @@ TcoinPool
 v5
 r1
 cCheck dependencies
+cCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
 cCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
 cCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Miner.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
 cCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
-cCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
 cCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
 cLd /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.dylib normal x86_64
-cPhaseScriptExecution "CMake PostBuild Rules" /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Script-FFF47F1939DA4E27B555239F.sh
+cPhaseScriptExecution "CMake PostBuild Rules" /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Script-76A34C535A854E699B84BD0C.sh
 
 N/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk
 c000000005130312F00000000000000AA
@@ -16,19 +16,19 @@ t1362112815
 s170
 
 N/Users/gronager/Development/libcoin/libcoin/include/coin/Address.h
-c0000000051F280B10000000000002611
-t1374847153
-s9745
+c00000000521530EA0000000000002619
+t1377120490
+s9753
 
 N/Users/gronager/Development/libcoin/libcoin/include/coin/BigNum.h
-c0000000051CE82C30000000000003E79
-t1372488387
-s15993
+c00000000521530EB0000000000003E83
+t1377120491
+s16003
 
 N/Users/gronager/Development/libcoin/libcoin/include/coin/Block.h
-c000000005194EC080000000000001AA8
-t1368714248
-s6824
+c000000005215305C0000000000001AAC
+t1377120348
+s6828
 
 N/Users/gronager/Development/libcoin/libcoin/include/coin/Config.h
 c000000005073D9910000000000000216
@@ -41,9 +41,9 @@ t1347356019
 s1866
 
 N/Users/gronager/Development/libcoin/libcoin/include/coin/Key.h
-c0000000051EF15500000000000002910
-t1374623056
-s10512
+c000000005214AF6000000000000028A9
+t1377087328
+s10409
 
 N/Users/gronager/Development/libcoin/libcoin/include/coin/KeyStore.h
 c00000000510F90F30000000000000D4B
@@ -56,39 +56,39 @@ t1362575944
 s5156
 
 N/Users/gronager/Development/libcoin/libcoin/include/coin/Script.h
-c0000000051CAA6570000000000006AB3
-t1372235351
-s27315
+c00000000521530EA0000000000006ABF
+t1377120490
+s27327
 
 N/Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h
-c0000000051C814AF000000000000335E
-t1372066991
-s13150
+c00000000521530600000000000003378
+t1377120352
+s13176
 
 N/Users/gronager/Development/libcoin/libcoin/include/coin/Version.h
-c00000000519F63F300000000000009DC
-t1369400307
+c000000005214CB4300000000000009DC
+t1377094467
 s2524
 
 N/Users/gronager/Development/libcoin/libcoin/include/coin/serialize.h
-c0000000051C99A7E000000000000BC15
-t1372166782
-s48149
+c000000005215311E000000000000BB7D
+t1377120542
+s47997
 
 N/Users/gronager/Development/libcoin/libcoin/include/coin/uint256.h
-c0000000051FF5C730000000000006281
-t1375689843
-s25217
+c00000000521530EC00000000000061F7
+t1377120492
+s25079
 
 N/Users/gronager/Development/libcoin/libcoin/include/coin/util.h
-c0000000052135AD30000000000005100
-t1377000147
-s20736
+c000000005215313E0000000000005079
+t1377120574
+s20601
 
 N/Users/gronager/Development/libcoin/libcoin/include/coinChain/BlockChain.h
-c0000000051FA1E060000000000002E87
-t1375346182
-s11911
+c000000005215305C0000000000002EBD
+t1377120348
+s11965
 
 N/Users/gronager/Development/libcoin/libcoin/include/coinChain/BlockFilter.h
 c0000000051F6D1B60000000000000D18
@@ -101,9 +101,9 @@ t1366981904
 s14160
 
 N/Users/gronager/Development/libcoin/libcoin/include/coinChain/Chain.h
-c0000000051FF62FE0000000000003259
-t1375691518
-s12889
+c00000000521530600000000000003265
+t1377120352
+s12901
 
 N/Users/gronager/Development/libcoin/libcoin/include/coinChain/ChatClient.h
 c0000000051CAEE4E0000000000000C01
@@ -111,24 +111,24 @@ t1372253774
 s3073
 
 N/Users/gronager/Development/libcoin/libcoin/include/coinChain/Claims.h
-c0000000051FA1D1500000000000013AF
-t1375345941
-s5039
+c000000005215305D00000000000013B9
+t1377120349
+s5049
 
 N/Users/gronager/Development/libcoin/libcoin/include/coinChain/Database.h
-c0000000051C41554000000000000E832
-t1371805012
-s59442
+c000000005215178F000000000000E7AC
+t1377113999
+s59308
 
 N/Users/gronager/Development/libcoin/libcoin/include/coinChain/Endpoint.h
-c00000000504F057300000000000013B0
-t1347356019
-s5040
+c00000000521530EA00000000000013BE
+t1377120490
+s5054
 
 N/Users/gronager/Development/libcoin/libcoin/include/coinChain/EndpointPool.h
-c0000000050A4EB500000000000000AEC
-t1352985424
-s2796
+c000000005215305C0000000000000AF2
+t1377120348
+s2802
 
 N/Users/gronager/Development/libcoin/libcoin/include/coinChain/Export.h
 c00000000504F05730000000000000772
@@ -171,9 +171,9 @@ t1375081843
 s10983
 
 N/Users/gronager/Development/libcoin/libcoin/include/coinChain/Peer.h
-c0000000051F6D2390000000000001EC7
-t1375130169
-s7879
+c00000000521530EB0000000000001ED7
+t1377120491
+s7895
 
 N/Users/gronager/Development/libcoin/libcoin/include/coinChain/PeerManager.h
 c0000000051F6D2F20000000000000D1B
@@ -191,14 +191,14 @@ t1355746863
 s2794
 
 N/Users/gronager/Development/libcoin/libcoin/include/coinChain/Spendables.h
-c0000000051374BA80000000000000E94
-t1362578344
-s3732
+c000000005215305D0000000000000EAE
+t1377120349
+s3758
 
 N/Users/gronager/Development/libcoin/libcoin/include/coinChain/TransactionFilter.h
-c0000000051F6D2F60000000000000C63
-t1375130358
-s3171
+c000000005215305C0000000000000C65
+t1377120348
+s3173
 
 N/Users/gronager/Development/libcoin/libcoin/include/coinChain/Verifier.h
 c0000000050F7C5F800000000000006C1
@@ -300,8 +300,8 @@ t1361605125
 s9040176
 
 N/Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.dylib
-t1377078972
-s1345044
+t2
+s0
 
 N/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp
 c000000005137061900000000000019A9
@@ -331,24 +331,24 @@ t1361603801
 s2392
 
 N/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.o
-t1377074675
-s2825768
+t1377119597
+s2825632
 
 N/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.o
-t1377074674
-s2307848
+t1377119597
+s2307712
 
 N/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Miner.o
-t1377078972
-s1513224
+t1377119596
+s1513068
 
 N/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.o
-t1377074674
-s2121104
+t1377119603
+s2120964
 
 N/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.o
-t1377074680
-s2067760
+t1377119603
+s2067624
 
 N/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/coinPoold.LinkFileList
 c0000000052148EB50000000000000274
@@ -363,6 +363,11 @@ s195
 N/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Script-2E8C313340F4470CBCD0D660.sh
 c0000000051277F3E00000000000000C3
 t1361542974
+s195
+
+N/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Script-76A34C535A854E699B84BD0C.sh
+c0000000052152D6600000000000000C3
+t1377119590
 s195
 
 N/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Script-F85DFDF2844A4C628FE91620.sh
@@ -5812,11 +5817,11 @@ r0
 
 CCheck dependencies
 r0
-lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection18"Check dependencies3b8c6dcbc6c4b741^d1086ecbc6c4b741^---0#1#0#--18"Check dependencies36"98AD9466-970D-4C47-A813-26240DAF6393-
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection18"Check dependenciescd1d25ce69c5b741^40f725ce69c5b741^---0#1#0#--18"Check dependencies36"599605D8-F238-4341-93A2-B062AEE1CC7A-
 
 CCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
-s398767463.968412
-e398767475.533769
+s398813646.177406
+e398813658.190908
 r1
 xCompileC
 xsrc/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.o
@@ -5827,24 +5832,16 @@ xc++
 xcom.apple.compilers.llvm.clang.1_0.compiler
 oclang: warning: argument unused during compilation: '-ftree-vectorize'
 oIn file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:17:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/GetBlockTemplate.h:31:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:22:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:22:
-o/Users/gronager/Development/libcoin/libcoin/include/coin/Key.h:303:9: warning: unused variable 'check' [-Wunused-variable]
-o    int check = ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey);
-o        ^
-oIn file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:17:
 o/Users/gronager/Development/libcoin/libcoin/include/coinPool/GetBlockTemplate.h:111:8: warning: extra tokens at end of #endif directive [-Wextra-tokens]
 o#endif COINPOOL_GETBLOCKTEMPLATE_H
 o       ^
 o       //
-o2 warnings generated.
-lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection85"Compile /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp18e9f967b5c4b741^21aea873b5c4b741^-1132"clang: warning: argument unused during compilation: '-ftree-vectorize'In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:17:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/GetBlockTemplate.h:31:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:22:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:22:/Users/gronager/Development/libcoin/libcoin/include/coin/Key.h:303:9: warning: unused variable 'check' [-Wunused-variable]    int check = ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey);        ^In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:17:/Users/gronager/Development/libcoin/libcoin/include/coinPool/GetBlockTemplate.h:111:8: warning: extra tokens at end of #endif directive [-Wextra-tokens]#endif COINPOOL_GETBLOCKTEMPLATE_H       ^       //2 warnings generated.2(36%IDEClangDiagnosticActivityLogMessage2@23"Unused variable 'check'-398767475#18446744073709551615#0#5(2@103"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:17:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic23%DVTTextDocumentLocation3@93"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2@105"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/GetBlockTemplate.h:31:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@95"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/GetBlockTemplate.h0000000000000000^30#9#30#9#1565#0#21"Clang LLVM 1.0 Notice--2@93"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:22:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@83"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h0000000000000000^21#9#21#9#769#0#21"Clang LLVM 1.0 Notice--2@90"In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@80"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/Block.h0000000000000000^20#9#20#9#748#0#21"Clang LLVM 1.0 Notice--2@96"In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:22:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@86"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h0000000000000000^21#9#21#9#783#0#21"Clang LLVM 1.0 Notice--1#27"com.apple.dt.IDE.diagnostic3@78"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/Key.h0000000000000000^302#8#302#8#9681#0#19"Unused Entity Issue--2@39"Extra tokens at end of #endif directive-398767475#18446744073709551615#0#1(2@103"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:17:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@93"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--1#27"com.apple.dt.IDE.diagnostic3@95"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/GetBlockTemplate.h0000000000000000^110#7#110#7#4337#0#29"Lexical or Preprocessor Issue1(3@95"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/GetBlockTemplate.h0000000000000000^110#7#110#7#4337#0#-0#0#0#-19%DVTDocumentLocation4@93"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp0000000000000000^2361"CompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.o src/coinPool/GetBlockTemplate.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -DcoinPool_EXPORTS -DCOINPOOL_LIBRARY -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/lib/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/lib -mmacosx-version-min=10.8 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -fPIC -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.dia -c /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp -o /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.o36"F2BFE9F2-D476-4DA4-A5DE-B72C7D988653-
+o1 warning generated.
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection85"Compile /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cppff912dce69c5b741^a0de30da69c5b741^-403"clang: warning: argument unused during compilation: '-ftree-vectorize'In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:17:/Users/gronager/Development/libcoin/libcoin/include/coinPool/GetBlockTemplate.h:111:8: warning: extra tokens at end of #endif directive [-Wextra-tokens]#endif COINPOOL_GETBLOCKTEMPLATE_H       ^       //1 warning generated.1(36%IDEClangDiagnosticActivityLogMessage2@39"Extra tokens at end of #endif directive-398813658#18446744073709551615#0#1(2@103"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:17:-398813658#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic23%DVTTextDocumentLocation3@93"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--1#27"com.apple.dt.IDE.diagnostic3@95"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/GetBlockTemplate.h0000000000000000^110#7#110#7#4337#0#29"Lexical or Preprocessor Issue1(3@95"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/GetBlockTemplate.h0000000000000000^110#7#110#7#4337#0#-0#0#0#-19%DVTDocumentLocation4@93"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp0000000000000000^2361"CompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.o src/coinPool/GetBlockTemplate.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -DcoinPool_EXPORTS -DCOINPOOL_LIBRARY -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/lib/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/lib -mmacosx-version-min=10.8 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -fPIC -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.dia -c /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp -o /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.o36"727454D6-DBAF-47DB-8EE6-565678340337-
 
 CCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
-s398767463.968638
-e398767475.158344
+s398813646.177410
+e398813657.635712
 r1
 xCompileC
 xsrc/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.o
@@ -5854,20 +5851,11 @@ xx86_64
 xc++
 xcom.apple.compilers.llvm.clang.1_0.compiler
 oclang: warning: argument unused during compilation: '-ftree-vectorize'
-oIn file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:17:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/GetWork.h:22:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:22:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:22:
-o/Users/gronager/Development/libcoin/libcoin/include/coin/Key.h:303:9: warning: unused variable 'check' [-Wunused-variable]
-o    int check = ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey);
-o        ^
-o1 warning generated.
-lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection76"Compile /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp39d6f967b5c4b741^4e982873b5c4b741^-802"clang: warning: argument unused during compilation: '-ftree-vectorize'In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:17:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/GetWork.h:22:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:22:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:22:/Users/gronager/Development/libcoin/libcoin/include/coin/Key.h:303:9: warning: unused variable 'check' [-Wunused-variable]    int check = ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey);        ^1 warning generated.1(36%IDEClangDiagnosticActivityLogMessage2@23"Unused variable 'check'-398767475#18446744073709551615#0#5(2@94"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:17:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic23%DVTTextDocumentLocation3@84"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2@96"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/GetWork.h:22:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@86"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/GetWork.h0000000000000000^21#9#21#9#775#0#21"Clang LLVM 1.0 Notice--2@93"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:22:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@83"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h0000000000000000^21#9#21#9#769#0#21"Clang LLVM 1.0 Notice--2@90"In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@80"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/Block.h0000000000000000^20#9#20#9#748#0#21"Clang LLVM 1.0 Notice--2@96"In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:22:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@86"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h0000000000000000^21#9#21#9#783#0#21"Clang LLVM 1.0 Notice--1#27"com.apple.dt.IDE.diagnostic3@78"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/Key.h0000000000000000^302#8#302#8#9681#0#19"Unused Entity Issue--0#0#0#-19%DVTDocumentLocation4@84"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp0000000000000000^2307"CompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.o src/coinPool/GetWork.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -DcoinPool_EXPORTS -DCOINPOOL_LIBRARY -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/lib/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/lib -mmacosx-version-min=10.8 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -fPIC -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.dia -c /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp -o /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.o36"6F53E663-FD79-4618-9B3A-7F08E2AE86BF-
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection76"Compile /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cppb7962dce69c5b741^5fd4a2d969c5b741^-71"clang: warning: argument unused during compilation: '-ftree-vectorize'-0#0#0#-19%DVTDocumentLocation2@84"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp0000000000000000^2307"CompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.o src/coinPool/GetWork.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -DcoinPool_EXPORTS -DCOINPOOL_LIBRARY -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/lib/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/lib -mmacosx-version-min=10.8 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -fPIC -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.dia -c /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp -o /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.o36"C69C0CDD-1A1A-4462-9602-045A881119A6-
 
 CCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Miner.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
-s398771765.928325
-e398771772.213112
+s398813646.177419
+e398813656.942177
 r1
 xCompileC
 xsrc/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Miner.o
@@ -5877,13 +5865,6 @@ xx86_64
 xc++
 xcom.apple.compilers.llvm.clang.1_0.compiler
 oclang: warning: argument unused during compilation: '-ftree-vectorize'
-oIn file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp:19:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:22:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:22:
-o/Users/gronager/Development/libcoin/libcoin/include/coin/Key.h:303:9: warning: unused variable 'check' [-Wunused-variable]
-o    int check = ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey);
-o        ^
 o/Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp:68:1: warning: control reaches end of non-void function [-Wreturn-type]
 o}
 o^
@@ -5894,12 +5875,12 @@ oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coinH
 o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:27:24: warning: variable 'Value_type_name' is not needed and will not be emitted [-Wunneeded-internal-declaration]
 o    static const char* Value_type_name[]={"obj", "array", "str", "bool", "int", "real", "null"};
 o                       ^
-o3 warnings generated.
-lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection74"Compile /Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp0bd1ed35c6c4b741^6b9f363cc6c4b741^-1559"clang: warning: argument unused during compilation: '-ftree-vectorize'In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp:19:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:22:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:22:/Users/gronager/Development/libcoin/libcoin/include/coin/Key.h:303:9: warning: unused variable 'check' [-Wunused-variable]    int check = ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey);        ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp:68:1: warning: control reaches end of non-void function [-Wreturn-type]}^In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp:19:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:26:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/Method.h:27:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit.h:13:/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:27:24: warning: variable 'Value_type_name' is not needed and will not be emitted [-Wunneeded-internal-declaration]    static const char* Value_type_name[]={"obj", "array", "str", "bool", "int", "real", "null"};                       ^3 warnings generated.3(36%IDEClangDiagnosticActivityLogMessage2@23"Unused variable 'check'-398771772#18446744073709551615#0#4(2@92"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp:19:-398771772#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic23%DVTTextDocumentLocation3@82"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp0000000000000000^18#9#18#9#719#0#21"Clang LLVM 1.0 Notice--2@93"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:22:-398771772#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@83"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h0000000000000000^21#9#21#9#769#0#21"Clang LLVM 1.0 Notice--2@90"In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:-398771772#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@80"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/Block.h0000000000000000^20#9#20#9#748#0#21"Clang LLVM 1.0 Notice--2@96"In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:22:-398771772#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@86"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h0000000000000000^21#9#21#9#783#0#21"Clang LLVM 1.0 Notice--1#27"com.apple.dt.IDE.diagnostic3@78"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/Key.h0000000000000000^302#8#302#8#9681#0#19"Unused Entity Issue--2@40"Control reaches end of non-void function-398771772#18446744073709551615#0#-1#27"com.apple.dt.IDE.diagnostic3@82"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp0000000000000000^67#0#67#0#1919#0#14"Semantic Issue--2@64"Variable 'Value_type_name' is not needed and will not be emitted-398771772#18446744073709551615#0#4(2@92"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp:19:-398771772#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@82"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp0000000000000000^18#9#18#9#719#0#21"Clang LLVM 1.0 Notice--2@93"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:26:-398771772#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@83"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h0000000000000000^25#9#25#9#823#0#21"Clang LLVM 1.0 Notice--2@95"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/Method.h:27:-398771772#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@85"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/Method.h0000000000000000^26#9#26#9#852#0#21"Clang LLVM 1.0 Notice--2@105"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit.h:13:-398771772#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@95"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit.h0000000000000000^12#9#12#9#271#0#21"Clang LLVM 1.0 Notice--1#27"com.apple.dt.IDE.diagnostic3@101"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h0000000000000000^26#23#26#23#652#0#19"Unused Entity Issue--0#0#0#-19%DVTDocumentLocation4@82"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp0000000000000000^2295"CompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Miner.o src/coinPool/Miner.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -DcoinPool_EXPORTS -DCOINPOOL_LIBRARY -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/lib/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/lib -mmacosx-version-min=10.8 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -fPIC -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Miner.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Miner.dia -c /Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp -o /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Miner.o36"C5948C3D-B731-485A-A4D2-4B9855E07CDC-
+o2 warnings generated.
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection74"Compile /Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cppd9962dce69c5b741^7a53f1d869c5b741^-948"clang: warning: argument unused during compilation: '-ftree-vectorize'/Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp:68:1: warning: control reaches end of non-void function [-Wreturn-type]}^In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp:19:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:26:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/Method.h:27:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit.h:13:/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:27:24: warning: variable 'Value_type_name' is not needed and will not be emitted [-Wunneeded-internal-declaration]    static const char* Value_type_name[]={"obj", "array", "str", "bool", "int", "real", "null"};                       ^2 warnings generated.2(36%IDEClangDiagnosticActivityLogMessage2@40"Control reaches end of non-void function-398813656#18446744073709551615#0#-1#27"com.apple.dt.IDE.diagnostic23%DVTTextDocumentLocation3@82"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp0000000000000000^67#0#67#0#1919#0#14"Semantic Issue--2@64"Variable 'Value_type_name' is not needed and will not be emitted-398813656#18446744073709551615#0#4(2@92"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp:19:-398813656#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@82"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp0000000000000000^18#9#18#9#719#0#21"Clang LLVM 1.0 Notice--2@93"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:26:-398813656#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@83"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h0000000000000000^25#9#25#9#823#0#21"Clang LLVM 1.0 Notice--2@95"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/Method.h:27:-398813656#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@85"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/Method.h0000000000000000^26#9#26#9#852#0#21"Clang LLVM 1.0 Notice--2@105"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit.h:13:-398813656#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@95"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit.h0000000000000000^12#9#12#9#271#0#21"Clang LLVM 1.0 Notice--1#27"com.apple.dt.IDE.diagnostic3@101"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h0000000000000000^26#23#26#23#652#0#19"Unused Entity Issue--0#0#0#-19%DVTDocumentLocation4@82"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp0000000000000000^2295"CompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Miner.o src/coinPool/Miner.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -DcoinPool_EXPORTS -DCOINPOOL_LIBRARY -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/lib/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/lib -mmacosx-version-min=10.8 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -fPIC -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Miner.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Miner.dia -c /Users/gronager/Development/libcoin/libcoin/src/coinPool/Miner.cpp -o /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Miner.o36"BDDEC7D4-51E5-4B64-86E1-FBA669C232A1-
 
 CCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
-s398767463.980570
-e398767475.158782
+s398813646.177673
+e398813657.726994
 r1
 xCompileC
 xsrc/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.o
@@ -5910,25 +5891,18 @@ xc++
 xcom.apple.compilers.llvm.clang.1_0.compiler
 oclang: warning: argument unused during compilation: '-ftree-vectorize'
 oIn file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:17:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:22:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:22:
-o/Users/gronager/Development/libcoin/libcoin/include/coin/Key.h:303:9: warning: unused variable 'check' [-Wunused-variable]
-o    int check = ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey);
-o        ^
-oIn file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:17:
 oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:26:
 oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/Method.h:27:
 oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit.h:13:
 o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:27:24: warning: variable 'Value_type_name' is not needed and will not be emitted [-Wunneeded-internal-declaration]
 o    static const char* Value_type_name[]={"obj", "array", "str", "bool", "int", "real", "null"};
 o                       ^
-o2 warnings generated.
-lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection73"Compile /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp5130fb67b5c4b741^cea92873b5c4b741^-1414"clang: warning: argument unused during compilation: '-ftree-vectorize'In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:17:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:22:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:22:/Users/gronager/Development/libcoin/libcoin/include/coin/Key.h:303:9: warning: unused variable 'check' [-Wunused-variable]    int check = ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey);        ^In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:17:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:26:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/Method.h:27:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit.h:13:/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:27:24: warning: variable 'Value_type_name' is not needed and will not be emitted [-Wunneeded-internal-declaration]    static const char* Value_type_name[]={"obj", "array", "str", "bool", "int", "real", "null"};                       ^2 warnings generated.2(36%IDEClangDiagnosticActivityLogMessage2@23"Unused variable 'check'-398767475#18446744073709551615#0#4(2@91"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:17:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic23%DVTTextDocumentLocation3@81"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2@93"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:22:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@83"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h0000000000000000^21#9#21#9#769#0#21"Clang LLVM 1.0 Notice--2@90"In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@80"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/Block.h0000000000000000^20#9#20#9#748#0#21"Clang LLVM 1.0 Notice--2@96"In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:22:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@86"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h0000000000000000^21#9#21#9#783#0#21"Clang LLVM 1.0 Notice--1#27"com.apple.dt.IDE.diagnostic3@78"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/Key.h0000000000000000^302#8#302#8#9681#0#19"Unused Entity Issue--2@64"Variable 'Value_type_name' is not needed and will not be emitted-398767475#18446744073709551615#0#4(2@91"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:17:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@81"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2@93"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:26:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@83"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h0000000000000000^25#9#25#9#823#0#21"Clang LLVM 1.0 Notice--2@95"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/Method.h:27:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@85"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/Method.h0000000000000000^26#9#26#9#852#0#21"Clang LLVM 1.0 Notice--2@105"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit.h:13:-398767475#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@95"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit.h0000000000000000^12#9#12#9#271#0#21"Clang LLVM 1.0 Notice--1#27"com.apple.dt.IDE.diagnostic3@101"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h0000000000000000^26#23#26#23#652#0#19"Unused Entity Issue--0#0#0#-19%DVTDocumentLocation4@81"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp0000000000000000^2289"CompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.o src/coinPool/Pool.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -DcoinPool_EXPORTS -DCOINPOOL_LIBRARY -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/lib/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/lib -mmacosx-version-min=10.8 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -fPIC -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.dia -c /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp -o /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.o36"84C63BCD-E303-46CC-B3FA-640EA9A88525-
+o1 warning generated.
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection73"Compile /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cppaa992dce69c5b741^5b25bcd969c5b741^-803"clang: warning: argument unused during compilation: '-ftree-vectorize'In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:17:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:26:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/Method.h:27:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit.h:13:/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:27:24: warning: variable 'Value_type_name' is not needed and will not be emitted [-Wunneeded-internal-declaration]    static const char* Value_type_name[]={"obj", "array", "str", "bool", "int", "real", "null"};                       ^1 warning generated.1(36%IDEClangDiagnosticActivityLogMessage2@64"Variable 'Value_type_name' is not needed and will not be emitted-398813657#18446744073709551615#0#4(2@91"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:17:-398813657#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic23%DVTTextDocumentLocation3@81"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2@93"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:26:-398813657#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@83"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h0000000000000000^25#9#25#9#823#0#21"Clang LLVM 1.0 Notice--2@95"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/Method.h:27:-398813657#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@85"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/Method.h0000000000000000^26#9#26#9#852#0#21"Clang LLVM 1.0 Notice--2@105"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit.h:13:-398813657#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@95"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit.h0000000000000000^12#9#12#9#271#0#21"Clang LLVM 1.0 Notice--1#27"com.apple.dt.IDE.diagnostic3@101"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h0000000000000000^26#23#26#23#652#0#19"Unused Entity Issue--0#0#0#-19%DVTDocumentLocation4@81"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp0000000000000000^2289"CompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.o src/coinPool/Pool.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -DcoinPool_EXPORTS -DCOINPOOL_LIBRARY -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/lib/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/lib -mmacosx-version-min=10.8 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -fPIC -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.dia -c /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp -o /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.o36"AD188BE4-DD37-4377-8B06-D88FC3139E6E-
 
 CCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
-s398767475.166473
-e398767480.510901
+s398813656.944051
+e398813662.808972
 r1
 xCompileC
 xsrc/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.o
@@ -5938,26 +5912,17 @@ xx86_64
 xc++
 xcom.apple.compilers.llvm.clang.1_0.compiler
 oclang: warning: argument unused during compilation: '-ftree-vectorize'
-oIn file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:22:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:22:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:22:
-o/Users/gronager/Development/libcoin/libcoin/include/coin/Key.h:303:9: warning: unused variable 'check' [-Wunused-variable]
-o    int check = ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey);
-o        ^
-o1 warning generated.
-lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection80"Compile /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp60ac2b73b5c4b741^fbe68278b5c4b741^-810"clang: warning: argument unused during compilation: '-ftree-vectorize'In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:22:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:22:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:22:/Users/gronager/Development/libcoin/libcoin/include/coin/Key.h:303:9: warning: unused variable 'check' [-Wunused-variable]    int check = ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey);        ^1 warning generated.1(36%IDEClangDiagnosticActivityLogMessage2@23"Unused variable 'check'-398767480#18446744073709551615#0#5(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-398767480#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic23%DVTTextDocumentLocation3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2@100"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:22:-398767480#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^21#9#21#9#784#0#21"Clang LLVM 1.0 Notice--2@93"In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:22:-398767480#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@83"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h0000000000000000^21#9#21#9#769#0#21"Clang LLVM 1.0 Notice--2@90"In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:-398767480#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@80"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/Block.h0000000000000000^20#9#20#9#748#0#21"Clang LLVM 1.0 Notice--2@96"In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:22:-398767480#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@86"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h0000000000000000^21#9#21#9#783#0#21"Clang LLVM 1.0 Notice--1#27"com.apple.dt.IDE.diagnostic3@78"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coin/Key.h0000000000000000^302#8#302#8#9681#0#19"Unused Entity Issue--0#0#0#-19%DVTDocumentLocation4@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^2331"CompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.o src/coinPool/SubmitBlock.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -DcoinPool_EXPORTS -DCOINPOOL_LIBRARY -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/lib/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/lib -mmacosx-version-min=10.8 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -fPIC -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.dia -c /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp -o /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.o36"070C29A2-BEFF-4B8F-9266-EA3890EC6EEF-
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection80"Compile /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cppfad4f1d869c5b741^1617cfde69c5b741^-71"clang: warning: argument unused during compilation: '-ftree-vectorize'-0#0#0#-19%DVTDocumentLocation2@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^2331"CompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.o src/coinPool/SubmitBlock.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -DcoinPool_EXPORTS -DCOINPOOL_LIBRARY -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/lib/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/lib -mmacosx-version-min=10.8 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -fPIC -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.dia -c /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp -o /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.o36"34E7792A-ECE8-464C-99DA-F7C27C515D94-
 
 CLd /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.dylib normal x86_64
-s398771772.220076
-e398771772.541769
+s398813662.815997
+e398813663.068669
 r1
 xLd
 x/Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.dylib
 xnormal
 xx86_64
-lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection71"Link /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.dylib857c383cc6c4b741^e6029f3cc6c4b741^---0#0#0#--2310"Ld lib/libcoinPoold.dylib normal x86_64    cd /Users/gronager/Development/libcoin/libcoin    setenv MACOSX_DEPLOYMENT_TARGET 10.8    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++ -arch x86_64 -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -L/Users/gronager/Development/libcoin/libcoin/lib -F/Users/gronager/Development/libcoin/libcoin/lib -filelist /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/coinPoold.LinkFileList -install_name /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.dylib -mmacosx-version-min=10.8 -dynamiclib -Wl,-headerpad_max_install_names /Users/gronager/Development/libcoin/libcoin/lib/libcoind.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinChaind.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPd.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinWalletd.dylib /usr/lib/libm.dylib /usr/local/Cellar/openssl/1.0.1c/lib/libssl.dylib /usr/local/Cellar/openssl/1.0.1c/lib/libcrypto.dylib /usr/local/lib/libboost_chrono-mt.dylib /usr/local/lib/libboost_date_time-mt.dylib /usr/local/lib/libboost_regex-mt.dylib /usr/local/lib/libboost_system-mt.dylib /usr/local/lib/libboost_filesystem-mt.dylib /usr/local/lib/libboost_thread-mt.dylib /usr/local/lib/libboost_program_options-mt.dylib /usr/local/lib/libdb_cxx.dylib /usr/lib/libdl.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinChaind.dylib /usr/local/lib/libsqlite3.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPd.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoind.dylib /usr/lib/libm.dylib /usr/local/Cellar/openssl/1.0.1c/lib/libssl.dylib /usr/local/Cellar/openssl/1.0.1c/lib/libcrypto.dylib /usr/local/lib/libboost_chrono-mt.dylib /usr/local/lib/libboost_date_time-mt.dylib /usr/local/lib/libboost_regex-mt.dylib /usr/local/lib/libboost_system-mt.dylib /usr/local/lib/libboost_filesystem-mt.dylib /usr/local/lib/libboost_thread-mt.dylib /usr/local/lib/libboost_program_options-mt.dylib /usr/local/lib/libdb_cxx.dylib /usr/lib/libdl.dylib -single_module -current_version 0.5.91 -o /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.dylib36"FF51690A-7BA6-43C8-9746-E9E6ECE425E0-
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection71"Link /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.dylib4cfdd0de69c5b741^d59711df69c5b741^---0#0#0#--2310"Ld lib/libcoinPoold.dylib normal x86_64    cd /Users/gronager/Development/libcoin/libcoin    setenv MACOSX_DEPLOYMENT_TARGET 10.8    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++ -arch x86_64 -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -L/Users/gronager/Development/libcoin/libcoin/lib -F/Users/gronager/Development/libcoin/libcoin/lib -filelist /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/coinPoold.LinkFileList -install_name /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.dylib -mmacosx-version-min=10.8 -dynamiclib -Wl,-headerpad_max_install_names /Users/gronager/Development/libcoin/libcoin/lib/libcoind.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinChaind.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPd.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinWalletd.dylib /usr/lib/libm.dylib /usr/local/Cellar/openssl/1.0.1c/lib/libssl.dylib /usr/local/Cellar/openssl/1.0.1c/lib/libcrypto.dylib /usr/local/lib/libboost_chrono-mt.dylib /usr/local/lib/libboost_date_time-mt.dylib /usr/local/lib/libboost_regex-mt.dylib /usr/local/lib/libboost_system-mt.dylib /usr/local/lib/libboost_filesystem-mt.dylib /usr/local/lib/libboost_thread-mt.dylib /usr/local/lib/libboost_program_options-mt.dylib /usr/local/lib/libdb_cxx.dylib /usr/lib/libdl.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinChaind.dylib /usr/local/lib/libsqlite3.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPd.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoind.dylib /usr/lib/libm.dylib /usr/local/Cellar/openssl/1.0.1c/lib/libssl.dylib /usr/local/Cellar/openssl/1.0.1c/lib/libcrypto.dylib /usr/local/lib/libboost_chrono-mt.dylib /usr/local/lib/libboost_date_time-mt.dylib /usr/local/lib/libboost_regex-mt.dylib /usr/local/lib/libboost_system-mt.dylib /usr/local/lib/libboost_filesystem-mt.dylib /usr/local/lib/libboost_thread-mt.dylib /usr/local/lib/libboost_program_options-mt.dylib /usr/local/lib/libdb_cxx.dylib /usr/lib/libdl.dylib -single_module -current_version 0.5.92 -o /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.dylib36"2C9C5A9F-8ECC-4130-9252-70E0D15E5613-
 
 CLibtool /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.a normal x86_64
 s383301298.202425
@@ -5994,6 +5959,20 @@ oDepend check for xcode
 ocd /Users/gronager/Development/libcoin/libcoin && make -C /Users/gronager/Development/libcoin/libcoin -f /Users/gronager/Development/libcoin/libcoin/CMakeScripts/XCODE_DEPEND_HELPER.make PostBuild.coinPool.Debug
 o/bin/rm -f /Users/gronager/Development/libcoin/libcoin/bin/bitcoindd
 lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection47"Run custom shell script 'CMake PostBuild Rules'8e5c87ebb8d7b641^4aed99ebb8d7b641^-334"echo "Depend check for xcode"Depend check for xcodecd /Users/gronager/Development/libcoin/libcoin && make -C /Users/gronager/Development/libcoin/libcoin -f /Users/gronager/Development/libcoin/libcoin/CMakeScripts/XCODE_DEPEND_HELPER.make PostBuild.coinPool.Debug/bin/rm -f /Users/gronager/Development/libcoin/libcoin/bin/bitcoindd4(21%IDEActivityLogMessage2@30"echo "Depend check for xcode"-383236331#0#30#-0#-----2@23"Depend check for xcode-383236331#30#23#-0#-----2@212"cd /Users/gronager/Development/libcoin/libcoin && make -C /Users/gronager/Development/libcoin/libcoin -f /Users/gronager/Development/libcoin/libcoin/CMakeScripts/XCODE_DEPEND_HELPER.make PostBuild.coinPool.Debug-383236331#53#212#-0#-----2@69"/bin/rm -f /Users/gronager/Development/libcoin/libcoin/bin/bitcoindd-383236331#265#69#-0#-----0#0#0#--321"PhaseScriptExecution "CMake PostBuild Rules" src/coinPool/libcoin.build/Debug/coinPool.build/Script-2E8C313340F4470CBCD0D660.sh    cd /Users/gronager/Development/libcoin/libcoin    /bin/sh -c /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Script-2E8C313340F4470CBCD0D660.sh36"7DAFD613-B311-48BE-9D13-B040A8DA7EA0-
+
+CPhaseScriptExecution "CMake PostBuild Rules" /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Script-76A34C535A854E699B84BD0C.sh
+s398813663.076804
+e398813663.140644
+r1
+xPhaseScriptExecution
+xCMake PostBuild Rules
+x/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Script-76A34C535A854E699B84BD0C.sh
+oecho "Depend check for xcode"
+oDepend check for xcode
+ocd /Users/gronager/Development/libcoin/libcoin && make -C /Users/gronager/Development/libcoin/libcoin -f /Users/gronager/Development/libcoin/libcoin/CMakeScripts/XCODE_DEPEND_HELPER.make PostBuild.coinPool.Debug
+o/bin/rm -f /Users/gronager/Development/libcoin/libcoin/bin/bitcoindd
+o/bin/rm -f /Users/gronager/Development/libcoin/libcoin/bin/ponzicoind
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection47"Run custom shell script 'CMake PostBuild Rules'003614df69c5b741^650024df69c5b741^-404"echo "Depend check for xcode"Depend check for xcodecd /Users/gronager/Development/libcoin/libcoin && make -C /Users/gronager/Development/libcoin/libcoin -f /Users/gronager/Development/libcoin/libcoin/CMakeScripts/XCODE_DEPEND_HELPER.make PostBuild.coinPool.Debug/bin/rm -f /Users/gronager/Development/libcoin/libcoin/bin/bitcoindd/bin/rm -f /Users/gronager/Development/libcoin/libcoin/bin/ponzicoind5(21%IDEActivityLogMessage2@30"echo "Depend check for xcode"-398813663#0#30#-0#-----2@23"Depend check for xcode-398813663#30#23#-0#-----2@212"cd /Users/gronager/Development/libcoin/libcoin && make -C /Users/gronager/Development/libcoin/libcoin -f /Users/gronager/Development/libcoin/libcoin/CMakeScripts/XCODE_DEPEND_HELPER.make PostBuild.coinPool.Debug-398813663#53#212#-0#-----2@69"/bin/rm -f /Users/gronager/Development/libcoin/libcoin/bin/bitcoindd-398813663#265#69#-0#-----2@70"/bin/rm -f /Users/gronager/Development/libcoin/libcoin/bin/ponzicoind-398813663#334#70#-0#-----0#0#0#--321"PhaseScriptExecution "CMake PostBuild Rules" src/coinPool/libcoin.build/Debug/coinPool.build/Script-76A34C535A854E699B84BD0C.sh    cd /Users/gronager/Development/libcoin/libcoin    /bin/sh -c /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Script-76A34C535A854E699B84BD0C.sh36"BA9C3B56-53D6-491D-854E-C8CEE940696A-
 
 CPhaseScriptExecution "CMake PostBuild Rules" /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Script-F85DFDF2844A4C628FE91620.sh
 s398770122.718372
