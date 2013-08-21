@@ -425,14 +425,14 @@ public:
 
 
     explicit Script(char b)           { operator<<(b); }
-    explicit Script(short b)          { operator<<(b); }
-    explicit Script(int b)            { operator<<(b); }
-    explicit Script(long b)           { operator<<(b); }
+    explicit Script(int16_t b)          { operator<<(b); }
+    //explicit Script(int b)            { operator<<(b); }
+    explicit Script(int32_t b)           { operator<<(b); }
     explicit Script(int64_t b)          { operator<<(b); }
     explicit Script(unsigned char b)  { operator<<(b); }
-    explicit Script(unsigned int b)   { operator<<(b); }
-    explicit Script(unsigned short b) { operator<<(b); }
-    explicit Script(unsigned long b)  { operator<<(b); }
+    //explicit Script(unsigned int b)   { operator<<(b); }
+    explicit Script(uint16_t b) { operator<<(b); }
+    explicit Script(uint32_t b)       { operator<<(b); }
     explicit Script(uint64_t b)         { operator<<(b); }
 
     explicit Script(opcodetype b)     { operator<<(b); }
@@ -442,14 +442,14 @@ public:
 
 
     Script& operator<<(char b)           { return push_int64(b); }
-    Script& operator<<(short b)          { return push_int64(b); }
-    Script& operator<<(int b)            { return push_int64(b); }
-    Script& operator<<(long b)           { return push_int64(b); }
+    Script& operator<<(int16_t b)          { return push_int64(b); }
+    Script& operator<<(int32_t b)            { return push_int64(b); }
+    //    Script& operator<<(long b)           { return push_int64(b); }
     Script& operator<<(int64_t b)          { return push_int64(b); }
     Script& operator<<(unsigned char b)  { return push_uint64(b); }
-    Script& operator<<(unsigned int b)   { return push_uint64(b); }
-    Script& operator<<(unsigned short b) { return push_uint64(b); }
-    Script& operator<<(unsigned long b)  { return push_uint64(b); }
+    Script& operator<<(uint_32 b)   { return push_uint64(b); }
+    Script& operator<<(uint16_t b) { return push_uint64(b); }
+    //    Script& operator<<(unsigned long b)  { return push_uint64(b); }
     Script& operator<<(uint64_t b)         { return push_uint64(b); }
 
     Script& operator<<(opcodetype opcode)
