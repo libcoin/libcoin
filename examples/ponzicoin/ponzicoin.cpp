@@ -23,8 +23,10 @@
 #include <coinWallet/Wallet.h>
 #include <coinWallet/WalletRPC.h>
 
-#include <coinMine/Miner.h>
-#include <coinMine/MinerRPC.h>
+#include <coinPool/Miner.h>
+#include <coinPool/GetWork.h>
+#include <coinPool/GetBlockTemplate.h>
+#include <coinPool/SubmitBlock.h>
 
 #include <boost/thread.hpp>
 #include <boost/program_options.hpp>
@@ -45,7 +47,8 @@ public:
     virtual const int64 subsidy(unsigned int height) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 20); }
-    virtual unsigned int nextWorkRequired(const CBlockIndex* pindexLast) const ;
+    virtual unsigned int nextWorkRequired(BlockIterator blk) const;
+    virtual const bool checkProofOfWork(const Block& block) const;
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const { return true; }
     virtual unsigned int totalBlocksEstimate() const { return 0; }
     
@@ -88,7 +91,8 @@ PonziChain::PonziChain() {
     Script script = Script() << OP_DUP << OP_HASH160 << ParseHex("5e5bd04fad1beadbc1dddb1f41c34dc3df527cd6") << OP_EQUALVERIFY << OP_CHECKSIG;
     txNew.addOutput(Output(50 * COIN, script)); 
     int Jan25th2012atnoon = 1327492800;
-    _genesisBlock = Block(1, 0, 0, Jan25th2012atnoon, 0x20000006, 3600743);
+    _genesisBlock = Block(1, uint256(0), uint256(0), Jan25th2012atnoon, 0x20000006, 3600743);
+
     _genesisBlock.addTransaction(txNew);
     _genesisBlock.updateMerkleTree(); // genesisBlock
 
@@ -130,28 +134,26 @@ bool PonziChain::isStandard(const Transaction& tx) const {
     return true;
 }
 
-unsigned int PonziChain::nextWorkRequired(const CBlockIndex* pindexLast) const {
+unsigned int PonziChain::nextWorkRequired(BlockIterator blk) const {
     const int64 nTargetTimespan = 2 * 60 * 60; // two hours
     const int64 nTargetSpacing = 1 * 60; // one block a minute !
     const int64 nInterval = nTargetTimespan / nTargetSpacing;
     
     // Genesis block
-    if (pindexLast == NULL)
+    int h = blk.height();
+    if (h == 0) // trick to test that it is asking for the genesis block
         return proofOfWorkLimit().GetCompact();
     
     // Only change once per interval
-    if ((pindexLast->nHeight+1) % nInterval != 0)
-        return pindexLast->nBits;
+    if ((h + 1) % nInterval != 0)
+        return blk->bits;
     
     // Go back by what we want to be 14 days worth of blocks
-    const CBlockIndex* pindexFirst = pindexLast;
-    for (int i = 0; pindexFirst && i < nInterval-1; i++)
-        pindexFirst = pindexFirst->pprev;
-    assert(pindexFirst);
+    BlockIterator former = blk - (nInterval-1);
     
     // Limit adjustment step
-    int64 nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
-    log_debug("  nActualTimespan = %d  before bounds\n", nActualTimespan);
+    int nActualTimespan = blk->time - former->time;
+    log_debug("  nActualTimespan = %"PRI64d"  before bounds", nActualTimespan);
     if (nActualTimespan < nTargetTimespan/4)
         nActualTimespan = nTargetTimespan/4;
     if (nActualTimespan > nTargetTimespan*4)
@@ -159,7 +161,7 @@ unsigned int PonziChain::nextWorkRequired(const CBlockIndex* pindexLast) const {
     
     // Retarget
     CBigNum bnNew;
-    bnNew.SetCompact(pindexLast->nBits);
+    bnNew.SetCompact(blk->bits);
     bnNew *= nActualTimespan;
     bnNew /= nTargetTimespan;
     
@@ -167,12 +169,30 @@ unsigned int PonziChain::nextWorkRequired(const CBlockIndex* pindexLast) const {
         bnNew = proofOfWorkLimit();
     
     /// debug print
-    log_debug("GetNextWorkRequired RETARGET\n");
-    log_debug("nTargetTimespan = %d    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
-    log_debug("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().toString().c_str());
-    log_debug("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
+    log_debug("GetNextWorkRequired RETARGET");
+    log_debug("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"", nTargetTimespan, nActualTimespan);
+    log_debug("Before: %08x  %s", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
+    log_debug("After:  %08x  %s", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
     
     return bnNew.GetCompact();
+
+}
+
+const bool PonziChain::checkProofOfWork(const Block& block) const {
+    uint256 hash = block.getHash();
+    unsigned int nBits = block.getBits();
+    CBigNum bnTarget;
+    bnTarget.SetCompact(nBits);
+    
+    // Check range
+    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit()))
+        return ::error("CheckProofOfWork() : nBits below minimum work");
+    
+    // Check proof of work matches claimed amount
+    if (hash > bnTarget.getuint256())
+        return ::error("CheckProofOfWork() : hash doesn't match nBits");
+    
+    return true;
 }
 
 const PonziChain ponzicoin;
@@ -276,15 +296,15 @@ int main(int argc, char* argv[])
             Client client;
             // this is a blocking post!
             Reply reply = client.post(url, RPC::content(rpc_method, rpc_params), auth.headers());
-            if(reply.status == Reply::ok) {
-                Object rpc_reply = RPC::reply(reply.content);
+            if(reply.status() == Reply::ok) {
+                Object rpc_reply = RPC::reply(reply.content());
                 Value result = find_value(rpc_reply, "result");
                 cout << write_formatted(result) << "\n";
                 return 0;
             }
             else {
-                cout << "HTTP error code: " << reply.status << "\n";
-                Object rpc_reply = RPC::reply(reply.content);
+                cout << "HTTP error code: " << reply.status() << "\n";
+                Object rpc_reply = RPC::reply(reply.content());
                 Object rpc_error = find_value(rpc_reply, "error").get_obj();
                 Value code = find_value(rpc_error, "code");
                 Value message = find_value(rpc_error, "message");
@@ -308,19 +328,10 @@ int main(int argc, char* argv[])
         for(strings::iterator ep = connect_peers.begin(); ep != connect_peers.end(); ++ep) node.connectPeer(*ep);
         
         Wallet wallet(node); // this will also register the needed callbacks
-        
-        if(args.count("rescan")) {
-            wallet.ScanForWalletTransactions();
-            log_info("Scanned for wallet transactions");
-        }
-        
+                
         thread nodeThread(&Node::run, &node); // run this as a background thread
         
         CReserveKey reservekey(&wallet);
-        
-        Miner miner(node, reservekey);
-        miner.setGenerate(gen);
-        thread miningThread(&Miner::run, &miner);
         
         Server server(rpc_bind, lexical_cast<string>(rpc_port), filesystem::initial_path().string());
         
@@ -332,6 +343,20 @@ int main(int argc, char* argv[])
         server.registerMethod(method_ptr(new GetConnectionCount(node)));
         server.registerMethod(method_ptr(new GetDifficulty(node)));
         server.registerMethod(method_ptr(new GetInfo(node)));
+        
+        /// The Pool enables you to run a backend for a miner, i.e. your private pool, it also enables you to participate in the "Name of Pool"
+        // We need a list of blocks for the shared mining
+        ChainAddress address("17uY6a7zUidQrJVvpnFchD1MX1untuAufd");
+        StaticPayee payee(address.getPubKeyHash());
+        Pool pool(node, payee);
+        
+        server.registerMethod(method_ptr(new GetWork(pool)));
+        server.registerMethod(method_ptr(new GetBlockTemplate(pool)));
+        server.registerMethod(method_ptr(new SubmitBlock(pool)));
+        
+        Miner miner(pool);
+        miner.setGenerate(gen);
+        thread miningThread(&Miner::run, &miner);
         
         // Register Wallet methods.
         server.registerMethod(method_ptr(new GetBalance(wallet)), auth);
@@ -362,9 +387,9 @@ int main(int argc, char* argv[])
         server.registerMethod(method_ptr(new WalletPassphrase(wallet, server.get_io_service())), auth);
         
         // Register Mining methods.
-        server.registerMethod(method_ptr(new SetGenerate(miner)), auth);    
-        server.registerMethod(method_ptr(new GetGenerate(miner)), auth);    
-        server.registerMethod(method_ptr(new GetHashesPerSec(miner)), auth);    
+        //server.registerMethod(method_ptr(new SetGenerate(miner)), auth);
+        //server.registerMethod(method_ptr(new GetGenerate(miner)), auth);
+        //server.registerMethod(method_ptr(new GetHashesPerSec(miner)), auth);
         
         
         server.run();

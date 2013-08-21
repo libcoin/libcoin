@@ -24,6 +24,7 @@
 #include <coinWallet/Wallet.h>
 #include <coinWallet/WalletRPC.h>
 
+#include <coinPool/Miner.h>
 #include <coinPool/GetWork.h>
 #include <coinPool/GetBlockTemplate.h>
 #include <coinPool/SubmitBlock.h>
@@ -443,63 +444,6 @@ private:
 
 */
 
-class Miner : private boost::noncopyable {
-public:
-    Miner(Pool& pool) : _pool(pool), _io_service(), _generate(true) {}
-    
-    // run the miner
-    void run() {
-        // get a block candidate
-        _io_service.run();
-    }
-    
-    void setGenerate(bool gen) {
-        if (gen^_generate) {
-            _generate = gen;
-            if (_generate)
-                _io_service.post(boost::bind(&Miner::mine, this));
-        }
-    }
-    
-    bool getGenerate() const {
-        return _generate;
-    }
-    
-    /// Shutdown the Node.
-    void shutdown() { _io_service.dispatch(boost::bind(&Miner::handle_stop, this)); }
-    
-private:
-    void handle_stop() {
-        _io_service.stop();
-    }
-    
-    // return true on success
-    bool mine() {
-        int tries = 65536;
-        
-        Block block = _pool.getBlockTemplate();
-
-        uint256 target = _pool.target();
-        
-        // mine - i.e. adjust the nonce and calculate the hash - note this is a totally crappy mining implementation! Don't used except for testing
-        while (block.getHash() > target && tries--)
-            block.setNonce(block.getNonce() + 1);
-
-        if (block.getHash() <= target)
-            _pool.submitBlock(block);
-
-        if (_generate)
-            _io_service.post(boost::bind(&Miner::mine, this));
-    }
-    
-protected:
-    Pool& _pool;
-    
-    boost::asio::io_service _io_service;
-            
-    bool _generate;
-};
-
 void calcDividend () {
     // test function
     // we maintain a sharetree for the last 144 blocks
@@ -514,7 +458,7 @@ void calcDividend () {
     // The sharetree can also use the sparse tree (keeping only the best chain indexed) ?
     
 }
-
+/*
 // A structure to hold the ShareChains - First a ShareTree:
 class ShareTree {
 public:
@@ -662,7 +606,7 @@ private:
     Trees _trees;
     uint256 _best;
 };
-
+*/
 int main(int argc, char* argv[])
 {
     try {

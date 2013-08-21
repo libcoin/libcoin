@@ -13,6 +13,7 @@ SET(TARGET_H
     ${HEADER_PATH}/Export.h
     ${HEADER_PATH}/GetBlockTemplate.h
     ${HEADER_PATH}/GetWork.h
+    ${HEADER_PATH}/Miner.h
     ${HEADER_PATH}/Pool.h
     ${HEADER_PATH}/SubmitBlock.h
     ${LIBCOIN_CONFIG_HEADER}
@@ -24,6 +25,7 @@ SET(TARGET_H
 SET(TARGET_SRC
     GetBlockTemplate.cpp
     GetWork.cpp
+    Miner.cpp
     Pool.cpp
     SubmitBlock.cpp
     ${LIBCOIN_VERSIONINFO_RC}

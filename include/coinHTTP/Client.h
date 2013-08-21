@@ -38,38 +38,38 @@ public:
     void setSecure(bool secure) { _secure = secure; }
     bool isSecure() const { return _secure; }
     
+    typedef boost::function< void(Reply& reply) > ReplyHandler;
+    
+    /// Non-blocking post. Requires definition of a callback.
+    void async_post(std::string url, std::string content, ReplyHandler handler, Headers headers = Headers());
+    
     /// Blocking post.
-    /*
     Reply post(std::string url, std::string content, Headers headers = Headers()) {
-        async_post(url, content, boost::bind(&Client::handle_reply, this), headers);
+        async_post(url, content, handle_reply, headers);
         _io_service.run();
         if(_error)
             _reply.content() += _error.message();
         // parse the reply
         return _reply;
     }
-    */
-    typedef boost::function< void(Reply& reply) > ReplyHandler;
     
-    /// Non-blocking post. Requires definition of a callback.
-    void async_post(std::string url, std::string content, ReplyHandler handler, Headers headers = Headers());
-    
+    /// Non-blocking get. Requires definition of a callback.
+    void async_get(std::string url, ReplyHandler handler, Headers headers = Headers());
+
     /// Blocking get.
-    /*
     Reply get(std::string url, Headers headers = Headers()) {
-        async_get(url, boost::bind(&Client::handle_reply, this), headers);
+        async_get(url, handle_reply, headers);
         _io_service.run();
         // parse the reply
         return _reply;
     }
-    */
-    /// Non-blocking get. Requires definition of a callback.
-    void async_get(std::string url, ReplyHandler handler, Headers headers = Headers());
-
+    
     void cancel() {
         _socket.close();
     }
     
+    static void handle_reply(Reply& reply) {}
+
 private:
     void handle_resolve(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
     void handle_connect(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
@@ -79,7 +79,6 @@ private:
     void handle_read_headers(const boost::system::error_code& err, std::size_t bytes_transferred);
     void handle_read_content(const boost::system::error_code& err, std::size_t bytes_transferred);
     void handle_done(const boost::system::error_code& err);
-    void handle_reply(Reply& reply) {}
 
 private:
     boost::asio::io_service _io_service;

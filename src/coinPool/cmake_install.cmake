@@ -96,6 +96,7 @@ IF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "libcoin
     "/Users/gronager/Development/libcoin/libcoin/include/coinPool/Export.h"
     "/Users/gronager/Development/libcoin/libcoin/include/coinPool/GetBlockTemplate.h"
     "/Users/gronager/Development/libcoin/libcoin/include/coinPool/GetWork.h"
+    "/Users/gronager/Development/libcoin/libcoin/include/coinPool/Miner.h"
     "/Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h"
     "/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h"
     "/Users/gronager/Development/libcoin/libcoin/include/coin/Config.h"
