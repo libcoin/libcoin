@@ -8,6 +8,7 @@
 #include <coin/Version.h>
 
 #include <limits.h>
+#include <stdint.h>
 #include <string>
 #include <vector>
 #include <cstring> // memcpy!

@@ -94,7 +94,7 @@ public:
     CBigNum(unsigned char n)    { BN_init(this); setulong(n); }
     CBigNum(uint16_t n)         { BN_init(this); setulong(n); }
     CBigNum(uint32_t n)         { BN_init(this); setulong(n); }
-    //CBigNum(unsigned long n)    { BN_init(this); setulong(n); }
+    CBigNum(size_t n)           { BN_init(this); setulong(n); }
     CBigNum(uint64_t n)         { BN_init(this); setuint64(n); }
     explicit CBigNum(uint256 n) { BN_init(this); setuint256(n); }
 

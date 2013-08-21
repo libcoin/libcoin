@@ -39,7 +39,7 @@ typedef std::vector<unsigned char> PubKey;
 
 class COIN_EXPORT PubKeyHash : public uint160 {
 public:
-    PubKeyHash(const uint160& b = 0) : uint160(b) {}
+    PubKeyHash(const uint160& b = uint160(0)) : uint160(b) {}
     PubKeyHash(uint64_t b) : uint160(b) {}
     
     PubKeyHash& operator=(const uint160& b) {
