@@ -447,7 +447,7 @@ public:
     //    Script& operator<<(long b)           { return push_int64(b); }
     Script& operator<<(int64_t b)          { return push_int64(b); }
     Script& operator<<(unsigned char b)  { return push_uint64(b); }
-    Script& operator<<(uint_32 b)   { return push_uint64(b); }
+    Script& operator<<(uint32_t b)   { return push_uint64(b); }
     Script& operator<<(uint16_t b) { return push_uint64(b); }
     //    Script& operator<<(unsigned long b)  { return push_uint64(b); }
     Script& operator<<(uint64_t b)         { return push_uint64(b); }
