@@ -24,10 +24,10 @@ using namespace boost;
 
 namespace sqliterate {
     
-    void StatementBase::bind(sqlite3_int64 arg, int col) const {
+    void StatementBase::bind(int64_t arg, int col) const {
         int ret = sqlite3_bind_int64(_->stmt, col, arg);
         if (ret != SQLITE_OK)
-            throw Database::Error("StatementBase::bind(sqlite3_int64) : error " + lexical_cast<string>(ret) + " binding a value");
+            throw Database::Error("StatementBase::bind(int64_t) : error " + lexical_cast<string>(ret) + " binding a value");
     }
     void StatementBase::bind(double arg, int col) const {
         int ret = sqlite3_bind_double(_->stmt, col, arg);
@@ -56,7 +56,7 @@ namespace sqliterate {
     }
     
     
-    void StatementBase::get(sqlite3_int64& arg, int col) const {
+    void StatementBase::get(int64_t& arg, int col) const {
         int storage_class = sqlite3_column_type(_->stmt, col);
         if (storage_class == SQLITE_NULL) {
             arg = 0;
@@ -107,7 +107,7 @@ namespace sqliterate {
         arg = uint160(a);
     }
     
-    Database::Database(const string filename, sqlite3_int64 heap_limit) {
+    Database::Database(const string filename, int64_t heap_limit) {
         _db = NULL;
 
         int ret = sqlite3_open(filename.c_str(), &_db);
@@ -154,10 +154,10 @@ namespace sqliterate {
     }
     
     const std::string Database::statistics() const {
-        typedef map<sqlite3_int64, string> Stats;
+        typedef map<int64_t, string> Stats;
         Stats stats;
-        sqlite3_int64 total_time = 0;
-        sqlite3_int64 total_count = 0;
+        int64_t total_time = 0;
+        int64_t total_count = 0;
         for (Statements::const_iterator is = _statements.begin(); is != _statements.end(); ++is) {
             const StatementBase& s = is->second;
             if (s.stat_count()) {

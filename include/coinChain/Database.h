@@ -291,13 +291,13 @@ namespace sqliterate {
             return *this;
         }
         
-        sqlite3_int64 stat_time() const { return _->stat_time; }
-        sqlite3_int64 stat_count() const { return _->stat_count; }
+        int64_t stat_time() const { return _->stat_time; }
+        int64_t stat_count() const { return _->stat_count; }
         
-        void bind(sqlite3_int64 arg, int col) const;
-        void bind(uint64_t arg, int col) const { bind((sqlite3_int64)arg, col); }
-        void bind(int arg, int col) const { bind((sqlite3_int64)arg, col); }
-        void bind(uint32_t arg, int col) const { bind((sqlite3_int64)arg, col); }
+        void bind(int64_t arg, int col) const;
+        void bind(uint64_t arg, int col) const { bind((int64_t)arg, col); }
+        void bind(int32_t arg, int col) const { bind((int64_t)arg, col); }
+        void bind(uint32_t arg, int col) const { bind((int64_t)arg, col); }
         void bind(double arg, int col) const;
         void bind(const std::string& arg, int col) const;
         void bind(const blob& arg, int col) const;
@@ -306,10 +306,10 @@ namespace sqliterate {
         
         sqlite3_stmt *stmt() { return _->stmt; }
     protected:
-        void get(sqlite3_int64& arg, int col) const;
-        void get(int& arg, int col) const { sqlite3_int64 a; get((a), col); arg = a;}
-        void get(unsigned int& arg, int col) const { sqlite3_int64 a; get((a), col); arg = a;}
-        void get(unsigned short& arg, int col) const { sqlite3_int64 a; get((a), col); arg = a;}
+        void get(int64_t& arg, int col) const;
+        void get(int& arg, int col) const { int64_t a; get((a), col); arg = a;}
+        void get(unsigned int& arg, int col) const { int64_t a; get((a), col); arg = a;}
+        void get(unsigned short& arg, int col) const { int64_t a; get((a), col); arg = a;}
         
         void get(double& arg, int col) const;
         void get(std::string& arg, int col) const;
@@ -321,7 +321,7 @@ namespace sqliterate {
         
         const std::string& sql() const { return _->sql; }
         
-        inline sqlite3_int64 time_microseconds() const {
+        inline int64_t time_microseconds() const {
             return (boost::posix_time::ptime(boost::posix_time::microsec_clock::universal_time()) -
                     boost::posix_time::ptime(boost::gregorian::date(1970,1,1))).total_microseconds();
         }
@@ -331,8 +331,8 @@ namespace sqliterate {
         public:
             sqlite3_stmt *stmt;
             std::string sql;
-            mutable sqlite3_int64 stat_time;
-            mutable sqlite3_int64 stat_count;
+            mutable int64_t stat_time;
+            mutable int64_t stat_count;
             
             Representation() : stmt(NULL), stat_time(0), stat_count(0), _refs(0) {}
             
@@ -351,7 +351,7 @@ namespace sqliterate {
         Statement(const StatementBase& stmt) : StatementBase(stmt) {}
         
         R eval() {
-            sqlite3_int64 t0 = time_microseconds();
+            int64_t t0 = time_microseconds();
             R r = R();
             if (sqlite3_step(_->stmt) == SQLITE_ROW)
                 get(r, 0);
@@ -363,9 +363,9 @@ namespace sqliterate {
     };
     
     struct RowId {
-        sqlite3_int64 rowid;
-        RowId(sqlite3_int64 i) : rowid(i) {}
-        operator sqlite3_int64() { return rowid; }
+        int64_t rowid;
+        RowId(int64_t i) : rowid(i) {}
+        operator int64_t() { return rowid; }
     };
     
     // specialization for RowId
@@ -376,9 +376,9 @@ namespace sqliterate {
         Statement(const StatementBase& stmt) : StatementBase(stmt) {}
         
         RowId eval() {
-            sqlite3_int64 t0 = time_microseconds();
+            int64_t t0 = time_microseconds();
             while(sqlite3_step(_->stmt) == SQLITE_ROW);
-            sqlite3_int64 last_id = sqlite3_last_insert_rowid(sqlite3_db_handle(_->stmt));
+            int64_t last_id = sqlite3_last_insert_rowid(sqlite3_db_handle(_->stmt));
             sqlite3_reset(_->stmt);
             _->stat_time += time_microseconds() - t0;
             ++_->stat_count;
@@ -393,7 +393,7 @@ namespace sqliterate {
         StatementCol(const StatementBase& stmt) : StatementBase(stmt) {}
         
         std::vector<R> eval() {
-            sqlite3_int64 t0 = time_microseconds();
+            int64_t t0 = time_microseconds();
             int result = sqlite3_step(_->stmt);
             std::vector<R> rs;;
             while(result == SQLITE_ROW) {
@@ -428,7 +428,7 @@ namespace sqliterate {
         StatementRow(const StatementBase& stmt) : StatementBase(stmt) {}
         
         C eval() {
-            sqlite3_int64 t0 = time_microseconds();
+            int64_t t0 = time_microseconds();
             C c;
             if (sqlite3_step(_->stmt) == SQLITE_ROW) {
                 P0 p0; P1 p1; P2 p2; P3 p3; P4 p4; P5 p5; P6 p6; P7 p7; P8 p8; P9 p9;
@@ -461,7 +461,7 @@ namespace sqliterate {
         StatementColRow(const StatementBase& stmt) : StatementBase(stmt) {}
         
         std::vector<C> eval() {
-            sqlite3_int64 t0 = time_microseconds();
+            int64_t t0 = time_microseconds();
             std::vector<C> cs;
             while (sqlite3_step(_->stmt) == SQLITE_ROW) {
                 P0 p0; P1 p1; P2 p2; P3 p3; P4 p4; P5 p5; P6 p6; P7 p7; P8 p8; P9 p9;
@@ -482,7 +482,7 @@ namespace sqliterate {
             Error(const std::string& s) : std::runtime_error(s.c_str()) {}
         };
         
-        Database(const std::string filename = ":memory:", sqlite3_int64 heap_limit = 0);
+        Database(const std::string filename = ":memory:", int64_t heap_limit = 0);
         ~Database();
         
         StatementBase statement(const char* stmt);
