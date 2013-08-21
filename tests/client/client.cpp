@@ -14,18 +14,14 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <boost/thread.hpp>
-#include <boost/program_options.hpp>
-#include <boost/assign.hpp>
-#include <boost/asio.hpp>
 
-#include <fstream>
-
+#include <coinHTTP/Client.h>
 
 using namespace std;
 using namespace boost;
-using namespace json_spirit;
 
+//using namespace json_spirit;
+/*
 class Response {
     Response& operator= (const Response& resp);
 public:
@@ -178,17 +174,17 @@ private:
     /// The managed requests.
     std::set<request_ptr> _requests;
 };
-
-void response_handler(Response& response) {
-    cout << "Status: " << response.status() << endl;
-    cout << response.body() << endl;
+*/
+void handler(Reply& reply) {
+    cout << "Status: " << reply.status() << endl;
+    cout << reply.content() << endl;
 }
 
 int main(int argc, char* argv[]) {
-    Client client("http://ceptacle.com");
-
     boost::asio::io_service io_service;
-    client.request(new Get(io_service, "index.php", &response_handler));
+    Client client(io_service);
+
+    client.async_get("http://ceptacle.com/index.php", handler);
 
     io_service.run();
     
