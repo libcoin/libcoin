@@ -318,7 +318,7 @@ boost::tribool Evaluator::eval(opcodetype opcode) {
             
         case OP_DEPTH: {
             // -- stacksize
-            CBigNum bn(_stack.size());
+            CBigNum bn((uint64_t)_stack.size());
             _stack.push_back(bn.getvch());
             break;
         }
@@ -462,7 +462,7 @@ boost::tribool Evaluator::eval(opcodetype opcode) {
             // (in -- in size)
             if (_stack.size() < 1)
                 return false;
-            CBigNum bn(top(-1).size());
+            CBigNum bn((uint64_t)top(-1).size());
             _stack.push_back(bn.getvch());
             break;
         }
