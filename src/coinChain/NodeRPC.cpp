@@ -179,6 +179,8 @@ Value GetPenetration::operator()(const Array& params, bool fHelp) {
     obj.push_back(Pair("total", (int)total));
     
     // register callback for a this specific tx to be confirmed up to certain level
+    // NOT FINISHED!!!
+    return Value::null;
 }
     
 Value GetBlockCount::operator()(const Array& params, bool fHelp) {

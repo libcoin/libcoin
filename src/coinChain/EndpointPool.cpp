@@ -69,8 +69,6 @@ bool EndpointPool::addEndpoint(Endpoint endpoint, int64 penalty)
     if (endpoint.getIP() == _localhost.getIP())
         return false;
     endpoint.setTime(max((int64)0, (int64)endpoint.getTime() - penalty));
-    bool updated = false;
-    bool is_new = false;
     Endpoint found = endpoint;
     
     query("INSERT OR REPLACE INTO Endpoints VALUES (?, ?, ?, ?)", (int64)endpoint.getIP(), (int64)endpoint.getPort(), (int64)endpoint.getTime(), 0);

@@ -31,7 +31,7 @@ PROJECT(libcoin)
 
 SET(LIBCOIN_MAJOR_VERSION 0)
 SET(LIBCOIN_MINOR_VERSION 5)
-SET(LIBCOIN_PATCH_VERSION 91)
+SET(LIBCOIN_PATCH_VERSION 92)
 SET(LIBCOIN_SOVERSION 0)
 
 # set to 0 when not a release candidate, non zero means that any generated 
@@ -407,7 +407,7 @@ INCLUDE(LibCoinMacroUtils)
 # Create bin and lib directories if required
 
 IF("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
-   FILE(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin ${CMAKE_BINARY_DIR}/lib ${CMAKE_BINARY_DIR}/lib/${LIBCOIN_PLUGINS})
+   FILE(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin ${CMAKE_BINARY_DIR}/lib)
 ENDIF()
 
 

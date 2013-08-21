@@ -134,7 +134,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         
         vector<Block> vHeaders;
         int nLimit = 2000 + _blockChain.getDistanceBack(locator);
-        int height = blk.height();
+        //int height = blk.height();
         log_debug("getheaders %d to %s limit %d", (!!blk ? height : -1), hashStop.toString().substr(0,20).c_str(), nLimit);
         for (; !!blk; ++blk) {
             Block block;
@@ -299,7 +299,7 @@ bool BlockFilter::alreadyHave(const Inventory& inv) {
 
 
 bool ShareFilter::process(const Block& block, Peers peers) {
-    uint256 hash = block.getHash();
+    //    uint256 hash = block.getHash();
     try {
         _blockChain.append(block);
     }
