@@ -374,7 +374,7 @@ inline std::string StackString(const std::vector<std::vector<unsigned char> >& v
 class Script : public std::vector<unsigned char>
 {
 protected:
-    Script& push_int64(int64 n)
+    Script& push_int64(int64_t n)
     {
         if (n == -1 || (n >= 1 && n <= 16))
         {
@@ -388,7 +388,7 @@ protected:
         return *this;
     }
 
-    Script& push_uint64(uint64 n)
+    Script& push_uint64(uint64_t n)
     {
         if (n >= 1 && n <= 16)
         {
@@ -428,12 +428,12 @@ public:
     explicit Script(short b)          { operator<<(b); }
     explicit Script(int b)            { operator<<(b); }
     explicit Script(long b)           { operator<<(b); }
-    explicit Script(int64 b)          { operator<<(b); }
+    explicit Script(int64_t b)          { operator<<(b); }
     explicit Script(unsigned char b)  { operator<<(b); }
     explicit Script(unsigned int b)   { operator<<(b); }
     explicit Script(unsigned short b) { operator<<(b); }
     explicit Script(unsigned long b)  { operator<<(b); }
-    explicit Script(uint64 b)         { operator<<(b); }
+    explicit Script(uint64_t b)         { operator<<(b); }
 
     explicit Script(opcodetype b)     { operator<<(b); }
     explicit Script(const uint256& b) { operator<<(b); }
@@ -445,12 +445,12 @@ public:
     Script& operator<<(short b)          { return push_int64(b); }
     Script& operator<<(int b)            { return push_int64(b); }
     Script& operator<<(long b)           { return push_int64(b); }
-    Script& operator<<(int64 b)          { return push_int64(b); }
+    Script& operator<<(int64_t b)          { return push_int64(b); }
     Script& operator<<(unsigned char b)  { return push_uint64(b); }
     Script& operator<<(unsigned int b)   { return push_uint64(b); }
     Script& operator<<(unsigned short b) { return push_uint64(b); }
     Script& operator<<(unsigned long b)  { return push_uint64(b); }
-    Script& operator<<(uint64 b)         { return push_uint64(b); }
+    Script& operator<<(uint64_t b)         { return push_uint64(b); }
 
     Script& operator<<(opcodetype opcode)
     {

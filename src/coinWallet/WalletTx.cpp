@@ -15,7 +15,7 @@
 
 using namespace std;
 
-int64 CWalletTx::GetDebit() const
+int64_t CWalletTx::GetDebit() const
 {
     if (getInputs().empty())
         return 0;
@@ -26,7 +26,7 @@ int64 CWalletTx::GetDebit() const
     return nDebitCached;
 }
 
-int64 CWalletTx::GetCredit(bool fUseCache) const
+int64_t CWalletTx::GetCredit(bool fUseCache) const
 {
     // Must wait until coinbase is safely deep enough in the chain before valuing it
     if (isCoinBase() && pwallet->GetBlocksToMaturity(*this) > 0)
@@ -40,7 +40,7 @@ int64 CWalletTx::GetCredit(bool fUseCache) const
     return nCreditCached;
 }
 
-int64 CWalletTx::GetAvailableCredit(bool fUseCache) const
+int64_t CWalletTx::GetAvailableCredit(bool fUseCache) const
 {
     // Must wait until coinbase is safely deep enough in the chain before valuing it
     if (isCoinBase() && pwallet->GetBlocksToMaturity(*this) > 0)
@@ -49,7 +49,7 @@ int64 CWalletTx::GetAvailableCredit(bool fUseCache) const
     if (fUseCache && fAvailableCreditCached)
         return nAvailableCreditCached;
     
-    int64 nCredit = 0;
+    int64_t nCredit = 0;
     for (int i = 0; i < _outputs.size(); i++)
         {
         if (!IsSpent(i))
@@ -67,7 +67,7 @@ int64 CWalletTx::GetAvailableCredit(bool fUseCache) const
 }
 
 
-int64 CWalletTx::GetChange() const
+int64_t CWalletTx::GetChange() const
 {
     if (fChangeCached)
         return nChangeCached;
@@ -77,7 +77,7 @@ int64 CWalletTx::GetChange() const
 }
 
 
-int64 CWalletTx::GetTxTime() const
+int64_t CWalletTx::GetTxTime() const
 {
     return nTimeReceived;
 }
@@ -121,8 +121,8 @@ int CWalletTx::GetRequestCount() const
     return nRequests;
 }
 
-void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, list<pair<ChainAddress, int64> >& listReceived,
-                           list<pair<ChainAddress, int64> >& listSent, int64& nFee, string& strSentAccount) const
+void CWalletTx::GetAmounts(int64_t& nGeneratedImmature, int64_t& nGeneratedMature, list<pair<ChainAddress, int64_t> >& listReceived,
+                           list<pair<ChainAddress, int64_t> >& listSent, int64_t& nFee, string& strSentAccount) const
 {
     nGeneratedImmature = nGeneratedMature = nFee = 0;
     listReceived.clear();
@@ -139,10 +139,10 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
     }
 
     // Compute fee:
-    int64 nDebit = GetDebit();
+    int64_t nDebit = GetDebit();
     if (nDebit > 0) // debit>0 means we signed/sent this transaction
     {
-        int64 nValueOut = getValueOut();
+        int64_t nValueOut = getValueOut();
         nFee = nDebit - nValueOut;
     }
 
@@ -173,29 +173,29 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
 
 }
 
-void CWalletTx::GetAccountAmounts(const string& strAccount, int64& nGenerated, int64& nReceived, 
-                                  int64& nSent, int64& nFee) const
+void CWalletTx::GetAccountAmounts(const string& strAccount, int64_t& nGenerated, int64_t& nReceived, 
+                                  int64_t& nSent, int64_t& nFee) const
 {
     nGenerated = nReceived = nSent = nFee = 0;
 
-    int64 allGeneratedImmature, allGeneratedMature, allFee;
+    int64_t allGeneratedImmature, allGeneratedMature, allFee;
     allGeneratedImmature = allGeneratedMature = allFee = 0;
     string strSentAccount;
-    list<pair<ChainAddress, int64> > listReceived;
-    list<pair<ChainAddress, int64> > listSent;
+    list<pair<ChainAddress, int64_t> > listReceived;
+    list<pair<ChainAddress, int64_t> > listSent;
     GetAmounts(allGeneratedImmature, allGeneratedMature, listReceived, listSent, allFee, strSentAccount);
 
     if (strAccount == "")
         nGenerated = allGeneratedMature;
     if (strAccount == strSentAccount)
     {
-        BOOST_FOREACH(const PAIRTYPE(ChainAddress,int64)& s, listSent)
+        BOOST_FOREACH(const PAIRTYPE(ChainAddress,int64_t)& s, listSent)
             nSent += s.second;
         nFee = allFee;
     }
     CRITICAL_BLOCK(pwallet->cs_wallet)
     {
-        BOOST_FOREACH(const PAIRTYPE(ChainAddress,int64)& r, listReceived)
+        BOOST_FOREACH(const PAIRTYPE(ChainAddress,int64_t)& r, listReceived)
         {
             if (pwallet->mapAddressBook.count(r.first))
             {

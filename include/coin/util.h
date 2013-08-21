@@ -42,13 +42,7 @@ typedef unsigned __int64 uint64_t;
 #include <openssl/ripemd.h>
 
 
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-typedef __int64  int64;
-typedef unsigned __int64  uint64;
-#else
-typedef long long  int64;
-typedef unsigned long long  uint64;
-#endif
+
 #if defined(_MSC_VER) && _MSC_VER < 1300
 #define for  if (false) ; else for
 #endif
@@ -163,9 +157,9 @@ void LogException(std::exception* pex, const char* pszThread);
 void PrintException(std::exception* pex, const char* pszThread);
 void PrintExceptionContinue(std::exception* pex, const char* pszThread);
 //void ParseString(const std::string& str, char c, std::vector<std::string>& v);
-std::string FormatMoney(int64 n, bool fPlus=false);
-//bool ParseMoney(const std::string& str, int64& nRet);
-//bool ParseMoney(const char* pszIn, int64& nRet);
+std::string FormatMoney(int64_t n, bool fPlus=false);
+//bool ParseMoney(const std::string& str, int64_t& nRet);
+//bool ParseMoney(const char* pszIn, int64_t& nRet);
 std::vector<unsigned char> ParseHex(const char* psz);
 std::vector<unsigned char> ParseHex(const std::string& str);
 const char* wxGetTranslation(const char* psz);
@@ -179,10 +173,10 @@ std::string MyGetSpecialFolderPath(int nFolder, bool fCreate);
 //std::string GetDataDir();
 void ShrinkDebugFile();
 int GetRandInt(int nMax);
-uint64 GetRand(uint64 nMax);
+uint64_t GetRand(uint64_t nMax);
 
-int64 GetAdjustedTime();
-void AddTimeData(unsigned int ip, int64 nTime);
+int64_t GetAdjustedTime();
+void AddTimeData(unsigned int ip, int64_t nTime);
 std::string FormatVersion(int nVersion);
 
 
@@ -321,7 +315,7 @@ struct secure_allocator : public std::allocator<T>
 // (secure_allocator<> is defined in serialize.h)
 typedef std::basic_string<char, std::char_traits<char>, secure_allocator<char> > SecureString;
 
-inline std::string i64tostr(int64 n)
+inline std::string i64tostr(int64_t n)
 {
     return strprintf("%"PRI64d, n);
 }
@@ -331,7 +325,7 @@ inline std::string itostr(int n)
     return strprintf("%d", n);
 }
 
-inline int64 atoi64(const char* psz)
+inline int64_t atoi64(const char* psz)
 {
 #ifdef _MSC_VER
     return _atoi64(psz);
@@ -340,7 +334,7 @@ inline int64 atoi64(const char* psz)
 #endif
 }
 
-inline int64 atoi64(const std::string& str)
+inline int64_t atoi64(const std::string& str)
 {
 #ifdef _MSC_VER
     return _atoi64(str.c_str());
@@ -359,12 +353,12 @@ inline int roundint(double d)
     return (int)(d > 0 ? d + 0.5 : d - 0.5);
 }
 
-inline int64 roundint64(double d)
+inline int64_t roundint64(double d)
 {
-    return (int64)(d > 0 ? d + 0.5 : d - 0.5);
+    return (int64_t)(d > 0 ? d + 0.5 : d - 0.5);
 }
 
-inline int64 abs64(int64 n)
+inline int64_t abs64(int64_t n)
 {
     return (n >= 0 ? n : -n);
 }
@@ -418,9 +412,9 @@ inline void PrintHex(const std::vector<unsigned char>& vch, const char* pszForma
     log_info(pszFormat, HexStr(vch, fSpaces).c_str());
 }
 
-inline int64 GetPerformanceCounter()
+inline int64_t GetPerformanceCounter()
 {
-    int64 nCounter = 0;
+    int64_t nCounter = 0;
 #ifdef _WIN32
     QueryPerformanceCounter((LARGE_INTEGER*)&nCounter);
 #else
@@ -449,8 +443,8 @@ public:
         boost::chrono::nanoseconds nano = now.time_since_epoch();
         return nano.count()+adjust();
     }
-    static int64 adjust() {
-        static int64 zero = 0;
+    static int64_t adjust() {
+        static int64_t zero = 0;
         if (zero == 0) {
             boost::chrono::high_resolution_clock::time_point now = boost::chrono::high_resolution_clock::now();
             boost::chrono::nanoseconds nano = now.time_since_epoch();
@@ -461,13 +455,13 @@ public:
 };
 
 
-inline int64 GetTimeMillis()
+inline int64_t GetTimeMillis()
 {
     return (boost::posix_time::ptime(boost::posix_time::microsec_clock::universal_time()) -
             boost::posix_time::ptime(boost::gregorian::date(1970,1,1))).total_milliseconds();
 }
 
-inline std::string DateTimeStrFormat(const char* pszFormat, int64 nTime)
+inline std::string DateTimeStrFormat(const char* pszFormat, int64_t nTime)
 {
     time_t n = nTime;
     struct tm* ptmTime = gmtime(&n);
@@ -499,7 +493,7 @@ inline std::string GetArg(const std::string& strArg, const std::string& strDefau
     return strDefault;
 }
 
-inline int64 GetArg(const std::string& strArg, int64 nDefault)
+inline int64_t GetArg(const std::string& strArg, int64_t nDefault)
 {
     if (mapArgs.count(strArg))
         return atoi64(mapArgs[strArg]);

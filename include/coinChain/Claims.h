@@ -26,14 +26,14 @@ class Claims {
 public:
     // Inserting a claim means looking up if it depends on other transactions and then sum up the size and fee for those
     struct Claim : public Transaction {
-        Claim(const Transaction& txn, int64 fee, unsigned int ts = 0) : Transaction(txn), fee(fee) {
+        Claim(const Transaction& txn, int64_t fee, unsigned int ts = 0) : Transaction(txn), fee(fee) {
             size = ::GetSerializeSize(txn, SER_NETWORK);
             delta_spendables = txn.getNumOutputs()-txn.getNumInputs();
             timestamp = ts ? ts : UnixTime::s();
         }
         unsigned int timestamp;
         unsigned int size;
-        int64 fee;
+        int64_t fee;
         int delta_spendables;
         std::vector<uint256> depends;
     };
@@ -91,7 +91,7 @@ public:
     
     const Output prev(const Coin& coin) const;
     
-    void insert(Transaction txn, const Spents& spents, int64 fee, unsigned int ts = 0);
+    void insert(Transaction txn, const Spents& spents, int64_t fee, unsigned int ts = 0);
     
     void erase(uint256 hash);
     
@@ -113,10 +113,10 @@ public:
     }
     
     // Transactions ordered in dependent order
-    std::vector<Transaction> transactions(int64& fee, size_t header_and_coinbase = 1000) const;
+    std::vector<Transaction> transactions(int64_t& fee, size_t header_and_coinbase = 1000) const;
     
     // current transaction fee threshold to get into a block
-    int64 threshold(size_t header_and_coinbase = 1000) const;
+    int64_t threshold(size_t header_and_coinbase = 1000) const;
     
     void purge(unsigned int before);
 

@@ -41,10 +41,10 @@ public:
     mutable char fCreditCached;
     mutable char fAvailableCreditCached;
     mutable char fChangeCached;
-    mutable int64 nDebitCached;
-    mutable int64 nCreditCached;
-    mutable int64 nAvailableCreditCached;
-    mutable int64 nChangeCached;
+    mutable int64_t nDebitCached;
+    mutable int64_t nCreditCached;
+    mutable int64_t nAvailableCreditCached;
+    mutable int64_t nChangeCached;
 
     // memory only UI hints
     mutable unsigned int nTimeDisplayed;
@@ -190,16 +190,16 @@ public:
         return (!!vfSpent[nOut]);
     }
 
-    int64 GetDebit() const;
-    int64 GetCredit(bool fUseCache=true) const;
-    int64 GetAvailableCredit(bool fUseCache=true) const;
-    int64 GetChange() const;
+    int64_t GetDebit() const;
+    int64_t GetCredit(bool fUseCache=true) const;
+    int64_t GetAvailableCredit(bool fUseCache=true) const;
+    int64_t GetChange() const;
 
-    void GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, std::list<std::pair<ChainAddress, int64> >& listReceived,
-                    std::list<std::pair<ChainAddress, int64> >& listSent, int64& nFee, std::string& strSentAccount) const;
+    void GetAmounts(int64_t& nGeneratedImmature, int64_t& nGeneratedMature, std::list<std::pair<ChainAddress, int64_t> >& listReceived,
+                    std::list<std::pair<ChainAddress, int64_t> >& listSent, int64_t& nFee, std::string& strSentAccount) const;
 
-    void GetAccountAmounts(const std::string& strAccount, int64& nGenerated, int64& nReceived, 
-                           int64& nSent, int64& nFee) const;
+    void GetAccountAmounts(const std::string& strAccount, int64_t& nGenerated, int64_t& nReceived, 
+                           int64_t& nSent, int64_t& nFee) const;
 
     bool IsFromMe() const
     {
@@ -210,7 +210,7 @@ public:
     
     bool WriteToDisk();
 
-    int64 GetTxTime() const;
+    int64_t GetTxTime() const;
     int GetRequestCount() const;
 
     void AddSupportingTransactions(const BlockChain& blockChain);

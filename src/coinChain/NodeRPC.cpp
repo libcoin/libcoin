@@ -74,7 +74,7 @@ Value GetBlock::operator()(const Array& params, bool fHelp) {
     return result;
 }        
 
-Object tx2json(Transaction &tx, int64 timestamp, int64 blockheight)
+Object tx2json(Transaction &tx, int64_t timestamp, int64_t blockheight)
 {
     Object entry;
     
@@ -132,8 +132,8 @@ Value GetTransaction::operator()(const Array& params, bool fHelp) {
     uint256 hash;
     hash.SetHex(params[0].get_str());
     
-    int64 timestamp = 0;
-    int64 blockheight = 0;
+    int64_t timestamp = 0;
+    int64_t blockheight = 0;
     
     Transaction tx;
     _node.blockChain().getTransaction(hash, tx, blockheight, timestamp);
@@ -154,8 +154,8 @@ Value GetPenetration::operator()(const Array& params, bool fHelp) {
     uint256 hash;
     hash.SetHex(params[0].get_str());
     
-    int64 timestamp = 0;
-    int64 blockheight = 0;
+    int64_t timestamp = 0;
+    int64_t blockheight = 0;
     
     Transaction tx;
     _node.blockChain().getTransaction(hash, tx, blockheight, timestamp);

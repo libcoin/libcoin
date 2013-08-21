@@ -48,14 +48,14 @@ public:
     void stop() { _timer += UnixTime::us(); _running = false; }
     
     std::string str() const {
-        int64 timer = _timer + (_running ? UnixTime::us() : 0);
+        int64_t timer = _timer + (_running ? UnixTime::us() : 0);
         double avg = 1./_counter*timer;
         std::string s = cformat("%9.3fs / #%6d = %6.3fus : \"%s\"", 0.000001*timer, _counter, avg).text();
         return s;
     }
 private:
-    int64 _timer;
-    int64 _counter;
+    int64_t _timer;
+    int64_t _counter;
     bool _running;
 };
 
@@ -105,16 +105,16 @@ public:
     /// T R A N S A C T I O N S    
     
     /// Get transactions from db or memory.
-    void getTransaction(const int64 cnf, Transaction &txn) const;
+    void getTransaction(const int64_t cnf, Transaction &txn) const;
     void getTransaction(const uint256& hash, Transaction& tx) const;
-    void getTransaction(const int64 cnf, Transaction& tx, int64& height, int64& time) const;
-    void getTransaction(const uint256& hash, Transaction& tx, int64& height, int64& time) const;
+    void getTransaction(const int64_t cnf, Transaction& tx, int64_t& height, int64_t& time) const;
+    void getTransaction(const uint256& hash, Transaction& tx, int64_t& height, int64_t& time) const;
     
     /// Query for existence of a Transaction.
     bool haveTx(uint256 hash, bool must_be_confirmed = false) const;
     
     /// A Transaction is final if the critreias set by it locktime are met.
-    bool isFinal(const Transaction& tx, int nBlockHeight=0, int64 nBlockTime=0) const;
+    bool isFinal(const Transaction& tx, int nBlockHeight=0, int64_t nBlockTime=0) const;
     
     /// Dry run version of claim.
     bool checkTransaction(const Transaction& txn) const {
@@ -128,7 +128,7 @@ public:
         }
     }
     
-    std::pair<Claims::Spents, int64> try_claim(const Transaction& txn, bool verify) const;
+    std::pair<Claims::Spents, int64_t> try_claim(const Transaction& txn, bool verify) const;
 
     void claim(const Transaction& txn, bool verify = true);
     
@@ -146,7 +146,7 @@ public:
     /// If the timestamp is 0 (default) everything is included
     void getUnspents(const Script& script, Unspents& unspents, unsigned int before = 0) const;
     
-    //    int64 value(Coin coin) const;
+    //    int64_t value(Coin coin) const;
     
     /// B L O C K S
         
@@ -217,7 +217,7 @@ public:
     
     const uint256& getGenesisHash() const { return _chain.genesisHash(); }
     const uint256& getBestChain() const { return _tree.best()->hash; }
-    const int64& getBestReceivedTime() const { return _bestReceivedTime; }
+    const int64_t& getBestReceivedTime() const { return _bestReceivedTime; }
 
     typedef std::vector<Script> Payees;
     typedef std::vector<unsigned int> Fractions;
@@ -244,7 +244,7 @@ protected:
     int getMinAcceptedBlockVersion() const;
     int getMinEnforcedBlockVersion() const;
     
-    void rollbackConfirmation(int64 cnf);
+    void rollbackConfirmation(int64_t cnf);
     void rollbackBlock(int count);
     
     void updateBestLocator();
@@ -253,7 +253,7 @@ protected:
 
     bool disconnectInputs(const Transaction& tx);    
     
-    void deleteTransaction(const int64 tx, Transaction &txn);
+    void deleteTransaction(const int64_t tx, Transaction &txn);
     
 private:
     typedef std::map<uint256, Transaction> Txns;
@@ -262,10 +262,10 @@ private:
     void attach(BlockIterator &blk, Txns& unconfirmed, Hashes& confirmed);
     void detach(BlockIterator &blk, Txns& unconfirmed);
 
-    void postTransaction(const Transaction txn, int64& fees, int64 min_fee, BlockIterator blk, int64 idx, bool verify);
-    void postSubsidy(const Transaction txn, BlockIterator blk, int64 fees);
+    void postTransaction(const Transaction txn, int64_t& fees, int64_t min_fee, BlockIterator blk, int64_t idx, bool verify);
+    void postSubsidy(const Transaction txn, BlockIterator blk, int64_t fees);
     
-    void insertBlockHeader(int64 count, const Block& block);
+    void insertBlockHeader(int64_t count, const Block& block);
 
     /// Mark a spendable spent - throw if already spent (or immature in case of database mode)
     Output redeem(const Input& input, int iidx, Confirmation conf);
@@ -274,7 +274,7 @@ private:
     void issue(const Output& output, uint256 hash, unsigned int out_idx, Confirmation conf, bool unique = true);
     
     /// Maturate the coinbase from block with count # - throw if not unique ?
-    void maturate(int64 count);
+    void maturate(int64_t count);
 
 private:
     const Chain& _chain;
@@ -309,18 +309,18 @@ private:
     
     Claims _claims;
     
-    int64 _bestReceivedTime;
+    int64_t _bestReceivedTime;
 
     mutable boost::shared_mutex _chain_and_pool_access;
 
     mutable Stats _redeemStats;
     mutable Stats _issueStats;
     
-    mutable int64 _acceptBlockTimer;
-    mutable int64 _connectInputsTimer;
-    mutable int64 _verifySignatureTimer;
-    mutable int64 _setBestChainTimer;
-    mutable int64 _addToBlockIndexTimer;
+    mutable int64_t _acceptBlockTimer;
+    mutable int64_t _connectInputsTimer;
+    mutable int64_t _verifySignatureTimer;
+    mutable int64_t _setBestChainTimer;
+    mutable int64_t _addToBlockIndexTimer;
 };
 
 #endif // BLOCKCHAIN_H

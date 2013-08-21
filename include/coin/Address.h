@@ -40,13 +40,13 @@ typedef std::vector<unsigned char> PubKey;
 class COIN_EXPORT PubKeyHash : public uint160 {
 public:
     PubKeyHash(const uint160& b = 0) : uint160(b) {}
-    PubKeyHash(uint64 b) : uint160(b) {}
+    PubKeyHash(uint64_t b) : uint160(b) {}
     
     PubKeyHash& operator=(const uint160& b) {
         uint160::operator=(b);
         return *this;
     }
-    PubKeyHash& operator=(uint64 b) {
+    PubKeyHash& operator=(uint64_t b) {
         uint160::operator=(b);
         return *this;
     }
@@ -62,13 +62,13 @@ PubKeyHash toPubKeyHash(const std::string& str);
 class COIN_EXPORT ScriptHash : public uint160 {
 public:
     ScriptHash(const uint160& b = 0) : uint160(b) {}
-    ScriptHash(uint64 b) : uint160(b) {}
+    ScriptHash(uint64_t b) : uint160(b) {}
     
     ScriptHash& operator=(const uint160& b) {
         uint160::operator=(b);
         return *this;
     }
-    ScriptHash& operator=(uint64 b) {
+    ScriptHash& operator=(uint64_t b) {
         uint160::operator=(b);
         return *this;
     }

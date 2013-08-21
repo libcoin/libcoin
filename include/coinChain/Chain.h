@@ -38,7 +38,7 @@ public:
     };
     virtual const Block& genesisBlock() const = 0;
     virtual const uint256& genesisHash() const = 0;
-    virtual const int64 subsidy(unsigned int height) const = 0;
+    virtual const int64_t subsidy(unsigned int height) const = 0;
     virtual bool isStandard(const Transaction& tx) const = 0;
     virtual unsigned int nextWorkRequired(BlockIterator blk) const = 0;
     virtual const CBigNum proofOfWorkLimit() const = 0;
@@ -80,7 +80,7 @@ public:
     virtual std::string ircChannel() const = 0;
     virtual unsigned int ircChannels() const = 0; // number of groups to try (100 for bitcoin, 2 for litecoin)
     virtual std::string cc() const { return ""; }
-    virtual std::string operator()(int64 amount, bool include_currency_symbol = true) const {
+    virtual std::string operator()(int64_t amount, bool include_currency_symbol = true) const {
         std::stringstream ss;
         ss << amount/100000000 << "." << std::setfill('0') << std::setw(8) << abs(amount%100000000);
         if (include_currency_symbol) ss << " " << cc();
@@ -94,7 +94,7 @@ public:
     BitcoinChain();
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
-    virtual const int64 subsidy(unsigned int height) const ;
+    virtual const int64_t subsidy(unsigned int height) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 32); }
     virtual unsigned int nextWorkRequired(BlockIterator blk) const;
@@ -139,7 +139,7 @@ public:
     TestNetChain();
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
-    virtual const int64 subsidy(unsigned int height) const ;
+    virtual const int64_t subsidy(unsigned int height) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 28); }
     virtual const bool checkProofOfWork(const Block& block) const;
@@ -196,7 +196,7 @@ public:
     LitecoinChain();
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
-    virtual const int64 subsidy(unsigned int height) const ;
+    virtual const int64_t subsidy(unsigned int height) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 20); } // Litecoin: starting difficulty is 1 / 2^12
     virtual const bool checkProofOfWork(const Block& block) const;
@@ -252,7 +252,7 @@ public:
     TerracoinChain();
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
-    virtual const int64 subsidy(unsigned int height) const ;
+    virtual const int64_t subsidy(unsigned int height) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 32); } 
     virtual const bool checkProofOfWork(const Block& block) const;

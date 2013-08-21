@@ -37,7 +37,7 @@ public:
     void purge();
     
     /// Add an endpoint with a time penalty in seconds. Returns true if the endpoint was not in the pool already.
-    bool addEndpoint(Endpoint endpoint, int64 penalty = 0);
+    bool addEndpoint(Endpoint endpoint, int64_t penalty = 0);
 
     /// Get a handle to an endpoint.
     Endpoint& getEndpoint(Endpoint::Key key) { return _endpoints[key]; }
@@ -54,7 +54,7 @@ public:
     const size_t getPoolSize() const { return _endpoints.size(); } 
     
     /// Get good candidate for a new peer
-    Endpoint getCandidate(const std::set<unsigned int>& not_in, int64 start_time);
+    Endpoint getCandidate(const std::set<unsigned int>& not_in, int64_t start_time);
     
     /// Return the external endpoint of the local host
     const Endpoint getLocal() const { return _localhost; }
@@ -78,7 +78,7 @@ private:
     
     short _defaultPort;
     Endpoint _localhost;
-    int64 _lastPurgeTime;
+    int64_t _lastPurgeTime;
 };
 
 #endif // ENDPOINTPOOL_H

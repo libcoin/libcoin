@@ -88,7 +88,7 @@ bool Wallet::ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, 
                 return false;
             if (CCryptoKeyStore::Unlock(vMasterKey))
             {
-                int64 nStartTime = GetTimeMillis();
+                int64_t nStartTime = GetTimeMillis();
                 crypter.SetKeyFromPassphrase(strNewWalletPassphrase, pMasterKey.second.vchSalt, pMasterKey.second.nDeriveIterations, pMasterKey.second.nDerivationMethod);
                 pMasterKey.second.nDeriveIterations = pMasterKey.second.nDeriveIterations * (100 / ((double)(GetTimeMillis() - nStartTime)));
 
@@ -147,7 +147,7 @@ bool Wallet::EncryptWallet(const SecureString& strWalletPassphrase)
     RAND_bytes(&kMasterKey.vchSalt[0], WALLET_CRYPTO_SALT_SIZE);
 
     CCrypter crypter;
-    int64 nStartTime = GetTimeMillis();
+    int64_t nStartTime = GetTimeMillis();
     crypter.SetKeyFromPassphrase(strWalletPassphrase, kMasterKey.vchSalt, 25000, kMasterKey.nDerivationMethod);
     kMasterKey.nDeriveIterations = 2500000 / ((double)(GetTimeMillis() - nStartTime));
 
@@ -346,7 +346,7 @@ bool Wallet::IsMine(const Input &txin) const
     return false;
 }
 
-int64 Wallet::GetDebit(const Input &txin) const
+int64_t Wallet::GetDebit(const Input &txin) const
 {
     CRITICAL_BLOCK(cs_wallet)
     {
@@ -522,7 +522,7 @@ void Wallet::ReacceptWalletTransactions()
 // This will be polled from the TransactionFilter infrequently
 void Wallet::resend() {
     // Only do it if there's been a new block since last time
-    static int64 nLastTime;
+    static int64_t nLastTime;
     if (_blockChain.getBestReceivedTime() < nLastTime)
         return;
     nLastTime = UnixTime::s();
@@ -536,7 +536,7 @@ void Wallet::resend() {
             CWalletTx& wtx = item.second;
             // Don't rebroadcast until it's had plenty of time that
             // it should have gotten in already by now.
-            if (_blockChain.getBestReceivedTime() - (int64)wtx.nTimeReceived > 5 * 60)
+            if (_blockChain.getBestReceivedTime() - (int64_t)wtx.nTimeReceived > 5 * 60)
                 mapSorted.insert(make_pair(wtx.nTimeReceived, &wtx));
         }
         BOOST_FOREACH(PAIRTYPE(const unsigned int, CWalletTx*)& item, mapSorted) {
@@ -581,9 +581,9 @@ bool Wallet::WriteToDisk(const CWalletTx& wtx) {
 //
 
 
-int64 Wallet::GetBalance(bool confirmed) const
+int64_t Wallet::GetBalance(bool confirmed) const
 {
-    int64 nTotal = 0;
+    int64_t nTotal = 0;
     CRITICAL_BLOCK(cs_wallet)
     {
         for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
@@ -599,17 +599,17 @@ int64 Wallet::GetBalance(bool confirmed) const
 }
 
 
-bool Wallet::SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfTheirs, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet) const
+bool Wallet::SelectCoinsMinConf(int64_t nTargetValue, int nConfMine, int nConfTheirs, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64_t& nValueRet) const
 {
     setCoinsRet.clear();
     nValueRet = 0;
 
     // List of values less than target
-    pair<int64, pair<const CWalletTx*,unsigned int> > coinLowestLarger;
+    pair<int64_t, pair<const CWalletTx*,unsigned int> > coinLowestLarger;
     coinLowestLarger.first = INT64_MAX;
     coinLowestLarger.second.first = NULL;
-    vector<pair<int64, pair<const CWalletTx*,unsigned int> > > vValue;
-    int64 nTotalLower = 0;
+    vector<pair<int64_t, pair<const CWalletTx*,unsigned int> > > vValue;
+    int64_t nTotalLower = 0;
 
     CRITICAL_BLOCK(cs_wallet)
     {
@@ -636,12 +636,12 @@ bool Wallet::SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfThei
                 if (pcoin->IsSpent(i) || !IsMine(pcoin->getOutput(i)))
                     continue;
 
-                int64 n = pcoin->getOutput(i).value();
+                int64_t n = pcoin->getOutput(i).value();
 
                 if (n <= 0)
                     continue;
 
-                pair<int64,pair<const CWalletTx*,unsigned int> > coin = make_pair(n,make_pair(pcoin,i));
+                pair<int64_t,pair<const CWalletTx*,unsigned int> > coin = make_pair(n,make_pair(pcoin,i));
 
                 if (n == nTargetValue)
                 {
@@ -688,12 +688,12 @@ bool Wallet::SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfThei
     sort(vValue.rbegin(), vValue.rend());
     vector<char> vfIncluded;
     vector<char> vfBest(vValue.size(), true);
-    int64 nBest = nTotalLower;
+    int64_t nBest = nTotalLower;
 
     for (int nRep = 0; nRep < 1000 && nBest != nTargetValue; nRep++)
     {
         vfIncluded.assign(vValue.size(), false);
-        int64 nTotal = 0;
+        int64_t nTotal = 0;
         bool fReachedTarget = false;
         for (int nPass = 0; nPass < 2 && !fReachedTarget; nPass++)
         {
@@ -744,7 +744,7 @@ bool Wallet::SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfThei
     return true;
 }
 
-bool Wallet::SelectCoins(int64 nTargetValue, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet) const
+bool Wallet::SelectCoins(int64_t nTargetValue, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64_t& nValueRet) const
 {
     return (SelectCoinsMinConf(nTargetValue, 1, 6, setCoinsRet, nValueRet) ||
             SelectCoinsMinConf(nTargetValue, 1, 1, setCoinsRet, nValueRet) ||
@@ -754,10 +754,10 @@ bool Wallet::SelectCoins(int64 nTargetValue, set<pair<const CWalletTx*,unsigned 
 
 
 
-bool Wallet::CreateTransaction(const vector<pair<Script, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
+bool Wallet::CreateTransaction(const vector<pair<Script, int64_t> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64_t& nFeeRet)
 {
-    int64 nValue = 0;
-    BOOST_FOREACH (const PAIRTYPE(Script, int64)& s, vecSend)
+    int64_t nValue = 0;
+    BOOST_FOREACH (const PAIRTYPE(Script, int64_t)& s, vecSend)
     {
         if (nValue < 0)
             return false;
@@ -780,29 +780,29 @@ bool Wallet::CreateTransaction(const vector<pair<Script, int64> >& vecSend, CWal
                 wtxNew.removeOutputs();
                 wtxNew.fFromMe = true;
 
-                int64 nTotalValue = nValue + nFeeRet;
+                int64_t nTotalValue = nValue + nFeeRet;
                 double dPriority = 0;
                 // vouts to the payees
-                BOOST_FOREACH (const PAIRTYPE(Script, int64)& s, vecSend)
+                BOOST_FOREACH (const PAIRTYPE(Script, int64_t)& s, vecSend)
                     wtxNew.addOutput(Output(s.second, s.first));
 
                 // Choose coins to use
                 set<pair<const CWalletTx*,unsigned int> > setCoins;
-                int64 nValueIn = 0;
+                int64_t nValueIn = 0;
                 if (!SelectCoins(nTotalValue, setCoins, nValueIn))
                     return false;
                 BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int) pcoin, setCoins)
                 {
-                    int64 nCredit = pcoin.first->getOutput(pcoin.second).value();
+                    int64_t nCredit = pcoin.first->getOutput(pcoin.second).value();
                     dPriority += (double)nCredit * _blockChain.getDepthInMainChain(pcoin.first->getHash());
                 }
 
-                int64 nChange = nValueIn - nValue - nFeeRet;
+                int64_t nChange = nValueIn - nValue - nFeeRet;
                 // if sub-cent change is required, the fee must be raised to at least MIN_TX_FEE
                 // or until nChange becomes zero
                 if (nFeeRet < MIN_TX_FEE && nChange > 0 && nChange < CENT)
                 {
-                    int64 nMoveToFee = min(nChange, MIN_TX_FEE - nFeeRet);
+                    int64_t nMoveToFee = min(nChange, MIN_TX_FEE - nFeeRet);
                     nChange -= nMoveToFee;
                     nFeeRet += nMoveToFee;
                 }
@@ -852,9 +852,9 @@ bool Wallet::CreateTransaction(const vector<pair<Script, int64> >& vecSend, CWal
                 dPriority /= nBytes;
 
                 // Check that enough fee is included
-                int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
+                int64_t nPayFee = nTransactionFee * (1 + (int64_t)nBytes / 1000);
                 bool fAllowFree = Transaction::allowFree(dPriority);
-                int64 nMinFee = wtxNew.getMinFee(1, fAllowFree);
+                int64_t nMinFee = wtxNew.getMinFee(1, fAllowFree);
                 if (nFeeRet < max(nPayFee, nMinFee))
                 {
                     nFeeRet = max(nPayFee, nMinFee);
@@ -872,9 +872,9 @@ bool Wallet::CreateTransaction(const vector<pair<Script, int64> >& vecSend, CWal
     return true;
 }
 
-bool Wallet::CreateTransaction(Script scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
+bool Wallet::CreateTransaction(Script scriptPubKey, int64_t nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64_t& nFeeRet)
 {
-    vector< pair<Script, int64> > vecSend;
+    vector< pair<Script, int64_t> > vecSend;
     vecSend.push_back(make_pair(scriptPubKey, nValue));
     return CreateTransaction(vecSend, wtxNew, reservekey, nFeeRet);
 }
@@ -929,16 +929,16 @@ bool Wallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
 }
 
 // this is ugly - again we have calls to GUI methods from within the code code - need to make some call back structure
-inline bool ThreadSafeAskFee(int64 nFeeRequired, const std::string& strCaption, void* parent)
+inline bool ThreadSafeAskFee(int64_t nFeeRequired, const std::string& strCaption, void* parent)
 {
     return true;
 }
 
 
-string Wallet::SendMoney(Script scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee)
+string Wallet::SendMoney(Script scriptPubKey, int64_t nValue, CWalletTx& wtxNew, bool fAskFee)
 {
     CReserveKey reservekey(this);
-    int64 nFeeRequired;
+    int64_t nFeeRequired;
 
     if (IsLocked())
     {
@@ -968,7 +968,7 @@ string Wallet::SendMoney(Script scriptPubKey, int64 nValue, CWalletTx& wtxNew, b
 
 
 
-string Wallet::SendMoneyToBitcoinAddress(const ChainAddress& address, int64 nValue, CWalletTx& wtxNew, bool fAskFee)
+string Wallet::SendMoneyToBitcoinAddress(const ChainAddress& address, int64_t nValue, CWalletTx& wtxNew, bool fAskFee)
 {
     // Check amount
     if (nValue <= 0)
@@ -1091,10 +1091,10 @@ bool Wallet::TopUpKeyPool()
         CWalletDB walletdb(_dataDir, strWalletFile);
 
         // Top up key pool
-    int64 nTargetSize = 100;//max(GetArg("-keypool", 100), (int64)0);
+    int64_t nTargetSize = 100;//max(GetArg("-keypool", 100), (int64_t)0);
         while (setKeyPool.size() < nTargetSize+1)
         {
-            int64 nEnd = 1;
+            int64_t nEnd = 1;
             if (!setKeyPool.empty())
                 nEnd = *(--setKeyPool.end()) + 1;
             if (!walletdb.WritePool(nEnd, CKeyPool(generateNewKey())))
@@ -1106,7 +1106,7 @@ bool Wallet::TopUpKeyPool()
     return true;
 }
 
-void Wallet::ReserveKeyFromKeyPool(int64& nIndex, CKeyPool& keypool)
+void Wallet::ReserveKeyFromKeyPool(int64_t& nIndex, CKeyPool& keypool)
 {
     nIndex = -1;
     keypool.vchPubKey.clear();
@@ -1132,7 +1132,7 @@ void Wallet::ReserveKeyFromKeyPool(int64& nIndex, CKeyPool& keypool)
     }
 }
 
-void Wallet::KeepKey(int64 nIndex)
+void Wallet::KeepKey(int64_t nIndex)
 {
     // Remove from key pool
     if (fFileBacked)
@@ -1143,7 +1143,7 @@ void Wallet::KeepKey(int64 nIndex)
     log_info("keypool keep %d\n", nIndex);
 }
 
-void Wallet::ReturnKey(int64 nIndex)
+void Wallet::ReturnKey(int64_t nIndex)
 {
     // Return to key pool
     CRITICAL_BLOCK(cs_wallet)
@@ -1153,7 +1153,7 @@ void Wallet::ReturnKey(int64 nIndex)
 
 bool Wallet::GetKeyFromPool(vector<unsigned char>& result, bool fAllowReuse)
 {
-    int64 nIndex = 0;
+    int64_t nIndex = 0;
     CKeyPool keypool;
     CRITICAL_BLOCK(cs_wallet)
     {
@@ -1175,9 +1175,9 @@ bool Wallet::GetKeyFromPool(vector<unsigned char>& result, bool fAllowReuse)
     return true;
 }
 
-int64 Wallet::GetOldestKeyPoolTime()
+int64_t Wallet::GetOldestKeyPoolTime()
 {
-    int64 nIndex = 0;
+    int64_t nIndex = 0;
     CKeyPool keypool;
     ReserveKeyFromKeyPool(nIndex, keypool);
     if (nIndex == -1)

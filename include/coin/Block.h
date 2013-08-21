@@ -85,8 +85,8 @@ public:
 
     uint256 getHalfHash() const;
     
-    int64 getBlockTime() const {
-        return (int64)_time;
+    int64_t getBlockTime() const {
+        return (int64_t)_time;
     }
 
     int GetSigOpCount() const;

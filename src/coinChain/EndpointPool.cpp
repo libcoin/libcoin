@@ -45,14 +45,14 @@ void EndpointPool::purge()
         _lastPurgeTime = UnixTime::s();
 
         // remove endpoints older than 14 days:
-        int64 since = GetAdjustedTime() - 14 * 24 * 60 * 60;
+        int64_t since = GetAdjustedTime() - 14 * 24 * 60 * 60;
         query("DELETE FROM Endpoints WHERE time < ?", since);
     }
 }
 
 set<Endpoint> EndpointPool::getRecent(int within, int rand_max)
 {
-    int64 since = GetAdjustedTime() - within; // in the last 3 hours
+    int64_t since = GetAdjustedTime() - within; // in the last 3 hours
     
     vector<Endpoint> endpoint_list= queryColRow<Endpoint(unsigned int, unsigned short, unsigned int, unsigned int)>("SELECT ip, port, time, lasttry FROM Endpoints WHERE time > ? ORDER BY RANDOM() LIMIT ?", since, rand_max); // rows will now contain a list of endpoint newer than 'since'
 
@@ -62,40 +62,40 @@ set<Endpoint> EndpointPool::getRecent(int within, int rand_max)
     return endpoints;
 }
 
-bool EndpointPool::addEndpoint(Endpoint endpoint, int64 penalty)
+bool EndpointPool::addEndpoint(Endpoint endpoint, int64_t penalty)
 {
     if (!endpoint.isRoutable())
         return false;
     if (endpoint.getIP() == _localhost.getIP())
         return false;
-    endpoint.setTime(max((int64)0, (int64)endpoint.getTime() - penalty));
+    endpoint.setTime(max((int64_t)0, (int64_t)endpoint.getTime() - penalty));
     Endpoint found = endpoint;
     
-    query("INSERT OR REPLACE INTO Endpoints VALUES (?, ?, ?, ?)", (int64)endpoint.getIP(), (int64)endpoint.getPort(), (int64)endpoint.getTime(), 0);
+    query("INSERT OR REPLACE INTO Endpoints VALUES (?, ?, ?, ?)", (int64_t)endpoint.getIP(), (int64_t)endpoint.getPort(), (int64_t)endpoint.getTime(), 0);
     
     return true;
 }
 
 void EndpointPool::currentlyConnected(const Endpoint& ep)
 {
-    int64 now = GetAdjustedTime();
+    int64_t now = GetAdjustedTime();
 
-    query("UPDATE Endpoints SET time = ? WHERE ip = ? AND port = ?", now, (int64)ep.getIP(), ep.getPort());
+    query("UPDATE Endpoints SET time = ? WHERE ip = ? AND port = ?", now, (int64_t)ep.getIP(), ep.getPort());
 }
 
 void EndpointPool::setLastTry(const Endpoint& ep) {
-    int64 now = GetAdjustedTime();
-    query("UPDATE Endpoints SET lasttry = ? WHERE ip = ? AND port = ?", now, (int64)ep.getIP(), ep.getPort());
+    int64_t now = GetAdjustedTime();
+    query("UPDATE Endpoints SET lasttry = ? WHERE ip = ? AND port = ?", now, (int64_t)ep.getIP(), ep.getPort());
 }
 
-Endpoint EndpointPool::getCandidate(const set<unsigned int>& not_in, int64 start_time)
+Endpoint EndpointPool::getCandidate(const set<unsigned int>& not_in, int64_t start_time)
 {
     //
     // Choose an address to connect to based on most recently seen
     //
     Endpoint candidate;
     
-    int64 now = GetAdjustedTime();
+    int64_t now = GetAdjustedTime();
     vector<Endpoint> endpoints = queryColRow<Endpoint(unsigned int, unsigned short, unsigned int, unsigned int)>("SELECT ip, port, time, lasttry FROM Endpoints WHERE lasttry < ? ORDER BY time DESC", now-60*60);
     
     // iterate until we get an address not in not_in or in the same class-B network:
@@ -123,11 +123,11 @@ Endpoint EndpointPool::getCandidate(const set<unsigned int>& not_in, int64 start
         const Endpoint& ep = item.second;
         if (!ep.isIPv4() || !ep.isValid() || not_in.count(ep.getIP() & 0x0000ffff))
             continue;
-        int64 sinceLastSeen = GetAdjustedTime() - ep.getTime();
-        int64 sinceLastTry = GetAdjustedTime() - ep.getLastTry();
+        int64_t sinceLastSeen = GetAdjustedTime() - ep.getTime();
+        int64_t sinceLastTry = GetAdjustedTime() - ep.getLastTry();
         
         // Randomize the order in a deterministic way, putting the standard port first
-        int64 randomizer = (uint64)(start_time * 4951 + ep.getLastTry() * 9567851 + ep.getIP() * 7789) % (2 * 60 * 60);
+        int64_t randomizer = (uint64_t)(start_time * 4951 + ep.getLastTry() * 9567851 + ep.getIP() * 7789) % (2 * 60 * 60);
         if (ep.getPort() != htons(_defaultPort))
             randomizer += 2 * 60 * 60;
         
@@ -141,7 +141,7 @@ Endpoint EndpointPool::getCandidate(const set<unsigned int>& not_in, int64 start
         //   30 days   27 hours
         //   90 days   46 hours
         //  365 days   93 hours
-        int64 delay = (int64)(3600.0 * sqrt(fabs((double)sinceLastSeen) / 3600.0) + randomizer);
+        int64_t delay = (int64_t)(3600.0 * sqrt(fabs((double)sinceLastSeen) / 3600.0) + randomizer);
         
         // Fast reconnect for one hour after last seen
         if (sinceLastSeen < 60 * 60)
@@ -165,7 +165,7 @@ Endpoint EndpointPool::getCandidate(const set<unsigned int>& not_in, int64 start
         
         // If multiple addresses are ready, prioritize by time since
         // last seen and time since last tried.
-        int64 score = min(sinceLastTry, (int64)24 * 60 * 60) - sinceLastSeen - randomizer;
+        int64_t score = min(sinceLastTry, (int64_t)24 * 60 * 60) - sinceLastSeen - randomizer;
         if (score > best) {
             best = score;
             candidate = ep;

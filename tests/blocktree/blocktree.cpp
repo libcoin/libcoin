@@ -31,7 +31,7 @@ using namespace std;
 using namespace boost;
 
 
-inline int64 time_microseconds() {
+inline int64_t time_microseconds() {
     return (boost::posix_time::ptime(boost::posix_time::microsec_clock::universal_time()) -
             boost::posix_time::ptime(boost::gregorian::date(1970,1,1))).total_microseconds();
 }

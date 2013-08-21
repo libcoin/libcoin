@@ -88,7 +88,7 @@ private:
     /// The Relay system is only used for Transactions - hence we put it here.
     
     std::map<Inventory, CDataStream> _relay;
-    std::deque<std::pair<int64, Inventory> > _relayExpiration;
+    std::deque<std::pair<int64_t, Inventory> > _relayExpiration;
     
     inline void relayInventory(const Peers& peers, const Inventory& inv);
 

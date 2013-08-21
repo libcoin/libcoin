@@ -97,7 +97,7 @@ string bin2dec(string bin) {
 }
 
 
-inline int64 time_microseconds() {
+inline int64_t time_microseconds() {
     return (boost::posix_time::ptime(boost::posix_time::microsec_clock::universal_time()) -
             boost::posix_time::ptime(boost::gregorian::date(1970,1,1))).total_microseconds();
 }
@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
         }
 
         cout << "Inserting " << N << " elements" << endl;
-        int64 t_insert = -time_microseconds();
+        int64_t t_insert = -time_microseconds();
         for (size_t i = 0; i < N; ++i)
             trie.insert(elems[i]);
         for (size_t i = 0; i < keys.size(); ++i)
@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
         random_shuffle ( elems.begin(), elems.end() );
 
         trie_rnd.authenticated(true);
-        int64 t_rnd_insert = -time_microseconds();
+        int64_t t_rnd_insert = -time_microseconds();
         for (size_t i = 0; i < N; ++i) {
             trie_rnd.insert(elems[i]);
             if (i%13)
@@ -176,7 +176,7 @@ int main(int argc, char* argv[])
         
         cout << "Performing " << N << " searches " << endl;
 
-        int64 t_search = -time_microseconds();
+        int64_t t_search = -time_microseconds();
         
         size_t removed = 0;
         for (size_t i = 0; i < N; ++i) {

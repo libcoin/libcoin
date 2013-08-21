@@ -44,8 +44,8 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
         // Store the new addresses
         //        CAddrDB addrDB;
         //addrDB.TxnBegin();
-        int64 now = GetAdjustedTime();
-        int64 since = now - 10 * 60;
+        int64_t now = GetAdjustedTime();
+        int64_t since = now - 10 * 60;
         BOOST_FOREACH(Endpoint& ep, endpoints) {
             // ignore IPv6 for now, since it isn't implemented anyway
             if (!ep.isIPv4())
@@ -64,7 +64,7 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
                 static uint256 hashSalt; // belongs to the Handler/Node...
                 if (hashSalt == 0)
                     RAND_bytes((unsigned char*)&hashSalt, sizeof(hashSalt));
-                uint256 hashRand = hashSalt ^ uint256(((int64)ep.getIP())<<32) ^ uint256((UnixTime::s() + ep.getIP())/(24*60*60));
+                uint256 hashRand = hashSalt ^ uint256(((int64_t)ep.getIP())<<32) ^ uint256((UnixTime::s() + ep.getIP())/(24*60*60));
                 hashRand = Hash(BEGIN(hashRand), END(hashRand));
                 multimap<uint256, Peer*> mapMix;
                 Peers peers = origin->getAllPeers();
@@ -111,7 +111,7 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
     }
     else if (msg.command() == "ping") {
         if (origin->nVersion > BIP0031_VERSION) {
-            uint64 nonce = 0;
+            uint64_t nonce = 0;
             CDataStream data(msg.payload());
             data >> nonce;
             // Echo the message back with the nonce. This allows for two useful features:
@@ -136,7 +136,7 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
             _endpointPool.currentlyConnected(origin->addr);
     
     // Endpoint refresh broadcast - has been moved into the EndpointFilter... - this means that it is only induced by some of the commands registered to this filter, but it is a 24hours recheck, so it should not matter.
-    static int64 nLastRebroadcast;
+    static int64_t nLastRebroadcast;
     if (UnixTime::s() - nLastRebroadcast > 24 * 60 * 60) {
         nLastRebroadcast = UnixTime::s();
         // Periodically clear setAddrKnown to allow refresh broadcasts

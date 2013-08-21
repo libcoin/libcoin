@@ -312,8 +312,8 @@ public:
         //insertBlockHeader(blk.count(), block);
         
         // commit transactions
-        int64 fees = 0;
-        int64 min_fee = 0;
+        int64_t fees = 0;
+        int64_t min_fee = 0;
         bool verify = _verification_depth && (height > _verification_depth);
         for(size_t idx = 1; idx < block.getNumTransactions(); ++idx) {
             Transaction txn = block.getTransaction(idx);
@@ -355,12 +355,12 @@ public:
         
         // check the payout - each former share in the share chain need their share
         // at this stage we don't need to verify that the overall reward is correct, we only need the relative share
-        int64 reward = 0;
+        int64_t reward = 0;
         const Transaction& cb_txn = share.getTransaction(0);
         for (int i = 0; i < cb_txn.getNumOutputs(); ++i)
             reward += cb_txn.getOutput(i).value();
-        int64 fraction = reward/360;
-        int64 modulus = reward%360;
+        int64_t fraction = reward/360;
+        int64_t modulus = reward%360;
         
         // check that the shares are correct
         map<Script, unsigned int> fractions;
@@ -368,7 +368,7 @@ public:
         unsigned int total = 0;
         for (int i = 1; i < cb_txn.getNumOutputs(); ++i) {
             const Script& script = cb_txn.getOutput(i).script();
-            int64 value = cb_txn.getOutput(i).value();
+            int64_t value = cb_txn.getOutput(i).value();
             if (value%fraction)
                 throw Error("Wrong fractions in coinbase transaction");
             fractions[script] = value/fraction;
@@ -377,7 +377,7 @@ public:
         }
         // now handle the reward to the share creater
         const Script& script = cb_txn.getOutput(0).script();
-        int64 value = cb_txn.getOutput(0).value();
+        int64_t value = cb_txn.getOutput(0).value();
         
         value -= modulus;
         if (value%fraction)

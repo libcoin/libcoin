@@ -31,7 +31,7 @@ using namespace std;
 using namespace boost;
 
 
-inline int64 time_microseconds() {
+inline int64_t time_microseconds() {
     return (boost::posix_time::ptime(boost::posix_time::microsec_clock::universal_time()) -
             boost::posix_time::ptime(boost::gregorian::date(1970,1,1))).total_microseconds();
 }
@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
                 Transaction txn;
                 Claims::Spents spents;
                 spents.clear();
-                int64 amount = 0;
+                int64_t amount = 0;
                 size_t n = 1+rand()%3;
                 for (size_t i = 0; i < n; i++) {
                     size_t idx = rand()%unspents.size();
@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
                     unspents.erase(unspents.begin() + idx); // erase the unspents as it is now used in a txn
                 }
                 size_t m = 2+rand()%3;
-                int64 fee = rand()%1000000;
+                int64_t fee = rand()%1000000;
                 amount -= fee;
                 for (size_t j = 0; j < m; j++) {
                     Output output(amount/m, Script());
@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
             }
             
             // now get the transactions for a block candidate:
-            int64 fee;
+            int64_t fee;
             vector<Transaction> txns = claims.transactions(fee);
             cout << "Created block candidate with " << txns.size() << " transactions and a fee of " << fee << " satoshis." << endl;
              blocks++;

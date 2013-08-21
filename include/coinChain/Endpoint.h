@@ -41,10 +41,10 @@ class COINCHAIN_EXPORT Endpoint : public boost::asio::ip::tcp::endpoint
     Endpoint();
     Endpoint(boost::asio::ip::tcp::endpoint ep);
     Endpoint(const Endpoint& endpoint);
-    Endpoint(unsigned int ipIn, unsigned short portIn=0, uint64 nServicesIn=NODE_NETWORK);
-    explicit Endpoint(const struct sockaddr_in& sockaddr, uint64 nServicesIn=NODE_NETWORK);
-    explicit Endpoint(std::string strIn, unsigned short portIn, bool fNameLookup = false, uint64 nServicesIn=NODE_NETWORK);
-    explicit Endpoint(std::string strIn, bool fNameLookup = false, uint64 nServicesIn=NODE_NETWORK);
+    Endpoint(unsigned int ipIn, unsigned short portIn=0, uint64_t nServicesIn=NODE_NETWORK);
+    explicit Endpoint(const struct sockaddr_in& sockaddr, uint64_t nServicesIn=NODE_NETWORK);
+    explicit Endpoint(std::string strIn, unsigned short portIn, bool fNameLookup = false, uint64_t nServicesIn=NODE_NETWORK);
+    explicit Endpoint(std::string strIn, bool fNameLookup = false, uint64_t nServicesIn=NODE_NETWORK);
     explicit Endpoint(unsigned int ip, unsigned short port, unsigned int time, unsigned int last_try);
     
         void init();
@@ -111,11 +111,11 @@ class COINCHAIN_EXPORT Endpoint : public boost::asio::ip::tcp::endpoint
     const unsigned int getLastTry() const { return _lastTry; }
     void setLastTry(unsigned int lastTry) { _lastTry = lastTry; }
 
-    const uint64 getServices() const { return _services; }
-    void setServices(uint64 services) { _services = services; }
+    const uint64_t getServices() const { return _services; }
+    void setServices(uint64_t services) { _services = services; }
     
     private:
-        uint64 _services;
+        uint64_t _services;
         unsigned char _ipv6[12];
     //        unsigned int _ip;
     //        unsigned short _port;

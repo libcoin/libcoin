@@ -43,7 +43,7 @@ public:
     json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);    
 };
 
-extern COINCHAIN_EXPORT json_spirit::Object tx2json(Transaction &tx, int64 timestamp = 0, int64 blockheight = 0);
+extern COINCHAIN_EXPORT json_spirit::Object tx2json(Transaction &tx, int64_t timestamp = 0, int64_t blockheight = 0);
 
 class COINCHAIN_EXPORT GetTransaction : public NodeMethod {
 public:

@@ -155,23 +155,23 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
     log_info("BlockChain initialized - main best height: %d", _tree.height());
     
     // determine purge_depth from database:
-    _purge_depth = query<int64>("SELECT CASE WHEN COUNT(*)=0 THEN 0 ELSE MIN(count) END FROM Confirmations");
+    _purge_depth = query<int64_t>("SELECT CASE WHEN COUNT(*)=0 THEN 0 ELSE MIN(count) END FROM Confirmations");
     _deepest_depth = _purge_depth + 1;
     
     // determine validation index type from database:
-    bool coin_index = query<int64>("SELECT COUNT(*) FROM SQLITE_MASTER WHERE name='UnspentIndex'");
+    bool coin_index = query<int64_t>("SELECT COUNT(*) FROM SQLITE_MASTER WHERE name='UnspentIndex'");
     if (coin_index)
         _validation_depth = 0;
     else {
         _validation_depth = _chain.totalBlocksEstimate();
 
         // load the elements - i.e. the spendables
-        Unspents spendables = queryColRow<Unspent(int64, uint256, unsigned int, int64, Script, int64, int64)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count >= -?", _tree.count()-COINBASE_MATURITY+1);
+        Unspents spendables = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count >= -?", _tree.count()-COINBASE_MATURITY+1);
         
         for (Unspents::const_iterator u = spendables.begin(); u != spendables.end(); ++u)
             _spendables.insert(*u);
         
-        Unspents immatures = queryColRow<Unspent(int64, uint256, unsigned int, int64, Script, int64, int64)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count < -?", _tree.count()-COINBASE_MATURITY+1);
+        Unspents immatures = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count < -?", _tree.count()-COINBASE_MATURITY+1);
 
         for (Unspents::const_iterator u = immatures.begin(); u != immatures.end(); ++u)
             _immature_coinbases.insert(*u);
@@ -209,7 +209,7 @@ void BlockChain::validation_depth(unsigned int v) {
 }
 
 bool BlockChain::script_to_unspents() const {
-    return query<int64>("SELECT COUNT(*) FROM SQLITE_MASTER WHERE name='ScriptIndex'");
+    return query<int64_t>("SELECT COUNT(*) FROM SQLITE_MASTER WHERE name='ScriptIndex'");
 }
 
 void BlockChain::script_to_unspents(bool enable) {
@@ -219,10 +219,10 @@ void BlockChain::script_to_unspents(bool enable) {
         query("DROP INDEX IF EXISTS ScriptIndex");
 }
 
-std::pair<Claims::Spents, int64> BlockChain::try_claim(const Transaction& txn, bool verify) const {
+std::pair<Claims::Spents, int64_t> BlockChain::try_claim(const Transaction& txn, bool verify) const {
     uint256 hash = txn.getHash();
-    int64 fee = 0;
-    int64 min_fee = 0;
+    int64_t fee = 0;
+    int64_t min_fee = 0;
     
     if (_claims.have(hash)) // transaction already exist
         throw Error("Transaction already exists!");
@@ -236,7 +236,7 @@ std::pair<Claims::Spents, int64> BlockChain::try_claim(const Transaction& txn, b
         
         // redeem the inputs
         const Inputs& inputs = txn.getInputs();
-        int64 value_in = 0;
+        int64_t value_in = 0;
         for (size_t in_idx = 0; in_idx < inputs.size(); ++in_idx) {
             Unspent coin;
             const Input& input = inputs[in_idx];
@@ -252,7 +252,7 @@ std::pair<Claims::Spents, int64> BlockChain::try_claim(const Transaction& txn, b
             else {
                 //  3. are among the confirmed outputs in the Database / do a database lookup
                 if (_validation_depth == 0) {
-                    coin = queryRow<Unspent(int64, uint256, unsigned int, int64, Script, int64, int64)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE hash = ? AND idx = ?", input.prevout().hash, input.prevout().index);
+                    coin = queryRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE hash = ? AND idx = ?", input.prevout().hash, input.prevout().index);
                     if (!coin)
                         throw Reject("Spent coin not found !");
                     
@@ -297,12 +297,12 @@ std::pair<Claims::Spents, int64> BlockChain::try_claim(const Transaction& txn, b
         throw Error(string("claim(Transaction): ") + e.what());
     }
 
-    return make_pair<Claims::Spents, int64>(spents, fee);
+    return make_pair<Claims::Spents, int64_t>(spents, fee);
 }
 
 // claim, claims a transaction expecting it to go into a block in the near future
 void BlockChain::claim(const Transaction& txn, bool verify) {
-    pair<Claims::Spents, int64> res = try_claim(txn, verify);
+    pair<Claims::Spents, int64_t> res = try_claim(txn, verify);
     
     // we insert the unconfirmed transaction into a list/map according to the key: fee/size and delta-spendings    
     _claims.insert(txn, res.first, res.second);
@@ -312,7 +312,7 @@ Output BlockChain::redeem(const Input& input, int iidx, Confirmation iconf) {
     Unspent coin;
     
     if (_validation_depth == 0) {
-        coin = queryRow<Unspent(int64, uint256, unsigned int, int64, Script, int64, int64)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE hash = ? AND idx = ?", input.prevout().hash, input.prevout().index);
+        coin = queryRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE hash = ? AND idx = ?", input.prevout().hash, input.prevout().index);
 
         if (!coin)
             throw Reject("Spent coin not found !");
@@ -348,7 +348,7 @@ Output BlockChain::redeem(const Input& input, int iidx, Confirmation iconf) {
 }
 
 void BlockChain::issue(const Output& output, uint256 hash, unsigned int out_idx, Confirmation conf, bool unique) {
-    int64 count = conf.is_coinbase() ? -conf.count : conf.count;
+    int64_t count = conf.is_coinbase() ? -conf.count : conf.count;
     if (_validation_depth == 0) {
         if (unique)
             query("INSERT INTO Unspents (hash, idx, value, script, count, ocnf) VALUES (?, ?, ?, ?, ?, ?)", hash, out_idx, output.value(), output.script(), count, conf.cnf); // will throw if trying to insert a dublicate value as the index is unique
@@ -356,7 +356,7 @@ void BlockChain::issue(const Output& output, uint256 hash, unsigned int out_idx,
             query("INSERT OR REPLACE INTO Unspents (hash, idx, value, script, count, ocnf) VALUES (?, ?, ?, ?, ?, ?)", hash, out_idx, output.value(), output.script(), count, conf.cnf);
     }
     else {
-        int64 coin = query("INSERT INTO Unspents (hash, idx, value, script, count, ocnf) VALUES (?, ?, ?, ?, ?, ?)", hash, out_idx, output.value(), output.script(), count, conf.cnf);
+        int64_t coin = query("INSERT INTO Unspents (hash, idx, value, script, count, ocnf) VALUES (?, ?, ?, ?, ?, ?)", hash, out_idx, output.value(), output.script(), count, conf.cnf);
         
         _issueStats.start();
         Unspent unspent(coin, hash, out_idx, output.value(), output.script(), count, conf.cnf);
@@ -379,11 +379,11 @@ void BlockChain::issue(const Output& output, uint256 hash, unsigned int out_idx,
     }
 }
 
-void BlockChain::maturate(int64 count) {
+void BlockChain::maturate(int64_t count) {
     if (_validation_depth == 0)
         return;
     
-    Unspents coinbase_unspents = queryColRow<Unspent(int64, uint256, unsigned int, int64, Script, int64, int64)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count = ?", -count);
+    Unspents coinbase_unspents = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count = ?", -count);
 
     for (Unspents::const_iterator cb = coinbase_unspents.begin(); cb != coinbase_unspents.end(); ++cb) {
         _spendables.insert(*cb);
@@ -391,11 +391,11 @@ void BlockChain::maturate(int64 count) {
     }
 }
 
-void BlockChain::insertBlockHeader(int64 count, const Block& block) {
+void BlockChain::insertBlockHeader(int64_t count, const Block& block) {
     query("INSERT INTO Blocks (count, hash, version, prev, mrkl, time, bits, nonce) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", count, block.getHash(), block.getVersion(), block.getPrevBlock(), block.getMerkleRoot(), block.getBlockTime(), block.getBits(), block.getNonce());
 }
 
-void BlockChain::postTransaction(const Transaction txn, int64& fees, int64 min_fee, BlockIterator blk, int64 idx, bool verify) {
+void BlockChain::postTransaction(const Transaction txn, int64_t& fees, int64_t min_fee, BlockIterator blk, int64_t idx, bool verify) {
     Confirmation conf(txn, 0, blk.count());
     
     uint256 hash = txn.getHash();
@@ -410,7 +410,7 @@ void BlockChain::postTransaction(const Transaction txn, int64& fees, int64 min_f
         
     // redeem the inputs
     const Inputs& inputs = txn.getInputs();
-    int64 value_in = 0;
+    int64_t value_in = 0;
     for (size_t in_idx = 0; in_idx < inputs.size(); ++in_idx) {
         const Input& input = inputs[in_idx];
         Output coin = redeem(input, in_idx, conf); // this will throw in case of doublespend attempts
@@ -425,7 +425,7 @@ void BlockChain::postTransaction(const Transaction txn, int64& fees, int64 min_f
     }
     
     // verify outputs
-    int64 fee = value_in - txn.getValueOut();
+    int64_t fee = value_in - txn.getValueOut();
     if (fee < 0)
         throw Error("fee < 0");
     if (fee < min_fee)
@@ -440,7 +440,7 @@ void BlockChain::postTransaction(const Transaction txn, int64& fees, int64 min_f
         issue(outputs[out_idx], hash, out_idx, conf); // will throw in case of dublicate (hash,idx)
 }
 
-void BlockChain::postSubsidy(const Transaction txn, BlockIterator blk, int64 fees) {
+void BlockChain::postSubsidy(const Transaction txn, BlockIterator blk, int64_t fees) {
     
     if (!txn.isCoinBase())
         throw Error("postSubsidy only valid for coinbase transactions.");
@@ -458,7 +458,7 @@ void BlockChain::postSubsidy(const Transaction txn, BlockIterator blk, int64 fee
     
     // insert coinbase into spendings
     const Input& input = txn.getInput(0);
-    int64 value_in = _chain.subsidy(blk.height()) + fees;
+    int64_t value_in = _chain.subsidy(blk.height()) + fees;
     if (value_in < txn.getValueOut())
         throw Error("value in < value out");
     if (blk.count() >= _purge_depth)
@@ -477,19 +477,19 @@ void BlockChain::postSubsidy(const Transaction txn, BlockIterator blk, int64 fee
         maturate(blk.count()-COINBASE_MATURITY+1);
 }
 
-void BlockChain::rollbackConfirmation(int64 cnf) {
+void BlockChain::rollbackConfirmation(int64_t cnf) {
     // first get a list of spendings in which this coin was used as input and delete these iteratively...
-    //    vector<int64> cnfs = queryCol<int64>("SELECT ocnf FROM Spendings WHERE icnf = ?");
+    //    vector<int64_t> cnfs = queryCol<int64_t>("SELECT ocnf FROM Spendings WHERE icnf = ?");
     //for (size_t i = 0; i < cnfs.size(); ++i)
     //  rollbackConfirmation(cnfs[i], true);
     // delete the coins
 
-    int64 count = query<int64, int64>("SELECT count FROM Confirmations WHERE cnf = ?", cnf);
+    int64_t count = query<int64_t, int64_t>("SELECT count FROM Confirmations WHERE cnf = ?", cnf);
     
     if (_validation_depth > 0) {
         // iterate over spendings and undo them by converting spengins to unspents and remove correspoding unspent
         if (cnf > 0) {
-            Unspents unspents = queryColRow<Unspent(int64, uint256, unsigned int, int64, Script, int64, int64)>("SELECT coin, hash, idx, value, script, ?, ocnf FROM Spendings WHERE icnf = ?", count, cnf); // we lose the block info count here !
+            Unspents unspents = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, ?, ocnf FROM Spendings WHERE icnf = ?", count, cnf); // we lose the block info count here !
             
             for (Unspents::const_iterator u = unspents.begin(); u != unspents.end(); ++u)
                 _spendables.insert(*u);
@@ -511,8 +511,8 @@ void BlockChain::rollbackConfirmation(int64 cnf) {
 }
 
 void BlockChain::rollbackBlock(int count) {
-    typedef vector<int64> Cnfs;
-    Cnfs cnfs = queryCol<int64>("SELECT cnf FROM Confirmations WHERE count = ? ORDER BY idx", count);
+    typedef vector<int64_t> Cnfs;
+    Cnfs cnfs = queryCol<int64_t>("SELECT cnf FROM Confirmations WHERE count = ? ORDER BY idx", count);
     // remove transactions in reverse order
     for (Cnfs::const_reverse_iterator tx = cnfs.rbegin(); tx != cnfs.rend(); ++tx) {
         rollbackConfirmation(*tx);
@@ -533,15 +533,15 @@ void BlockChain::getBlock(int count, Block& block) const {
     getBlockHeader(count, block);
     
     // now get the transactions
-    vector<Confirmation> confs = queryColRow<Confirmation(int, unsigned int, int64, int64)>("SELECT cnf, version, locktime, count FROM Confirmations WHERE count = ? ORDER BY idx", count);
+    vector<Confirmation> confs = queryColRow<Confirmation(int, unsigned int, int64_t, int64_t)>("SELECT cnf, version, locktime, count FROM Confirmations WHERE count = ? ORDER BY idx", count);
     
     for (size_t idx = 0; idx < confs.size(); idx++) {
         //        Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY idx", abs(confs[idx].cnf)); // note that "ABS" as cnf for coinbases is negative!
 
         Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY iidx", abs(confs[idx].cnf)); // note that "ABS" as cnf for coinbases is negative!
         
-        Outputs outputs = queryColRow<Output(int64, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1) ORDER BY idx", confs[idx].cnf);
-        //        Outputs outputs = queryColRow<Output(int64, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE icnf = ?1 ORDER BY idx ASC);", confs[idx].cnf);
+        Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1) ORDER BY idx", confs[idx].cnf);
+        //        Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE icnf = ?1 ORDER BY idx ASC);", confs[idx].cnf);
         Transaction txn = confs[idx];
         txn.setInputs(inputs);
         txn.setOutputs(outputs);
@@ -570,8 +570,8 @@ void BlockChain::attach(BlockIterator &blk, Txns& unconfirmed, Hashes& confirmed
     insertBlockHeader(blk.count(), block);
     
     // commit transactions
-    int64 fees = 0;
-    int64 min_fee = 0;
+    int64_t fees = 0;
+    int64_t min_fee = 0;
     bool verify = _verification_depth && (height > _verification_depth);
     for(size_t idx = 1; idx < block.getNumTransactions(); ++idx) {
         Transaction txn = block.getTransaction(idx);
@@ -650,17 +650,17 @@ bool BlockChain::checkShare(const Block& share) const {
         ShareTree::Dividend dividend;
         
         // check that the dividend in this share matches the one in the chain
-        int64 reward = 0;
+        int64_t reward = 0;
         const Transaction& cb_txn = share.getTransaction(0);
         for (int i = 0; i < cb_txn.getNumOutputs(); ++i)
             reward += cb_txn.getOutput(i).value();
-        int64 fraction = reward/360;
-        int64 modulus = reward%360;
+        int64_t fraction = reward/360;
+        int64_t modulus = reward%360;
         
         unsigned int total = 0;
         for (int i = 1; i < cb_txn.getNumOutputs(); ++i) {
             const Script& script = cb_txn.getOutput(i).script();
-            int64 value = cb_txn.getOutput(i).value();
+            int64_t value = cb_txn.getOutput(i).value();
             if (value%fraction)
                 throw Error("Wrong fractions in coinbase transaction");
             dividend[script] = value/fraction;
@@ -669,7 +669,7 @@ bool BlockChain::checkShare(const Block& share) const {
         }
         // now handle the reward to the share creater
         const Script& script = cb_txn.getOutput(0).script();
-        int64 value = cb_txn.getOutput(0).value();
+        int64_t value = cb_txn.getOutput(0).value();
         
         value -= modulus;
         if (value%fraction)
@@ -936,18 +936,18 @@ void BlockChain::getBlock(const uint256 hash, Block& block) const
     }
 }
 
-void BlockChain::getTransaction(const int64 cnf, Transaction &txn) const {
-    Confirmation conf = queryRow<Confirmation(int, unsigned int, int64, int64)>("SELECT (cnf, version, locktime, count) FROM Confirmations WHERE cnf = ?", cnf);
+void BlockChain::getTransaction(const int64_t cnf, Transaction &txn) const {
+    Confirmation conf = queryRow<Confirmation(int, unsigned int, int64_t, int64_t)>("SELECT (cnf, version, locktime, count) FROM Confirmations WHERE cnf = ?", cnf);
     
     Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT (hash, idx, signature, sequence) FROM Spendings WHERE cin = ? ORDER BY iidx", cnf);
-    Outputs outputs = queryColRow<Output(int64, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1 ORDER BY idx ASC);", cnf);
+    Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1 ORDER BY idx ASC);", cnf);
     txn = conf;
     txn.setInputs(inputs);
     txn.setOutputs(outputs);
 }
 
-void BlockChain::getTransaction(const int64 cnf, Transaction &txn, int64& height, int64& time) const {
-    Confirmation conf = queryRow<Confirmation(int, unsigned int, int64, int64)>("SELECT (cnf, version, locktime, count) FROM Confirmations WHERE cnf = ?", cnf);
+void BlockChain::getTransaction(const int64_t cnf, Transaction &txn, int64_t& height, int64_t& time) const {
+    Confirmation conf = queryRow<Confirmation(int, unsigned int, int64_t, int64_t)>("SELECT (cnf, version, locktime, count) FROM Confirmations WHERE cnf = ?", cnf);
  
     if (conf.count > LOCKTIME_THRESHOLD) {
         height = -1;
@@ -960,7 +960,7 @@ void BlockChain::getTransaction(const int64 cnf, Transaction &txn, int64& height
     }
     
     Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT (hash, idx, signature, sequence) FROM Spendings WHERE cin = ? ORDER BY iidx", cnf);
-    Outputs outputs = queryColRow<Output(int64, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1 ORDER BY idx ASC);", cnf);
+    Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1 ORDER BY idx ASC);", cnf);
     txn = conf;
     txn.setInputs(inputs);
     txn.setOutputs(outputs);
@@ -1044,9 +1044,9 @@ bool BlockChain::haveTx(uint256 hash, bool must_be_confirmed) const
     return true;
     // There is no index on hash, only on the hash + index - we shall assume that the hash + 0 is at least in the spendings, and hence we need not query for more.
     // Further, if we prune the database (remove spendings) we cannot answer this question (at least not if it is 
-    int64 cnf = query<int64>("SELECT ocnf FROM Unspents WHERE hash = ?", hash);
+    int64_t cnf = query<int64_t>("SELECT ocnf FROM Unspents WHERE hash = ?", hash);
     if (!cnf)
-        cnf = query<int64>("SELECT ocnf FROM Spendings WHERE hash = ?", hash);
+        cnf = query<int64_t>("SELECT ocnf FROM Spendings WHERE hash = ?", hash);
 
     if (!must_be_confirmed)
         return cnf;
@@ -1062,7 +1062,7 @@ bool BlockChain::haveTx(uint256 hash, bool must_be_confirmed) const
         return false;
 }
 
-bool BlockChain::isFinal(const Transaction& tx, int nBlockHeight, int64 nBlockTime) const
+bool BlockChain::isFinal(const Transaction& tx, int nBlockHeight, int64_t nBlockTime) const
 {
     // Time based nLockTime implemented in 0.1.6
     if (tx.lockTime() == 0)
@@ -1071,7 +1071,7 @@ bool BlockChain::isFinal(const Transaction& tx, int nBlockHeight, int64 nBlockTi
         nBlockHeight = _tree.height();
     if (nBlockTime == 0)
         nBlockTime = GetAdjustedTime();
-    if ((int64)tx.lockTime() < (tx.lockTime() < LOCKTIME_THRESHOLD ? (int64)nBlockHeight : nBlockTime))
+    if ((int64_t)tx.lockTime() < (tx.lockTime() < LOCKTIME_THRESHOLD ? (int64_t)nBlockHeight : nBlockTime))
         return true;
     BOOST_FOREACH(const Input& txin, tx.getInputs())
         if (!txin.isFinal())
@@ -1086,16 +1086,16 @@ bool BlockChain::haveBlock(uint256 hash) const {
 void BlockChain::getTransaction(const uint256& hash, Transaction& txn) const {
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
 
-    int64 cnf = query<int64>("SELECT ocnf FROM Unspents WHERE hash = ? LIMIT 1", txn.getHash());
+    int64_t cnf = query<int64_t>("SELECT ocnf FROM Unspents WHERE hash = ? LIMIT 1", txn.getHash());
     
     getTransaction(cnf, txn);
 }
 
-void BlockChain::getTransaction(const uint256& hash, Transaction& txn, int64& height, int64& time) const
+void BlockChain::getTransaction(const uint256& hash, Transaction& txn, int64_t& height, int64_t& time) const
 {
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
 
-    int64 cnf = query<int64>("SELECT ocnf FROM Unspents WHERE hash = ? LIMIT 1", txn.getHash());
+    int64_t cnf = query<int64_t>("SELECT ocnf FROM Unspents WHERE hash = ? LIMIT 1", txn.getHash());
 
     getTransaction(cnf, txn, height, time);
 }
@@ -1104,7 +1104,7 @@ bool BlockChain::isSpent(Coin coin) const {
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
 
     if (_validation_depth == 0) // Database
-        return query<int64>("SELECT coin FROM Unspents WHERE hash = ? AND idx = ?", coin.hash, coin.index) == 0;
+        return query<int64_t>("SELECT coin FROM Unspents WHERE hash = ? AND idx = ?", coin.hash, coin.index) == 0;
     else
         return !_spendables.find(coin);
 }
@@ -1114,7 +1114,7 @@ void BlockChain::getUnspents(const Script& script, Unspents& unspents, unsigned 
     if (!script_to_unspents())
         throw Error("Lookup of unspents requires an INDEX!");
     
-    unspents = queryColRow<Unspent(int64, uint256, unsigned int, int64, Script, int64, int64)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE script = ?", script);
+    unspents = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE script = ?", script);
     
     if (before == 0 || before > LOCKTIME_THRESHOLD) { // include unconfirmed transactions too
         typedef vector<pair<Coin, Output> > Claimed;
@@ -1201,7 +1201,7 @@ Block BlockChain::getBlockTemplate(Payees payees, Fractions fractions, Fractions
     
     // now get the optimal set of transactions
     typedef vector<Transaction> Txns;
-    int64 fee = 0;
+    int64_t fee = 0;
     Txns txns = _claims.transactions(fee);
 
     Spendables spendables = _spendables;
@@ -1219,7 +1219,7 @@ Block BlockChain::getBlockTemplate(Payees payees, Fractions fractions, Fractions
     // insert the matured coinbase from block #-100
     int count = _tree.count();
     if (count > 0) {
-        Unspents coinbase_unspents = queryColRow<Unspent(int64, uint256, unsigned int, int64, Script, int64, int64)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count = ?", -(count-COINBASE_MATURITY));
+        Unspents coinbase_unspents = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count = ?", -(count-COINBASE_MATURITY));
         
         for (Unspents::const_iterator cb = coinbase_unspents.begin(); cb != coinbase_unspents.end(); ++cb)
             spendables.insert(*cb);
@@ -1238,16 +1238,16 @@ Block BlockChain::getBlockTemplate(Payees payees, Fractions fractions, Fractions
     // and then the outputs!
     // we have the list of payees and their shares
     // first sum up the denominators
-    int64 denominator = accumulate(fractions.begin(), fractions.end(), 0);
-    int64 fee_denominator = accumulate(fee_fractions.begin(), fee_fractions.end(), 0);
+    int64_t denominator = accumulate(fractions.begin(), fractions.end(), 0);
+    int64_t fee_denominator = accumulate(fee_fractions.begin(), fee_fractions.end(), 0);
     if (denominator == 0) denominator = payees.size();
     if (fee_denominator == 0) fee_denominator = denominator;
 
-    int64 subsidy = _chain.subsidy(count);
+    int64_t subsidy = _chain.subsidy(count);
     for (size_t i = 0; i < payees.size(); ++i) {
-        int64 nominator = fractions.size() ? fractions[i] : 1;
-        int64 fee_nominator = fee_fractions.size() ? fee_fractions[i] : nominator;
-        int64 value = nominator*subsidy/denominator + fee_nominator*fee/fee_denominator;
+        int64_t nominator = fractions.size() ? fractions[i] : 1;
+        int64_t fee_nominator = fee_fractions.size() ? fee_fractions[i] : nominator;
+        int64_t value = nominator*subsidy/denominator + fee_nominator*fee/fee_denominator;
         if (i == 0) value += subsidy%denominator + fee%fee_denominator;
         coinbase_txn.addOutput(Output(value, payees[i]));
     }

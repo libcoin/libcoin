@@ -83,9 +83,9 @@ int Transaction::getSigOpCount() const {
     return n;
 }
 
-int64 Transaction::getValueOut() const
+int64_t Transaction::getValueOut() const
 {
-    int64 valueOut = 0;
+    int64_t valueOut = 0;
     BOOST_FOREACH(const Output& output, _outputs)
     {
     valueOut += output.value();
@@ -95,8 +95,8 @@ int64 Transaction::getValueOut() const
     return valueOut;
 }
 
-int64 Transaction::paymentTo(PubKeyHash address) const {
-    int64 value = 0;
+int64_t Transaction::paymentTo(PubKeyHash address) const {
+    int64_t value = 0;
     BOOST_FOREACH(const Output& output, _outputs)
     {
     if(output.getAddress() == address)
@@ -106,21 +106,21 @@ int64 Transaction::paymentTo(PubKeyHash address) const {
     return value;
 }
 
-bool Transaction::isSufficient(map<PubKeyHash, int64> payments) const {
-    for (map<PubKeyHash, int64>::const_iterator payment = payments.begin(); payment != payments.end(); ++payment) {
+bool Transaction::isSufficient(map<PubKeyHash, int64_t> payments) const {
+    for (map<PubKeyHash, int64_t>::const_iterator payment = payments.begin(); payment != payments.end(); ++payment) {
         if (paymentTo(payment->first) < payment->second)
             return false;
     }
     return true;
 }
 
-int64 Transaction::getMinFee(unsigned int nBlockSize, bool fAllowFree, bool fForRelay) const {
+int64_t Transaction::getMinFee(unsigned int nBlockSize, bool fAllowFree, bool fForRelay) const {
     // Base fee is either MIN_TX_FEE or MIN_RELAY_TX_FEE
-    int64 nBaseFee = fForRelay ? MIN_RELAY_TX_FEE : MIN_TX_FEE;
+    int64_t nBaseFee = fForRelay ? MIN_RELAY_TX_FEE : MIN_TX_FEE;
     
     unsigned int nBytes = ::GetSerializeSize(*this, SER_NETWORK);
     unsigned int nNewBlockSize = nBlockSize + nBytes;
-    int64 nMinFee = (1 + (int64)nBytes / 1000) * nBaseFee;
+    int64_t nMinFee = (1 + (int64_t)nBytes / 1000) * nBaseFee;
     
     if (fAllowFree) {
         if (nBlockSize == 1) {
@@ -169,7 +169,7 @@ bool Transaction::checkTransaction() const
         return error("Transaction::CheckTransaction() : size limits failed");
 
     // Check for negative or overflow output values
-    int64 nValueOut = 0;
+    int64_t nValueOut = 0;
     BOOST_FOREACH(const Output& output, _outputs)
     {
         if (output.value() < 0)

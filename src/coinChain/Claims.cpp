@@ -29,7 +29,7 @@ const Output Claims::prev(const Coin& coin) const {
     return Output();
 }
 
-void Claims::insert(Transaction txn, const Spents& spents, int64 fee, unsigned int ts) {
+void Claims::insert(Transaction txn, const Spents& spents, int64_t fee, unsigned int ts) {
     Claim claim(txn, fee, ts);
     // check for dependent transactions
     for (Inputs::const_iterator i = txn.getInputs().begin(); i != txn.getInputs().end(); ++i) {
@@ -74,7 +74,7 @@ void Claims::erase(uint256 hash) {
 }
 
 // Transactions ordered in dependent order
-vector<Transaction> Claims::transactions(int64& fee, size_t header_and_coinbase) const {
+vector<Transaction> Claims::transactions(int64_t& fee, size_t header_and_coinbase) const {
     fee = 0;
     vector<Transaction> txns;
     set<uint256> inserted;
@@ -113,9 +113,9 @@ size_t Claims::insert_claim(const Claim& claim, vector<Transaction>& txns, set<u
 }
 
 // current transaction fee threshold to get into a block
-int64 Claims::threshold(size_t header_and_coinbase) const {
+int64_t Claims::threshold(size_t header_and_coinbase) const {
     Priorities::const_iterator p = _priorities.begin();
-    int64 fee = 0;
+    int64_t fee = 0;
     size_t size = header_and_coinbase; // make room for header and coinbase
     while (p != _priorities.end() && size < MAX_BLOCK_SIZE) {
         const Claim& claim = _confirmations.find(*p)->second;

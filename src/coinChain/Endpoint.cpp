@@ -103,7 +103,7 @@ Endpoint::Endpoint(const Endpoint& ep) : tcp::endpoint(ep), _services(ep._servic
     memcpy(_ipv6, ep._ipv6, sizeof(_ipv6));
 }
 
-Endpoint::Endpoint(unsigned int ip, unsigned short p, uint64 services)
+Endpoint::Endpoint(unsigned int ip, unsigned short p, uint64_t services)
 {
     init();
     //    address(address_v4(ip));
@@ -114,7 +114,7 @@ Endpoint::Endpoint(unsigned int ip, unsigned short p, uint64 services)
     _services = services;
 }
 
-Endpoint::Endpoint(const struct sockaddr_in& sockaddr, uint64 services)
+Endpoint::Endpoint(const struct sockaddr_in& sockaddr, uint64_t services)
 {
     init();
     address(address_v4(sockaddr.sin_addr.s_addr));
@@ -122,13 +122,13 @@ Endpoint::Endpoint(const struct sockaddr_in& sockaddr, uint64 services)
     _services = services;
 }
 
-Endpoint::Endpoint(std::string strIn, unsigned short portIn, bool fNameLookup, uint64 nServicesIn)
+Endpoint::Endpoint(std::string strIn, unsigned short portIn, bool fNameLookup, uint64_t nServicesIn)
 {
     init();
     Lookup(strIn, *this, nServicesIn, fNameLookup, portIn);
 }
 
-Endpoint::Endpoint(std::string strIn, bool fNameLookup, uint64 nServicesIn)
+Endpoint::Endpoint(std::string strIn, bool fNameLookup, uint64_t nServicesIn)
 {
     init();
     Lookup(strIn, *this, nServicesIn, fNameLookup, 0, true);

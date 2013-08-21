@@ -74,7 +74,7 @@ public:
 
     const int getPriority() const { return _priority; }
     
-    const int64 until() const { return _relay_until; }
+    const int64_t until() const { return _relay_until; }
     
     std::string toString() const;
 
@@ -87,8 +87,8 @@ public:
     
 protected:
     int _version;
-    int64 _relay_until;      // when newer nodes stop relaying to newer nodes
-    int64 _expiration;
+    int64_t _relay_until;      // when newer nodes stop relaying to newer nodes
+    int64_t _expiration;
     int _id;
     int _cancel;
     std::set<int> _cancels;

@@ -25,12 +25,12 @@
 static const unsigned int MAX_BLOCK_SIZE = 1000000;
 static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
 static const int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
-static const int64 COIN = 100000000;
-static const int64 CENT = 1000000;
-static const int64 MIN_TX_FEE = 50000;
-static const int64 MIN_RELAY_TX_FEE = 10000;
-static const int64 MAX_MONEY = 21000000 * COIN;
-inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
+static const int64_t COIN = 100000000;
+static const int64_t CENT = 1000000;
+static const int64_t MIN_TX_FEE = 50000;
+static const int64_t MIN_RELAY_TX_FEE = 10000;
+static const int64_t MAX_MONEY = 21000000 * COIN;
+inline bool MoneyRange(int64_t nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 static const int COINBASE_MATURITY = 100;
 // Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp.
 static const int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
@@ -165,7 +165,7 @@ public:
         setNull();
     }
 
-    Output(int64 value, Script script) {
+    Output(int64_t value, Script script) {
         _value = value;
         _script = script;
     }
@@ -185,7 +185,7 @@ public:
         return (_value == -1);
     }
 
-    const int64 value() const { return _value; }
+    const int64_t value() const { return _value; }
     
     const Script script() const { return _script; }
     
@@ -215,7 +215,7 @@ public:
     }
     
 private:
-    int64 _value;
+    int64_t _value;
     Script _script;
 };
 
@@ -323,14 +323,14 @@ public:
     int getSigOpCount() const;
 
     /// Get the total value of the transaction (excluding the fee).
-    int64 getValueOut() const;
+    int64_t getValueOut() const;
 
     /// Calculate the amount payed to a spicific address by this transaction. If the address is not part of the
     /// transaction, 0 will be returned. 
-    int64 paymentTo(PubKeyHash address) const;
+    int64_t paymentTo(PubKeyHash address) const;
     
     /// Calculate for a payment map of pubkeyhashes and amounts if a transaction is sufficient.
-    bool isSufficient(std::map<PubKeyHash, int64> payments) const;
+    bool isSufficient(std::map<PubKeyHash, int64_t> payments) const;
     
     /// Check if a transaction with a given priority can be completed with no fee.
     static bool allowFree(double dPriority) {
@@ -340,7 +340,7 @@ public:
     }
 
     /// Calculate minimum transaction fee.
-    int64 getMinFee(unsigned int nBlockSize=1, bool fAllowFree=true, bool fForRelay=false) const;
+    int64_t getMinFee(unsigned int nBlockSize=1, bool fAllowFree=true, bool fForRelay=false) const;
 
     /// Compare two transactions.
     friend bool operator==(const Transaction& a, const Transaction& b) {

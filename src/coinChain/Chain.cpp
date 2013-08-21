@@ -65,8 +65,8 @@ const Block& BitcoinChain::genesisBlock() const {
     return _genesisBlock;
 }
 
-const int64 BitcoinChain::subsidy(unsigned int height) const {
-    int64 s = 50 * COIN;
+const int64_t BitcoinChain::subsidy(unsigned int height) const {
+    int64_t s = 50 * COIN;
     
     // Subsidy is cut in half every 4 years
     s >>= (height / 210000);
@@ -105,9 +105,9 @@ const bool BitcoinChain::checkProofOfWork(const Block& block) const {
 }
 
 unsigned int BitcoinChain::nextWorkRequired(BlockIterator blk) const {
-    const int64 nTargetTimespan = 14 * 24 * 60 * 60; // two weeks
-    const int64 nTargetSpacing = 10 * 60;
-    const int64 nInterval = nTargetTimespan / nTargetSpacing;
+    const int64_t nTargetTimespan = 14 * 24 * 60 * 60; // two weeks
+    const int64_t nTargetSpacing = 10 * 60;
+    const int64_t nInterval = nTargetTimespan / nTargetSpacing;
     
     // Genesis block
     int h = blk.height();
@@ -181,8 +181,8 @@ const Block& TestNetChain::genesisBlock() const {
     return _genesisBlock;
 }
 
-const int64 TestNetChain::subsidy(unsigned int height) const {
-    int64 s = 50 * COIN;
+const int64_t TestNetChain::subsidy(unsigned int height) const {
+    int64_t s = 50 * COIN;
     
     // Subsidy is cut in half every 4 years
     s >>= (height / 210000);
@@ -214,9 +214,9 @@ const bool TestNetChain::checkProofOfWork(const Block& block) const {
 
 
 unsigned int TestNetChain::nextWorkRequired(BlockIterator blk) const {
-    const int64 nTargetTimespan = 14 * 24 * 60 * 60; // two weeks
-    const int64 nTargetSpacing = 10 * 60;
-    const int64 nInterval = nTargetTimespan / nTargetSpacing;
+    const int64_t nTargetTimespan = 14 * 24 * 60 * 60; // two weeks
+    const int64_t nTargetSpacing = 10 * 60;
+    const int64_t nInterval = nTargetTimespan / nTargetSpacing;
     
     // Genesis block
     int h = blk.height();
@@ -307,8 +307,8 @@ const Block& LitecoinChain::genesisBlock() const {
     return _genesisBlock;
 }
 
-const int64 LitecoinChain::subsidy(unsigned int height) const {
-    int64 s = 50 * COIN;
+const int64_t LitecoinChain::subsidy(unsigned int height) const {
+    int64_t s = 50 * COIN;
     
     // Subsidy is cut in half every 4 years
     s >>= (height / 840000);
@@ -340,9 +340,9 @@ const bool LitecoinChain::checkProofOfWork(const Block& block) const {
 }
 
 unsigned int LitecoinChain::nextWorkRequired(BlockIterator blk) const {
-    const int64 nTargetTimespan = 3.5 * 24 * 60 * 60; // two weeks
-    const int64 nTargetSpacing = 2.5 * 60;
-    const int64 nInterval = nTargetTimespan / nTargetSpacing;
+    const int64_t nTargetTimespan = 3.5 * 24 * 60 * 60; // two weeks
+    const int64_t nTargetSpacing = 2.5 * 60;
+    const int64_t nInterval = nTargetTimespan / nTargetSpacing;
     
     // Genesis block
     int h = blk.height();
@@ -491,8 +491,8 @@ const Block& TerracoinChain::genesisBlock() const {
     return _genesisBlock;
 }
 
-const int64 TerracoinChain::subsidy(unsigned int height) const {
-    int64 s = 50 * COIN;
+const int64_t TerracoinChain::subsidy(unsigned int height) const {
+    int64_t s = 50 * COIN;
     
     // Subsidy is cut in half every 4 years
     s >>= (height / 1050000);
@@ -531,9 +531,9 @@ const bool TerracoinChain::checkProofOfWork(const Block& block) const {
 }
 
 unsigned int TerracoinChain::nextWorkRequired(BlockIterator blk) const {
-    const int64 nTargetTimespan = 60 * 60; // one hour weeks
-    const int64 nTargetSpacing = 2 * 60; // new block every two minutes
-    const int64 nInterval = nTargetTimespan / nTargetSpacing;
+    const int64_t nTargetTimespan = 60 * 60; // one hour weeks
+    const int64_t nTargetSpacing = 2 * 60; // new block every two minutes
+    const int64_t nInterval = nTargetTimespan / nTargetSpacing;
     
     // Genesis block
     int h = blk.height();

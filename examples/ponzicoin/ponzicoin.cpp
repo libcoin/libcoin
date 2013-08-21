@@ -44,7 +44,7 @@ public:
     PonziChain();
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
-    virtual const int64 subsidy(unsigned int height) const ;
+    virtual const int64_t subsidy(unsigned int height) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 20); }
     virtual unsigned int nextWorkRequired(BlockIterator blk) const;
@@ -113,8 +113,8 @@ const Block& PonziChain::genesisBlock() const {
     return _genesisBlock;
 }
 
-const int64 PonziChain::subsidy(unsigned int height) const {
-    int64 s = 50 * COIN;
+const int64_t PonziChain::subsidy(unsigned int height) const {
+    int64_t s = 50 * COIN;
     
     // Subsidy is cut in half every week
     s >>= (height / 10080);
@@ -135,9 +135,9 @@ bool PonziChain::isStandard(const Transaction& tx) const {
 }
 
 unsigned int PonziChain::nextWorkRequired(BlockIterator blk) const {
-    const int64 nTargetTimespan = 2 * 60 * 60; // two hours
-    const int64 nTargetSpacing = 1 * 60; // one block a minute !
-    const int64 nInterval = nTargetTimespan / nTargetSpacing;
+    const int64_t nTargetTimespan = 2 * 60 * 60; // two hours
+    const int64_t nTargetSpacing = 1 * 60; // one block a minute !
+    const int64_t nInterval = nTargetTimespan / nTargetSpacing;
     
     // Genesis block
     int h = blk.height();

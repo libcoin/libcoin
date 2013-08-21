@@ -60,7 +60,7 @@ public:
     const bool getProxy() const { return _proxy; }
     
     /// Get the local nonce
-    const uint64 getNonce() const { return _nonce; }
+    const uint64_t getNonce() const { return _nonce; }
     
     /// Set and record the Peer starting height
     void setStartingHeight(int height) { _peerManager.recordPeerBlockCount(_startingHeight = height); }
@@ -91,14 +91,14 @@ private:
     
 public:
     // socket
-    uint64 nServices;
+    uint64_t nServices;
     CDataStream vSend;
     CDataStream vRecv;
 
-    int64 nLastSend;
-    int64 nLastRecv;
-    int64 nLastSendEmpty;
-    int64 nTimeConnected;
+    int64_t nLastSend;
+    int64_t nLastRecv;
+    int64_t nLastSendEmpty;
+    int64_t nTimeConnected;
     unsigned int nHeaderStart;
     unsigned int nMessageStart;
     Endpoint addr;
@@ -110,7 +110,7 @@ public:
     bool fDisconnect;
     
 public:
-    int64 nReleaseTime;
+    int64_t nReleaseTime;
     uint256 hashContinue;
     BlockLocator locatorLastGetBlocksBegin;
     uint256 hashLastGetBlocksEnd;
@@ -247,7 +247,7 @@ private:
     bool _proxy;
     
     /// the local nonce - used to detect connections to self
-    uint64 _nonce;
+    uint64_t _nonce;
     
     /// Streambufs for reading and writing
     boost::asio::streambuf _send;

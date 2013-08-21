@@ -25,11 +25,11 @@
 /// Confirmation is the Transaction class incl its DB index
 struct Confirmation : public Transaction {
     Confirmation() : cnf(0), count(0) {}
-    Confirmation(int64 cnf, int version, unsigned int locktime, int64 count) : Transaction(version, locktime), cnf(cnf), count(count) {}
-    Confirmation(const Transaction& txn, int64 cnf = 0, int64 count = 0) : Transaction(txn), cnf(cnf), count(count) {}
+    Confirmation(int64_t cnf, int version, unsigned int locktime, int64_t count) : Transaction(version, locktime), cnf(cnf), count(count) {}
+    Confirmation(const Transaction& txn, int64_t cnf = 0, int64_t count = 0) : Transaction(txn), cnf(cnf), count(count) {}
     
-    int64 cnf;
-    int64 count;
+    int64_t cnf;
+    int64_t count;
     
     bool is_confirmed() { return (0 < count) && (count < LOCKTIME_THRESHOLD); }
     bool is_coinbase() {return (cnf < 0); }
@@ -41,14 +41,14 @@ struct Unspent {
     typedef unsigned short KeyWidth;
     
     Unspent() : key(), output(), coin(0), cnf(0) {}
-    Unspent(int64 coin, uint256 hash, unsigned int idx, int64 value, Script script, int64 count, int64 cnf) : key(hash, idx), output(value, script), coin(coin), count(count), cnf(cnf) { }
+    Unspent(int64_t coin, uint256 hash, unsigned int idx, int64_t value, Script script, int64_t count, int64_t cnf) : key(hash, idx), output(value, script), coin(coin), count(count), cnf(cnf) { }
 
     Key key;
     Output output;
 
-    int64 coin;
-    int64 count;
-    int64 cnf;
+    int64_t coin;
+    int64_t count;
+    int64_t cnf;
     
     bool is_valid() const { return (!key.isNull()) && (!output.isNull()) && (cnf != 0); }
     

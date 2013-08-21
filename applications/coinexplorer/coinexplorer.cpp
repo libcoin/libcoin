@@ -247,8 +247,8 @@ Value Search::operator()(const Array& params, bool fHelp) {
                 return result;
             }
             
-            int64 timestamp = 0;
-            int64 blockheight = 0;
+            int64_t timestamp = 0;
+            int64_t blockheight = 0;
             
             Transaction tx;
             _node.blockChain().getTransaction(hash, tx, blockheight, timestamp);

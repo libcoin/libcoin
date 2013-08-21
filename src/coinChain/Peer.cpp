@@ -114,7 +114,7 @@ void Peer::show_activity(const system::error_code& e) {
         if(!_activity) { // send a ping - we might get a pong then
             // Keep-alive ping. We send a nonce of zero because we don't use it anywhere
             // right now.
-            uint64 nonce = 0;
+            uint64_t nonce = 0;
             if (nVersion > BIP0031_VERSION)
                 PushMessage("ping", nonce);
             else
@@ -424,13 +424,13 @@ void Peer::EndMessageAbortIfEmpty() {
 
 void Peer::PushVersion() {
     /// when NTP implemented, change to just nTime = GetAdjustedTime()
-    int64 nTime = (fInbound ? GetAdjustedTime() : UnixTime::s());
+    int64_t nTime = (fInbound ? GetAdjustedTime() : UnixTime::s());
     //    Endpoint remote = _socket.remote_endpoint();
     Endpoint local = _socket.local_endpoint();
     Endpoint addrYou = (_proxy ? Endpoint("0.0.0.0") : addr);
     Endpoint addrMe = (_proxy ? Endpoint("0.0.0.0") : local);
     RAND_bytes((unsigned char*)&_nonce, sizeof(_nonce));
-    uint64 nLocalServices = NODE_NETWORK;
+    uint64_t nLocalServices = NODE_NETWORK;
     PushMessage("version", PROTOCOL_VERSION, nLocalServices, nTime, addrYou, addrMe,
                 _nonce, _sub_version, _startingHeight);
 }

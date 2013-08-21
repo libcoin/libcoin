@@ -43,20 +43,20 @@ private:
 class COINWALLET_EXPORT Wallet : public CCryptoKeyStore
 {
 private:
-    bool SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfTheirs, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet) const;
-    bool SelectCoins(int64 nTargetValue, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet) const;
+    bool SelectCoinsMinConf(int64_t nTargetValue, int nConfMine, int nConfTheirs, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64_t& nValueRet) const;
+    bool SelectCoins(int64_t nTargetValue, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64_t& nValueRet) const;
 
     CWalletDB *pwalletdbEncryption;
 
 public:
     mutable CCriticalSection cs_wallet;
-    int64 nTransactionFee;
+    int64_t nTransactionFee;
 
     bool fFileBacked;
     std::string strWalletFile;
     std::string _dataDir;
     
-    std::set<int64> setKeyPool;
+    std::set<int64_t> setKeyPool;
 
     typedef std::map<unsigned int, CMasterKey> MasterKeyMap;
     MasterKeyMap mapMasterKeys;
@@ -156,28 +156,28 @@ public:
     //    int ScanForWalletTransactions(const CBlockIndex* pindexStart = NULL, bool fUpdate = false);
     void ReacceptWalletTransactions();
     void resend();
-    int64 GetBalance(bool confirmed = true) const;
-    bool CreateTransaction(const std::vector<std::pair<Script, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
-    bool CreateTransaction(Script scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
+    int64_t GetBalance(bool confirmed = true) const;
+    bool CreateTransaction(const std::vector<std::pair<Script, int64_t> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64_t& nFeeRet);
+    bool CreateTransaction(Script scriptPubKey, int64_t nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64_t& nFeeRet);
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey);
     bool BroadcastTransaction(CWalletTx& wtxNew);
-    std::string SendMoney(Script scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
-    std::string SendMoneyToBitcoinAddress(const ChainAddress& address, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
+    std::string SendMoney(Script scriptPubKey, int64_t nValue, CWalletTx& wtxNew, bool fAskFee=false);
+    std::string SendMoneyToBitcoinAddress(const ChainAddress& address, int64_t nValue, CWalletTx& wtxNew, bool fAskFee=false);
 
     bool TopUpKeyPool();
-    void ReserveKeyFromKeyPool(int64& nIndex, CKeyPool& keypool);
-    void KeepKey(int64 nIndex);
-    void ReturnKey(int64 nIndex);
+    void ReserveKeyFromKeyPool(int64_t& nIndex, CKeyPool& keypool);
+    void KeepKey(int64_t nIndex);
+    void ReturnKey(int64_t nIndex);
     bool GetKeyFromPool(std::vector<unsigned char> &key, bool fAllowReuse=true);
-    int64 GetOldestKeyPoolTime();
+    int64_t GetOldestKeyPoolTime();
 
     bool IsMine(const Input& txin) const;
-    int64 GetDebit(const Input& txin) const;
+    int64_t GetDebit(const Input& txin) const;
     bool IsMine(const Output& txout) const
     {
         return ::IsMine(*this, txout.script());
     }
-    int64 GetCredit(const Output& txout) const
+    int64_t GetCredit(const Output& txout) const
     {
         if (!MoneyRange(txout.value()))
             throw std::runtime_error("Wallet::GetCredit() : value out of range");
@@ -202,7 +202,7 @@ public:
     }
         return false;
     }
-    int64 GetChange(const Output& txout) const
+    int64_t GetChange(const Output& txout) const
     {
         if (!MoneyRange(txout.value()))
             throw std::runtime_error("Wallet::GetChange() : value out of range");
@@ -222,9 +222,9 @@ public:
     
     bool IsConfirmed(const CWalletTx& tx) const;
     
-    int64 GetDebit(const Transaction& tx) const
+    int64_t GetDebit(const Transaction& tx) const
     {
-        int64 nDebit = 0;
+        int64_t nDebit = 0;
         BOOST_FOREACH(const Input& txin, tx.getInputs())
         {
             nDebit += GetDebit(txin);
@@ -233,9 +233,9 @@ public:
         }
         return nDebit;
     }
-    int64 GetCredit(const Transaction& tx) const
+    int64_t GetCredit(const Transaction& tx) const
     {
-        int64 nCredit = 0;
+        int64_t nCredit = 0;
         BOOST_FOREACH(const Output& txout, tx.getOutputs())
         {
             nCredit += GetCredit(txout);
@@ -244,9 +244,9 @@ public:
         }
         return nCredit;
     }
-    int64 GetChange(const Transaction& tx) const
+    int64_t GetChange(const Transaction& tx) const
     {
-        int64 nChange = 0;
+        int64_t nChange = 0;
         BOOST_FOREACH(const Output& txout, tx.getOutputs())
         {
             nChange += GetChange(txout);
@@ -312,7 +312,7 @@ class COINWALLET_EXPORT CReserveKey
 {
 protected:
     Wallet* pwallet;
-    int64 nIndex;
+    int64_t nIndex;
     std::vector<unsigned char> vchPubKey;
 public:
     CReserveKey(Wallet* pwalletIn)
@@ -339,13 +339,13 @@ class COINWALLET_EXPORT CWalletKey
 {
 public:
     CPrivKey vchPrivKey;
-    int64 nTimeCreated;
-    int64 nTimeExpires;
+    int64_t nTimeCreated;
+    int64_t nTimeExpires;
     std::string strComment;
     //// todo: add something to note what created it (user, getnewaddress, change)
     ////   maybe should have a map<string, string> property map
 
-    CWalletKey(int64 nExpires=0)
+    CWalletKey(int64_t nExpires=0)
     {
         nTimeCreated = (nExpires ? UnixTime::s() : 0);
         nTimeExpires = nExpires;
@@ -404,8 +404,8 @@ class COINWALLET_EXPORT CAccountingEntry
 {
 public:
     std::string strAccount;
-    int64 nCreditDebit;
-    int64 nTime;
+    int64_t nCreditDebit;
+    int64_t nTime;
     std::string strOtherAccount;
     std::string strComment;
 

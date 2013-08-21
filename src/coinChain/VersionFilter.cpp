@@ -36,10 +36,10 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
         //        }
         //        cout << endl;
         
-        int64 nTime;
+        int64_t nTime;
         Endpoint addrMe;
         Endpoint addrFrom;
-        uint64 nNonce = 1;
+        uint64_t nNonce = 1;
         CDataStream data(msg.payload(), SER_NETWORK, 0); // this is to ensure we dont reread the time and version for the endpoints (see Endpoint serializer)
 
         data >> origin->nVersion >> origin->nServices >> nTime >> addrMe;

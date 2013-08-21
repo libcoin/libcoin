@@ -27,8 +27,8 @@ public:
     GetBalance(Wallet& wallet) : WalletMethod(wallet) {}
     virtual json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
 protected:
-    int64 GetAccountBalance(CWalletDB& walletdb, const std::string& strAccount, int nMinDepth);
-    int64 GetAccountBalance(const std::string& strAccount, int nMinDepth);
+    int64_t GetAccountBalance(CWalletDB& walletdb, const std::string& strAccount, int nMinDepth);
+    int64_t GetAccountBalance(const std::string& strAccount, int nMinDepth);
 };
 
 /// Return the unconfirmed balance or Held balance.
