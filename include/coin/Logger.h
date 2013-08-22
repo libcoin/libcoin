@@ -27,6 +27,9 @@
 #include <iomanip>
 #include <deque>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wno-variadic-macros"
+
 class COIN_EXPORT LineBuffer : public std::streambuf {
 public:
     LineBuffer(size_t lines = 10) : std::streambuf(), _lines(lines) { }
@@ -108,11 +111,11 @@ private:
 #define log_warn(fmt, ...) Logger::log(Logger::warn, __FILE__, __LINE__, __FUNCTION__) << cformat(fmt, ##__VA_ARGS__) << std::endl
 #define log_info(fmt, ...) Logger::log(Logger::info, __FILE__, __LINE__, __FUNCTION__) << cformat(fmt, ##__VA_ARGS__) << std::endl
 
-//#define log_debug(...) Logger::log(Logger::DEBUG, __FILE__, __LINE__, __PRETTY_FUNCTION__) << cformat(__VA_ARGS__) << std::endl
-//#define log_trace(...) Logger::log(Logger::TRACE, __FILE__, __LINE__, __PRETTY_FUNCTION__) << cformat(__VA_ARGS__) << std::endl
+#define log_debug(...) Logger::log(Logger::debug, __FILE__, __LINE__, __PRETTY_FUNCTION__) << cformat(__VA_ARGS__) << std::endl
+#define log_trace(...) Logger::log(Logger::trace, __FILE__, __LINE__, __PRETTY_FUNCTION__) << cformat(__VA_ARGS__) << std::endl
 
-#define log_debug(...) do {} while(0)
-#define log_trace(...) do {} while(0)
+//#define log_debug(...) do {} while(0)
+//#define log_trace(...) do {} while(0)
 
 // MSVC++ has a bug in the interpretation of VA_ARGS so:
 // #define F(x, ...) X = x and VA_ARGS = __VA_ARGS__
@@ -168,4 +171,6 @@ private:
 
 inline std::ostream& operator<<(std::ostream& os, const Format& fmt) { return os << fmt.text(); }
 
+#pragma GCC diagnostic pop
+            
 #endif // COIN_LOGGER_H

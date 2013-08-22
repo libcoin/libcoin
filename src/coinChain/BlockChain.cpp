@@ -726,7 +726,7 @@ void BlockChain::append(const Block &block) {
         throw Error("Rejected version = " + lexical_cast<string>(block.getVersion())+ " block: version too old.");
     
     if (prev == _tree.end())
-        throw Error("Cannot accept orphan block");
+        throw Error("Cannot accept orphan block: " + hash.toString());
 
     if (block.getBits() != _chain.nextWorkRequired(prev))
         throw Error("Incorrect proof of work");
