@@ -15,6 +15,8 @@
  */
 
 #include <coinChain/MessageHandler.h>
+#include <coinChain/Peer.h>
+
 #include <coin/serialize.h>
 
 #include <string>
@@ -30,6 +32,7 @@ void MessageHandler::installFilter(filter_ptr filter) {
 }
 
 bool MessageHandler::handleMessage(Peer* origin, Message& msg) {
+    log_trace("args origin: %s, command: %s, size: %d", origin->addr.toString(), msg.command(), msg.payload().size());
 
     try {
         bool ret = false;
@@ -43,6 +46,7 @@ bool MessageHandler::handleMessage(Peer* origin, Message& msg) {
                 if ( (**filter)(origin, message) ) ret = true;
             }
         }
+        log_trace("exit: %s", ret ? "true" : "false");
         return ret;
     } 
     catch (OriginNotReady& e) { // Must have a version message before anything else
@@ -66,5 +70,6 @@ bool MessageHandler::handleMessage(Peer* origin, Message& msg) {
     //    catch (...) {
     //        PrintExceptionContinue(NULL, "ProcessMessage()");
     //    }
+    log_trace("exit: false");
     return false;
 }

@@ -141,6 +141,7 @@ void Peer::stop() {
 }
 
 void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferred) {
+    log_trace("args error: %s, bytes: %d", e.message(), bytes_transferred);
     if (!e) {
         _activity = true;
         string rx;
@@ -199,6 +200,7 @@ void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferre
         log_debug("Read error %s, disconnecting... (read %d bytes though) \n", e.message().c_str(), bytes_transferred);
         _peerManager.post_stop(shared_from_this());
     }
+    log_trace("exit");
 }
 
 void Peer::queue(const Inventory& inv) {
@@ -317,6 +319,7 @@ void Peer::flush() {
 }
 
 void Peer::handle_write(const system::error_code& e, size_t bytes_transferred) {
+    log_trace("args error: %s, bytes: %d", e.message(), bytes_transferred);
     /*
     if (!e) {
         // Initiate graceful connection closure.
@@ -332,6 +335,7 @@ void Peer::handle_write(const system::error_code& e, size_t bytes_transferred) {
         log_debug("Write error %s, disconnecting...\n", e.message().c_str());
         _peerManager.post_stop(shared_from_this());
     }
+    log_trace("exit");
 }
 
 void Peer::successfullyConnected() {
@@ -406,7 +410,6 @@ void Peer::EndMessage() {
     }
     
     log_debug("(%d bytes) ", nSize);
-    log_debug("\n");
     
     nHeaderStart = -1;
     nMessageStart = -1;
