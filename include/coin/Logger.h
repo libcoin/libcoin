@@ -90,6 +90,8 @@ private:
     LineBuffer _line_buffer;
     std::ostream _buf_stream;
     
+    std::ostream _null_stream;
+    
     Level _log_level;
 
     typedef std::map<Level, std::string> LevelLabels;

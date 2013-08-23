@@ -68,7 +68,8 @@ std::ostream& Logger::log(Level level, std::string file, int line, std::string f
 
     std::ostream* s = instance()._log_stream;
     if (level < self._log_level)
-        s = &self._buf_stream;
+        s = &self._null_stream;
+        //        s = &self._buf_stream;
     std::ostream& os = *s;
     if (level == fatal) {
         os << "Flushing earlier log:" << std::endl;
@@ -121,7 +122,7 @@ const std::string Logger::timestamp() const {
     return ss.str();
 }
 
-Logger::Logger() : _log_stream(&std::cerr), _line_buffer(10), _buf_stream(&_line_buffer) {
+Logger::Logger() : _log_stream(&std::cerr), _line_buffer(10), _buf_stream(&_line_buffer), _null_stream(NULL) {
     _level_labels = boost::assign::map_list_of
         (trace, "TRACE")
         (debug, "DEBUG")
