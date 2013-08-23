@@ -31,6 +31,10 @@ EndpointPool::EndpointPool(short defaultPort, const std::string dataDir, const c
         _localhost("0.0.0.0", defaultPort, false, NODE_NETWORK),
     _lastPurgeTime(0) {
 
+    query("PRAGMA journal_mode=WAL");
+    query("PRAGMA locking_mode=NORMAL");
+    query("PRAGMA synchronous=OFF");
+    query("PRAGMA temp_store=MEMORY");
     query("CREATE TABLE IF NOT EXISTS Endpoints(ip INTEGER NOT NULL, port INTEGER NOT NULL, time INTEGER, lasttry INTEGER, PRIMARY KEY (ip, port))");
 
 }
