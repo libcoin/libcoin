@@ -84,14 +84,14 @@ class COINHTTP_EXPORT ServerLogger
 public:
     ServerLogger(std::string dir) : _access(std::cout.rdbuf()) {
         if(dir.size()) {
-            _access_file.open((dir + "/access_log").c_str(), std::ios::app); 
+            _access_file.open((dir + "/access.log").c_str(), std::ios::app); 
             _access.rdbuf(_access_file.rdbuf());
         }
         
         boost::posix_time::time_facet* facet = new boost::posix_time::time_facet("[%d/%b/%Y:%H:%M:%S %q]");
         _access.imbue(std::locale(_access.getloc(), facet));
 
-        _access << std::endl << std::endl << std::endl;
+        _access << std::endl;
         _access << "Logger started" << std::endl;
     }
     std::ostream& access() { return _access; }

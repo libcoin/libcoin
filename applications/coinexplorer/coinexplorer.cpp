@@ -266,7 +266,7 @@ Value Search::operator()(const Array& params, bool fHelp) {
 int main(int argc, char* argv[])
 {
     try {
-        string config_file, data_dir;
+        string config_file, data_dir, log_file;
         unsigned short port, rpc_port;
         string rpc_bind, rpc_connect, rpc_user, rpc_pass;
         typedef vector<string> strings;
@@ -308,6 +308,9 @@ int main(int argc, char* argv[])
             ("rpcssl", value<bool>(&ssl)->default_value(false), "Use OpenSSL (https) for JSON-RPC connections")
             ("rpcsslcertificatechainfile", value<string>(&certchain)->default_value("server.cert"), "Server certificate file")
             ("rpcsslprivatekeyfile", value<string>(&privkey)->default_value("server.pem"), "Server private key")
+            ("debug", "Set logging output to debug")
+            ("trace", "Set logging output to trace")
+            ("log", value<string>(&log_file)->default_value("debug.log"), "Logfile name - if starting with / absolute path is assumed, otherwise relative to data directory, choose '-' for logging to stderr")
         ;
         
         options_description cmdline_options;
@@ -367,11 +370,28 @@ int main(int argc, char* argv[])
         if(!args.count("datadir"))
             data_dir = default_data_dir(chain.dataDirSuffix());
         
-        std::ofstream olog((data_dir + "/debug.log").c_str(), std::ios_base::out|std::ios_base::app);
-        Logger::instantiate(olog, Logger::debug);
-        Logger::label_thread("main");
+
+        ofstream olog;
         
-        //        logfile = data_dir + "/debug.log";
+        if (log_file.size() && log_file[0] != '-') {
+            if (log_file.size() && log_file[0] != '/')
+                log_file = data_dir + "/" + log_file;
+
+            olog.open((log_file).c_str(), std::ios_base::out|std::ios_base::app);;
+        }
+        
+        Logger::Level ll = Logger::info;
+        if (args.count("trace"))
+            ll = Logger::trace;
+        else if (args.count("debug"))
+            ll = Logger::debug;
+
+        if (olog.is_open())
+            Logger::instantiate(olog, ll);
+        else
+            Logger::instantiate(cerr, ll);
+
+        Logger::label_thread("main");
         
         asio::ip::tcp::endpoint proxy_server;
         if(proxy.size()) {
@@ -379,11 +399,11 @@ int main(int argc, char* argv[])
             if(host_port.size() < 2) host_port.push_back("1080");
             proxy_server = asio::ip::tcp::endpoint(asio::ip::address_v4::from_string(host_port[0]), lexical_cast<short>(host_port[1]));
         }
-        Node node(chain, data_dir, args.count("nolisten") ? "" : "0.0.0.0", lexical_cast<string>(port), proxy_server, timeout); // it is also here we specify the use of a proxy!
+        Node node(chain, data_dir, args.count("nolisten")||connect_peers.size() ? "" : "0.0.0.0", lexical_cast<string>(port), proxy_server, timeout); // it is also here we specify the use of a proxy!
         node.setClientVersion("libcoin/coinexplorer", vector<string>());
         node.verification(Node::MINIMAL);
-        node.validation(Node::MINIMAL);
-        node.persistence(Node::LAZY);
+        node.validation(Node::NONE); // note set to MINIMAL to get validation (merkeltrie stuff)
+        node.persistence(Node::LAZY); // set to FULL to get keep all blocks (history)
         node.searchable(true);
         PortMapper mapper(node.get_io_service(), port); // this will use the Node call
         if(portmap) mapper.start();
@@ -408,7 +428,7 @@ int main(int argc, char* argv[])
                 "</form>"
             "</body>"
         "</html>";
-        Server server(rpc_bind, lexical_cast<string>(rpc_port), (args.count("raphael") ? filesystem::initial_path().string() : search_page));
+        Server server(rpc_bind, lexical_cast<string>(rpc_port), (args.count("raphael") ? filesystem::initial_path().string() : search_page), data_dir);
         if(ssl) server.setCredentials(data_dir, certchain, privkey);
         
         // Register Server methods.

@@ -123,8 +123,6 @@ Object RPC::reply(string content) {
     return val.get_obj();
 }
 
-//RPC::RPC(const Request& request, Reply& reply) : _id(Value::null), _error(Value::null), _request(request), _reply(reply) {}
-
 RPC::RPC(const Request& request) : _id(Value::null), _error(Value::null), _request(request) {
     if (_request.is_post() && _request.mime() == "application/json")
         parse(_request.content());
@@ -187,27 +185,6 @@ void RPC::parse(std::string action, std::vector<std::string> args) {
         _params.push_back(arg);
     }
 }
-/*
-void RPC::parse(std::string path, std::string query) {
-    // get the command
-    _method = action;
-    _params = Array();
-    BOOST_FOREACH(const string& arg, args) {
-        _params.push_back(arg);
-    }
-}
-*/
-/*
-void RPC::setContent(string& content) {
-    // Generate JSON RPC 2.0 reply
-    Object reply;
-    reply.push_back(Pair("jsonrpc", "2.0"));
-    reply.push_back(Pair("result", _result));
-    reply.push_back(Pair("error", _error));
-    reply.push_back(Pair("id", _id));
-    content = write(Value(reply)) + "\n";
-}
-*/
 
 string& RPC::getContent() {
     // Generate JSON RPC 2.0 reply
@@ -256,23 +233,3 @@ const Reply::Status RPC::getStatus() {
 }
 
 const string& RPC::method() { return _method; } 
-
-/*
-void RPC::execute(Method& method) {
-    _result = method(_params, false, _request);
-}
-
-void RPC::dispatch(const CompletionHandler& handler) {
-    _call_method->dispatch(boost::boost::(&RPC::async_execute, this, handler));
-}
-
-void RPC::async_execute(const CompletionHandler& handler) {
-    _result = (*_call_method)(_params, false, _request);
-    _reply.content = getContent();
-    _reply.headers["Content-Length"] = lexical_cast<string>(_reply.content.size());
-    _reply.headers["Content-Type"] = "application/json";
-    _reply.status = getStatus();
-    boost::system::error_code ec (0, boost::system::system_category());
-    handler(ec);
-}
-*/
