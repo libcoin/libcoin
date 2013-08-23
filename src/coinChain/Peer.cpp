@@ -220,7 +220,7 @@ void Peer::reply() {
     while (!_queue.empty() && _queue.begin()->first <= now) {
         const Inventory& inv = _queue.begin()->second;
         if (_peerManager.queued(inv)) { // will check that this is really pending (as opposed to downloaded)
-            log_debug("sending getdata: %s\n", inv.toString().c_str());
+            log_debug("sending getdata: %s", inv.toString().c_str());
             get_data.push_back(inv);
             if (get_data.size() >= 1000) {
                 PushMessage("getdata", get_data);

@@ -254,7 +254,7 @@ private:
     boost::asio::streambuf _recv;
     
     /// Buffer for incoming data. Should be changed to streams in the future.
-    boost::array<char, 8192> _buffer;
+    boost::array<char, 65536> _buffer;
     
     static const unsigned int _initial_timeout = 60; // seconds. Initial timeout if no read activity
     static const unsigned int _suicide_timeout = 90*60; // seconds. Suicide timeout if no read activity
