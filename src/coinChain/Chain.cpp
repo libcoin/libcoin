@@ -27,6 +27,7 @@ using namespace std;
 using namespace boost;
 
 BitcoinChain::BitcoinChain() : _genesis("0x000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f") {
+    _alert_key = ParseHex("04fc9702847840aaf195de8442ebecedf5b095cdbb9bc716bda9110971b28a49e0ead8564ff0db22209e0374782c093bb899692d524e9d6a6956e7c5ecbcd68284");
     _messageStart[0] = 0xf9; _messageStart[1] = 0xbe; _messageStart[2] = 0xb4; _messageStart[3] = 0xd9;
     const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
     Transaction txNew;
@@ -160,6 +161,7 @@ const BitcoinChain bitcoin;
 
 
 TestNetChain::TestNetChain() : _genesis("0x00000007199508e34a9ff81e6ec0c477a4cccff2a4767a8eee39c11db367b008") {
+    _alert_key = ParseHex("04fc9702847840aaf195de8442ebecedf5b095cdbb9bc716bda9110971b28a49e0ead8564ff0db22209e0374782c093bb899692d524e9d6a6956e7c5ecbcd68284");
     _messageStart[0] = 0xfa; _messageStart[1] = 0xbf; _messageStart[2] = 0xb5; _messageStart[3] = 0xda;
 
     const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
@@ -260,7 +262,7 @@ unsigned int TestNetChain::nextWorkRequired(BlockIterator blk) const {
 const TestNetChain testnet;
 
 LitecoinChain::LitecoinChain() : _genesis("0x12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2") {
-    _messageStart[0] = 0xfb; _messageStart[1] = 0xc0; _messageStart[2] = 0xb6; _messageStart[3] = 0xdb; // Litecoin: increase each by adding 2 to bitcoin's value.
+    _alert_key = ParseHex("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9");    _messageStart[0] = 0xfb; _messageStart[1] = 0xc0; _messageStart[2] = 0xb6; _messageStart[3] = 0xdb; // Litecoin: increase each by adding 2 to bitcoin's value.
 
     const char* pszTimestamp = "NY Times 05/Oct/2011 Steve Jobs, Apple’s Visionary, Dies at 56";
     Transaction txNew;
@@ -407,6 +409,7 @@ const LitecoinChain litecoin;
 */
 
 TerracoinChain::TerracoinChain() : _genesis("0x00000000804bbc6a621a9dbb564ce469f492e1ccf2d70f8a6b241e26a277afa2") {
+    _alert_key = ParseHex("04302390343f91cc401d56d68b123028bf52e5fca1939df127f63c6467cdf9c8e2c14b61104cf817d0b780da337893ecc4aaff1309e536162dabbdb45200ca2b0a");
     _messageStart[0] = 0xfb; _messageStart[1] = 0xc0; _messageStart[2] = 0xb6; _messageStart[3] = 0xdb; // Terracoin: increase each by adding 2 to bitcoin's value.
     
     const char* pszTimestamp = "June 4th 1978 - March 6th 2009 ; Rest In Peace, Stephanie.";

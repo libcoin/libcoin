@@ -27,7 +27,7 @@ bool AlertFilter::operator() (Peer* origin, Message& msg) {
         throw OriginNotReady();
     }
     if (msg.command() == "alert") { // alert might need to be created with something; all peers/Node, like node->broadcast(alert)
-        Alert alert;
+        Alert alert(_pub_key);
         CDataStream data(msg.payload());
         data >> alert;
         

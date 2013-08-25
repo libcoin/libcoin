@@ -136,7 +136,7 @@ bool Alert::relayTo(Peer* peer) const
 bool Alert::checkSignature()
 {
     CKey key;
-    if (!key.SetPubKey(ParseHex("04fc9702847840aaf195de8442ebecedf5b095cdbb9bc716bda9110971b28a49e0ead8564ff0db22209e0374782c093bb899692d524e9d6a6956e7c5ecbcd68284")))
+    if (!key.SetPubKey(_pub_key))
         return error("Alert::CheckSignature() : SetPubKey failed");
     if (!key.Verify(Hash(_message.begin(), _message.end()), _signature))
         return error("Alert::CheckSignature() : verify signature failed");
@@ -155,37 +155,33 @@ bool Alert::processAlert()
         return false;
 
     // Cancel previous alerts
-    for (map<uint256, Alert>::iterator mi = mapAlerts.begin(); mi != mapAlerts.end();)
-        {
+    for (map<uint256, Alert>::iterator mi = mapAlerts.begin(); mi != mapAlerts.end();) {
         const Alert& alert = (*mi).second;
-        if (cancels(alert))
-            {
+        if (cancels(alert)) {
             log_info("cancelling alert %d\n", alert._id);
             mapAlerts.erase(mi++);
             }
-        else if (!alert.isInEffect())
-            {
+        else if (!alert.isInEffect()) {
             log_info("expiring alert %d\n", alert._id);
             mapAlerts.erase(mi++);
             }
         else
             mi++;
-        }
+    }
     
     // Check if this alert has been cancelled
-    BOOST_FOREACH(PAIRTYPE(const uint256, Alert)& item, mapAlerts)
-    {
-    const Alert& alert = item.second;
-    if (alert.cancels(*this))
-        {
-        log_warn("alert already cancelled by %d\n", alert._id);
-        return false;
+    BOOST_FOREACH(PAIRTYPE(const uint256, Alert)& item, mapAlerts) {
+        const Alert& alert = item.second;
+        if (alert.cancels(*this)) {
+            log_warn("alert already cancelled by %d\n", alert._id);
+            return false;
         }
     }
     
     // Add to mapAlerts
     mapAlerts.insert(make_pair(getHash(), *this));
 
-    log_info("accepted alert %d\n", _id);
+    string msg(_message.begin(), _message.end());
+    log_warn("accepted alert %d : %s", _id, msg);
     return true;
 }

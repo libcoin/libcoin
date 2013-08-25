@@ -23,6 +23,7 @@
 #include <coin/serialize.h>
 #include <coin/uint256.h>
 #include <coin/util.h>
+#include <coin/Key.h>
 
 #include <coinChain/Export.h>
 
@@ -112,7 +113,7 @@ class Peer;
 class COINCHAIN_EXPORT Alert : public UnsignedAlert
 {
 public:
-    Alert() {
+    Alert(const PubKey& pubkey) : _pub_key(pubkey) {
         setNull();
     }
 
@@ -164,6 +165,7 @@ public:
     bool processAlert();
     
 private:
+    const PubKey& _pub_key;
     std::vector<unsigned char> _message;
     std::vector<unsigned char> _signature;
 };

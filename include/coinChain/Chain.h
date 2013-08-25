@@ -65,6 +65,7 @@ public:
     virtual size_t enforce_quorum() const { return 1000; }
     virtual size_t enforce_majority() const { return 750; } // 75% of the last 1000
 
+    const PubKey& alert_key() const { return _alert_key; }
     
     //    virtual char networkId() const = 0; // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
     virtual ChainAddress getAddress(PubKeyHash hash) const = 0;
@@ -86,6 +87,9 @@ public:
         if (include_currency_symbol) ss << " " << cc();
         return ss.str();
     }
+        
+    protected:
+        PubKey _alert_key;
 };
 
 class COINCHAIN_EXPORT BitcoinChain : public Chain
@@ -103,6 +107,8 @@ public:
     virtual unsigned int totalBlocksEstimate() const;
 
     virtual const std::string dataDirSuffix() const { return "bitcoin"; }
+    
+    const PubKey& alert_key() const { return _alert_key; }
     
     //    virtual char networkId() const { return 0x00; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
     virtual ChainAddress getAddress(PubKeyHash hash) const { return ChainAddress(0x00, hash); }

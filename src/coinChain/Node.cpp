@@ -177,7 +177,7 @@ void Node::run() {
     _messageHandler.installFilter(_blockFilter);
     _messageHandler.installFilter(_shareFilter);
     _messageHandler.installFilter(_transactionFilter);
-    _messageHandler.installFilter(filter_ptr(new AlertFilter(getFullClientVersion()))); // this only output the alert to stdout
+    _messageHandler.installFilter(filter_ptr(new AlertFilter(_blockChain.chain().alert_key(), getFullClientVersion()))); // this only output the alert to stdout
     
     _io_service.run();
 }

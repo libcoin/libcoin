@@ -21,6 +21,8 @@
 
 #include <coinChain/Export.h>
 
+#include <coin/Key.h>
+
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -36,10 +38,9 @@ class COINCHAIN_EXPORT AlertHandler : boost::noncopyable
 
 typedef boost::shared_ptr<AlertHandler> alerthandler_ptr;
 
-class COINCHAIN_EXPORT AlertFilter : public Filter
-{
+class COINCHAIN_EXPORT AlertFilter : public Filter {
 public:
-    AlertFilter(std::string subversion) : _sub_version(subversion) {}
+    AlertFilter(const PubKey& pubkey, std::string subversion) : _pub_key(pubkey), _sub_version(subversion) {}
     
     /// Inhierit from AlertHandler and add it to receive alert notifications.
     void addHandler(alerthandler_ptr h) { _alertHandlers.insert(h); }
@@ -55,6 +56,7 @@ public:
     
 private:
     std::set<alerthandler_ptr> _alertHandlers;
+    PubKey _pub_key;
     std::string _sub_version;
 };
 
