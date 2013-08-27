@@ -77,7 +77,7 @@ void Server::setCredentials(const std::string dataDir, const std::string cert, c
         throw runtime_error(("SecureServer ERROR: missing server private key file " + keyfile.string()).c_str());
     _secure = true;
     
-    SSL_CTX* ssl_ctx = _context.impl();
+    //SSL_CTX* ssl_ctx = _context.impl();
     //long mode = SSL_CTX_get_session_cache_mode(ssl_ctx);
 }
 

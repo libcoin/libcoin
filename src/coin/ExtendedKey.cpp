@@ -443,7 +443,7 @@ ExtendedKey::ExtendedKey(SecureData seed) : Key() {
     }
     
     class HMAC hmac(HMAC::SHA512);
-    char* bitcoin_seed = "Bitcoin seed";
+    const char* bitcoin_seed = "Bitcoin seed";
     SecureData key(bitcoin_seed, &bitcoin_seed[12]);
     SecureData I = hmac(key, seed);
     
