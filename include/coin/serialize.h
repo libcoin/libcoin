@@ -44,6 +44,9 @@ inline T& REF(const T& val)
     return const_cast<T&>(val);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+
 /////////////////////////////////////////////////////////////////
 //
 // Templates for serializing to anything that looks like a stream,
@@ -1355,5 +1358,7 @@ public:
         return (*this);
     }
 };
+
+#pragma GCC diagnostic pop
 
 #endif
