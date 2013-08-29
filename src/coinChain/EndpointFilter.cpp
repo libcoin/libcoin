@@ -42,7 +42,7 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
         if (endpoints.size() > 1000)
             return error("message addr size() = %d", endpoints.size());
         
-        log_info("PEERS: %d addresses received from %s", endpoints.size(), origin->addr.toString());
+        log_debug("PEERS: %d addresses received from %s", endpoints.size(), origin->addr.toString());
         
         // Store the new addresses
         //        CAddrDB addrDB;
