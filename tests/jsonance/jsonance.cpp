@@ -33,7 +33,7 @@ using namespace std;
 /// And: a["property"] = "red"; // { property : "red" }
 /// And parse or output json as: value val; istream >> val; or ostream << val; or ostream << format("  ", "\n") << val;
 /// Finally, you can do a schema validated parsing by: istream >> schema(json_val) >> val;
-
+/*
 namespace jsonance {
     class null {
     public:
@@ -96,18 +96,18 @@ namespace jsonance {
         
         value operator()(value::object v) const {
             value arr;
-            arr[0] = v;
-            return v;
+            //            arr[0] = v;
+            //            return v;
         }
         
         value operator()(value::array v) const {
-            return v;
+            //            return v;
         }
         
     };
     
     value operator,(value l, value r) {
-        value arr = apply_visitor(array_wrapper(), l);
+        value arr = boost::apply_visitor(array_wrapper(), l);
         // three options : value a = (value("abc"), value(123)) -> ["abc", 123], but what about: value b = (a, a) ? is that ["abc", 123, "abc", 123] or [["abc",
         // solution is to introduce a element(value): value a = (value("abc"), value(123)), and (a, a) is one array, but (elem(a), elem(a)) is nested
         // so this operator will always concatenate into one array
