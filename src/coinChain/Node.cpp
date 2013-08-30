@@ -58,7 +58,7 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
     ip::tcp::resolver resolver(_io_service);
     ip::tcp::resolver::query query(address, port == "0" ? lexical_cast<string>(chain.defaultPort()) : port);
-    if(address.size()) {
+    if (address.size()) {
         ip::tcp::endpoint endpoint = *resolver.resolve(query);
         _acceptor.open(endpoint.protocol());
         _acceptor.set_option(ip::tcp::acceptor::reuse_address(true));
@@ -66,6 +66,11 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
         _acceptor.listen();        
     }
     // else nolisten
+
+    // disable chat by blanking out the chat server address
+    if (!irc.size()) {
+        post_accept_or_connect();
+    }
     
     // this setup the blockchain to use the database as validation index, and a purged client.
     //    _blockChain.validation_index(BlockChain::MerkleTrie);

@@ -19,6 +19,7 @@
 #include <vector>
 #include <deque>
 #include <iostream>
+#include <boost/variant.hpp>
 
 using namespace std;
 
@@ -32,6 +33,112 @@ using namespace std;
 /// And: a["property"] = "red"; // { property : "red" }
 /// And parse or output json as: value val; istream >> val; or ostream << val; or ostream << format("  ", "\n") << val;
 /// Finally, you can do a schema validated parsing by: istream >> schema(json_val) >> val;
+
+namespace jsonance {
+    class null {
+    public:
+        null() {}
+    };
+    
+    class value {
+    public:
+        typedef int64_t integer;
+        typedef map<std::string, value> object;
+        typedef vector<value> array;
+        
+        value() : _(null()) {}
+        value(const string& s) : _(s) {}
+        value(const integer& i) : _(i) {}
+        
+        value& operator[](const string& name) {
+            object& obj = boost::get<object>(_);
+            return obj[name];
+        }
+        
+        const value& operator[](const string& name) const {
+            const object& obj = boost::get<object>(_);
+            object::const_iterator p = obj.find(name);
+            return p->second;
+        }
+        
+        value& operator[](size_t idx) {
+            array& arr = boost::get<array>(_);
+            return arr[idx];
+        }
+        
+        const value& operator[](size_t idx) const {
+            const array& arr = boost::get<array>(_);
+            return arr[idx];
+        }
+        
+    private:
+        boost::variant<null,
+        boost::recursive_wrapper<string>,
+        boost::recursive_wrapper<integer>,
+        boost::recursive_wrapper<object>,
+        boost::recursive_wrapper<array> > _;
+    };
+    
+    class array_wrapper : public boost::static_visitor<value> {
+    public:
+    
+        value operator()(string v) const {
+            value arr;
+            arr[0] = v;
+            return v;
+        }
+    
+        value operator()(value::integer v) const {
+            value arr;
+            arr[0] = v;
+            return v;
+        }
+        
+        value operator()(value::object v) const {
+            value arr;
+            arr[0] = v;
+            return v;
+        }
+        
+        value operator()(value::array v) const {
+            return v;
+        }
+        
+    };
+    
+    value operator,(value l, value r) {
+        value arr = apply_visitor(array_wrapper(), l);
+        // three options : value a = (value("abc"), value(123)) -> ["abc", 123], but what about: value b = (a, a) ? is that ["abc", 123, "abc", 123] or [["abc",
+        // solution is to introduce a element(value): value a = (value("abc"), value(123)), and (a, a) is one array, but (elem(a), elem(a)) is nested
+        // so this operator will always concatenate into one array
+        
+    }
+}
+
+string test_vector =
+    "[ \
+        { \
+            \"precision\": \"zip\", \
+            \"Latitude\":  37.7668, \
+            \"Longitude\": -122.3959, \
+            \"Address\":   \"\", \
+            \"City\":      \"SAN FRANCISCO\", \
+            \"State\":     \"CA\", \
+            \"Zip\":       \"94107\", \
+            \"Country\":   \"US\" \
+        }, \
+        { \
+            \"precision\": \"zip\", \
+            \"Latitude\":  37.371991, \
+            \"Longitude\": -122.026020, \
+            \"Address\":   \"\", \
+            \"City\":      \"SUNNYVALE\", \
+            \"State\":     \"CA\", \
+            \"Zip\":       \"94085\", \
+            \"Country\":   \"US\" \
+        } \
+    ]";
+
 
 /*
  

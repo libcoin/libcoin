@@ -271,7 +271,7 @@ int main(int argc, char* argv[])
         string rpc_bind, rpc_connect, rpc_user, rpc_pass;
         typedef vector<string> strings;
         strings rpc_params;
-        string proxy;
+        string proxy, irc;
         strings connect_peers;
         strings add_peers;
         bool portmap, ssl;
@@ -296,6 +296,7 @@ int main(int argc, char* argv[])
             ("testnet", "Use the test network")
             ("litecoin", "RUn as a litecoin client")
             ("proxy", value<string>(&proxy), "Connect through socks4 proxy")
+            ("irc", value<string>(&irc)->default_value("92.243.23.21"), "Specify other chat server, for no chatserver specify \"\"")
             ("timeout", value<unsigned int>(&timeout)->default_value(5000), "Specify connection timeout (in milliseconds)")
             ("addnode", value<strings>(&add_peers), "Add a node to connect to")
             ("connect", value<strings>(&connect_peers), "Connect only to the specified node")
@@ -399,7 +400,7 @@ int main(int argc, char* argv[])
             if(host_port.size() < 2) host_port.push_back("1080");
             proxy_server = asio::ip::tcp::endpoint(asio::ip::address_v4::from_string(host_port[0]), lexical_cast<short>(host_port[1]));
         }
-        Node node(chain, data_dir, args.count("nolisten")||connect_peers.size() ? "" : "0.0.0.0", lexical_cast<string>(port), proxy_server, timeout); // it is also here we specify the use of a proxy!
+        Node node(chain, data_dir, args.count("nolisten")||connect_peers.size() ? "" : "0.0.0.0", lexical_cast<string>(port), proxy_server, timeout, irc); // it is also here we specify the use of a proxy!
         node.setClientVersion("libcoin/coinexplorer", vector<string>());
         node.verification(Node::MINIMAL);
         node.validation(Node::NONE); // note set to MINIMAL to get validation (merkeltrie stuff)
