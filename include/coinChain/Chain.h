@@ -57,6 +57,10 @@ public:
         return 0;
     }
     
+    virtual int64_t min_fee() const {
+        return 0;
+    }
+    
     // To enable upgrade from one block version to another we define a quorum and a majority for acceptance
     // of minimum this version as well as a quorum and majority for when the checks of that block version should be enforced.
     virtual size_t accept_quorum() const { return 1000;}
@@ -108,6 +112,10 @@ public:
 
     virtual const std::string dataDirSuffix() const { return "bitcoin"; }
     
+    virtual int64_t min_fee() const {
+        return 10000;
+    }
+
     const PubKey& alert_key() const { return _alert_key; }
     
     //    virtual char networkId() const { return 0x00; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
@@ -219,6 +227,10 @@ public:
             case BIP0030: return 1349049600; // 03/15/2012 12:00am GMT.
         }
         return 0;
+    }
+    
+    virtual int64_t min_fee() const {
+        return 2000000;
     }
     
     //    virtual char networkId() const { return 0x00; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
