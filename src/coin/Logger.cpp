@@ -77,7 +77,7 @@ std::ostream& Logger::log(Level level, std::string file, int line, std::string f
     }
     os << self.timestamp() << " ";
     os << self.label(level) << "(" << self.label() << ") ";
-    if (level < info) {
+    if (self._log_level < info) {
         os << "[" << file << ":" << line;
         if (function.size())
             os << " " << function;

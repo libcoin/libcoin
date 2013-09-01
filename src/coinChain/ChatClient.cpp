@@ -39,8 +39,10 @@ ChatClient::ChatClient(boost::asio::io_service& io_service, boost::function<void
     
     // Start an asynchronous resolve to translate the server and service names
     // into a list of endpoints.
-    tcp::resolver::query query(server, "irc"); // should we remove irc as service type ?
-    _resolver.async_resolve(query, boost::bind(&ChatClient::handle_resolve, this, asio::placeholders::error, asio::placeholders::iterator));
+    if (server.size()) {
+        tcp::resolver::query query(server, "irc"); // should we remove irc as service type ?
+        _resolver.async_resolve(query, boost::bind(&ChatClient::handle_resolve, this, asio::placeholders::error, asio::placeholders::iterator));
+    }
 }
 
 void ChatClient::handle_resolve(const system::error_code& err, tcp::resolver::iterator endpoint_iterator) {

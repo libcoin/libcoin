@@ -20,8 +20,58 @@
 #include <deque>
 #include <iostream>
 #include <boost/variant.hpp>
+#include <boost/lexical_cast.hpp>
 
 using namespace std;
+using namespace boost;
+
+template <typename T>
+T power(T m, unsigned int e) {
+    T p(1);
+    
+    for (unsigned int i = 0; i < e; ++i)
+        p *= m;
+    
+    return p;
+}
+
+class DecimalFormatter {
+public:
+    DecimalFormatter(unsigned int decimals = 8) : _decimals(decimals) {
+    }
+    
+    std::string operator()(int64_t subunit) {
+        bool negative = (subunit < 0);
+        if (negative) subunit = -subunit;
+        string str = lexical_cast<string>(subunit);
+        size_t len = str.size();
+        if (len < _decimals)
+            str = string(_decimals-len, '0') + str;
+        str.insert(str.size()-_decimals, 1, '.');
+        if (negative) str.insert(0, 1, '-');
+        return str;
+    }
+    
+    int64_t operator()(std::string str) {
+        // amount is a string - change into an int64_t
+        bool negative = (str[0] == '-');
+        if (negative) str = str.substr(1);
+        
+        size_t decimal = str.find('.');
+        int64_t subunit = power(10, _decimals)*lexical_cast<int64_t>(str.substr(0, decimal));
+        if (decimal != string::npos) {
+            str = str.substr(decimal + 1) + string(_decimals, '0');
+            str.resize(_decimals);
+            subunit += lexical_cast<int64_t>(str);
+        }
+        
+        if (negative) subunit = -subunit;
+        return subunit;
+    }
+private:
+    unsigned int _decimals;
+};
+
 
 /// The jsonance classes enables easy json creation, parsing and manipulation.
 /// There are two basic classes: value and pair, from which all json expressions
@@ -266,7 +316,15 @@ namespace json {
 */
 
 int main(int argc, char* argv[]) {
-/*
+
+    int64_t amount = 100000000;
+    cout << DecimalFormatter()(amount) << endl;
+    
+    cout << DecimalFormatter()("0.01") << endl;
+    
+    return 0;
+    
+    /*
     try {
         try {
             json::value obj = (json::pair("id", 123), json::pair("name", "abc"));
