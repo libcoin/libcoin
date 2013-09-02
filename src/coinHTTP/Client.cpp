@@ -300,10 +300,12 @@ void Client::handle_read_content(const boost::system::error_code& err, std::size
     }
     else if (bytes_transferred == 0) {
         boost::system::error_code e;
+        if (_reply.content().size() == 0)
+            _reply.status(Reply::no_content);
         handle_done(e);
     }
     else {
-        cout << "read_content" << endl;
+        _reply.status(Reply::not_found);
         handle_done(err);
     }
 }
