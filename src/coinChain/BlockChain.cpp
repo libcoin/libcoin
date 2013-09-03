@@ -955,7 +955,7 @@ void BlockChain::getTransaction(const int64_t cnf, Transaction &txn, int64_t& he
     }
     else {
         height = conf.count - 1;
-        BlockIterator blk = iterator(conf.count);
+        BlockIterator blk = iterator(height);
         time = blk->time;
     }
     
