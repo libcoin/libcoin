@@ -1159,3 +1159,65 @@ bool SignSignature(const KeyStore &keystore, const Output& txout, Transaction& t
     
     return true;
 }
+
+// Canonical tests
+
+void checkCanonicalPubKey(const valtype &vchPubKey) {
+    if (vchPubKey.size() < 33)
+        throw runtime_error("Non-canonical public key: too short");
+    if (vchPubKey[0] == 0x04) {
+        if (vchPubKey.size() != 65)
+            throw runtime_error("Non-canonical public key: invalid length for uncompressed key");
+    } else if (vchPubKey[0] == 0x02 || vchPubKey[0] == 0x03) {
+        if (vchPubKey.size() != 33)
+            throw runtime_error("Non-canonical public key: invalid length for compressed key");
+    } else {
+        throw runtime_error("Non-canonical public key: compressed nor uncompressed");
+    }
+}
+
+void checkCanonicalSignature(const valtype &vchSig) {
+    // See https://bitcointalk.org/index.php?topic=8392.msg127623#msg127623
+    // A canonical signature exists of: <30> <total len> <02> <len R> <R> <02> <len S> <S> <hashtype>
+    // Where R and S are not negative (their first byte has its highest bit not set), and not
+    // excessively padded (do not start with a 0 byte, unless an otherwise negative number follows,
+    // in which case a single 0 byte is necessary and even required).
+    if (vchSig.size() < 9)
+        throw runtime_error("Non-canonical signature: too short");
+    if (vchSig.size() > 73)
+        throw runtime_error("Non-canonical signature: too long");
+    unsigned char nHashType = vchSig[vchSig.size() - 1] & (~(SIGHASH_ANYONECANPAY));
+    if (nHashType < SIGHASH_ALL || nHashType > SIGHASH_SINGLE)
+        throw runtime_error("Non-canonical signature: unknown hashtype byte");
+    if (vchSig[0] != 0x30)
+        throw runtime_error("Non-canonical signature: wrong type");
+    if (vchSig[1] != vchSig.size()-3)
+        throw runtime_error("Non-canonical signature: wrong length marker");
+    unsigned int nLenR = vchSig[3];
+    if (5 + nLenR >= vchSig.size())
+        throw runtime_error("Non-canonical signature: S length misplaced");
+    unsigned int nLenS = vchSig[5+nLenR];
+    if ((unsigned long)(nLenR+nLenS+7) != vchSig.size())
+        throw runtime_error("Non-canonical signature: R+S length mismatch");
+    
+    const unsigned char *R = &vchSig[4];
+    if (R[-2] != 0x02)
+        throw runtime_error("Non-canonical signature: R value type mismatch");
+    if (nLenR == 0)
+        throw runtime_error("Non-canonical signature: R length is zero");
+    if (R[0] & 0x80)
+        throw runtime_error("Non-canonical signature: R value negative");
+    if (nLenR > 1 && (R[0] == 0x00) && !(R[1] & 0x80))
+        throw runtime_error("Non-canonical signature: R value excessively padded");
+    
+    const unsigned char *S = &vchSig[6+nLenR];
+    if (S[-2] != 0x02)
+        throw runtime_error("Non-canonical signature: S value type mismatch");
+    if (nLenS == 0)
+        throw runtime_error("Non-canonical signature: S length is zero");
+    if (S[0] & 0x80)
+        throw runtime_error("Non-canonical signature: S value negative");
+    if (nLenS > 1 && (S[0] == 0x00) && !(S[1] & 0x80))
+        throw runtime_error("Non-canonical signature: S value excessively padded");
+}
+

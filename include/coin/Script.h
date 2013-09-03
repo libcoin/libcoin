@@ -886,4 +886,7 @@ bool ExtractAddresses(const Script& scriptPubKey, txnouttype& typeRet, std::vect
 
 int ScriptSigArgsExpected(txnouttype t, const std::vector<std::vector<unsigned char> >& vSolutions);
 
+void checkCanonicalPubKey(const std::vector<unsigned char> &vchPubKey);
+void checkCanonicalSignature(const std::vector<unsigned char> &vchSig);
+
 #endif

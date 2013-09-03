@@ -24,6 +24,8 @@
 
 static const unsigned int MAX_BLOCK_SIZE = 1000000;
 static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
+/** The maximum size for transactions we're willing to relay/mine */
+static const unsigned int MAX_STANDARD_TX_SIZE = MAX_BLOCK_SIZE_GEN/5;
 static const int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
 static const int64_t COIN = 100000000;
 static const int64_t CENT = 1000000;
@@ -188,6 +190,18 @@ public:
     const int64_t value() const { return _value; }
     
     const Script script() const { return _script; }
+    
+    bool isDust(int64_t min_fee = MIN_RELAY_TX_FEE) const {
+        // "Dust" is defined in terms of CTransaction::nMinRelayTxFee,
+        // which has units satoshis-per-kilobyte.
+        // If you'd pay more than 1/3 in fees
+        // to spend something, then we consider it dust.
+        // A typical txout is 34 bytes big, and will
+        // need a CTxIn of at least 148 bytes to spend,
+        // so dust is a txout less than 54 uBTC
+        // (5460 satoshis) with default nMinRelayTxFee
+        return ((_value*1000)/(3*((int)GetSerializeSize(SER_DISK,0)+148)) < min_fee);
+    }
     
     uint256 getHash() const {
         return SerializeHash(*this);

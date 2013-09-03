@@ -76,14 +76,41 @@ const int64_t BitcoinChain::subsidy(unsigned int height) const {
 }
 
 bool BitcoinChain::isStandard(const Transaction& tx) const {
-    BOOST_FOREACH(const Input& txin, tx.getInputs())
-        if (!txin.signature().isPushOnly())
-            return error("nonstandard txin: %s", txin.signature().toString().c_str());
+
+    // Extremely large transactions with lots of inputs can cost the network
+    // almost as much to process as they cost the sender in fees, because
+    // computing signature hashes is O(ninputs*txsize). Limiting transactions
+    // to MAX_STANDARD_TX_SIZE mitigates CPU exhaustion attacks.
+    unsigned int sz = tx.GetSerializeSize(SER_NETWORK);
+    if (sz >= MAX_STANDARD_TX_SIZE)
+        return false;
+
+    
+    BOOST_FOREACH(const Input& txin, tx.getInputs()) {
+        // Biggest 'standard' txin is a 3-signature 3-of-3 CHECKMULTISIG
+        // pay-to-script-hash, which is 3 ~80-byte signatures, 3
+        // ~65-byte public keys, plus a few script ops.
+        if (txin.signature().size() > 500) {
+            log_debug("nonstandard txin, size too big: %s", txin.signature().toString());
+            return false;
+        }
+        if (!txin.signature().isPushOnly()) {
+            log_debug("nonstandard txin, signature is not push only: %s", txin.signature().toString());
+            return false;
+        }
+    }
     BOOST_FOREACH(const Output& txout, tx.getOutputs()) {
         vector<pair<opcodetype, valtype> > solution;
-        if (!Solver(txout.script(), solution))
-            return error("nonstandard txout: %s", txout.script().toString().c_str());        
+        if (!Solver(txout.script(), solution)) {
+            log_debug("nonstandard txout - solver returned false: %s", txout.script().toString());
+            return false;
+        }
+        if (txout.isDust(MIN_RELAY_TX_FEE)) {
+            log_debug("nonstandard txout - is dust, value = %d", txout.value());
+            return false;
+        }
     }
+    
     return true;
 }
 

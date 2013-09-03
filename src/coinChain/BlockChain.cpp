@@ -937,9 +937,9 @@ void BlockChain::getBlock(const uint256 hash, Block& block) const
 }
 
 void BlockChain::getTransaction(const int64_t cnf, Transaction &txn) const {
-    Confirmation conf = queryRow<Confirmation(int, unsigned int, int64_t, int64_t)>("SELECT (cnf, version, locktime, count) FROM Confirmations WHERE cnf = ?", cnf);
-    
-    Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT (hash, idx, signature, sequence) FROM Spendings WHERE cin = ? ORDER BY iidx", cnf);
+    Confirmation conf = queryRow<Confirmation(int, unsigned int, int64_t, int64_t)>("SELECT cnf, version, locktime, count FROM Confirmations WHERE cnf = ?", cnf);
+
+    Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY iidx", cnf);
     Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1 ORDER BY idx ASC);", cnf);
     txn = conf;
     txn.setInputs(inputs);
@@ -947,7 +947,7 @@ void BlockChain::getTransaction(const int64_t cnf, Transaction &txn) const {
 }
 
 void BlockChain::getTransaction(const int64_t cnf, Transaction &txn, int64_t& height, int64_t& time) const {
-    Confirmation conf = queryRow<Confirmation(int, unsigned int, int64_t, int64_t)>("SELECT (cnf, version, locktime, count) FROM Confirmations WHERE cnf = ?", cnf);
+    Confirmation conf = queryRow<Confirmation(int, unsigned int, int64_t, int64_t)>("SELECT cnf, version, locktime, count FROM Confirmations WHERE cnf = ?", cnf);
  
     if (conf.count > LOCKTIME_THRESHOLD) {
         height = -1;
@@ -959,7 +959,7 @@ void BlockChain::getTransaction(const int64_t cnf, Transaction &txn, int64_t& he
         time = blk->time;
     }
     
-    Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT (hash, idx, signature, sequence) FROM Spendings WHERE cin = ? ORDER BY iidx", cnf);
+    Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY iidx", cnf);
     Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1 ORDER BY idx ASC);", cnf);
     txn = conf;
     txn.setInputs(inputs);
@@ -1095,7 +1095,7 @@ void BlockChain::getTransaction(const uint256& hash, Transaction& txn, int64_t& 
 {
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
 
-    int64_t cnf = query<int64_t>("SELECT ocnf FROM Unspents WHERE hash = ? LIMIT 1", txn.getHash());
+    int64_t cnf = query<int64_t>("SELECT ocnf FROM Unspents WHERE hash = ? LIMIT 1", hash);
 
     getTransaction(cnf, txn, height, time);
 }
