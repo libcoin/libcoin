@@ -21,6 +21,7 @@
 #include <iostream>
 #include <boost/variant.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 
 using namespace std;
 using namespace boost;
@@ -45,8 +46,8 @@ public:
         if (negative) subunit = -subunit;
         string str = lexical_cast<string>(subunit);
         size_t len = str.size();
-        if (len < _decimals)
-            str = string(_decimals-len, '0') + str;
+        if (len < 1+_decimals)
+            str = string(1+_decimals-len, '0') + str;
         str.insert(str.size()-_decimals, 1, '.');
         if (negative) str.insert(0, 1, '-');
         return str;
@@ -315,12 +316,70 @@ namespace json {
 }
 */
 
+class error : public runtime_error {
+public:
+    error(std::string what) : runtime_error(what) {}
+    error(std::string what, std::exception& e) : runtime_error(what + ":\n" + indent(e.what())) {}
+    
+    std::string indent(std::string str) const {
+        // indent first line
+        str.insert(0, "\t");
+        boost::replace_all(str, "\n", "\n\t");
+        return str;
+    }
+};
+
+string strip_path(string path) {
+    size_t slash = path.rfind("/");
+    return path.substr(slash + 1);
+}
+
+namespace coin {
+
+void f0() {
+    throw error(strip_path(__FILE__) + " f0");
+}
+
+void f1() {
+    cout << strip_path(__FILE__) << ":" << __LINE__ << " " << __FUNCTION__ << endl;
+    try {
+        f0();
+    }
+    catch (std::exception&e) {
+        throw error(__FUNCTION__, e);
+    }
+}
+
+void f2() {
+    try {
+        f1();
+    }
+    catch (std::exception&e) {
+        throw error(__FUNCTION__, e);
+    }
+}
+
+void f3() {
+    try {
+        f2();
+    }
+    catch (std::exception&e) {
+        throw error(__FUNCTION__, e);
+    }
+}
+}
 int main(int argc, char* argv[]) {
 
     int64_t amount = 100000000;
     cout << DecimalFormatter()(amount) << endl;
     
     cout << DecimalFormatter()("0.01") << endl;
+    
+    try {
+        coin::f3();
+    } catch (std::exception& e) {
+        cout << "Error:\n" << e.what() << endl;
+    }
     
     return 0;
     

@@ -15,13 +15,16 @@ SET(TARGET_H
     ${HEADER_PATH}/util.h
     
     ${HEADER_PATH}/Address.h
+    ${HEADER_PATH}/AuxPow.h
     ${HEADER_PATH}/BigNum.h
     ${HEADER_PATH}/Block.h
+    ${HEADER_PATH}/BlockHeader.h
     ${HEADER_PATH}/Export.h
     ${HEADER_PATH}/ExtendedKey.h
     ${HEADER_PATH}/Key.h
     ${HEADER_PATH}/KeyStore.h
     ${HEADER_PATH}/Logger.h
+    ${HEADER_PATH}/MerkleTx.h
     ${HEADER_PATH}/Script.h
     ${HEADER_PATH}/Transaction.h
     ${HEADER_PATH}/Version.h
@@ -36,11 +39,14 @@ SET(TARGET_SRC
     util.cpp
     
     Address.cpp
+    AuxPow.cpp
     Block.cpp
+    BlockHeader.cpp
     ExtendedKey.cpp
     Key.cpp
     KeyStore.cpp
     Logger.cpp
+    MerkleTx.cpp
     Transaction.cpp
     Script.cpp
     ${LIBCOIN_VERSIONINFO_RC}

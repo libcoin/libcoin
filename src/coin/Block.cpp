@@ -20,26 +20,6 @@
 using namespace std;
 using namespace boost;
 
-uint256 Block::getHash() const
-{
-    return Hash(BEGIN(_version), END(_nonce));
-}
-
-template<typename T1>
-inline uint256 HalfHash(const T1 pbegin, const T1 pend)
-{
-    static unsigned char pblank[1];
-    uint256 hash1;
-    SHA256((pbegin == pend ? pblank : (unsigned char*)&pbegin[0]), (pend - pbegin) * sizeof(pbegin[0]), (unsigned char*)&hash1);
-    return hash1;
-}
-
-uint256 Block::getHalfHash() const
-{
-    return HalfHash(BEGIN(_version), END(_nonce));
-}
-
-
 int Block::GetSigOpCount() const
 {
     int n = 0;

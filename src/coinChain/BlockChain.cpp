@@ -123,6 +123,19 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
 
     query("CREATE INDEX IF NOT EXISTS SpendingsIn ON Spendings (icnf)");
     query("CREATE INDEX IF NOT EXISTS SpendingsOut ON Spendings (ocnf)");
+
+    // This table stores is the Auxiliary Proof-of-Works when using merged mining.
+    query("CREATE TABLE IF NOT EXISTS AuxProofOfWorks ("
+          "count INTEGER REFERENCES Blocks(count)," // linking this AuxPOW to the block chain - blocks with version&BLOCK_VERSION_AUXPOW are expected to have a row in this table
+          "coinbase BINARY," // Coinbase transaction that is in the parent block, linking the AuxPOW block to its parent block
+          "branch BINARY," // The merkle branch linking the coinbase to the parent block's merkle_root
+          "others BINARY," // The merkle branch linking this auxiliary blockchain to the others, when used in a merged mining setup with multiple auxiliary chains
+          "parent BINARY" // Parent block header
+          // Note the parent hash is not part of this table - we have the full header (parent) and it is not even checked in namecoin
+    ")");
+
+    // fast lookup based on count
+    query("CREATE INDEX IF NOT EXISTS AuxProofOfWorksIndex ON AuxProofOfWorks (count)");
     
     // populate the tree
     vector<BlockRef> blockchain = queryColRow<BlockRef(int, uint256, uint256, unsigned int, unsigned int)>("SELECT version, hash, prev, time, bits FROM Blocks ORDER BY count");

@@ -31,7 +31,7 @@ BitcoinChain::BitcoinChain() : _genesis("0x000000000019d6689c085ae165831e934ff76
     _messageStart[0] = 0xf9; _messageStart[1] = 0xbe; _messageStart[2] = 0xb4; _messageStart[3] = 0xd9;
     const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
     Transaction txNew;
-    Script signature = Script() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
+    Script signature = Script() << 0x1d00ffff << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
     txNew.addInput(Input(Coin(), signature)); 
     Script script = Script() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
     txNew.addOutput(Output(50 * COIN, script)); 
@@ -287,6 +287,167 @@ unsigned int TestNetChain::nextWorkRequired(BlockIterator blk) const {
 
 // global const definition of the testnet chain
 const TestNetChain testnet;
+
+
+NamecoinChain::NamecoinChain() : _genesis("0x00000007199508e34a9ff81e6ec0c477a4cccff2a4767a8eee39c11db367b008") {
+    _alert_key = ParseHex("04fc9702847840aaf195de8442ebecedf5b095cdbb9bc716bda9110971b28a49e0ead8564ff0db22209e0374782c093bb899692d524e9d6a6956e7c5ecbcd68284");
+    _messageStart[0] = 0xfa; _messageStart[1] = 0xbf; _messageStart[2] = 0xb5; _messageStart[3] = 0xda;
+    const char* pszTimestamp = "... choose what comes next.  Lives of your own, or a return to chains. -- V";
+    Transaction txNew;
+    Script signature = Script() << 0x1c007fff << CBigNum(522) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
+    txNew.addInput(Input(Coin(), signature));
+    Script script = Script() << ParseHex("04b620369050cd899ffbbc4e8ee51e8c4534a855bb463439d63d235d4779685d8b6f4870a238cf365ac94fa13ef9a2a22cd99d0d5ee86dcabcafce36c7acf43ce5") << OP_CHECKSIG;
+    txNew.addOutput(Output(50 * COIN, script));
+    _genesisBlock = Block(1, uint256(0), uint256(0), 1303000001, 0x1c007fff, 0xa21ea192U);
+    _genesisBlock.addTransaction(txNew);
+    _genesisBlock.updateMerkleTree(); // genesisBlock
+                                      //    assert(_genesisBlock.getHash() == _genesis);
+    
+    _checkpoints = boost::assign::map_list_of
+    (  2016, uint256("0x0000000000660bad0d9fbde55ba7ee14ddf766ed5f527e3fbca523ac11460b92"))
+    (  4032, uint256("0x0000000000493b5696ad482deb79da835fe2385304b841beef1938655ddbc411"))
+    (  6048, uint256("0x000000000027939a2e1d8bb63f36c47da858e56d570f143e67e85068943470c9"))
+    (  8064, uint256("0x000000000003a01f708da7396e54d081701ea406ed163e519589717d8b7c95a5"))
+    ( 10080, uint256("0x00000000000fed3899f818b2228b4f01b9a0a7eeee907abd172852df71c64b06"))
+    ( 12096, uint256("0x0000000000006c06988ff361f124314f9f4bb45b6997d90a7ee4cedf434c670f"))
+    ( 14112, uint256("0x00000000000045d95e0588c47c17d593c7b5cb4fb1e56213d1b3843c1773df2b"))
+    ( 16128, uint256("0x000000000001d9964f9483f9096cf9d6c6c2886ed1e5dec95ad2aeec3ce72fa9"))
+    ( 18940, uint256("0x00000000000087f7fc0c8085217503ba86f796fa4984f7e5a08b6c4c12906c05"))
+    ( 30240, uint256("0xe1c8c862ff342358384d4c22fa6ea5f669f3e1cdcf34111f8017371c3c0be1da"))
+    ( 57000, uint256("0xaa3ec60168a0200799e362e2b572ee01f3c3852030d07d036e0aa884ec61f203"))
+    (112896, uint256("0x73f880e78a04dd6a31efc8abf7ca5db4e262c4ae130d559730d6ccb8808095bf"))
+    ;
+    
+}
+
+unsigned int NamecoinChain::totalBlocksEstimate() const {
+    return _checkpoints.rbegin()->first;
+}
+
+
+const Block& NamecoinChain::genesisBlock() const {
+    return _genesisBlock;
+}
+
+const int64_t NamecoinChain::subsidy(unsigned int height) const {
+    int64_t s = 50 * COIN;
+    
+    // Subsidy is cut in half every 4 years
+    s >>= (height / 210000);
+    
+    return s;
+}
+
+bool NamecoinChain::isStandard(const Transaction& tx) const {
+    
+    // Extremely large transactions with lots of inputs can cost the network
+    // almost as much to process as they cost the sender in fees, because
+    // computing signature hashes is O(ninputs*txsize). Limiting transactions
+    // to MAX_STANDARD_TX_SIZE mitigates CPU exhaustion attacks.
+    unsigned int sz = tx.GetSerializeSize(SER_NETWORK);
+    if (sz >= MAX_STANDARD_TX_SIZE)
+        return false;
+    
+    BOOST_FOREACH(const Input& txin, tx.getInputs()) {
+        // Biggest 'standard' txin is a 3-signature 3-of-3 CHECKMULTISIG
+        // pay-to-script-hash, which is 3 ~80-byte signatures, 3
+        // ~65-byte public keys, plus a few script ops.
+        if (txin.signature().size() > 500) {
+            log_debug("nonstandard txin, size too big: %s", txin.signature().toString());
+            return false;
+        }
+        if (!txin.signature().isPushOnly()) {
+            log_debug("nonstandard txin, signature is not push only: %s", txin.signature().toString());
+            return false;
+        }
+    }
+    BOOST_FOREACH(const Output& txout, tx.getOutputs()) {
+        vector<pair<opcodetype, valtype> > solution;
+        if (!Solver(txout.script(), solution)) {
+            log_debug("nonstandard txout - solver returned false: %s", txout.script().toString());
+            return false;
+        }
+        if (txout.isDust(MIN_RELAY_TX_FEE)) {
+            log_debug("nonstandard txout - is dust, value = %d", txout.value());
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+/// This function has changed as it served two purposes: sanity check for headers and real proof of work check. We only need the proofOfWorkLimit for the latter
+const bool NamecoinChain::checkProofOfWork(const Block& block) const {
+    uint256 hash = block.getHash();
+    unsigned int nBits = block.getBits();
+    CBigNum bnTarget;
+    bnTarget.SetCompact(nBits);
+    
+    // Check range
+    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit()))
+        return error("CheckProofOfWork() : nBits below minimum work");
+    
+    // Check proof of work matches claimed amount
+    if (hash > bnTarget.getuint256())
+        return error("CheckProofOfWork() : hash doesn't match nBits");
+    
+    return true;
+}
+
+unsigned int NamecoinChain::nextWorkRequired(BlockIterator blk) const {
+    const int64_t nTargetTimespan = 14 * 24 * 60 * 60; // two weeks
+    const int64_t nTargetSpacing = 10 * 60;
+    const int64_t nInterval = nTargetTimespan / nTargetSpacing;
+    
+    // Genesis block
+    int h = blk.height();
+    if (h == 0) // trick to test that it is asking for the genesis block
+        return proofOfWorkLimit().GetCompact();
+    
+    // Only change once per interval
+    if ((h + 1) % nInterval != 0)
+        return blk->bits;
+    
+    // Go back by what we want to be 14 days worth of blocks
+    BlockIterator former = blk - (nInterval-1);
+    
+    // Limit adjustment step
+    int nActualTimespan = blk->time - former->time;
+    log_debug("  nActualTimespan = %"PRI64d"  before bounds", nActualTimespan);
+    if (nActualTimespan < nTargetTimespan/4)
+        nActualTimespan = nTargetTimespan/4;
+    if (nActualTimespan > nTargetTimespan*4)
+        nActualTimespan = nTargetTimespan*4;
+    
+    // Retarget
+    CBigNum bnNew;
+    bnNew.SetCompact(blk->bits);
+    bnNew *= nActualTimespan;
+    bnNew /= nTargetTimespan;
+    
+    if (bnNew > proofOfWorkLimit())
+        bnNew = proofOfWorkLimit();
+    
+    /// debug print
+    log_info("GetNextWorkRequired RETARGET");
+    log_info("\tnTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"", nTargetTimespan, nActualTimespan);
+    log_info("\tBefore: %08x  %s", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
+    log_info("\tAfter:  %08x  %s", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
+    
+    return bnNew.GetCompact();
+}
+
+bool NamecoinChain::checkPoints(const unsigned int height, const uint256& hash) const {
+    Checkpoints::const_iterator i = _checkpoints.find(height);
+    if (i == _checkpoints.end())
+        return true;
+    
+    return hash == i->second;
+}
+
+// global const definition of the bitcoin chain
+const NamecoinChain namecoin;
+
 
 LitecoinChain::LitecoinChain() : _genesis("0x12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2") {
     _alert_key = ParseHex("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9");    _messageStart[0] = 0xfb; _messageStart[1] = 0xc0; _messageStart[2] = 0xb6; _messageStart[3] = 0xdb; // Litecoin: increase each by adding 2 to bitcoin's value.

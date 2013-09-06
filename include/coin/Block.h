@@ -18,6 +18,8 @@
 #define BLOCK_H
 
 #include <coin/Export.h>
+#include <coin/BlockHeader.h>
+#include <coin/AuxPow.h>
 #include <coin/Transaction.h>
 #include <coin/uint256.h>
 
@@ -35,19 +37,21 @@ class Block;
 //
 
 typedef std::vector<Transaction> TransactionList;
-typedef std::vector<uint256> MerkleBranch;
 
-class COIN_EXPORT Block {
+class COIN_EXPORT Block : public BlockHeader {
 public:
     Block() {
         setNull();
     }
 
-    Block(const int version, const uint256 prevBlock, const uint256 merkleRoot, const int time, const int bits, const int nonce) : _version(version), _prevBlock(prevBlock), _merkleRoot(merkleRoot), _time(time), _bits(bits), _nonce(nonce) {
+    Block(const int version, const uint256 prevBlock, const uint256 merkleRoot, const int time, const int bits, const int nonce) : BlockHeader(version, prevBlock,merkleRoot, time, bits, nonce), _ignore_aux_pow(true) {
         _transactions.clear();
         _merkleTree.clear();
     }
-
+    
+    void adhere_aux_pow() {
+        _ignore_aux_pow = false;
+    }
     
     IMPLEMENT_SERIALIZE
     (
@@ -59,6 +63,8 @@ public:
         READWRITE(_bits);
         READWRITE(_nonce);
 
+        if (!_ignore_aux_pow) nSerSize += ReadWriteAuxPow(s, _aux_pow, nType, _version, ser_action);
+
         // ConnectBlock depends on vtx being last so it can calculate offset
         if (!(nType & (SER_GETHASH|SER_BLOCKHEADERONLY)))
             READWRITE(_transactions);
@@ -67,26 +73,10 @@ public:
     )
 
     void setNull() {
-        _version = 1;
-        _prevBlock = 0;
-        _merkleRoot = 0;
-        _time = 0;
-        _bits = 0;
-        _nonce = 0;
+        BlockHeader::setNull();
         _transactions.clear();
         _merkleTree.clear();
-    }
-
-    bool isNull() const {
-        return (_bits == 0);
-    }
-
-    uint256 getHash() const;
-
-    uint256 getHalfHash() const;
-    
-    int64_t getBlockTime() const {
-        return (int64_t)_time;
+        _ignore_aux_pow = true;
     }
 
     int GetSigOpCount() const;
@@ -99,6 +89,10 @@ public:
     const Transaction& getTransaction(size_t i) const { return _transactions[i]; }
     void keepOnlyCoinbase() { _transactions.resize(1); }
 
+    const AuxPow& getAuxPoW() const {
+        return _aux_pow;
+    }
+    
     uint256 buildMerkleTree() const;
 
     void updateMerkleTree() {
@@ -121,23 +115,7 @@ public:
     /// Version 3 check (no BIP): Root hash of all Spendables should be in the coinbase (following the height)
     bool checkSpendablesRootInCoinbase(uint256 hash) const;
     uint256 getSpendablesRoot() const;
-    
-    const int getVersion() const { return _version; }
-    
-    const uint256 getPrevBlock() const { return _prevBlock; }
-
-    const uint256 getMerkleRoot() const { return _merkleRoot; }
-
-    const int getTime() const { return _time; }
-    
-    void setTime(int time) { _time = time; }
-    
-    const int getBits() const { return _bits; }
-    
-    const uint256 getTarget() const {
-        return CBigNum().SetCompact(getBits()).getuint256();
-    }
-    
+        
     int getShareBits() const {
         try {
             Script coinbase = getTransaction(0).getInput(0).signature();
@@ -194,26 +172,18 @@ public:
         const Transaction& txn = getTransaction(0);
         return txn.getOutput(0).script();
     }
-
-    
-    const int getNonce() const { return _nonce; }
-
-    void setNonce(unsigned int nonce) { _nonce = nonce; }
     
 private:
-    // header
-    int _version;
-    uint256 _prevBlock;
-    uint256 _merkleRoot;
-    unsigned int _time;
-    unsigned int _bits;
-    unsigned int _nonce;
+    // will only be used for merged miners
+    AuxPow _aux_pow;
     
     // network and disk
     TransactionList _transactions;
     
     // memory only
     mutable MerkleBranch _merkleTree;
+    
+    bool _ignore_aux_pow;
 };
 
 #endif // BLOCK_H

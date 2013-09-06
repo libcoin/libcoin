@@ -294,7 +294,8 @@ int main(int argc, char* argv[])
             ("portmap", value<bool>(&portmap)->default_value(true), "Use IGD-UPnP or NATPMP to map the listening port")
             ("upnp", value<bool>(&portmap), "Use UPnP to map the listening port - deprecated, use portmap")
             ("testnet", "Use the test network")
-            ("litecoin", "RUn as a litecoin client")
+            ("litecoin", "Run as a litecoin client")
+            ("namecoin", "Run as a namecoin client")
             ("proxy", value<string>(&proxy), "Connect through socks4 proxy")
             ("irc", value<string>(&irc)->default_value("92.243.23.21"), "Specify other chat server, for no chatserver specify \"\"")
             ("timeout", value<unsigned int>(&timeout)->default_value(5000), "Specify connection timeout (in milliseconds)")
@@ -364,6 +365,8 @@ int main(int argc, char* argv[])
             chain_chooser = &testnet;
         else if(args.count("litecoin"))
             chain_chooser = &litecoin;
+        else if(args.count("namecoin"))
+            chain_chooser = &namecoin;
         else
             chain_chooser = &bitcoin;
         const Chain& chain(*chain_chooser);

@@ -96,8 +96,7 @@ public:
         PubKey _alert_key;
 };
 
-class COINCHAIN_EXPORT BitcoinChain : public Chain
-{
+class COINCHAIN_EXPORT BitcoinChain : public Chain {
 public:
     BitcoinChain();
     virtual const Block& genesisBlock() const ;
@@ -204,8 +203,58 @@ private:
 
 extern const TestNetChain testnet;
 
-class COINCHAIN_EXPORT LitecoinChain : public Chain
-{
+class COINCHAIN_EXPORT NamecoinChain : public Chain {
+public:
+    NamecoinChain();
+    virtual const Block& genesisBlock() const ;
+    virtual const uint256& genesisHash() const { return _genesis; }
+    virtual const int64_t subsidy(unsigned int height) const ;
+    virtual bool isStandard(const Transaction& tx) const ;
+    virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 28); }
+    virtual unsigned int nextWorkRequired(BlockIterator blk) const;
+    virtual const bool checkProofOfWork(const Block& block) const;
+    virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
+    virtual unsigned int totalBlocksEstimate() const;
+    
+    virtual const std::string dataDirSuffix() const { return "namecoin"; }
+    
+    virtual int64_t min_fee() const {
+        return 500000;
+    }
+    
+    const PubKey& alert_key() const { return _alert_key; }
+    
+    //    virtual char networkId() const { return 0x00; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
+    virtual ChainAddress getAddress(PubKeyHash hash) const { return ChainAddress(0x00, hash); }
+    virtual ChainAddress getAddress(ScriptHash hash) const { return ChainAddress(0x05, hash); }
+    virtual ChainAddress getAddress(std::string str) const {
+        ChainAddress addr(str);
+        if(addr.version() == 0x00)
+            addr.setType(ChainAddress::PUBKEYHASH);
+        else if (addr.version() == 0x05)
+            addr.setType(ChainAddress::SCRIPTHASH);
+        return addr;
+    }
+    
+    virtual const MessageStart& messageStart() const { return _messageStart; };
+    virtual short defaultPort() const { return 8334; }
+    
+    virtual std::string ircChannel() const { return "namecoin"; }
+    virtual unsigned int ircChannels() const { return 2; } // number of groups to try (100 for bitcoin, 2 for litecoin)
+    virtual std::string cc() const { return "NMC"; }
+    
+private:
+    Block _genesisBlock;
+    uint256 _genesis;
+    MessageStart _messageStart;
+    typedef std::map<int, uint256> Checkpoints;
+    Checkpoints _checkpoints;
+};
+
+extern const NamecoinChain namecoin;
+
+        
+class COINCHAIN_EXPORT LitecoinChain : public Chain {
 public:
     LitecoinChain();
     virtual const Block& genesisBlock() const ;

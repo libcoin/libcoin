@@ -42,6 +42,14 @@ enum opcodetype
     // push value
     OP_0=0,
     OP_FALSE=OP_0,
+
+    // definitions for namecoin
+    OP_NAME_INVALID = 0x00,
+    OP_NAME_NEW = 0x01,
+    OP_NAME_FIRSTUPDATE = 0x02,
+    OP_NAME_UPDATE = 0x03,
+    OP_NAME_NOP = 0x04,
+
     OP_PUSHDATA1=76,
     OP_PUSHDATA2,
     OP_PUSHDATA4,
@@ -322,6 +330,11 @@ inline const char* GetOpName(opcodetype opcode)
         case OP_NOP8                   : return "OP_NOP8";
         case OP_NOP9                   : return "OP_NOP9";
         case OP_NOP10                  : return "OP_NOP10";
+            
+            // Namecoin extensions
+        case OP_NAME_NEW               : return "NAME_NEW";
+        case OP_NAME_UPDATE            : return "NAME_UPDATE";
+        case OP_NAME_FIRSTUPDATE       : return "NAME_FIRSTUPDATE";
             
             // ExtendedKey stuff
         case OP_SIGHASH                : return "OP_SIGHASH";
