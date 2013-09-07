@@ -29,6 +29,8 @@
 #include <boost/function.hpp>
 #include <boost/asio/ssl.hpp>
 
+/// Note!!! The client class can only be called once - at least wait for answer to return before calling it again...
+
 class COINHTTP_EXPORT Client
 {
 public:
