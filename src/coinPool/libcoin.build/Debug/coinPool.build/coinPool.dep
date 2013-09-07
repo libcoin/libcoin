@@ -1,7 +1,0 @@
-524850dd75f8b08dd796ec7c89b9990a 806b632103d3f2c6cce9e2e044e2d75a ffffffffffffffffffffffffffffffff 0 /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.dylib
-0000000053d01d900000000000052733 fe5b74bf9d87d494bf399dcaf6cd8831 ffffffffffffffffffffffffffffffff 2067264 /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.o
-0000000002f79c940000000000052325 1482cfc64b2466f0d2336381ca25acb5 ffffffffffffffffffffffffffffffff 2120584 /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.o
-0000000000aeebae0000000000052507 6b97ff57c8015e575dbb08ce399b3793 ffffffffffffffffffffffffffffffff 1512724 /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Miner.o
-0000000053d01c4c00000000000520d3 126781d1240a0e6225eba013f98afea1 ffffffffffffffffffffffffffffffff 2307368 /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.o
-0000000053d01c460000000000053228 c16195224fe90953c2ccbaea754547fc ffffffffffffffffffffffffffffffff 2825368 /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.o
-ffffffffffffffffffffffffffffffff 6ccde5b826f164da7ecde109e1687980 ffffffffffffffffffffffffffffffff 9040176 /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.a

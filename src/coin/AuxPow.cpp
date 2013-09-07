@@ -4,6 +4,7 @@
 
 #include <coin/Script.h>
 #include <coin/AuxPow.h>
+#include <coin/Block.h>
 
 using namespace std;
 using namespace boost;
@@ -17,28 +18,28 @@ void RemoveMergedMiningHeader(vector<unsigned char>& vchAux)
     vchAux.erase(vchAux.begin(), vchAux.begin() + sizeof(pchMergedMiningHeader));
 }
 
-/*
-bool AuxPow::Check(uint256 hashAuxBlock, int nChainID)
+
+bool AuxPow::Check(uint256 hashAuxBlock, int nChainID) const
 {
-    if (nIndex != 0)
+    if (_index != 0)
         return error("AuxPow is not a generate");
 
-    if (!fTestNet && parentBlock.GetChainID() == nChainID)
+    if (parentBlock.getVersion() / BLOCK_VERSION_CHAIN_START == nChainID)
         return error("Aux POW parent has our chain ID");
 
     if (vChainMerkleBranch.size() > 30)
         return error("Aux POW chain merkle branch too long");
 
     // Check that the chain merkle root is in the coinbase
-    uint256 nRootHash = Block::CheckMerkleBranch(hashAuxBlock, vChainMerkleBranch, nChainIndex);
+    uint256 nRootHash = Block::checkMerkleBranch(hashAuxBlock, vChainMerkleBranch, nChainIndex);
     vector<unsigned char> vchRootHash(nRootHash.begin(), nRootHash.end());
     std::reverse(vchRootHash.begin(), vchRootHash.end()); // correct endian
 
     // Check that we are in the parent block merkle tree
-    if (CBlock::CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != parentBlock.hashMerkleRoot)
+    if (Block::checkMerkleBranch(getHash(), _merkleBranch, _index) != parentBlock.getMerkleRoot())
         return error("Aux POW merkle root incorrect");
 
-    const Script script = vin[0].scriptSig;
+    const Script script = getInput(0).signature();
 
     // Check that the same work is not submitted twice to our chain.
     //
@@ -52,8 +53,7 @@ bool AuxPow::Check(uint256 hashAuxBlock, int nChainID)
     if (pc == script.end())
         return error("Aux POW missing chain merkle root in parent coinbase");
 
-    if (pcHead != script.end())
-    {
+    if (pcHead != script.end()) {
         // Enforce only one chain merkle root by checking that a single instance of the merged
         // mining header exists just before.
         if (script.end() != std::search(pcHead + 1, script.end(), UBEGIN(pchMergedMiningHeader), UEND(pchMergedMiningHeader)))
@@ -61,8 +61,7 @@ bool AuxPow::Check(uint256 hashAuxBlock, int nChainID)
         if (pcHead + sizeof(pchMergedMiningHeader) != pc)
             return error("Merged mining header is not just before chain merkle root");
     }
-    else
-    {
+    else {
         // For backward compatibility.
         // Enforce only one chain merkle root by checking that it starts early in the coinbase.
         // 8-12 bytes are enough to encode extraNonce and nBits.
@@ -101,7 +100,7 @@ bool AuxPow::Check(uint256 hashAuxBlock, int nChainID)
 
     return true;
 }
-*/
+
 /*
 Script MakeCoinbaseWithAux(unsigned int nBits, unsigned int nExtraNonce, vector<unsigned char>& vchAux)
 {

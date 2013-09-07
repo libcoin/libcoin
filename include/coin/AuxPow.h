@@ -48,9 +48,9 @@ public:
         nSerSize += SerReadWrite(s, parentBlock, nType | SER_BLOCKHEADERONLY, nVersion, ser_action);
     )
 
-    //    bool Check(uint256 hashAuxBlock, int nChainID);
+    bool Check(uint256 hashAuxBlock, int nChainID) const;
 
-    uint256 GetParentBlockHash() {
+    uint256 GetParentBlockHash() const {
         return parentBlock.getHash();
     }
 };

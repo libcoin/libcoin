@@ -15,6 +15,10 @@
  */
 
 
+#include <coin/BigNum.h>
+
+#include <iomanip>
+
 #include <map>
 #include <vector>
 #include <deque>
@@ -22,6 +26,7 @@
 #include <boost/variant.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
+
 
 using namespace std;
 using namespace boost;
@@ -333,7 +338,7 @@ string strip_path(string path) {
     size_t slash = path.rfind("/");
     return path.substr(slash + 1);
 }
-
+/*
 namespace coin {
 
 void f0() {
@@ -368,13 +373,33 @@ void f3() {
     }
 }
 }
+ */
 int main(int argc, char* argv[]) {
 
+    CBigNum pow;
+    pow.SetCompact(0x1c008000);
+    cout << hex << (pow-1).GetCompact() << endl;
+    
+    
+    cout << hex << CBigNum(~uint256(0) >> 30).GetCompact() << endl;
+    cout << hex << CBigNum(~uint256(0) >> 31).GetCompact() << endl;
+    cout << hex << CBigNum(~uint256(0) >> 32).GetCompact() << endl;
+    cout << hex << CBigNum(~uint256(0) >> 33).GetCompact() << endl;
+    cout << hex << CBigNum(~uint256(0) >> 34).GetCompact() << endl;
+    cout << hex << CBigNum(~uint256(0) >> 35).GetCompact() << endl;
+    cout << hex << CBigNum(~uint256(0) >> 36).GetCompact() << endl;
+    cout << hex << CBigNum(~uint256(0) >> 37).GetCompact() << endl;
+    cout << hex << CBigNum(~uint256(0) >> 38).GetCompact() << endl;
+    cout << hex << CBigNum(~uint256(0) >> 39).GetCompact() << endl;
+    cout << hex << CBigNum(~uint256(0) >> 40).GetCompact() << endl;
+    cout << hex << CBigNum(~uint256(0) >> 41).GetCompact() << endl;
+    cout << hex << CBigNum(~uint256(0) >> 42).GetCompact() << endl;
+    
     int64_t amount = 100000000;
     cout << DecimalFormatter()(amount) << endl;
     
     cout << DecimalFormatter()("0.01") << endl;
-    
+    /*
     try {
         coin::f3();
     } catch (std::exception& e) {

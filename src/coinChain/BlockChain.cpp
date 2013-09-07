@@ -406,6 +406,16 @@ void BlockChain::maturate(int64_t count) {
 
 void BlockChain::insertBlockHeader(int64_t count, const Block& block) {
     query("INSERT INTO Blocks (count, hash, version, prev, mrkl, time, bits, nonce) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", count, block.getHash(), block.getVersion(), block.getPrevBlock(), block.getMerkleRoot(), block.getBlockTime(), block.getBits(), block.getNonce());
+        
+    // also insert the AuxPow extra header into the db:
+    //if (_chain.adhere_aux_pow() && block.getVersion()&BLOCK_VERSION_AUXPOW) {
+    //    const AuxPow& aux = block.getAuxPoW();
+    //    const MerkleTx& mtxn = aux;
+    //    Data coinbase = (CDataStream() << mtxn).data();
+    //    Data branch = (CDataStream() << aux.vChainMerkleBranch << aux.nChainIndex).data();
+    //    Data others =
+    //    query("INSERT INTO AuxProofOfWorks (count, coinbase, branch, others, parent) VALUES (?, ?, ?, ?, ?)", count, coinbase, branch, others, );
+    //}
 }
 
 void BlockChain::postTransaction(const Transaction txn, int64_t& fees, int64_t min_fee, BlockIterator blk, int64_t idx, bool verify) {
@@ -1155,6 +1165,8 @@ int BlockChain::getMinAcceptedBlockVersion() const {
     size_t quorum = _chain.accept_quorum();
     size_t majority = _chain.accept_majority();
     
+    if (quorum < majority) return 1; // don't enforce
+    
     map<int, size_t> bins; // map will initialize size_t using the default initializer size_t() which is 0.
     // iterate backwards in the chain until
     BlockTree::Iterator bi = _tree.best();
@@ -1178,6 +1190,9 @@ int BlockChain::getMinAcceptedBlockVersion() const {
 int BlockChain::getMinEnforcedBlockVersion() const {
     size_t quorum = _chain.enforce_quorum();
     size_t majority = _chain.enforce_majority();
+
+    if (quorum < majority) return 1; // don't enforce
+    
     map<int, size_t> bins; // map will initialize size_t using the default initializer size_t() which is 0.
                           // iterate backwards in the chain until
     BlockTree::Iterator bi = _tree.best();

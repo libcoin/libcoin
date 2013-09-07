@@ -42,7 +42,7 @@ public:
     virtual bool isStandard(const Transaction& tx) const = 0;
     virtual unsigned int nextWorkRequired(BlockIterator blk) const = 0;
     virtual const CBigNum proofOfWorkLimit() const = 0;
-    
+    virtual bool adhere_aux_pow() const { return false; }
     virtual const bool checkProofOfWork(const Block& block) const = 0;
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const { return true; } // optional
     virtual unsigned int totalBlocksEstimate() const { return 0; } // optional
@@ -210,9 +210,11 @@ public:
     virtual const uint256& genesisHash() const { return _genesis; }
     virtual const int64_t subsidy(unsigned int height) const ;
     virtual bool isStandard(const Transaction& tx) const ;
-    virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 28); }
+    virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 32); }
     virtual unsigned int nextWorkRequired(BlockIterator blk) const;
     virtual const bool checkProofOfWork(const Block& block) const;
+    virtual bool adhere_aux_pow() const { return true; }
+    
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
     virtual unsigned int totalBlocksEstimate() const;
     
@@ -281,6 +283,14 @@ public:
     virtual int64_t min_fee() const {
         return 2000000;
     }
+    
+    // To enable upgrade from one block version to another we define a quorum and a majority for acceptance
+    // of minimum this version as well as a quorum and majority for when the checks of that block version should be enforced.
+    virtual size_t accept_quorum() const { return 1000;}
+    virtual size_t accept_majority() const { return 1001; } // 95% of the last 1000
+    
+    virtual size_t enforce_quorum() const { return 1000; }
+    virtual size_t enforce_majority() const { return 1001; } // 75% of the last 1000
     
     //    virtual char networkId() const { return 0x00; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
     virtual ChainAddress getAddress(PubKeyHash hash) const { return ChainAddress(0x30, hash); }

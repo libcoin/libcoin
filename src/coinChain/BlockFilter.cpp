@@ -33,6 +33,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
     }
     if (msg.command() == "block") {
         Block block;
+        if (_blockChain.chain().adhere_aux_pow()) block.adhere_aux_pow();
         CDataStream data(msg.payload());
         data >> block;
         

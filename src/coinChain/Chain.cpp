@@ -289,9 +289,9 @@ unsigned int TestNetChain::nextWorkRequired(BlockIterator blk) const {
 const TestNetChain testnet;
 
 
-NamecoinChain::NamecoinChain() : _genesis("0x00000007199508e34a9ff81e6ec0c477a4cccff2a4767a8eee39c11db367b008") {
+NamecoinChain::NamecoinChain() : _genesis("000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770") {
     _alert_key = ParseHex("04fc9702847840aaf195de8442ebecedf5b095cdbb9bc716bda9110971b28a49e0ead8564ff0db22209e0374782c093bb899692d524e9d6a6956e7c5ecbcd68284");
-    _messageStart[0] = 0xfa; _messageStart[1] = 0xbf; _messageStart[2] = 0xb5; _messageStart[3] = 0xda;
+    _messageStart[0] = 0xf9; _messageStart[1] = 0xbe; _messageStart[2] = 0xb4; _messageStart[3] = 0xfe;
     const char* pszTimestamp = "... choose what comes next.  Lives of your own, or a return to chains. -- V";
     Transaction txNew;
     Script signature = Script() << 0x1c007fff << CBigNum(522) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
@@ -301,7 +301,7 @@ NamecoinChain::NamecoinChain() : _genesis("0x00000007199508e34a9ff81e6ec0c477a4c
     _genesisBlock = Block(1, uint256(0), uint256(0), 1303000001, 0x1c007fff, 0xa21ea192U);
     _genesisBlock.addTransaction(txNew);
     _genesisBlock.updateMerkleTree(); // genesisBlock
-                                      //    assert(_genesisBlock.getHash() == _genesis);
+    assert(_genesisBlock.getHash() == _genesis);
     
     _checkpoints = boost::assign::map_list_of
     (  2016, uint256("0x0000000000660bad0d9fbde55ba7ee14ddf766ed5f527e3fbca523ac11460b92"))
@@ -377,20 +377,38 @@ bool NamecoinChain::isStandard(const Transaction& tx) const {
 }
 
 /// This function has changed as it served two purposes: sanity check for headers and real proof of work check. We only need the proofOfWorkLimit for the latter
+/// For namecoin we allow merged mining for the PoW!
 const bool NamecoinChain::checkProofOfWork(const Block& block) const {
-    uint256 hash = block.getHash();
-    unsigned int nBits = block.getBits();
-    CBigNum bnTarget;
-    bnTarget.SetCompact(nBits);
-    
-    // Check range
-    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit()))
+    log_trace("Enter %s (block.version = %d)", __FUNCTION__, block.getVersion());
+    // we accept aux pow all the time - the lockins will ensure we get the right chain
+    // Prevent same work from being submitted twice:
+    // - this block must have our chain ID
+    // - parent block must not have the same chain ID (see CAuxPow::Check)
+    // - index of this chain in chain merkle tree must be pre-determined (see CAuxPow::Check)
+    //    if (nHeight != INT_MAX && GetChainID() != GetOurChainID())
+    //    return error("CheckProofOfWork() : block does not have our chain ID");
+
+    CBigNum target;
+    target.SetCompact(block.getBits());
+    if (proofOfWorkLimit() != 0 && (target <= 0 || target > proofOfWorkLimit())) {
+        cout << target.GetHex() << endl;
+        cout << proofOfWorkLimit().GetHex() << endl;
         return error("CheckProofOfWork() : nBits below minimum work");
+    }
     
-    // Check proof of work matches claimed amount
-    if (hash > bnTarget.getuint256())
-        return error("CheckProofOfWork() : hash doesn't match nBits");
-    
+    if (block.getVersion()&BLOCK_VERSION_AUXPOW) {
+        if (!block.getAuxPoW().Check(block.getHash(), block.getVersion()/BLOCK_VERSION_CHAIN_START))
+            return error("CheckProofOfWork() : AUX POW is not valid");
+        // Check proof of work matches claimed amount
+        if (block.getAuxPoW().GetParentBlockHash() > target.getuint256())
+            return error("CheckProofOfWork() : AUX proof of work failed");
+    }
+    else {
+        // Check proof of work matches claimed amount
+        if (block.getHash() > target.getuint256())
+            return error("CheckProofOfWork() : proof of work failed");
+    }
+    log_trace("Return(true): %s", __FUNCTION__);
     return true;
 }
 
@@ -402,7 +420,7 @@ unsigned int NamecoinChain::nextWorkRequired(BlockIterator blk) const {
     // Genesis block
     int h = blk.height();
     if (h == 0) // trick to test that it is asking for the genesis block
-        return proofOfWorkLimit().GetCompact();
+        return 0x1c007fff;
     
     // Only change once per interval
     if ((h + 1) % nInterval != 0)
@@ -410,6 +428,9 @@ unsigned int NamecoinChain::nextWorkRequired(BlockIterator blk) const {
     
     // Go back by what we want to be 14 days worth of blocks
     BlockIterator former = blk - (nInterval-1);
+    
+    if (h >= 19200 && (h+1 > nInterval))
+        former = blk - nInterval;
     
     // Limit adjustment step
     int nActualTimespan = blk->time - former->time;

@@ -46,7 +46,7 @@ uint256 Block::buildMerkleTree() const
     return merkleRoot;
 }
 
-std::vector<uint256> Block::getMerkleBranch(int index) const
+MerkleBranch Block::getMerkleBranch(int index) const
 {
     if (_merkleTree.empty())
         buildMerkleTree();
@@ -61,7 +61,7 @@ std::vector<uint256> Block::getMerkleBranch(int index) const
     return merkleBranch;
 }
 
-uint256 Block::checkMerkleBranch(uint256 hash, const std::vector<uint256>& merkleBranch, int index)
+uint256 Block::checkMerkleBranch(uint256 hash, const MerkleBranch& merkleBranch, int index)
 {
     if (index == -1)
         return uint256(0);

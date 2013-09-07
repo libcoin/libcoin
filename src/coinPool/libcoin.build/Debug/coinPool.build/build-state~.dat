@@ -1,484 +1,0 @@
-TcoinPool
-v5
-r1
-cCheck dependencies
-cCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
-cCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
-cCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
-cCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
-
-N/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk
-c000000005122142C00000000000000AA
-t1361187884
-s170
-
-N/Users/gronager/Development/libcoin/libcoin/include/coinPool/GetBlockTemplate.h
-c0000000051277E5000000000000010DF
-t1361542736
-s4319
-
-N/Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.a
-t2
-s0
-
-N/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp
-c0000000051277E330000000000001946
-t1361542707
-s6470
-i<coinPool/GetBlockTemplate.h>
-
-N/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp
-c0000000051277CB50000000000000A75
-t1361542325
-s2677
-
-N/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp
-c0000000051277A530000000000001867
-t1361541715
-s6247
-
-N/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp
-c0000000051277F34000000000000076B
-t1361542964
-s1899
-
-N/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.o
-t2
-s0
-
-N/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.o
-t2
-s0
-
-N/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.o
-t2
-s0
-
-N/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.o
-t2
-s0
-
-N/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/coinPoold.LinkFileList
-c0000000051277F3E00000000000001FA
-t1361542974
-s506
-
-N/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Script-2E8C313340F4470CBCD0D660.sh
-c0000000051277F3E00000000000000C3
-t1361542974
-s195
-
-CBuild AST from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp
-r0
-
-CBuild AST from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp
-r0
-
-CBuild AST from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp
-r0
-
-CBuild AST from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp
-r0
-
-CCheck dependencies
-r0
-lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection18"Check dependencies13bb12beb6d7b641^7e7422beb6d7b641^---0#1#0#--18"Check dependencies36"BAD4363D-29EF-42FA-9411-B2E483E54391-
-
-CCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
-s383235774.078675
-e383235780.539986
-r0
-xCompileC
-xsrc/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.o
-x/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp
-xnormal
-xx86_64
-xc++
-xcom.apple.compilers.llvm.clang.1_0.compiler
-oclang: warning: argument unused during compilation: '-ftree-vectorize'
-oIn file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:17:
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/GetBlockTemplate.h:109:8: warning: extra tokens at end of #endif directive [-Wextra-tokens]
-o#endif COINPOOL_GETBLOCKTEMPLATE_H
-o       ^
-o       //
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:23:5: error: unknown type name 'RPC'
-o    RPC rpc(request);
-o    ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:25:5: error: use of undeclared identifier 'Array'; did you mean 'array'?
-o    Array params = rpc.params();
-o    ^~~~~
-o    array
-o/usr/local/include/boost/asio/detail/array_fwd.hpp:23:7: note: 'array' declared here
-oclass array;
-o      ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:25:5: error: unknown type name 'Array'; did you mean 'json_spirit::Array'?
-o    Array params = rpc.params();
-o    ^~~~~
-o    json_spirit::Array
-o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:143:33: note: 'json_spirit::Array' declared here
-o    typedef Config::Array_type  Array;
-o                                ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:26:51: error: use of undeclared identifier 'obj_type'; did you mean 'json_spirit::obj_type'?
-o    if (params.size() == 0 || params[0].type() != obj_type) {
-o                                                  ^~~~~~~~
-o                                                  json_spirit::obj_type
-o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:26:22: note: 'json_spirit::obj_type' declared here
-o    enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };
-o                     ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:31:5: error: unknown type name 'Object'; did you mean 'json_spirit::Object'?
-o    Object obj = params[0].get_obj();
-o    ^~~~~~
-o    json_spirit::Object
-o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:142:33: note: 'json_spirit::Object' declared here
-o    typedef Config::Object_type Object;
-o                                ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:32:5: error: unknown type name 'Value'; did you mean 'json_spirit::Value'?
-o    Value longpollid = find_value(obj, "longpollid");
-o    ^~~~~
-o    json_spirit::Value
-o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:140:33: note: 'json_spirit::Value' declared here
-o    typedef Config::Value_type  Value;
-o                                ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:34:30: error: use of undeclared identifier 'str_type'; did you mean 'json_spirit::str_type'?
-o    if (longpollid.type() != str_type) { // first call (or error) just dispatch
-o                             ^~~~~~~~
-o                             json_spirit::str_type
-o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:26:44: note: 'json_spirit::str_type' declared here
-o    enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };
-o                                           ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:46:1: error: unknown type name 'Value'; did you mean 'json_spirit::Value'?
-oValue GetBlockTemplate::operator()(const Array& params, bool fHelp) {
-o^~~~~
-ojson_spirit::Value
-o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:140:33: note: 'json_spirit::Value' declared here
-o    typedef Config::Value_type  Value;
-o                                ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:46:42: error: unknown type name 'Array'; did you mean 'json_spirit::Array'?
-oValue GetBlockTemplate::operator()(const Array& params, bool fHelp) {
-o                                         ^~~~~
-o                                         json_spirit::Array
-o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:143:33: note: 'json_spirit::Array' declared here
-o    typedef Config::Array_type  Array;
-o                                ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:47:60: error: use of undeclared identifier 'obj_type'; did you mean 'json_spirit::obj_type'?
-o    if (fHelp || params.size() == 0 || params[0].type() != obj_type)
-o                                                           ^~~~~~~~
-o                                                           json_spirit::obj_type
-o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:26:22: note: 'json_spirit::obj_type' declared here
-o    enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };
-o                     ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:48:15: error: use of undeclared identifier 'RPC'
-o        throw RPC::error(RPC::invalid_params, "getblocktemplate\n [{capabilities : []}]"
-o              ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:48:26: error: use of undeclared identifier 'RPC'
-o        throw RPC::error(RPC::invalid_params, "getblocktemplate\n [{capabilities : []}]"
-o                         ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:51:5: error: unknown type name 'Object'; did you mean 'json_spirit::Object'?
-o    Object obj = params[0].get_obj();
-o    ^~~~~~
-o    json_spirit::Object
-o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:142:33: note: 'json_spirit::Object' declared here
-o    typedef Config::Object_type Object;
-o                                ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:52:5: error: unknown type name 'Value'; did you mean 'json_spirit::Value'?
-o    Value capabilities = find_value(obj, "capabilities");
-o    ^~~~~
-o    json_spirit::Value
-o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:140:33: note: 'json_spirit::Value' declared here
-o    typedef Config::Value_type  Value;
-o                                ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:54:32: error: use of undeclared identifier 'array_type'; did you mean 'json_spirit::array_type'?
-o    if (capabilities.type() != array_type)
-o                               ^~~~~~~~~~
-o                               json_spirit::array_type
-o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:26:32: note: 'json_spirit::array_type' declared here
-o    enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };
-o                               ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:55:15: error: use of undeclared identifier 'RPC'
-o        throw RPC::error(RPC::parse_error, "Expected a capability array");
-o              ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:55:26: error: use of undeclared identifier 'RPC'
-o        throw RPC::error(RPC::parse_error, "Expected a capability array");
-o                         ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:61:51: error: use of undeclared identifier 'str_type'; did you mean 'json_spirit::str_type'?
-o        if (capabilities.get_array()[i].type() != str_type)
-o                                                  ^~~~~~~~
-o                                                  json_spirit::str_type
-o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:26:44: note: 'json_spirit::str_type' declared here
-o    enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };
-o                                           ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:74:15: error: use of undeclared identifier 'RPC'
-o        throw RPC::error(RPC::invalid_request, "Need coinbasetxn capability");
-o              ^
-ofatal error: too many errors emitted, stopping now [-ferror-limit=]
-o1 warning and 20 errors generated.
-lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection85"Compile /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp1b4b14beb6d7b641^1adc8ac4b6d7b641^-8396"clang: warning: argument unused during compilation: '-ftree-vectorize'In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:17:/Users/gronager/Development/libcoin/libcoin/include/coinPool/GetBlockTemplate.h:109:8: warning: extra tokens at end of #endif directive [-Wextra-tokens]#endif COINPOOL_GETBLOCKTEMPLATE_H       ^       ///Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:23:5: error: unknown type name 'RPC'    RPC rpc(request);    ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:25:5: error: use of undeclared identifier 'Array'; did you mean 'array'?    Array params = rpc.params();    ^~~~~    array/usr/local/include/boost/asio/detail/array_fwd.hpp:23:7: note: 'array' declared hereclass array;      ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:25:5: error: unknown type name 'Array'; did you mean 'json_spirit::Array'?    Array params = rpc.params();    ^~~~~    json_spirit::Array/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:143:33: note: 'json_spirit::Array' declared here    typedef Config::Array_type  Array;                                ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:26:51: error: use of undeclared identifier 'obj_type'; did you mean 'json_spirit::obj_type'?    if (params.size() == 0 || params[0].type() != obj_type) {                                                  ^~~~~~~~                                                  json_spirit::obj_type/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:26:22: note: 'json_spirit::obj_type' declared here    enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };                     ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:31:5: error: unknown type name 'Object'; did you mean 'json_spirit::Object'?    Object obj = params[0].get_obj();    ^~~~~~    json_spirit::Object/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:142:33: note: 'json_spirit::Object' declared here    typedef Config::Object_type Object;                                ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:32:5: error: unknown type name 'Value'; did you mean 'json_spirit::Value'?    Value longpollid = find_value(obj, "longpollid");    ^~~~~    json_spirit::Value/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:140:33: note: 'json_spirit::Value' declared here    typedef Config::Value_type  Value;                                ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:34:30: error: use of undeclared identifier 'str_type'; did you mean 'json_spirit::str_type'?    if (longpollid.type() != str_type) { // first call (or error) just dispatch                             ^~~~~~~~                             json_spirit::str_type/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:26:44: note: 'json_spirit::str_type' declared here    enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };                                           ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:46:1: error: unknown type name 'Value'; did you mean 'json_spirit::Value'?Value GetBlockTemplate::operator()(const Array& params, bool fHelp) {^~~~~json_spirit::Value/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:140:33: note: 'json_spirit::Value' declared here    typedef Config::Value_type  Value;                                ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:46:42: error: unknown type name 'Array'; did you mean 'json_spirit::Array'?Value GetBlockTemplate::operator()(const Array& params, bool fHelp) {                                         ^~~~~                                         json_spirit::Array/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:143:33: note: 'json_spirit::Array' declared here    typedef Config::Array_type  Array;                                ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:47:60: error: use of undeclared identifier 'obj_type'; did you mean 'json_spirit::obj_type'?    if (fHelp || params.size() == 0 || params[0].type() != obj_type)                                                           ^~~~~~~~                                                           json_spirit::obj_type/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:26:22: note: 'json_spirit::obj_type' declared here    enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };                     ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:48:15: error: use of undeclared identifier 'RPC'        throw RPC::error(RPC::invalid_params, "getblocktemplate\n [{capabilities : []}]"              ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:48:26: error: use of undeclared identifier 'RPC'        throw RPC::error(RPC::invalid_params, "getblocktemplate\n [{capabilities : []}]"                         ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:51:5: error: unknown type name 'Object'; did you mean 'json_spirit::Object'?    Object obj = params[0].get_obj();    ^~~~~~    json_spirit::Object/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:142:33: note: 'json_spirit::Object' declared here    typedef Config::Object_type Object;                                ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:52:5: error: unknown type name 'Value'; did you mean 'json_spirit::Value'?    Value capabilities = find_value(obj, "capabilities");    ^~~~~    json_spirit::Value/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:140:33: note: 'json_spirit::Value' declared here    typedef Config::Value_type  Value;                                ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:54:32: error: use of undeclared identifier 'array_type'; did you mean 'json_spirit::array_type'?    if (capabilities.type() != array_type)                               ^~~~~~~~~~                               json_spirit::array_type/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:26:32: note: 'json_spirit::array_type' declared here    enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };                               ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:55:15: error: use of undeclared identifier 'RPC'        throw RPC::error(RPC::parse_error, "Expected a capability array");              ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:55:26: error: use of undeclared identifier 'RPC'        throw RPC::error(RPC::parse_error, "Expected a capability array");                         ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:61:51: error: use of undeclared identifier 'str_type'; did you mean 'json_spirit::str_type'?        if (capabilities.get_array()[i].type() != str_type)                                                  ^~~~~~~~                                                  json_spirit::str_type/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:26:44: note: 'json_spirit::str_type' declared here    enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };                                           ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp:74:15: error: use of undeclared identifier 'RPC'        throw RPC::error(RPC::invalid_request, "Need coinbasetxn capability");              ^fatal error: too many errors emitted, stopping now [-ferror-limit=]1 warning and 20 errors generated.-0#0#0#-19%DVTDocumentLocation2@93"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp0000000000000000^2343"CompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.o src/coinPool/GetBlockTemplate.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -DCOINMINE_LIBRARY_STATIC -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/lib/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/lib -mmacosx-version-min=10.8 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.dia -c /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetBlockTemplate.cpp -o /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetBlockTemplate.o36"14A23E92-1D9C-4E7D-AF88-25E7061AF39D-
-
-CCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
-s383235774.078708
-e383235780.643634
-r0
-xCompileC
-xsrc/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.o
-x/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp
-xnormal
-xx86_64
-xc++
-xcom.apple.compilers.llvm.clang.1_0.compiler
-oclang: warning: argument unused during compilation: '-ftree-vectorize'
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:19:1: error: unknown type name 'Value'; did you mean 'json_spirit::Value'?
-oValue GetWork::operator()(const Array& params, bool fHelp) {
-o^~~~~
-ojson_spirit::Value
-o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:140:33: note: 'json_spirit::Value' declared here
-o    typedef Config::Value_type  Value;
-o                                ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:19:33: error: unknown type name 'Array'; did you mean 'json_spirit::Array'?
-oValue GetWork::operator()(const Array& params, bool fHelp) {
-o                                ^~~~~
-o                                json_spirit::Array
-o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:143:33: note: 'json_spirit::Array' declared here
-o    typedef Config::Array_type  Array;
-o                                ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:21:15: error: use of undeclared identifier 'RPC'
-o        throw RPC::error(RPC::invalid_params, "getwork [data]\n"
-o              ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:21:26: error: use of undeclared identifier 'RPC'
-o        throw RPC::error(RPC::invalid_params, "getwork [data]\n"
-o                         ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:33:9: error: use of undeclared identifier 'tie'
-o        tie(block, target) = _pool.getWork();
-o        ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:41:9: error: unknown type name 'Object'; did you mean 'json_spirit::Object'?
-o        Object result;
-o        ^~~~~~
-o        json_spirit::Object
-o/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:142:33: note: 'json_spirit::Object' declared here
-o    typedef Config::Object_type Object;
-o                                ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:42:26: error: use of undeclared identifier 'Pair'
-o        result.push_back(Pair("midstate", HexStr(BEGIN(pmidstate), END(pmidstate)))); // deprecated
-o                         ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:43:26: error: use of undeclared identifier 'Pair'
-o        result.push_back(Pair("data",     HexStr(BEGIN(pdata), END(pdata))));
-o                         ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:44:26: error: use of undeclared identifier 'Pair'
-o        result.push_back(Pair("hash1",    HexStr(BEGIN(phash1), END(phash1)))); // deprecated
-o                         ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:45:26: error: use of undeclared identifier 'Pair'
-o        result.push_back(Pair("target",   HexStr(BEGIN(target), END(target))));
-o                         ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:46:16: error: no viable conversion from 'Object' (aka 'vector<Pair_type>') to 'int'
-o        return result;
-o               ^~~~~~
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:50:9: error: no template named 'vector'; did you mean 'std::vector'?
-o        vector<unsigned char> data = ParseHex(params[0].get_str());
-o        ^~~~~~
-o        std::vector
-o/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/bits/stl_vector.h:162:11: note: 'std::vector' declared here
-o    class vector : protected _Vector_base<_Tp, _Alloc>
-o          ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:52:19: error: use of undeclared identifier 'RPC'
-o            throw RPC::error(RPC::invalid_params, "Invalid parameter");
-o                  ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:52:30: error: use of undeclared identifier 'RPC'
-o            throw RPC::error(RPC::invalid_params, "Invalid parameter");
-o                             ^
-oIn file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:17:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/GetWork.h:20:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:20:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:21:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/BigNum.h:12:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/util.h:23:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Logger.h:22:
-oIn file included from /usr/local/include/boost/thread/thread.hpp:17:
-oIn file included from /usr/local/include/boost/thread/pthread/thread_data.hpp:10:
-oIn file included from /usr/local/include/boost/shared_ptr.hpp:17:
-oIn file included from /usr/local/include/boost/smart_ptr/shared_ptr.hpp:30:
-o/usr/local/include/boost/checked_delete.hpp:34:5: warning: delete called on 'boost::error_info<boost::tag_original_exception_type, const std::type_info *>' that has virtual functions but non-virtual destructor [-Wdelete-non-virtual-dtor]
-o    delete x;
-o    ^
-o/usr/local/include/boost/smart_ptr/detail/shared_count.hpp:95:13: note: in instantiation of function template specialization 'boost::checked_delete<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here
-o            boost::checked_delete( p );
-o            ^
-o/usr/local/include/boost/smart_ptr/shared_ptr.hpp:183:44: note: in instantiation of function template specialization 'boost::detail::shared_count::shared_count<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here
-o    explicit shared_ptr( Y * p ): px( p ), pn( p ) // Y must be complete
-o                                           ^
-o/usr/local/include/boost/exception/info.hpp:170:42: note: in instantiation of function template specialization 'boost::shared_ptr<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >::shared_ptr<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here
-o            shared_ptr<error_info_tag_t> p( new error_info_tag_t(v) );
-o                                         ^
-o/usr/local/include/boost/exception/info.hpp:191:16: note: in instantiation of function template specialization 'boost::exception_detail::set_info<boost::unknown_exception, boost::tag_original_exception_type, const std::type_info *>' requested here
-o        return exception_detail::set_info(x,v);
-o               ^
-o/usr/local/include/boost/exception/detail/exception_ptr.hpp:181:21: note: in instantiation of function template specialization 'boost::operator<<<boost::unknown_exception, boost::tag_original_exception_type, const std::type_info *>' requested here
-o            (*this) << original_exception_type(&typeid(e));
-o                    ^
-o/usr/local/include/boost/exception/detail/exception_ptr.hpp:160:13: note: in instantiation of function template specialization 'boost::unknown_exception::add_original_type<std::exception>' requested here
-o            add_original_type(e);
-o            ^
-o1 warning and 14 errors generated.
-lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection76"Compile /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cppc45e14beb6d7b641^edd8a4c4b6d7b641^-7403"clang: warning: argument unused during compilation: '-ftree-vectorize'/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:19:1: error: unknown type name 'Value'; did you mean 'json_spirit::Value'?Value GetWork::operator()(const Array& params, bool fHelp) {^~~~~json_spirit::Value/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:140:33: note: 'json_spirit::Value' declared here    typedef Config::Value_type  Value;                                ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:19:33: error: unknown type name 'Array'; did you mean 'json_spirit::Array'?Value GetWork::operator()(const Array& params, bool fHelp) {                                ^~~~~                                json_spirit::Array/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:143:33: note: 'json_spirit::Array' declared here    typedef Config::Array_type  Array;                                ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:21:15: error: use of undeclared identifier 'RPC'        throw RPC::error(RPC::invalid_params, "getwork [data]\n"              ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:21:26: error: use of undeclared identifier 'RPC'        throw RPC::error(RPC::invalid_params, "getwork [data]\n"                         ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:33:9: error: use of undeclared identifier 'tie'        tie(block, target) = _pool.getWork();        ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:41:9: error: unknown type name 'Object'; did you mean 'json_spirit::Object'?        Object result;        ^~~~~~        json_spirit::Object/Users/gronager/Development/libcoin/libcoin/include/coinHTTP/json/json_spirit_value.h:142:33: note: 'json_spirit::Object' declared here    typedef Config::Object_type Object;                                ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:42:26: error: use of undeclared identifier 'Pair'        result.push_back(Pair("midstate", HexStr(BEGIN(pmidstate), END(pmidstate)))); // deprecated                         ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:43:26: error: use of undeclared identifier 'Pair'        result.push_back(Pair("data",     HexStr(BEGIN(pdata), END(pdata))));                         ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:44:26: error: use of undeclared identifier 'Pair'        result.push_back(Pair("hash1",    HexStr(BEGIN(phash1), END(phash1)))); // deprecated                         ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:45:26: error: use of undeclared identifier 'Pair'        result.push_back(Pair("target",   HexStr(BEGIN(target), END(target))));                         ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:46:16: error: no viable conversion from 'Object' (aka 'vector<Pair_type>') to 'int'        return result;               ^~~~~~/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:50:9: error: no template named 'vector'; did you mean 'std::vector'?        vector<unsigned char> data = ParseHex(params[0].get_str());        ^~~~~~        std::vector/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/bits/stl_vector.h:162:11: note: 'std::vector' declared here    class vector : protected _Vector_base<_Tp, _Alloc>          ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:52:19: error: use of undeclared identifier 'RPC'            throw RPC::error(RPC::invalid_params, "Invalid parameter");                  ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:52:30: error: use of undeclared identifier 'RPC'            throw RPC::error(RPC::invalid_params, "Invalid parameter");                             ^In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp:17:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/GetWork.h:20:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:20:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:21:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/BigNum.h:12:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/util.h:23:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Logger.h:22:In file included from /usr/local/include/boost/thread/thread.hpp:17:In file included from /usr/local/include/boost/thread/pthread/thread_data.hpp:10:In file included from /usr/local/include/boost/shared_ptr.hpp:17:In file included from /usr/local/include/boost/smart_ptr/shared_ptr.hpp:30:/usr/local/include/boost/checked_delete.hpp:34:5: warning: delete called on 'boost::error_info<boost::tag_original_exception_type, const std::type_info *>' that has virtual functions but non-virtual destructor [-Wdelete-non-virtual-dtor]    delete x;    ^/usr/local/include/boost/smart_ptr/detail/shared_count.hpp:95:13: note: in instantiation of function template specialization 'boost::checked_delete<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here            boost::checked_delete( p );            ^/usr/local/include/boost/smart_ptr/shared_ptr.hpp:183:44: note: in instantiation of function template specialization 'boost::detail::shared_count::shared_count<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here    explicit shared_ptr( Y * p ): px( p ), pn( p ) // Y must be complete                                           ^/usr/local/include/boost/exception/info.hpp:170:42: note: in instantiation of function template specialization 'boost::shared_ptr<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >::shared_ptr<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here            shared_ptr<error_info_tag_t> p( new error_info_tag_t(v) );                                         ^/usr/local/include/boost/exception/info.hpp:191:16: note: in instantiation of function template specialization 'boost::exception_detail::set_info<boost::unknown_exception, boost::tag_original_exception_type, const std::type_info *>' requested here        return exception_detail::set_info(x,v);               ^/usr/local/include/boost/exception/detail/exception_ptr.hpp:181:21: note: in instantiation of function template specialization 'boost::operator<<<boost::unknown_exception, boost::tag_original_exception_type, const std::type_info *>' requested here            (*this) << original_exception_type(&typeid(e));                    ^/usr/local/include/boost/exception/detail/exception_ptr.hpp:160:13: note: in instantiation of function template specialization 'boost::unknown_exception::add_original_type<std::exception>' requested here            add_original_type(e);            ^1 warning and 14 errors generated.-0#0#0#-19%DVTDocumentLocation2@84"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp0000000000000000^2289"CompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.o src/coinPool/GetWork.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -DCOINMINE_LIBRARY_STATIC -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/lib/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/lib -mmacosx-version-min=10.8 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.dia -c /Users/gronager/Development/libcoin/libcoin/src/coinPool/GetWork.cpp -o /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/GetWork.o36"F97E1641-CF6E-480C-9613-0C84DF509479-
-
-CCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
-s383235774.079065
-e383235780.643625
-r0
-xCompileC
-xsrc/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.o
-x/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp
-xnormal
-xx86_64
-xc++
-xcom.apple.compilers.llvm.clang.1_0.compiler
-oclang: warning: argument unused during compilation: '-ftree-vectorize'
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:27:12: error: out-of-line definition of 'submitBlock' does not match any declaration in 'Pool'
-obool Pool::submitBlock(const Block& stub) {
-o           ^~~~~~~~~~~
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:43:36: error: unknown type name 'workid'
-o                uint256 merkleroot(workid);
-o                                   ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:43:35: warning: parentheses were disambiguated as a function declaration [-Wvexing-parse]
-o                uint256 merkleroot(workid);
-o                                  ^~~~~~~~
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:43:36: note: add a pair of parentheses to declare a variable
-o                uint256 merkleroot(workid);
-o                                   ^
-o                                   (      )
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:69:9: error: use of undeclared identifier 'cout'; did you mean 'std::cout'?
-o        cout << "Block with hash: " << hash.toString() << " mined" << endl;
-o        ^~~~
-o        std::cout
-o/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/iostream:63:18: note: 'std::cout' declared here
-o  extern ostream cout;          ///< Linked to standard output
-o                 ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:69:71: error: use of undeclared identifier 'endl'; did you mean 'std::endl'?
-o        cout << "Block with hash: " << hash.toString() << " mined" << endl;
-o                                                                      ^~~~
-o                                                                      std::endl
-o/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/ostream:607:5: note: 'std::endl' declared here
-o    endl(basic_ostream<_CharT, _Traits>& __os)
-o    ^
-o/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:93:42: error: use of undeclared identifier 'make_pair'; did you mean 'std::make_pair'?
-o        _latest_work = _templates.insert(make_pair(block.getMerkleRoot(), block)).first;
-o                                         ^~~~~~~~~
-o                                         std::make_pair
-o/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/bits/stl_pair.h:144:5: note: 'std::make_pair' declared here
-o    make_pair(_T1 __x, _T2 __y)
-o    ^
-oIn file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:17:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:20:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:21:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/BigNum.h:12:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/util.h:23:
-oIn file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Logger.h:22:
-oIn file included from /usr/local/include/boost/thread/thread.hpp:17:
-oIn file included from /usr/local/include/boost/thread/pthread/thread_data.hpp:10:
-oIn file included from /usr/local/include/boost/shared_ptr.hpp:17:
-oIn file included from /usr/local/include/boost/smart_ptr/shared_ptr.hpp:30:
-o/usr/local/include/boost/checked_delete.hpp:34:5: warning: delete called on 'boost::error_info<boost::tag_original_exception_type, const std::type_info *>' that has virtual functions but non-virtual destructor [-Wdelete-non-virtual-dtor]
-o    delete x;
-o    ^
-o/usr/local/include/boost/smart_ptr/detail/shared_count.hpp:95:13: note: in instantiation of function template specialization 'boost::checked_delete<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here
-o            boost::checked_delete( p );
-o            ^
-o/usr/local/include/boost/smart_ptr/shared_ptr.hpp:183:44: note: in instantiation of function template specialization 'boost::detail::shared_count::shared_count<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here
-o    explicit shared_ptr( Y * p ): px( p ), pn( p ) // Y must be complete
-o                                           ^
-o/usr/local/include/boost/exception/info.hpp:170:42: note: in instantiation of function template specialization 'boost::shared_ptr<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >::shared_ptr<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here
-o            shared_ptr<error_info_tag_t> p( new error_info_tag_t(v) );
-o                                         ^
-o/usr/local/include/boost/exception/info.hpp:191:16: note: in instantiation of function template specialization 'boost::exception_detail::set_info<boost::unknown_exception, boost::tag_original_exception_type, const std::type_info *>' requested here
-o        return exception_detail::set_info(x,v);
-o               ^
-o/usr/local/include/boost/exception/detail/exception_ptr.hpp:181:21: note: in instantiation of function template specialization 'boost::operator<<<boost::unknown_exception, boost::tag_original_exception_type, const std::type_info *>' requested here
-o            (*this) << original_exception_type(&typeid(e));
-o                    ^
-o/usr/local/include/boost/exception/detail/exception_ptr.hpp:160:13: note: in instantiation of function template specialization 'boost::unknown_exception::add_original_type<std::exception>' requested here
-o            add_original_type(e);
-o            ^
-o2 warnings and 5 errors generated.
-lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection73"Compile /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp466014beb6d7b641^20d5a4c4b6d7b641^-5878"clang: warning: argument unused during compilation: '-ftree-vectorize'/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:27:12: error: out-of-line definition of 'submitBlock' does not match any declaration in 'Pool'bool Pool::submitBlock(const Block& stub) {           ^~~~~~~~~~~/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:43:36: error: unknown type name 'workid'                uint256 merkleroot(workid);                                   ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:43:35: warning: parentheses were disambiguated as a function declaration [-Wvexing-parse]                uint256 merkleroot(workid);                                  ^~~~~~~~/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:43:36: note: add a pair of parentheses to declare a variable                uint256 merkleroot(workid);                                   ^                                   (      )/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:69:9: error: use of undeclared identifier 'cout'; did you mean 'std::cout'?        cout << "Block with hash: " << hash.toString() << " mined" << endl;        ^~~~        std::cout/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/iostream:63:18: note: 'std::cout' declared here  extern ostream cout;          ///< Linked to standard output                 ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:69:71: error: use of undeclared identifier 'endl'; did you mean 'std::endl'?        cout << "Block with hash: " << hash.toString() << " mined" << endl;                                                                      ^~~~                                                                      std::endl/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/ostream:607:5: note: 'std::endl' declared here    endl(basic_ostream<_CharT, _Traits>& __os)    ^/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:93:42: error: use of undeclared identifier 'make_pair'; did you mean 'std::make_pair'?        _latest_work = _templates.insert(make_pair(block.getMerkleRoot(), block)).first;                                         ^~~~~~~~~                                         std::make_pair/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include/c++/4.2.1/bits/stl_pair.h:144:5: note: 'std::make_pair' declared here    make_pair(_T1 __x, _T2 __y)    ^In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp:17:In file included from /Users/gronager/Development/libcoin/libcoin/include/coinPool/Pool.h:20:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Block.h:21:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Transaction.h:21:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/BigNum.h:12:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/util.h:23:In file included from /Users/gronager/Development/libcoin/libcoin/include/coin/Logger.h:22:In file included from /usr/local/include/boost/thread/thread.hpp:17:In file included from /usr/local/include/boost/thread/pthread/thread_data.hpp:10:In file included from /usr/local/include/boost/shared_ptr.hpp:17:In file included from /usr/local/include/boost/smart_ptr/shared_ptr.hpp:30:/usr/local/include/boost/checked_delete.hpp:34:5: warning: delete called on 'boost::error_info<boost::tag_original_exception_type, const std::type_info *>' that has virtual functions but non-virtual destructor [-Wdelete-non-virtual-dtor]    delete x;    ^/usr/local/include/boost/smart_ptr/detail/shared_count.hpp:95:13: note: in instantiation of function template specialization 'boost::checked_delete<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here            boost::checked_delete( p );            ^/usr/local/include/boost/smart_ptr/shared_ptr.hpp:183:44: note: in instantiation of function template specialization 'boost::detail::shared_count::shared_count<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here    explicit shared_ptr( Y * p ): px( p ), pn( p ) // Y must be complete                                           ^/usr/local/include/boost/exception/info.hpp:170:42: note: in instantiation of function template specialization 'boost::shared_ptr<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >::shared_ptr<boost::error_info<boost::tag_original_exception_type, const std::type_info *> >' requested here            shared_ptr<error_info_tag_t> p( new error_info_tag_t(v) );                                         ^/usr/local/include/boost/exception/info.hpp:191:16: note: in instantiation of function template specialization 'boost::exception_detail::set_info<boost::unknown_exception, boost::tag_original_exception_type, const std::type_info *>' requested here        return exception_detail::set_info(x,v);               ^/usr/local/include/boost/exception/detail/exception_ptr.hpp:181:21: note: in instantiation of function template specialization 'boost::operator<<<boost::unknown_exception, boost::tag_original_exception_type, const std::type_info *>' requested here            (*this) << original_exception_type(&typeid(e));                    ^/usr/local/include/boost/exception/detail/exception_ptr.hpp:160:13: note: in instantiation of function template specialization 'boost::unknown_exception::add_original_type<std::exception>' requested here            add_original_type(e);            ^2 warnings and 5 errors generated.-0#0#0#-19%DVTDocumentLocation2@81"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp0000000000000000^2271"CompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.o src/coinPool/Pool.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -DCOINMINE_LIBRARY_STATIC -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/lib/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/lib -mmacosx-version-min=10.8 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.dia -c /Users/gronager/Development/libcoin/libcoin/src/coinPool/Pool.cpp -o /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/Pool.o36"5ED87FC3-F47A-4452-B830-4C97740B730F-
-
-CCompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.o /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
-s383235774.079468
-e383235774.371575
-r0
-xCompileC
-xsrc/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.o
-x/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp
-xnormal
-xx86_64
-xc++
-xcom.apple.compilers.llvm.clang.1_0.compiler
-oclang: warning: argument unused during compilation: '-ftree-vectorize'
-oIn file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:20:28: error: expected class name
-oclass SubmitBlock : public PoolMethod {
-o                           ^
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:23:17: error: unknown type name 'Pool'; did you mean 'bool'?
-o    SubmitBlock(Pool& pool) : PoolMethod(pool) {
-o                ^~~~
-o                bool
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:26:5: error: use of undeclared identifier 'json_spirit'
-o    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp) {
-o    ^
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:26:41: error: use of undeclared identifier 'json_spirit'
-o    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp) {
-o                                        ^
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:23:31: error: member initializer 'PoolMethod' does not name a non-static data member or base class
-o    SubmitBlock(Pool& pool) : PoolMethod(pool) {
-o                              ^~~~~~~~~~~~~~~~
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:28:19: error: use of undeclared identifier 'RPC'
-o            throw RPC::error(RPC::invalid_params, "submitblock <hex data> [<workid>]\n"
-o                  ^
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:28:30: error: use of undeclared identifier 'RPC'
-o            throw RPC::error(RPC::invalid_params, "submitblock <hex data> [<workid>]\n"
-o                             ^
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:33:37: error: use of undeclared identifier 'str_type'
-o            if (params[0].type() != str_type)
-o                                    ^
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:34:23: error: use of undeclared identifier 'RPC'
-o                throw RPC::error(RPC::parse_error, "Expect a string, hex encoded data, as the first param");
-o                      ^
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:34:34: error: use of undeclared identifier 'RPC'
-o                throw RPC::error(RPC::parse_error, "Expect a string, hex encoded data, as the first param");
-o                                 ^
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:36:17: error: unknown type name 'string'
-o                string workid;
-o                ^
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:37:54: error: use of undeclared identifier 'str_type'
-o        if (params.size() > 1 && params[1].type() == str_type)
-o                                                     ^
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:40:13: error: use of undeclared identifier 'vector'
-o            vector<unsigned char> block_data(ParseHex(params[0].get_str()));
-o            ^
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:40:29: error: expected '(' for function-style cast or type construction
-o            vector<unsigned char> block_data(ParseHex(params[0].get_str()));
-o                   ~~~~~~~~ ^
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:41:13: error: unknown type name 'CDataStream'
-o            CDataStream block_stream(block_data, SER_NETWORK, PROTOCOL_VERSION);
-o            ^
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:41:38: error: C++ requires a type specifier for all declarations
-o            CDataStream block_stream(block_data, SER_NETWORK, PROTOCOL_VERSION);
-o                                     ^~~~~~~~~~
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:41:50: error: C++ requires a type specifier for all declarations
-o            CDataStream block_stream(block_data, SER_NETWORK, PROTOCOL_VERSION);
-o                                                 ^~~~~~~~~~~
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:41:63: error: unknown type name 'PROTOCOL_VERSION'
-o            CDataStream block_stream(block_data, SER_NETWORK, PROTOCOL_VERSION);
-o                                                              ^
-o/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:42:13: error: unknown type name 'Block'
-o            Block block;
-o            ^
-ofatal error: too many errors emitted, stopping now [-ferror-limit=]
-o20 errors generated.
-lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection80"Compile /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp537814beb6d7b641^c85e6bbeb6d7b641^-4698"clang: warning: argument unused during compilation: '-ftree-vectorize'In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:20:28: error: expected class nameclass SubmitBlock : public PoolMethod {                           ^/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:23:17: error: unknown type name 'Pool'; did you mean 'bool'?    SubmitBlock(Pool& pool) : PoolMethod(pool) {                ^~~~                bool/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:26:5: error: use of undeclared identifier 'json_spirit'    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp) {    ^/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:26:41: error: use of undeclared identifier 'json_spirit'    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp) {                                        ^/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:23:31: error: member initializer 'PoolMethod' does not name a non-static data member or base class    SubmitBlock(Pool& pool) : PoolMethod(pool) {                              ^~~~~~~~~~~~~~~~/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:28:19: error: use of undeclared identifier 'RPC'            throw RPC::error(RPC::invalid_params, "submitblock <hex data> [<workid>]\n"                  ^/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:28:30: error: use of undeclared identifier 'RPC'            throw RPC::error(RPC::invalid_params, "submitblock <hex data> [<workid>]\n"                             ^/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:33:37: error: use of undeclared identifier 'str_type'            if (params[0].type() != str_type)                                    ^/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:34:23: error: use of undeclared identifier 'RPC'                throw RPC::error(RPC::parse_error, "Expect a string, hex encoded data, as the first param");                      ^/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:34:34: error: use of undeclared identifier 'RPC'                throw RPC::error(RPC::parse_error, "Expect a string, hex encoded data, as the first param");                                 ^/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:36:17: error: unknown type name 'string'                string workid;                ^/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:37:54: error: use of undeclared identifier 'str_type'        if (params.size() > 1 && params[1].type() == str_type)                                                     ^/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:40:13: error: use of undeclared identifier 'vector'            vector<unsigned char> block_data(ParseHex(params[0].get_str()));            ^/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:40:29: error: expected '(' for function-style cast or type construction            vector<unsigned char> block_data(ParseHex(params[0].get_str()));                   ~~~~~~~~ ^/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:41:13: error: unknown type name 'CDataStream'            CDataStream block_stream(block_data, SER_NETWORK, PROTOCOL_VERSION);            ^/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:41:38: error: C++ requires a type specifier for all declarations            CDataStream block_stream(block_data, SER_NETWORK, PROTOCOL_VERSION);                                     ^~~~~~~~~~/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:41:50: error: C++ requires a type specifier for all declarations            CDataStream block_stream(block_data, SER_NETWORK, PROTOCOL_VERSION);                                                 ^~~~~~~~~~~/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:41:63: error: unknown type name 'PROTOCOL_VERSION'            CDataStream block_stream(block_data, SER_NETWORK, PROTOCOL_VERSION);                                                              ^/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h:42:13: error: unknown type name 'Block'            Block block;            ^fatal error: too many errors emitted, stopping now [-ferror-limit=]20 errors generated.20(36%IDEClangDiagnosticActivityLogMessage2@19"Expected class name-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic23%DVTTextDocumentLocation3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^19#27#19#27#772#0#11"Parse Issue--2@46"Unknown type name 'Pool'; did you mean 'bool'?-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^22#16#22#16#814#0#14"Semantic Issue1(3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^22#16#22#20#814#4#-2@42"Use of undeclared identifier 'json_spirit'-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^25#4#25#4#862#0#14"Semantic Issue--2@42"Use of undeclared identifier 'json_spirit'-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^25#40#25#40#898#0#14"Semantic Issue--2@84"Member initializer 'PoolMethod' does not name a non-static data member or base class-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^22#30#22#30#828#0#14"Semantic Issue1(3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^22#30#22#46#828#15#-2@34"Use of undeclared identifier 'RPC'-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^27#18#27#18#1019#0#14"Semantic Issue--2@34"Use of undeclared identifier 'RPC'-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^27#29#27#29#1030#0#14"Semantic Issue--2@39"Use of undeclared identifier 'str_type'-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^32#36#32#36#1423#0#14"Semantic Issue--2@34"Use of undeclared identifier 'RPC'-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^33#22#33#22#1455#0#14"Semantic Issue--2@34"Use of undeclared identifier 'RPC'-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^33#33#33#33#1466#0#14"Semantic Issue--2@26"Unknown type name 'string'-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^35#16#35#16#1575#0#11"Parse Issue--2@39"Use of undeclared identifier 'str_type'-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^36#53#36#53#1643#0#14"Semantic Issue--2@37"Use of undeclared identifier 'vector'-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^39#12#39#12#1720#0#14"Semantic Issue--2@57"Expected '(' for function-style cast or type construction-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^39#28#39#28#1736#0#11"Parse Issue1(3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^39#19#39#27#1727#0#-2@31"Unknown type name 'CDataStream'-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^40#12#40#12#1797#0#11"Parse Issue--2@50"C++ requires a type specifier for all declarations-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^40#37#40#37#1822#0#14"Semantic Issue1(3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^40#37#40#47#1822#0#-2@50"C++ requires a type specifier for all declarations-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^40#49#40#49#1834#0#14"Semantic Issue1(3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^40#49#40#60#1834#0#-2@36"Unknown type name 'PROTOCOL_VERSION'-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^40#62#40#62#1847#0#11"Parse Issue--2@25"Unknown type name 'Block'-383235774#18446744073709551615#0#1(2@98"In file included from /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp:17:-383235774#18446744073709551615#0#-0#27"com.apple.dt.IDE.diagnostic3@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^16#9#16#9#690#0#21"Clang LLVM 1.0 Notice--2#27"com.apple.dt.IDE.diagnostic3@90"file://localhost/Users/gronager/Development/libcoin/libcoin/include/coinPool/SubmitBlock.h0000000000000000^41#12#41#12#1878#0#11"Parse Issue--2@37"Too many errors emitted, stopping now-383235774#18446744073709551615#0#-2#27"com.apple.dt.IDE.diagnostic-20"Clang LLVM 1.0 Error--0#0#0#-19%DVTDocumentLocation4@88"file://localhost/Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp0000000000000000^2313"CompileC src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.o src/coinPool/SubmitBlock.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -DCOINMINE_LIBRARY_STATIC -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/lib/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/lib -mmacosx-version-min=10.8 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.dia -c /Users/gronager/Development/libcoin/libcoin/src/coinPool/SubmitBlock.cpp -o /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Objects-normal/x86_64/SubmitBlock.o36"593240F5-4A46-4ECA-9590-C9F50374C4D9-
-
-CLibtool /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.a normal x86_64
-r0
-
-CPhaseScriptExecution "CMake PostBuild Rules" /Users/gronager/Development/libcoin/libcoin/src/coinPool/libcoin.build/Debug/coinPool.build/Script-2E8C313340F4470CBCD0D660.sh
-r0
-

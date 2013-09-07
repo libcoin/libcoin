@@ -101,7 +101,7 @@ public:
     
     MerkleBranch getMerkleBranch(int index) const;
 
-    static uint256 checkMerkleBranch(uint256 hash, const std::vector<uint256>& merkleBranch, int index);
+    static uint256 checkMerkleBranch(uint256 hash, const MerkleBranch& merkleBranch, int index);
 
     void print() const;
 
