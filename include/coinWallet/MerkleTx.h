@@ -2,8 +2,8 @@
 // Copyright (c) 2011 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
-#ifndef MERKLETX_H
-#define MERKLETX_H
+#ifndef COINWALLET_MERKLETX_H
+#define COINWALLET_MERKLETX_H
 
 #include <coin/Transaction.h>
 #include <coin/BigNum.h>
@@ -62,4 +62,4 @@ public:
  */
 };
 
-#endif // MERKLETX_H
+#endif // COINWALLET_MERKLETX_H
