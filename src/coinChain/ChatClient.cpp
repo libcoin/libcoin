@@ -176,9 +176,10 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                             if (_channels > 1) {
                                 // randomly join e.g. #bitcoin00-#bitcoin99
                                 int channel_number = GetRandInt(_channels);
-                                txstream << setfill('0') << setw(2);
-                                txstream << "JOIN #" << _channel << channel_number << "\r";
-                                txstream <<  "WHO #" << _channel << channel_number <<  "\r";
+                                stringstream ss;
+                                ss << setfill('0') << setw(2) << channel_number;
+                                txstream << "JOIN #" << _channel << ss.str() << "\r";
+                                txstream <<  "WHO #" << _channel << ss.str() <<  "\r";
                             }
                             else {
                                 txstream << "JOIN #" << _channel << "00\r";

@@ -69,6 +69,12 @@ bool Script::isPayToScriptHash() const
             this->at(22) == OP_EQUAL);
 }
 
+Script Script::getDropped() const {
+    DropEvaluator eval;
+    eval(*this);
+    return eval.dropped();
+}
+
 
 bool Evaluator::operator()(const Script& script) {
     _begin = script.begin();

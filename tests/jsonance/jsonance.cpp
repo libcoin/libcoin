@@ -26,6 +26,7 @@
 #include <boost/variant.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/interprocess/interprocess_fwd.hpp>
 
 
 using namespace std;
@@ -376,6 +377,10 @@ void f3() {
  */
 int main(int argc, char* argv[]) {
 
+    
+    
+    cout << boost::interprocess::ipcdetail::get_current_process_id() << endl;
+    
     CBigNum pow;
     pow.SetCompact(0x1c008000);
     cout << hex << (pow-1).GetCompact() << endl;

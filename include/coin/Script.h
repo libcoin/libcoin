@@ -43,13 +43,6 @@ enum opcodetype
     OP_0=0,
     OP_FALSE=OP_0,
 
-    // definitions for namecoin
-    OP_NAME_INVALID = 0x00,
-    OP_NAME_NEW = 0x01,
-    OP_NAME_FIRSTUPDATE = 0x02,
-    OP_NAME_UPDATE = 0x03,
-    OP_NAME_NOP = 0x04,
-
     OP_PUSHDATA1=76,
     OP_PUSHDATA2,
     OP_PUSHDATA4,
@@ -330,12 +323,7 @@ inline const char* GetOpName(opcodetype opcode)
         case OP_NOP8                   : return "OP_NOP8";
         case OP_NOP9                   : return "OP_NOP9";
         case OP_NOP10                  : return "OP_NOP10";
-            
-            // Namecoin extensions
-        case OP_NAME_NEW               : return "NAME_NEW";
-        case OP_NAME_UPDATE            : return "NAME_UPDATE";
-        case OP_NAME_FIRSTUPDATE       : return "NAME_FIRSTUPDATE";
-            
+                        
             // ExtendedKey stuff
         case OP_SIGHASH                : return "OP_SIGHASH";
         case OP_RESOLVE                : return "OP_RESOLVE";
@@ -358,9 +346,9 @@ inline const char* GetOpName(opcodetype opcode)
 
 inline std::string ValueString(const std::vector<unsigned char>& vch)
 {
-    if (vch.size() <= 4)
-        return strprintf("%d", CBigNum(vch).getint());
-    else
+    //    if (vch.size() <= 4)
+    //        return strprintf("%d", CBigNum(vch).getint());
+    //    else
         return HexStr(vch);
 }
 
@@ -700,7 +688,8 @@ public:
         setAddress(toPubKeyHash(vchPubKey));
     }
 
-
+    Script getDropped() const;
+    
     void printHex() const
     {
         log_info("Script(%s)\n", HexStr(begin(), end(), true).c_str());
@@ -768,11 +757,19 @@ protected:
     Value& top(int i = -1) {
         return _stack.at(_stack.size() + i);
     }
-
+    
     Value& alttop(int i = -1) {
         return _alt_stack.at(_alt_stack.size()+i);
     }
-
+    
+    const Value& top(int i = -1) const {
+        return _stack.at(_stack.size() + i);
+    }
+    
+    const Value& alttop(int i = -1) const {
+        return _alt_stack.at(_alt_stack.size()+i);
+    }
+    
     static inline void pop(Stack& stack) {
         if (stack.empty())
             throw std::runtime_error("pop() : stack empty");
@@ -793,6 +790,52 @@ protected:
     Stack _alt_stack;
 };
 
+/// DropEvaluator - returns the dropped part of a script
+class DropEvaluator : public Evaluator {
+public:
+    DropEvaluator() : Evaluator() {}
+
+    Script dropped() const {
+        Script script;
+        // return the script in reverse order - namecoin has these strange scripts that are reversed
+        for (Stack::const_iterator val = _dropped.begin(); val != _dropped.end(); ++val) {
+            if (val->size() == 1 && 0 < (*val)[0] && (*val)[0] < 16)
+                script << (int) (*val)[0];
+            else
+                script << *val;
+        }
+        return script;
+    }
+private:
+    Stack _dropped;
+
+protected:
+    /// Subclass Evaluator to implement eval, enbaling evaluation of context dependent operations
+    virtual boost::tribool eval(opcodetype opcode) {
+        switch (opcode) {
+            case OP_2DROP: {
+                // (x1 x2 -- )
+                if (_stack.size() < 2)
+                    return false;
+                _dropped.push_back(_stack.back());
+                pop(_stack);
+                _dropped.push_back(_stack.back());
+                pop(_stack);
+                return boost::indeterminate;
+            }
+            case OP_DROP: {
+                // (x -- )
+                if (_stack.size() < 1)
+                    return false;
+                _dropped.push_back(_stack.front());
+                pop(_stack);
+                return boost::indeterminate;
+            }
+            default:
+                return Evaluator::eval(opcode);
+        }
+    }
+};
 
 /// TemplateEvaluator matches a script against a template. The stack is then populated with the template values of the script.
 /// True is returned on match, false if no match

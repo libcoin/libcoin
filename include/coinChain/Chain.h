@@ -43,6 +43,7 @@ public:
     virtual unsigned int nextWorkRequired(BlockIterator blk) const = 0;
     virtual const CBigNum proofOfWorkLimit() const = 0;
     virtual bool adhere_aux_pow() const { return false; }
+    virtual bool adhere_names() const { return false; }
     virtual const bool checkProofOfWork(const Block& block) const = 0;
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const { return true; } // optional
     virtual unsigned int totalBlocksEstimate() const { return 0; } // optional
@@ -58,6 +59,15 @@ public:
     }
     
     virtual int64_t min_fee() const {
+        return 0;
+    }
+    
+    /// specially for namecoin
+    virtual int64_t network_fee(int count) const {
+        return 0;
+    }
+    
+    virtual int expirationDepth(int count) const {
         return 0;
     }
     
@@ -214,6 +224,7 @@ public:
     virtual unsigned int nextWorkRequired(BlockIterator blk) const;
     virtual const bool checkProofOfWork(const Block& block) const;
     virtual bool adhere_aux_pow() const { return true; }
+    virtual bool adhere_names() const { return true; }
     
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
     virtual unsigned int totalBlocksEstimate() const;
@@ -224,17 +235,47 @@ public:
         return 500000;
     }
     
+    virtual int64_t network_fee(int count) const {
+        int height = count - 1;
+        // Speed up network fee decrease 4x starting at 24000
+        if (height >= 24000)
+            height += (height - 24000) * 3;
+        if ((height >> 13) >= 60)
+            return 0;
+        int64_t start = 50 * COIN;
+        int64_t res = start >> (height >> 13);
+        res -= (res >> 14) * (height % 8192);
+        return res;
+    }
+    
+    virtual int expirationDepth(int count) const {
+        int height = count - 1;
+        if (height < 24000)
+            return 12000;
+        if (height < 48000)
+            return height - 12000;
+        return 36000;
+    }
+
+    // To enable upgrade from one block version to another we define a quorum and a majority for acceptance
+    // of minimum this version as well as a quorum and majority for when the checks of that block version should be enforced.
+    virtual size_t accept_quorum() const { return 1000;}
+    virtual size_t accept_majority() const { return 1001; } // 95% of the last 1000
+    
+    virtual size_t enforce_quorum() const { return 1000; }
+    virtual size_t enforce_majority() const { return 1001; } // 75% of the last 1000
+    
     const PubKey& alert_key() const { return _alert_key; }
     
     //    virtual char networkId() const { return 0x00; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
-    virtual ChainAddress getAddress(PubKeyHash hash) const { return ChainAddress(0x00, hash); }
-    virtual ChainAddress getAddress(ScriptHash hash) const { return ChainAddress(0x05, hash); }
+    virtual ChainAddress getAddress(PubKeyHash hash) const { return ChainAddress(0x34, hash); }
+    virtual ChainAddress getAddress(ScriptHash hash) const { throw std::runtime_error("ScriptHash not supported by Namecoin!"); }
     virtual ChainAddress getAddress(std::string str) const {
         ChainAddress addr(str);
-        if(addr.version() == 0x00)
+        if(addr.version() == 0x34)
             addr.setType(ChainAddress::PUBKEYHASH);
-        else if (addr.version() == 0x05)
-            addr.setType(ChainAddress::SCRIPTHASH);
+        else
+            throw std::runtime_error("ScriptHash not supported by Namecoin!");
         return addr;
     }
     
@@ -242,7 +283,7 @@ public:
     virtual short defaultPort() const { return 8334; }
     
     virtual std::string ircChannel() const { return "namecoin"; }
-    virtual unsigned int ircChannels() const { return 2; } // number of groups to try (100 for bitcoin, 2 for litecoin)
+    virtual unsigned int ircChannels() const { return 1; } // number of groups to try (100 for bitcoin, 2 for litecoin)
     virtual std::string cc() const { return "NMC"; }
     
 private:

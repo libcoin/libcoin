@@ -22,6 +22,7 @@
 #include <coinChain/Peer.h>
 
 #include <coin/Script.h>
+#include <coin/NameOperation.h>
 #include <coin/Logger.h>
 
 #include <boost/lexical_cast.hpp>
@@ -33,10 +34,13 @@ using namespace std;
 using namespace boost;
 using namespace sqliterate;
 
+static const int NAMECOIN_TX_VERSION = 0x7100;
 
 //
 // BlockChain
 //
+
+typedef vector<unsigned char> Data;
 
 BlockChain::BlockChain(const Chain& chain, const string dataDir) :
     sqliterate::Database(dataDir == "" ? ":memory:" : dataDir + "/blockchain.sqlite3", getMemorySize()/4),
@@ -92,6 +96,8 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
               "idx INTEGER"
           ")");
 
+    query("CREATE INDEX IF NOT EXISTS ConfCount ON Confirmations(count)");
+    
     query("CREATE TABLE IF NOT EXISTS Unspents ("
               "coin INTEGER PRIMARY KEY AUTOINCREMENT,"
               "hash BINARY,"
@@ -127,15 +133,26 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
     // This table stores is the Auxiliary Proof-of-Works when using merged mining.
     query("CREATE TABLE IF NOT EXISTS AuxProofOfWorks ("
           "count INTEGER REFERENCES Blocks(count)," // linking this AuxPOW to the block chain - blocks with version&BLOCK_VERSION_AUXPOW are expected to have a row in this table
-          "coinbase BINARY," // Coinbase transaction that is in the parent block, linking the AuxPOW block to its parent block
-          "branch BINARY," // The merkle branch linking the coinbase to the parent block's merkle_root
-          "others BINARY," // The merkle branch linking this auxiliary blockchain to the others, when used in a merged mining setup with multiple auxiliary chains
-          "parent BINARY" // Parent block header
+          "hash BINARY," // The hash of the auxiliary chain block
+          "auxpow BINARY" // The auxiliary block proof of work - i.e. coinbase, merkle branch and header
           // Note the parent hash is not part of this table - we have the full header (parent) and it is not even checked in namecoin
     ")");
 
     // fast lookup based on count
     query("CREATE INDEX IF NOT EXISTS AuxProofOfWorksIndex ON AuxProofOfWorks (count)");
+    query("CREATE INDEX IF NOT EXISTS AuxPoWHashIndex ON AuxProofOfWorks (hash)");
+    
+    // finally we have, for namecoin a name value store
+    query("CREATE TABLE IF NOT EXISTS Names ("
+          "coin PRIMARY KEY REFERENCES Unspents(coin),"
+          "count INTEGER REFERENCES Blocks(count),"
+          "name BINARY,"
+          "value BINARY"
+          ")");
+
+    // enable fast lookup by name and height
+    query("CREATE INDEX IF NOT EXISTS NamesIndex ON Names (name)");
+    query("CREATE INDEX IF NOT EXISTS NamesCountIndex ON Names (count)");
     
     // populate the tree
     vector<BlockRef> blockchain = queryColRow<BlockRef(int, uint256, uint256, unsigned int, unsigned int)>("SELECT version, hash, prev, time, bits FROM Blocks ORDER BY count");
@@ -250,6 +267,7 @@ std::pair<Claims::Spents, int64_t> BlockChain::try_claim(const Transaction& txn,
         // redeem the inputs
         const Inputs& inputs = txn.getInputs();
         int64_t value_in = 0;
+        NameOperation name_op;
         for (size_t in_idx = 0; in_idx < inputs.size(); ++in_idx) {
             Unspent coin;
             const Input& input = inputs[in_idx];
@@ -282,7 +300,10 @@ std::pair<Claims::Spents, int64_t> BlockChain::try_claim(const Transaction& txn,
             }
             spents.insert(input.prevout());
             // all OK - spend the coin
-            
+
+            if (_chain.adhere_names())
+                name_op.input(coin.output, coin.count);
+
             // Check for negative or overflow input values
             if (!MoneyRange(coin.output.value()))
                 throw Error("Input values out of range");
@@ -302,6 +323,24 @@ std::pair<Claims::Spents, int64_t> BlockChain::try_claim(const Transaction& txn,
         if (fee < min_fee)
             throw Error("fee < min_fee");
         
+        if (_chain.adhere_names()) {
+            for (Outputs::const_iterator out = txn.getOutputs().begin(); out != txn.getOutputs().end(); ++out)
+                if (_chain.adhere_names() && name_op.output(*out)) {
+                    if (txn.version() != NAMECOIN_TX_VERSION)
+                        throw Error("Namecoin scripts only allowed in Namecoin transactions");
+                    // finally check for conflicts with the name database
+                    int count = getNameAge(name_op.name());
+                    if (name_op.reserve()) {
+                        if (count && count > _tree.count() - _chain.expirationDepth(_tree.count()))
+                            throw Reject("Trying to reserve existing and not expired name: " + name_op.name());
+                    }
+                    else {
+                        if (count == 0 || count <= _tree.count() - _chain.expirationDepth(_tree.count()))
+                            throw Error("Trying to update expired or non existing name: " + name_op.name());
+                    }
+                }
+            name_op.check_fees(_chain.network_fee(_tree.count()));
+        }
     }
     catch (Reject& r) {
         throw Reject(string("claim(Transaction): ") + r.what());
@@ -321,7 +360,7 @@ void BlockChain::claim(const Transaction& txn, bool verify) {
     _claims.insert(txn, res.first, res.second);
 }
 
-Output BlockChain::redeem(const Input& input, int iidx, Confirmation iconf) {
+std::pair<Output, int> BlockChain::redeem(const Input& input, int iidx, Confirmation iconf) {
     Unspent coin;
     
     if (_validation_depth == 0) {
@@ -357,16 +396,16 @@ Output BlockChain::redeem(const Input& input, int iidx, Confirmation iconf) {
         query("INSERT INTO Spendings (coin, ocnf, hash, idx, value, script, signature, sequence, iidx, icnf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", coin.coin, coin.cnf, input.prevout().hash, input.prevout().index, coin.output.value(), coin.output.script(), input.signature(), input.sequence(), iidx, iconf.cnf);
     query("DELETE FROM Unspents WHERE coin = ?", coin.coin);
     
-    return coin.output;
+    return make_pair(coin.output, coin.count);
 }
 
-void BlockChain::issue(const Output& output, uint256 hash, unsigned int out_idx, Confirmation conf, bool unique) {
+int64_t BlockChain::issue(const Output& output, uint256 hash, unsigned int out_idx, Confirmation conf, bool unique) {
     int64_t count = conf.is_coinbase() ? -conf.count : conf.count;
     if (_validation_depth == 0) {
         if (unique)
-            query("INSERT INTO Unspents (hash, idx, value, script, count, ocnf) VALUES (?, ?, ?, ?, ?, ?)", hash, out_idx, output.value(), output.script(), count, conf.cnf); // will throw if trying to insert a dublicate value as the index is unique
+            return query("INSERT INTO Unspents (hash, idx, value, script, count, ocnf) VALUES (?, ?, ?, ?, ?, ?)", hash, out_idx, output.value(), output.script(), count, conf.cnf); // will throw if trying to insert a dublicate value as the index is unique
         else
-            query("INSERT OR REPLACE INTO Unspents (hash, idx, value, script, count, ocnf) VALUES (?, ?, ?, ?, ?, ?)", hash, out_idx, output.value(), output.script(), count, conf.cnf);
+            return query("INSERT OR REPLACE INTO Unspents (hash, idx, value, script, count, ocnf) VALUES (?, ?, ?, ?, ?, ?)", hash, out_idx, output.value(), output.script(), count, conf.cnf);
     }
     else {
         int64_t coin = query("INSERT INTO Unspents (hash, idx, value, script, count, ocnf) VALUES (?, ?, ?, ?, ?, ?)", hash, out_idx, output.value(), output.script(), count, conf.cnf);
@@ -389,6 +428,7 @@ void BlockChain::issue(const Output& output, uint256 hash, unsigned int out_idx,
         else
             _spendables.insert(unspent);
         _issueStats.stop();
+        return coin;
     }
 }
 
@@ -406,61 +446,112 @@ void BlockChain::maturate(int64_t count) {
 
 void BlockChain::insertBlockHeader(int64_t count, const Block& block) {
     query("INSERT INTO Blocks (count, hash, version, prev, mrkl, time, bits, nonce) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", count, block.getHash(), block.getVersion(), block.getPrevBlock(), block.getMerkleRoot(), block.getBlockTime(), block.getBits(), block.getNonce());
-        
+
     // also insert the AuxPow extra header into the db:
-    //if (_chain.adhere_aux_pow() && block.getVersion()&BLOCK_VERSION_AUXPOW) {
-    //    const AuxPow& aux = block.getAuxPoW();
-    //    const MerkleTx& mtxn = aux;
-    //    Data coinbase = (CDataStream() << mtxn).data();
-    //    Data branch = (CDataStream() << aux.vChainMerkleBranch << aux.nChainIndex).data();
-    //    Data others =
-    //    query("INSERT INTO AuxProofOfWorks (count, coinbase, branch, others, parent) VALUES (?, ?, ?, ?, ?)", count, coinbase, branch, others, );
-    //}
+    if (_chain.adhere_aux_pow() && block.getVersion()&BLOCK_VERSION_AUXPOW) {
+        // serialize the AuxPow
+        CDataStream ds;
+        ds << block.getAuxPoW();
+        Data auxpow(ds.begin(), ds.end());
+        uint256 hash = block.getAuxPoW().getHash();
+        query("INSERT INTO AuxProofOfWorks (count, hash, auxpow) VALUES (?, ?, ?)", count, hash, auxpow);
+    }
+}
+
+void BlockChain::updateName(const NameOperation& name_op, int64_t coin, int count) {
+    // check the depth of the current (if any) name
+    int latest_count = query<int>("SELECT count FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", name_op.name());
+    bool expired = (latest_count == 0) ? true : (latest_count < count - _chain.expirationDepth(count));
+    if (name_op.reserve()) {
+        if (count - name_op.input_count() < MIN_FIRSTUPDATE_DEPTH)
+            throw Error("Tried to reserve a name less than 12 blocks after name_new: " + name_op.name());
+        if (expired)
+            query("INSERT INTO Names (name, value, coin, count) VALUES (?, ?, ?, ?)", name_op.name(), name_op.value(), coin, count);
+        else
+            throw Error("Tried to reserve non expired name: " + name_op.name());
+    }
+    else {
+        if (!expired)
+            query("INSERT INTO Names (name, value, coin, count) VALUES (?, ?, ?, ?)", name_op.name(), name_op.value(), coin, count);
+        else
+            throw Error("Tried to update an expired name: " + name_op.name());
+    }
+}
+
+int BlockChain::getNameAge(const std::string& name) const {
+    return query<int>("SELECT value, count FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", name);
 }
 
 void BlockChain::postTransaction(const Transaction txn, int64_t& fees, int64_t min_fee, BlockIterator blk, int64_t idx, bool verify) {
     Confirmation conf(txn, 0, blk.count());
     
     uint256 hash = txn.getHash();
-    
-    // BIP0016 check - if the block is newer than the BIP0016 date enforce strictPayToScriptHash
-    bool strictPayToScriptHash = (blk->time > _chain.timeStamp(Chain::BIP0016));
-    
-    if (blk.count() >= _purge_depth)
-        conf.cnf = query("INSERT INTO Confirmations (locktime, version, count, idx) VALUES (?, ?, ?, ?)", txn.lockTime(), txn.version(), blk.count(), idx);
-    else
-        conf.cnf = LOCKTIME_THRESHOLD; // we are downloading the chain - no need to create a confirmation
+
+    try {
+
+        // BIP0016 check - if the block is newer than the BIP0016 date enforce strictPayToScriptHash
+        bool strictPayToScriptHash = (blk->time > _chain.timeStamp(Chain::BIP0016));
         
-    // redeem the inputs
-    const Inputs& inputs = txn.getInputs();
-    int64_t value_in = 0;
-    for (size_t in_idx = 0; in_idx < inputs.size(); ++in_idx) {
-        const Input& input = inputs[in_idx];
-        Output coin = redeem(input, in_idx, conf); // this will throw in case of doublespend attempts
-        value_in += coin.value();
+        if (blk.count() >= _purge_depth)
+            conf.cnf = query("INSERT INTO Confirmations (locktime, version, count, idx) VALUES (?, ?, ?, ?)", txn.lockTime(), txn.version(), blk.count(), idx);
+        else
+            conf.cnf = LOCKTIME_THRESHOLD; // we are downloading the chain - no need to create a confirmation
         
-        _verifySignatureTimer -= UnixTime::us();
+        // redeem the inputs
+        const Inputs& inputs = txn.getInputs();
+        int64_t value_in = 0;
+        NameOperation name_op;
+        for (size_t in_idx = 0; in_idx < inputs.size(); ++in_idx) {
+            const Input& input = inputs[in_idx];
+            Output coin;
+            int count;
+            tie(coin, count) = redeem(input, in_idx, conf); // this will throw in case of doublespend attempts
+            value_in += coin.value();
+            
+            if (_chain.adhere_names())
+                name_op.input(coin, count);
+            
+            _verifySignatureTimer -= UnixTime::us();
+            
+            if (verify) // this is invocation only - the actual verification takes place in other threads
+                _verifier.verify(coin, txn, in_idx, strictPayToScriptHash, 0);
+            
+            _verifySignatureTimer += UnixTime::us();
+        }
         
-        if (verify) // this is invocation only - the actual verification takes place in other threads
-            _verifier.verify(coin, txn, in_idx, strictPayToScriptHash, 0);
+        // verify outputs
+        int64_t fee = value_in - txn.getValueOut();
+        if (fee < 0)
+            throw Error("fee < 0");
+        if (fee < min_fee)
+            throw Error("fee < min_fee");
+        fees += fee;
+        if (!MoneyRange(fees))
+            throw Error("fees out of range");
         
-        _verifySignatureTimer += UnixTime::us();
+        // issue the outputs
+        const Outputs& outputs = txn.getOutputs();
+        for (size_t out_idx = 0; out_idx < outputs.size(); ++out_idx) {
+            int64_t coin = issue(outputs[out_idx], hash, out_idx, conf); // will throw in case of dublicate (hash,idx)
+            if (_chain.adhere_names() && name_op.output(outputs[out_idx])) {
+                if (txn.version() != NAMECOIN_TX_VERSION)
+                    throw BlockChain::Error("Namecoin scripts only allowed in Namecoin transactions");
+                updateName(name_op, coin, blk.count());
+            }
+        }
+        if (_chain.adhere_names())
+            name_op.check_fees(_chain.network_fee(blk.count()));
     }
-    
-    // verify outputs
-    int64_t fee = value_in - txn.getValueOut();
-    if (fee < 0)
-        throw Error("fee < 0");
-    if (fee < min_fee)
-        throw Error("fee < min_fee");
-    fees += fee;
-    if (!MoneyRange(fees))
-        throw Error("fees out of range");
-    
-    // issue the outputs
-    const Outputs& outputs = txn.getOutputs();
-    for (size_t out_idx = 0; out_idx < outputs.size(); ++out_idx)
-        issue(outputs[out_idx], hash, out_idx, conf); // will throw in case of dublicate (hash,idx)
+    catch (NameOperation::Error& e) {
+        throw Error("Error in transaction: " + hash.toString() + "\n" + txn.toString() + "\n\t" + e.what());
+    }
+    catch (Error& e) {
+        throw Error("Error in transaction: " + hash.toString() + "\n" + txn.toString() + "\n\t" + e.what());
+    }
+    catch (std::exception& e) {
+        log_error("Error in transaction: %s", hash.toString());
+        throw;
+    }
 }
 
 void BlockChain::postSubsidy(const Transaction txn, BlockIterator blk, int64_t fees) {
@@ -510,7 +601,7 @@ void BlockChain::rollbackConfirmation(int64_t cnf) {
     int64_t count = query<int64_t, int64_t>("SELECT count FROM Confirmations WHERE cnf = ?", cnf);
     
     if (_validation_depth > 0) {
-        // iterate over spendings and undo them by converting spengins to unspents and remove correspoding unspent
+        // iterate over spendings and undo them by converting spendings to unspents and remove correspoding unspent
         if (cnf > 0) {
             Unspents unspents = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, ?, ocnf FROM Spendings WHERE icnf = ?", count, cnf); // we lose the block info count here !
             
@@ -528,8 +619,10 @@ void BlockChain::rollbackConfirmation(int64_t cnf) {
     query("INSERT INTO Unspents (coin, hash, idx, value, script, count, ocnf) SELECT coin, hash, idx, value, script, ?, ocnf FROM Spendings WHERE icnf = ?", count, cnf);
     query("DELETE FROM Spendings WHERE icnf = ?", cnf);
     
+    if (_chain.adhere_names()) query("DELETE FROM Names WHERE coin = (SELECT coin FROM Unspents WHERE ocnf = ?)", cnf);
+    
     query("DELETE FROM Unspents WHERE ocnf = ?", cnf);
-
+    
     query("DELETE FROM Confirmations WHERE cnf = ?", cnf);
 }
 
@@ -541,6 +634,7 @@ void BlockChain::rollbackBlock(int count) {
         rollbackConfirmation(*tx);
     }
     query("DELETE FROM Blocks WHERE count = ?", count);
+    query("DELETE FROM AuxProofOfWorks WHERE count = ?", count);
 }
 
 void BlockChain::getBlockHeader(int count, Block& block) const {
@@ -559,12 +653,10 @@ void BlockChain::getBlock(int count, Block& block) const {
     vector<Confirmation> confs = queryColRow<Confirmation(int, unsigned int, int64_t, int64_t)>("SELECT cnf, version, locktime, count FROM Confirmations WHERE count = ? ORDER BY idx", count);
     
     for (size_t idx = 0; idx < confs.size(); idx++) {
-        //        Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY idx", abs(confs[idx].cnf)); // note that "ABS" as cnf for coinbases is negative!
-
         Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY iidx", abs(confs[idx].cnf)); // note that "ABS" as cnf for coinbases is negative!
         
         Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1) ORDER BY idx", confs[idx].cnf);
-        //        Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE icnf = ?1 ORDER BY idx ASC);", confs[idx].cnf);
+
         Transaction txn = confs[idx];
         txn.setInputs(inputs);
         txn.setOutputs(outputs);
@@ -573,6 +665,14 @@ void BlockChain::getBlock(int count, Block& block) const {
     block.updateMerkleTree();
     if (!block.checkBlock()) {
         log_warn("getBlock failed for count= %i", count);
+    }
+    
+    // and get the AuxPoW if it is a merged mined block
+    if (_chain.adhere_aux_pow() && block.getVersion()&BLOCK_VERSION_AUXPOW) {
+        Data data = query<Data>("SELECT auxpow FROM AuxProofOfWorks WHERE count = ?", count);
+        AuxPow auxpow;
+        CDataStream(data) >> auxpow;
+        block.setAuxPoW(auxpow);
     }
     //    cout << block.getHash().toString() << endl;
 }
@@ -798,7 +898,7 @@ void BlockChain::append(const Block &block) {
         }
         
         // purge spendings in old blocks - we can just as well serve other nodes with blocks if we have them (requires lazy purging)
-        if (!_lazy_purging && blk.count() >= _purge_depth) { // no need to purge during download as we don't store spendings anyway
+        if (_purge_depth && !_lazy_purging && blk.count() >= _purge_depth) { // no need to purge during download as we don't store spendings anyway
             query("DELETE FROM Spendings WHERE icnf IN (SELECT cnf FROM Confirmations WHERE count <= ?)", _purge_depth);
             query("DELETE FROM Confirmations WHERE count <= ?", _purge_depth);
             _deepest_depth = _purge_depth + 1;

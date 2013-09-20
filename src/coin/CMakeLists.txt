@@ -25,6 +25,7 @@ SET(TARGET_H
     ${HEADER_PATH}/KeyStore.h
     ${HEADER_PATH}/Logger.h
     ${HEADER_PATH}/MerkleTx.h
+    ${HEADER_PATH}/NameOperation.h
     ${HEADER_PATH}/Script.h
     ${HEADER_PATH}/Transaction.h
     ${HEADER_PATH}/Version.h
@@ -47,6 +48,7 @@ SET(TARGET_SRC
     KeyStore.cpp
     Logger.cpp
     MerkleTx.cpp
+    NameOperation.cpp
     Transaction.cpp
     Script.cpp
     ${LIBCOIN_VERSIONINFO_RC}

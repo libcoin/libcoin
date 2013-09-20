@@ -17,6 +17,7 @@
 
 #include <coin/BigNum.h>
 #include <coin/Script.h>
+#include <coin/NameOperation.h>
 
 #include <iomanip>
 
@@ -58,16 +59,16 @@ int main(int argc, char* argv[]) {
         uint160 pkh = uint160("0x1234567890ABCDEF1234567890ABCDEF12345678");
         Script pay_to_pub_key_hash = (Script() << OP_DUP << OP_HASH160 << pkh << OP_EQUALVERIFY << OP_CHECKSIG);
         
-        Script script_new = (Script() << ((int)OP_NAME_NEW) << hash << OP_2DROP);
+        Script script_new = (Script() << ((int)NameOperation::OP_NAME_NEW) << hash << OP_2DROP);
         script_new += pay_to_pub_key_hash;
         
-        Script script_first = (Script() << (int)OP_NAME_FIRSTUPDATE << Evaluator::Value(name.begin(), name.end()) << rand_val << Evaluator::Value(value1.begin(), value1.end()) << OP_2DROP << OP_2DROP);
+        Script script_first = (Script() << (int)NameOperation::OP_NAME_FIRSTUPDATE << Evaluator::Value(name.begin(), name.end()) << rand_val << Evaluator::Value(value1.begin(), value1.end()) << OP_2DROP << OP_2DROP);
         script_first += pay_to_pub_key_hash;
         
-        Script script_update = (Script() << (int)OP_NAME_UPDATE << Evaluator::Value(name.begin(), name.end()) << Evaluator::Value(value2.begin(), value2.end()) << OP_2DROP << OP_DROP);
+        Script script_update = (Script() << (int)NameOperation::OP_NAME_UPDATE << Evaluator::Value(name.begin(), name.end()) << Evaluator::Value(value2.begin(), value2.end()) << OP_2DROP << OP_DROP);
         script_update += pay_to_pub_key_hash;
         
-        Script script_final = (Script() << (int)OP_NAME_UPDATE << Evaluator::Value(name.begin(), name.end()) << Evaluator::Value(value3.begin(), value3.end()) << OP_2DROP << OP_DROP);
+        Script script_final = (Script() << (int)NameOperation::OP_NAME_UPDATE << Evaluator::Value(name.begin(), name.end()) << Evaluator::Value(value3.begin(), value3.end()) << OP_2DROP << OP_DROP);
         script_final += pay_to_pub_key_hash;
         
         cout << "script_new: " << script_new.toString() << endl;
@@ -90,7 +91,7 @@ int main(int argc, char* argv[]) {
             cout << "name_in part (reversed): " << name_in.toString() << endl;
             cout << "name_out part (reversed): " << name_out.toString() << endl;
             
-            NameEvaluator eval;
+            NameOperation::Evaluator eval;
             bool allow_only_new = false;
             if (name_in.empty())
                 allow_only_new = true;

@@ -36,6 +36,7 @@
 #include <list>
 
 class Transaction;
+class NameOperation;
 
 typedef std::vector<Transaction> Transactions;
 typedef std::map<uint256, Block> Branches;
@@ -212,6 +213,9 @@ public:
         return _tree.best();
     }
     
+    /// NameCoin: getNameValue returns the most recent value for a name
+    int getNameAge(const std::string& name) const;
+    
     /// Get the locator for the best index
     const BlockLocator& getBestLocator() const;
     
@@ -268,13 +272,16 @@ private:
     void insertBlockHeader(int64_t count, const Block& block);
 
     /// Mark a spendable spent - throw if already spent (or immature in case of database mode)
-    Output redeem(const Input& input, int iidx, Confirmation conf);
+    std::pair<Output, int> redeem(const Input& input, int iidx, Confirmation conf);
     
     /// Issue a new spendable
-    void issue(const Output& output, uint256 hash, unsigned int out_idx, Confirmation conf, bool unique = true);
+    int64_t issue(const Output& output, uint256 hash, unsigned int out_idx, Confirmation conf, bool unique = true);
     
     /// Maturate the coinbase from block with count # - throw if not unique ?
     void maturate(int64_t count);
+
+    /// update the name in the name database - specifically for NameCoin
+    void updateName(const NameOperation& name_op, int64_t coin, int count);
 
 private:
     const Chain& _chain;

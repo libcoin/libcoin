@@ -610,7 +610,9 @@ private:
 int main(int argc, char* argv[])
 {
     try {
-        string config_file, data_dir;
+        string config_file = argv[0] + string(".conf");
+        string data_dir;
+        string log_file;
         unsigned short port, rpc_port;
         string rpc_bind, rpc_connect, rpc_user, rpc_pass;
         typedef vector<string> strings;
@@ -621,14 +623,21 @@ int main(int argc, char* argv[])
         bool portmap, gen, ssl;
         unsigned int timeout;
         string certchain, privkey;
-
+        
+        size_t slash = config_file.rfind('/');
+        if (slash != string::npos)
+            config_file = config_file.substr(slash+1);
+        
         // Commandline options
         options_description generic("Generic options");
         generic.add_options()
             ("help,?", "Show help messages")
             ("version,v", "print version string")
-            ("conf,c", value<string>(&config_file)->default_value("bitcoin.conf"), "Specify configuration file")
+            ("conf,c", value<string>(&config_file)->default_value(config_file), "Specify configuration file")
             ("datadir", value<string>(&data_dir), "Specify non default data directory")
+            ("testnet", "Use the test network")
+            ("litecoin", "Run as a litecoin client")
+            ("namecoin", "Run as a namecoin client")
         ;
         
         options_description config("Config options");
@@ -637,7 +646,6 @@ int main(int argc, char* argv[])
             ("nolisten", "Don't accept connections from outside")
             ("portmap", value<bool>(&portmap)->default_value(true), "Use IGD-UPnP or NATPMP to map the listening port")
             ("upnp", value<bool>(&portmap), "Use UPnP to map the listening port - deprecated, use portmap")
-            ("testnet", "Use the test network")
             ("proxy", value<string>(&proxy), "Connect through socks4 proxy")
             ("timeout", value<unsigned int>(&timeout)->default_value(5000), "Specify connection timeout (in milliseconds)")
             ("addnode", value<strings>(&add_peers), "Add a node to connect to")
@@ -654,6 +662,9 @@ int main(int argc, char* argv[])
             ("rpcssl", value<bool>(&ssl)->default_value(false), "Use OpenSSL (https) for JSON-RPC connections")
             ("rpcsslcertificatechainfile", value<string>(&certchain)->default_value("server.cert"), "Server certificate file")
             ("rpcsslprivatekeyfile", value<string>(&privkey)->default_value("server.pem"), "Server private key")
+            ("debug", "Set logging output to debug")
+            ("trace", "Set logging output to trace")
+            ("log", value<string>(&log_file)->default_value("debug.log"), "Logfile name - if starting with / absolute path is assumed, otherwise relative to data directory, choose '-' for logging to stderr")
         ;
         
         options_description hidden("Hidden options");
@@ -689,21 +700,52 @@ int main(int argc, char* argv[])
             return 1;        
         }
 
+        const Chain* chain_chooser;
+        if(args.count("testnet"))
+            chain_chooser = &testnet;
+        else if(args.count("litecoin"))
+            chain_chooser = &litecoin;
+        else if(args.count("namecoin"))
+            chain_chooser = &namecoin;
+        else
+            chain_chooser = &bitcoin;
+        const Chain& chain(*chain_chooser);
+        
         if(!args.count("datadir"))
-            data_dir = default_data_dir(bitcoin.dataDirSuffix());
+            data_dir = default_data_dir(chain.dataDirSuffix());
         
-        std::ofstream olog((data_dir + "/debug.log").c_str(), std::ios_base::out|std::ios_base::app);
-        Logger::instantiate(olog);
-        Logger::label_thread("main");
-        
-        // if present, parse the config file - if no data dir is specified we always assume bitcoin chain at this stage 
+        // if present, parse the config file - if no data dir is specified we always assume bitcoin chain at this stage
         string config_path = data_dir + "/" + config_file;
         ifstream ifs(config_path.c_str());
+        if (!ifs)
+            ifs.open((data_dir + "/libcoin.conf").c_str());
         if(ifs) {
             store(parse_config_file(ifs, config_file_options, true), args);
             notify(args);
         }
-
+        
+        ofstream olog;
+        
+        if (log_file.size() && log_file[0] != '-') {
+            if (log_file.size() && log_file[0] != '/')
+                log_file = data_dir + "/" + log_file;
+            
+            olog.open((log_file).c_str(), std::ios_base::out|std::ios_base::app);;
+        }
+        
+        Logger::Level ll = Logger::info;
+        if (args.count("trace"))
+            ll = Logger::trace;
+        else if (args.count("debug"))
+            ll = Logger::debug;
+        
+        if (olog.is_open())
+            Logger::instantiate(olog, ll);
+        else
+            Logger::instantiate(cerr, ll);
+        
+        Logger::label_thread("main");
+        
         Auth auth(rpc_user, rpc_pass); // if rpc_user and rpc_pass are not set, all authenticated methods becomes disallowed.
         
         // If we have params on the cmdline we run as a command line client contacting a server
@@ -739,18 +781,6 @@ int main(int argc, char* argv[])
         
         // Else we start the bitcoin node and server!
 
-        const Chain* chain_chooser;
-        if(args.count("testnet"))
-            chain_chooser = &testnet;
-        else
-            chain_chooser = &bitcoin;
-        const Chain& chain(*chain_chooser);
-
-        if(!args.count("datadir"))
-            data_dir = default_data_dir(chain.dataDirSuffix());
-        
-        logfile = data_dir + "/debug.log";
-        
         asio::ip::tcp::endpoint proxy_server;
         if(proxy.size()) {
             vector<string> host_port; split(host_port, proxy, is_any_of(":"));

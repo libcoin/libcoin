@@ -93,6 +93,10 @@ public:
         return _aux_pow;
     }
     
+    void setAuxPoW(const AuxPow& auxpow) {
+        _aux_pow = auxpow;
+    }
+    
     uint256 buildMerkleTree() const;
 
     void updateMerkleTree() {
