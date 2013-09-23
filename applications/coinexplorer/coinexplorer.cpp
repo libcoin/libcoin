@@ -266,7 +266,8 @@ Value Search::operator()(const Array& params, bool fHelp) {
 int main(int argc, char* argv[])
 {
     try {
-        string config_file, data_dir, log_file;
+        string config_file = argv[0] + string(".conf");
+        string data_dir, log_file;
         unsigned short port, rpc_port;
         string rpc_bind, rpc_connect, rpc_user, rpc_pass;
         typedef vector<string> strings;
@@ -278,13 +279,20 @@ int main(int argc, char* argv[])
         unsigned int timeout;
         string certchain, privkey;
 
+        size_t slash = config_file.rfind('/');
+        if (slash != string::npos)
+            config_file = config_file.substr(slash+1);
+        
         // Commandline options
         options_description generic("Generic options");
         generic.add_options()
             ("help,?", "Show help messages")
             ("version,v", "print version string")
-            ("conf,c", value<string>(&config_file)->default_value("libcoin.conf"), "Specify configuration file")
+            ("conf,c", value<string>(&config_file)->default_value(config_file), "Specify configuration file")
             ("datadir", value<string>(&data_dir), "Specify non default data directory")
+            ("testnet", "Use the test network")
+            ("litecoin", "Run as a litecoin client")
+            ("namecoin", "Run as a namecoin client")
         ;
         
         options_description config("Config options");
@@ -293,15 +301,12 @@ int main(int argc, char* argv[])
             ("nolisten", "Don't accept connections from outside")
             ("portmap", value<bool>(&portmap)->default_value(true), "Use IGD-UPnP or NATPMP to map the listening port")
             ("upnp", value<bool>(&portmap), "Use UPnP to map the listening port - deprecated, use portmap")
-            ("testnet", "Use the test network")
-            ("litecoin", "Run as a litecoin client")
-            ("namecoin", "Run as a namecoin client")
             ("proxy", value<string>(&proxy), "Connect through socks4 proxy")
             ("irc", value<string>(&irc)->default_value("92.243.23.21"), "Specify other chat server, for no chatserver specify \"\"")
             ("timeout", value<unsigned int>(&timeout)->default_value(5000), "Specify connection timeout (in milliseconds)")
             ("addnode", value<strings>(&add_peers), "Add a node to connect to")
             ("connect", value<strings>(&connect_peers), "Connect only to the specified node")
-            ("port", value<unsigned short>(&port)->default_value(8333), "Listen on specified port for the p2p protocol")
+            ("port", value<unsigned short>(&port)->default_value(0), "Listen on specified port for the p2p protocol")
             ("rpcuser", value<string>(&rpc_user), "Username for JSON-RPC connections")
             ("rpcpassword", value<string>(&rpc_pass), "Password for JSON-RPC connections")
             ("rpcport", value<unsigned short>(&rpc_port)->default_value(8332), "Listen for JSON-RPC connections on <arg>")
@@ -345,19 +350,6 @@ int main(int argc, char* argv[])
             return 1;        
         }
 
-        if(!args.count("datadir"))
-            data_dir = default_data_dir(bitcoin.dataDirSuffix());
-        
-        // if present, parse the config file - if no data dir is specified we always assume bitcoin chain at this stage
-        string config_path = data_dir + "/" + config_file;
-        ifstream ifs(config_path.c_str());
-        if(ifs) {
-            store(parse_config_file(ifs, config_file_options, true), args);
-            notify(args);
-        }
-
-        Auth auth(rpc_user, rpc_pass); // if rpc_user and rpc_pass are not set, all authenticated methods becomes disallowed.
-        
         // Start the bitcoin node and server!
 
         const Chain* chain_chooser;
@@ -374,7 +366,16 @@ int main(int argc, char* argv[])
         if(!args.count("datadir"))
             data_dir = default_data_dir(chain.dataDirSuffix());
         
-
+        // if present, parse the config file - if no data dir is specified we always assume bitcoin chain at this stage
+        string config_path = data_dir + "/" + config_file;
+        ifstream ifs(config_path.c_str());
+        if (!ifs)
+            ifs.open((data_dir + "/libcoin.conf").c_str());
+        if(ifs) {
+            store(parse_config_file(ifs, config_file_options, true), args);
+            notify(args);
+        }
+        
         ofstream olog;
         
         if (log_file.size() && log_file[0] != '-') {
@@ -396,6 +397,8 @@ int main(int argc, char* argv[])
             Logger::instantiate(cerr, ll);
 
         Logger::label_thread("main");
+        
+        Auth auth(rpc_user, rpc_pass); // if rpc_user and rpc_pass are not set, all authenticated methods becomes disallowed.
         
         asio::ip::tcp::endpoint proxy_server;
         if(proxy.size()) {

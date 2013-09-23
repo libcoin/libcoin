@@ -19,6 +19,7 @@ SET(TARGET_H
     ${HEADER_PATH}/Chain.h
     ${HEADER_PATH}/ChatClient.h
     ${HEADER_PATH}/Claims.h
+    ${HEADER_PATH}/Configuration.h
     ${HEADER_PATH}/Database.h
     ${HEADER_PATH}/Endpoint.h
     ${HEADER_PATH}/EndpointPool.h
@@ -57,6 +58,7 @@ SET(TARGET_SRC
     Chain.cpp
     ChatClient.cpp
     Claims.cpp
+    Configuration.cpp
     Database.cpp
     Endpoint.cpp
     EndpointPool.cpp
