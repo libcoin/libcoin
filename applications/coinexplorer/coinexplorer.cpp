@@ -17,12 +17,11 @@
 
 #include <coinChain/Node.h>
 #include <coinChain/NodeRPC.h>
+#include <coinChain/Configuration.h>
 
 #include <coinHTTP/Server.h>
 #include <coinHTTP/RPC.h>
 #include <coinHTTP/Client.h>
-
-#include <coinNAT/PortMapper.h>
 
 #include <boost/thread.hpp>
 #include <boost/program_options.hpp>
@@ -265,155 +264,50 @@ Value Search::operator()(const Array& params, bool fHelp) {
 
 int main(int argc, char* argv[])
 {
+    strings add_peers, connect_peers;
+    boost::program_options::options_description extra("Extra options");
+    extra.add_options()
+    ("addnode", boost::program_options::value<strings>(&add_peers), "Add a node to connect to")
+    ("connect", boost::program_options::value<strings>(&connect_peers), "Connect only to the specified node")
+    ;
+    
+    Configuration conf(argc, argv, extra);
+    
     try {
-        string config_file = argv[0] + string(".conf");
-        string data_dir, log_file;
-        unsigned short port, rpc_port;
-        string rpc_bind, rpc_connect, rpc_user, rpc_pass;
-        typedef vector<string> strings;
-        strings rpc_params;
-        string proxy, irc;
-        strings connect_peers;
-        strings add_peers;
-        bool portmap, ssl;
-        unsigned int timeout;
-        string certchain, privkey;
-
-        size_t slash = config_file.rfind('/');
-        if (slash != string::npos)
-            config_file = config_file.substr(slash+1);
         
-        // Commandline options
-        options_description generic("Generic options");
-        generic.add_options()
-            ("help,?", "Show help messages")
-            ("version,v", "print version string")
-            ("conf,c", value<string>(&config_file)->default_value(config_file), "Specify configuration file")
-            ("datadir", value<string>(&data_dir), "Specify non default data directory")
-            ("testnet", "Use the test network")
-            ("litecoin", "Run as a litecoin client")
-            ("namecoin", "Run as a namecoin client")
-        ;
+        Auth auth(conf.user(), conf.pass()); // if rpc_user and rpc_pass are not set, all authenticated methods becomes disallowed.
         
-        options_description config("Config options");
-        config.add_options()
-            ("pid", value<string>(), "Specify pid file (default: bitcoind.pid)")
-            ("nolisten", "Don't accept connections from outside")
-            ("portmap", value<bool>(&portmap)->default_value(true), "Use IGD-UPnP or NATPMP to map the listening port")
-            ("upnp", value<bool>(&portmap), "Use UPnP to map the listening port - deprecated, use portmap")
-            ("proxy", value<string>(&proxy), "Connect through socks4 proxy")
-            ("irc", value<string>(&irc)->default_value("92.243.23.21"), "Specify other chat server, for no chatserver specify \"\"")
-            ("timeout", value<unsigned int>(&timeout)->default_value(5000), "Specify connection timeout (in milliseconds)")
-            ("addnode", value<strings>(&add_peers), "Add a node to connect to")
-            ("connect", value<strings>(&connect_peers), "Connect only to the specified node")
-            ("port", value<unsigned short>(&port)->default_value(0), "Listen on specified port for the p2p protocol")
-            ("rpcuser", value<string>(&rpc_user), "Username for JSON-RPC connections")
-            ("rpcpassword", value<string>(&rpc_pass), "Password for JSON-RPC connections")
-            ("rpcport", value<unsigned short>(&rpc_port)->default_value(8332), "Listen for JSON-RPC connections on <arg>")
-            ("rpcallowip", value<string>(&rpc_bind)->default_value(asio::ip::address_v4::loopback().to_string()), "Allow JSON-RPC connections from specified IP address")
-            ("rpcconnect", value<string>(&rpc_connect)->default_value(asio::ip::address_v4::loopback().to_string()), "Send commands to node running on <arg>")
-            ("rpcssl", value<bool>(&ssl)->default_value(false), "Use OpenSSL (https) for JSON-RPC connections")
-            ("rpcsslcertificatechainfile", value<string>(&certchain)->default_value("server.cert"), "Server certificate file")
-            ("rpcsslprivatekeyfile", value<string>(&privkey)->default_value("server.pem"), "Server private key")
-            ("debug", "Set logging output to debug")
-            ("trace", "Set logging output to trace")
-            ("log", value<string>(&log_file)->default_value("debug.log"), "Logfile name - if starting with / absolute path is assumed, otherwise relative to data directory, choose '-' for logging to stderr")
-        ;
-        
-        options_description cmdline_options;
-        cmdline_options.add(generic).add(config);
-        
-        options_description config_file_options;
-        config_file_options.add(config);
-        
-        options_description visible;
-        visible.add(generic).add(config);
-        
-        positional_options_description pos;
-        pos.add("params", -1);
-        
-        
-        // parse the command line
-        variables_map args;
-        store(command_line_parser(argc, argv).options(cmdline_options).positional(pos).run(), args);
-        notify(args);
-        
-        if (args.count("help")) {
-            cout << "Usage: " << argv[0] << " [options]\n";
-            cout << visible << "\n";
-            cout << argv[0] << " start up as a daemon\n";
-            return 1;
-        }
-        
-        if (args.count("version")) {
-            cout << argv[0] << " version is: " << FormatVersion(PROTOCOL_VERSION) << "\n";
-            return 1;        
+        if (conf.method() != "") {
+            if (conf.method() == "help") {
+                cout << "Usage: " << argv[0] << " [options]\n";
+                cout << conf << "\n";
+                cout << argv[0] << " start up as a daemon\n";
+                return 1;
+            }
+            
+            if (conf.method() == "version") {
+                cout << argv[0] << " version is: " << FormatVersion(PROTOCOL_VERSION) << "\n";
+                return 1;
+            }
         }
 
         // Start the bitcoin node and server!
-
-        const Chain* chain_chooser;
-        if(args.count("testnet"))
-            chain_chooser = &testnet;
-        else if(args.count("litecoin"))
-            chain_chooser = &litecoin;
-        else if(args.count("namecoin"))
-            chain_chooser = &namecoin;
-        else
-            chain_chooser = &bitcoin;
-        const Chain& chain(*chain_chooser);
-
-        if(!args.count("datadir"))
-            data_dir = default_data_dir(chain.dataDirSuffix());
-        
-        // if present, parse the config file - if no data dir is specified we always assume bitcoin chain at this stage
-        string config_path = data_dir + "/" + config_file;
-        ifstream ifs(config_path.c_str());
-        if (!ifs)
-            ifs.open((data_dir + "/libcoin.conf").c_str());
-        if(ifs) {
-            store(parse_config_file(ifs, config_file_options, true), args);
-            notify(args);
-        }
-        
-        ofstream olog;
-        
-        if (log_file.size() && log_file[0] != '-') {
-            if (log_file.size() && log_file[0] != '/')
-                log_file = data_dir + "/" + log_file;
-
-            olog.open((log_file).c_str(), std::ios_base::out|std::ios_base::app);;
-        }
-        
-        Logger::Level ll = Logger::info;
-        if (args.count("trace"))
-            ll = Logger::trace;
-        else if (args.count("debug"))
-            ll = Logger::debug;
-
-        if (olog.is_open())
-            Logger::instantiate(olog, ll);
-        else
-            Logger::instantiate(cerr, ll);
-
-        Logger::label_thread("main");
-        
-        Auth auth(rpc_user, rpc_pass); // if rpc_user and rpc_pass are not set, all authenticated methods becomes disallowed.
         
         asio::ip::tcp::endpoint proxy_server;
-        if(proxy.size()) {
-            vector<string> host_port; split(host_port, proxy, is_any_of(":"));
+        if(conf.proxy().size()) {
+            strings host_port;
+            string proxy = conf.proxy();
+            split(host_port, proxy, is_any_of(":"));
+            split(host_port, proxy, is_any_of(":"));
             if(host_port.size() < 2) host_port.push_back("1080");
             proxy_server = asio::ip::tcp::endpoint(asio::ip::address_v4::from_string(host_port[0]), lexical_cast<short>(host_port[1]));
         }
-        Node node(chain, data_dir, args.count("nolisten")||connect_peers.size() ? "" : "0.0.0.0", lexical_cast<string>(port), proxy_server, timeout, irc); // it is also here we specify the use of a proxy!
-        node.setClientVersion("libcoin/coinexplorer", vector<string>());
+        Node node(conf.chain(), conf.data_dir(), conf.listen(), lexical_cast<string>(conf.node_port()), proxy_server, conf.timeout()); // it is also here we specify the use of a proxy!
+        node.setClientVersion("libcoin/bitcoind", vector<string>());
         node.verification(Node::MINIMAL);
-        node.validation(Node::NONE); // note set to MINIMAL to get validation (merkeltrie stuff)
-        node.persistence(Node::LAZY); // set to FULL to get keep all blocks (history)
+        node.validation(Node::NONE);
+        node.persistence(Node::LAZY);
         node.searchable(true);
-        PortMapper mapper(node.get_io_service(), port); // this will use the Node call
-        if(portmap) mapper.start();
 
         // use the connect and addnode options to restrict and supplement the irc and endpoint db.
         for(strings::iterator ep = add_peers.begin(); ep != add_peers.end(); ++ep) node.addPeer(*ep);
@@ -435,8 +329,9 @@ int main(int argc, char* argv[])
                 "</form>"
             "</body>"
         "</html>";
-        Server server(rpc_bind, lexical_cast<string>(rpc_port), (args.count("raphael") ? filesystem::initial_path().string() : search_page), data_dir);
-        if(ssl) server.setCredentials(data_dir, certchain, privkey);
+        
+        Server server(conf.bind(), lexical_cast<string>(conf.port()), filesystem::initial_path().string(), conf.data_dir());
+        if(conf.ssl()) server.setCredentials(conf.data_dir(), conf.certchain(), conf.privkey());
         
         // Register Server methods.
         server.registerMethod(method_ptr(new Stop(server)), auth);

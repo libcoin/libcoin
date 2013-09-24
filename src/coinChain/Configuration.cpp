@@ -72,7 +72,7 @@ Configuration::Configuration(int argc, char* argv[], options_description extra) 
     notify(args);
     
     if(args.count("testnet3") || prog_name.find("testnet3") != string::npos)
-        _chain = &testnet;
+        _chain = &testnet3;
     else if(args.count("litecoin") || prog_name.find("litecoin") != string::npos)
         _chain = &litecoin;
     else if(args.count("namecoin") || prog_name.find("namecoin") != string::npos)

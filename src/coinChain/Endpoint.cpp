@@ -95,7 +95,7 @@ Endpoint::Endpoint()
 Endpoint::Endpoint(tcp::endpoint ep) : tcp::endpoint(ep) {
     _services = NODE_NETWORK;
     memcpy(_ipv6, pchIPv4, sizeof(_ipv6));
-    _time = 100000000;
+    _time = UnixTime::s() - 3*24*60*60 - GetRand(4*24*60*60);
     _lastTry = 0;    
 }
 

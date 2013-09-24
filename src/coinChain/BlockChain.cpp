@@ -851,9 +851,14 @@ void BlockChain::append(const Block &block) {
     if (prev == _tree.end())
         throw Error("Cannot accept orphan block: " + hash.toString());
 
-    if (block.getBits() != _chain.nextWorkRequired(prev))
-        throw Error("Incorrect proof of work");
-    
+    if (block.getBits() != _chain.nextWorkRequired(prev)) {
+        // check if we can allow a block to slip through due to max time:
+        if (block.getTime() - (int)prev->time < _chain.maxInterBlockTime())
+            throw Error("Incorrect proof of work: " + lexical_cast<string>(block.getBits()) + " versus " + lexical_cast<string>(_chain.nextWorkRequired(prev)));
+        else if ( block.getBits() != _chain.proofOfWorkLimit().GetCompact())
+            throw Error("Incorrect proof of work (limit): " + lexical_cast<string>(block.getBits()) + " versus " + lexical_cast<string>(_chain.proofOfWorkLimit().GetCompact()));
+    }
+        
     if (block.getBlockTime() <= getMedianTimePast(prev))
         throw Error("Block's timestamp is too early");
 

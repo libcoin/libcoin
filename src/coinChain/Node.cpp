@@ -66,11 +66,18 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
         _acceptor.listen();        
     }
     // else nolisten
+    
+    // ensure we have some addresses to start with (dns seed)
+    for (set<string>::const_iterator seed = chain.seeds().begin(); seed != chain.seeds().end(); ++seed) {
+        addPeer(*seed);
+    }
 
     // disable chat by blanking out the chat server address
     if (!irc.size()) {
         post_accept_or_connect();
     }
+
+    
     
     // this setup the blockchain to use the database as validation index, and a purged client.
     //    _blockChain.validation_index(BlockChain::MerkleTrie);
@@ -213,8 +220,9 @@ void Node::addPeer(string hostport) {
     string port = (colon == string::npos) ? lexical_cast<string>(_blockChain.chain().defaultPort()) : hostport.substr(colon+1);
     ip::tcp::resolver resolver(_io_service);
     ip::tcp::resolver::query query(address, port);
-    ip::tcp::endpoint ep = *resolver.resolve(query);
-    addPeer(ep);
+    // iterate over all endpoints returned....
+    for (ip::tcp::resolver::iterator ep = resolver.resolve(query); ep != ip::tcp::resolver::iterator(); ++ep)
+        addPeer(*ep);
 }
 
 void Node::addPeer(boost::asio::ip::tcp::endpoint ep) {

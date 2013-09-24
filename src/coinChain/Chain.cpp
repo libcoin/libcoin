@@ -55,6 +55,11 @@ BitcoinChain::BitcoinChain() : _genesis("0x000000000019d6689c085ae165831e934ff76
     (210000, uint256("0x000000000000048b95347e83192f69cf0366076336c639f9b7228e9ba171342e"))
     ;
 
+    _seeds = boost::assign::list_of
+    ("seed.bitcoin.sipa.be")
+    ("dnsseed.bluematt.me")
+    ("dnsseed.bitcoin.dashjr.org")
+    ("bitseed.xf2.org");
 }
 
 unsigned int BitcoinChain::totalBlocksEstimate() const {
@@ -187,30 +192,33 @@ bool BitcoinChain::checkPoints(const unsigned int height, const uint256& hash) c
 const BitcoinChain bitcoin;
 
 
-TestNetChain::TestNetChain() : _genesis("0x00000007199508e34a9ff81e6ec0c477a4cccff2a4767a8eee39c11db367b008") {
-    _alert_key = ParseHex("04fc9702847840aaf195de8442ebecedf5b095cdbb9bc716bda9110971b28a49e0ead8564ff0db22209e0374782c093bb899692d524e9d6a6956e7c5ecbcd68284");
-    _messageStart[0] = 0xfa; _messageStart[1] = 0xbf; _messageStart[2] = 0xb5; _messageStart[3] = 0xda;
+TestNet3Chain::TestNet3Chain() : _genesis("0x000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943") {
+    _alert_key = ParseHex("04302390343f91cc401d56d68b123028bf52e5fca1939df127f63c6467cdf9c8e2c14b61104cf817d0b780da337893ecc4aaff1309e536162dabbdb45200ca2b0a");
+    _messageStart[0] = 0x0b; _messageStart[1] = 0x11; _messageStart[2] = 0x09; _messageStart[3] = 0x07;
 
     const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
     Transaction txNew;
     
-    Script signature = Script() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
+    Script signature = Script() << 0x1d00ffff << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
     txNew.addInput(Input(Coin(), signature)); 
     Script script = Script() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
     txNew.addOutput(Output(50 * COIN, script)); 
 
-    _genesisBlock = Block(1, uint256(0), uint256(0), 1296688602, 0x1d07fff8, 384568319);
+    _genesisBlock = Block(1, uint256(0), uint256(0), 1296688602, 0x1d00ffff, 414098458);
     _genesisBlock.addTransaction(txNew);
     _genesisBlock.updateMerkleTree(); // genesisBlock
     assert(_genesisBlock.getHash() == _genesis);
     
+    _seeds = boost::assign::list_of
+    ("testnet-seed.bitcoin.petertodd.org")
+    ("testnet-seed.bluematt.me");
 }
 
-const Block& TestNetChain::genesisBlock() const {
+const Block& TestNet3Chain::genesisBlock() const {
     return _genesisBlock;
 }
 
-const int64_t TestNetChain::subsidy(unsigned int height) const {
+const int64_t TestNet3Chain::subsidy(unsigned int height) const {
     int64_t s = 50 * COIN;
     
     // Subsidy is cut in half every 4 years
@@ -219,12 +227,12 @@ const int64_t TestNetChain::subsidy(unsigned int height) const {
     return s;
 }
 
-bool TestNetChain::isStandard(const Transaction& tx) const {
+bool TestNet3Chain::isStandard(const Transaction& tx) const {
     // on the test net everything is allowed
     return true;
 }
 
-const bool TestNetChain::checkProofOfWork(const Block& block) const {
+const bool TestNet3Chain::checkProofOfWork(const Block& block) const {
     uint256 hash = block.getHash();
     unsigned int nBits = block.getBits();
     CBigNum bnTarget;
@@ -242,7 +250,7 @@ const bool TestNetChain::checkProofOfWork(const Block& block) const {
 }
 
 
-unsigned int TestNetChain::nextWorkRequired(BlockIterator blk) const {
+unsigned int TestNet3Chain::nextWorkRequired(BlockIterator blk) const {
     const int64_t nTargetTimespan = 14 * 24 * 60 * 60; // two weeks
     const int64_t nTargetSpacing = 10 * 60;
     const int64_t nInterval = nTargetTimespan / nTargetSpacing;
@@ -253,8 +261,12 @@ unsigned int TestNetChain::nextWorkRequired(BlockIterator blk) const {
         return proofOfWorkLimit().GetCompact();
     
     // Only change once per interval
-    if ((h + 1) % nInterval != 0)
+    if ((h + 1) % nInterval != 0) {
+        // Return the last non-special-min-difficulty-rules-block
+        while (blk.height() % nInterval != 0 && blk->bits == proofOfWorkLimit().GetCompact())
+            blk--;
         return blk->bits;
+    }
     
     // Go back by what we want to be 14 days worth of blocks
     BlockIterator former = blk - (nInterval-1);
@@ -277,16 +289,16 @@ unsigned int TestNetChain::nextWorkRequired(BlockIterator blk) const {
         bnNew = proofOfWorkLimit();
     
     /// debug print
-    log_debug("GetNextWorkRequired RETARGET");
-    log_debug("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"", nTargetTimespan, nActualTimespan);
-    log_debug("Before: %08x  %s", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
-    log_debug("After:  %08x  %s", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
+    log_info("GetNextWorkRequired RETARGET");
+    log_info("\tnTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"", nTargetTimespan, nActualTimespan);
+    log_info("\tBefore: %08x  %s", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
+    log_info("\tAfter:  %08x  %s", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
     
     return bnNew.GetCompact();
 }
 
 // global const definition of the testnet chain
-const TestNetChain testnet;
+const TestNet3Chain testnet3;
 
 
 NamecoinChain::NamecoinChain() : _genesis("000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770") {

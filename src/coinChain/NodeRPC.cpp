@@ -226,7 +226,7 @@ Value GetInfo::operator()(const Array& params, bool fHelp) {
     //        obj.push_back(Pair("genproclimit",  (int)(fLimitProcessors ? nLimitProcessors : -1)));
     obj.push_back(Pair("difficulty",    (double)_node.blockChain().getDifficulty()));
     //        obj.push_back(Pair("hashespersec",  gethashespersec(params, false)));
-    obj.push_back(Pair("testnet",       (&_node.blockChain().chain() == &testnet)));
+    obj.push_back(Pair("testnet",       (&_node.blockChain().chain() == &testnet3)));
     //        obj.push_back(Pair("keypoololdest", (boost::int64_t)pwalletMain->GetOldestKeyPoolTime()));
     //        obj.push_back(Pair("paytxfee",      ValueFromAmount(nTransactionFee)));
     //        obj.push_back(Pair("errors",        GetWarnings("statusbar")));

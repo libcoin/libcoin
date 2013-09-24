@@ -42,6 +42,7 @@ public:
     virtual bool isStandard(const Transaction& tx) const = 0;
     virtual unsigned int nextWorkRequired(BlockIterator blk) const = 0;
     virtual const CBigNum proofOfWorkLimit() const = 0;
+    virtual const int maxInterBlockTime() const { return INT_MAX; }
     virtual bool adhere_aux_pow() const { return false; }
     virtual bool adhere_names() const { return false; }
     virtual const bool checkProofOfWork(const Block& block) const = 0;
@@ -69,6 +70,10 @@ public:
     
     virtual int expirationDepth(int count) const {
         return 0;
+    }
+    
+    const std::set<std::string>& seeds() const {
+        return _seeds;
     }
     
     // To enable upgrade from one block version to another we define a quorum and a majority for acceptance
@@ -104,6 +109,7 @@ public:
         
     protected:
         PubKey _alert_key;
+        std::set<std::string> _seeds;
 };
 
 class COINCHAIN_EXPORT BitcoinChain : public Chain {
@@ -156,20 +162,21 @@ private:
 
 extern const BitcoinChain bitcoin;
 
-class COINCHAIN_EXPORT TestNetChain : public Chain
+class COINCHAIN_EXPORT TestNet3Chain : public Chain
 {
 public:
-    TestNetChain();
+    TestNet3Chain();
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
     virtual const int64_t subsidy(unsigned int height) const ;
     virtual bool isStandard(const Transaction& tx) const ;
-    virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 28); }
+    virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 32); }
+    virtual const int maxInterBlockTime() const { return 2*10*60; }
     virtual const bool checkProofOfWork(const Block& block) const;
     virtual unsigned int nextWorkRequired(BlockIterator blk) const;
     //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const;
     
-    virtual const std::string dataDirSuffix() const { return "bitcoin/testnet"; };
+    virtual const std::string dataDirSuffix() const { return "testnet3"; };
     
     virtual unsigned int timeStamp(ChangeIdentifier id) const {
         switch(id) {
@@ -211,7 +218,7 @@ private:
     MessageStart _messageStart;
 };
 
-extern const TestNetChain testnet;
+extern const TestNet3Chain testnet3;
 
 class COINCHAIN_EXPORT NamecoinChain : public Chain {
 public:
