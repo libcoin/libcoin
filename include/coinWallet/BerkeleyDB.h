@@ -8,7 +8,7 @@
 #include <coin/Key.h>
 #include <coin/Transaction.h>
 
-#include <coinChain/Export.h>
+#include <coinWallet/Export.h>
 
 
 #include <coin/uint256.h>
@@ -25,7 +25,7 @@ extern std::map<std::string, int> mapFileUseCount;
 
 extern void DBFlush(bool fShutdown);
 
-class COINCHAIN_EXPORT CDB
+class COINWALLET_EXPORT CDB
 {
 protected:
     Db* pdb;

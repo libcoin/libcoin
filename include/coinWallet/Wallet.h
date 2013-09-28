@@ -11,9 +11,9 @@
 
 #include <coin/Block.h>
 #include <coinChain/Node.h>
-#include <coinChain/db.h>
 
 #include <coinWallet/Export.h>
+#include <coinWallet/BerkeleyDB.h>
 #include <coinWallet/CryptoKeyStore.h>
 #include <coinWallet/WalletTx.h>
 

@@ -8,7 +8,7 @@
 #include <coinWallet/Export.h>
 #include <coinWallet/Wallet.h>
 
-#include <coinChain/db.h>
+#include <coinWallet/BerkeleyDB.h>
 
 #include <coinWallet/WalletTx.h>
 
