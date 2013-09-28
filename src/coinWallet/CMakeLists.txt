@@ -10,6 +10,7 @@ SET(LIB_NAME coinWallet)
 
 SET(HEADER_PATH ${PROJECT_SOURCE_DIR}/include/${LIB_NAME})
 SET(TARGET_H
+    ${HEADER_PATH}/BerkeleyDB.h
     ${HEADER_PATH}/Crypter.h
     ${HEADER_PATH}/CryptoKeyStore.h
     ${HEADER_PATH}/Export.h
@@ -25,6 +26,7 @@ SET(TARGET_H
 #    ${LIBCOIN_USER_DEFINED_DYNAMIC_OR_STATIC}
 #    ${LIB_PUBLIC_HEADERS}
 SET(TARGET_SRC
+    BerkeleyDB.cpp
     Crypter.cpp
     CryptoKeyStore.cpp
     MerkleTx.cpp

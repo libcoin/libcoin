@@ -93,13 +93,11 @@ Configuration::Configuration(int argc, char* argv[], options_description extra) 
         notify(args);
     }
     
-    ofstream olog;
-    
     if (_log_file.size() && _log_file[0] != '-') {
         if (_log_file.size() && _log_file[0] != '/')
             _log_file = _data_dir + "/" + _log_file;
         
-        olog.open((_log_file).c_str(), std::ios_base::out|std::ios_base::app);;
+        _olog.open((_log_file).c_str(), std::ios_base::out|std::ios_base::app);;
     }
     
     Logger::Level ll = Logger::info;
@@ -108,8 +106,8 @@ Configuration::Configuration(int argc, char* argv[], options_description extra) 
     else if (args.count("debug"))
         ll = Logger::debug;
     
-    if (olog.is_open())
-        Logger::instantiate(olog, ll);
+    if (_olog.is_open())
+        Logger::instantiate(_olog, ll);
     else
         Logger::instantiate(cerr, ll);
     

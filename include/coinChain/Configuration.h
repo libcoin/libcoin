@@ -104,6 +104,7 @@ private:
     unsigned int _timeout;
     std::string _certchain, _privkey;
     const Chain* _chain;
+    std::ofstream _olog;
 };
 
 std::ostream& operator<<(std::ostream& os, const Configuration& conf) {
