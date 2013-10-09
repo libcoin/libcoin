@@ -19,6 +19,7 @@ SET(TARGET_H
     ${HEADER_PATH}/BigNum.h
     ${HEADER_PATH}/Block.h
     ${HEADER_PATH}/BlockHeader.h
+    ${HEADER_PATH}/Currency.h
     ${HEADER_PATH}/Export.h
     ${HEADER_PATH}/ExtendedKey.h
     ${HEADER_PATH}/Key.h
@@ -43,6 +44,7 @@ SET(TARGET_SRC
     AuxPow.cpp
     Block.cpp
     BlockHeader.cpp
+    Currency.cpp
     ExtendedKey.cpp
     Key.cpp
     KeyStore.cpp

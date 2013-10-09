@@ -78,7 +78,30 @@ public:
 private:
     unsigned int _decimals;
 };
+/*
+namespace json {
+    class null {
+    public:
+        null() {}
+    };
 
+    typedef bool boolean;
+    typedef int64_t integer;
+    typedef double number;
+    typedef map<string, value> object;
+    typedef vector<value> array;
+    
+    typedef boost::variant<null,
+    boost::recursive_wrapper<boolean>,
+    boost::recursive_wrapper<integer>,
+    boost::recursive_wrapper<number>,
+    boost::recursive_wrapper<string>,
+    boost::recursive_wrapper<integer>,
+    boost::recursive_wrapper<object>,
+    boost::recursive_wrapper<array> > value;
+}
+
+*/
 
 /// The jsonance classes enables easy json creation, parsing and manipulation.
 /// There are two basic classes: value and pair, from which all json expressions
@@ -90,6 +113,7 @@ private:
 /// And: a["property"] = "red"; // { property : "red" }
 /// And parse or output json as: value val; istream >> val; or ostream << val; or ostream << format("  ", "\n") << val;
 /// Finally, you can do a schema validated parsing by: istream >> schema(json_val) >> val;
+/// stringstream("{abc:123, aaa:[123,aaa,232]}") >> json::loose >> value;
 /*
 namespace jsonance {
     class null {
@@ -376,9 +400,23 @@ void f3() {
 }
  */
 int main(int argc, char* argv[]) {
+    /*
+    json::value res = json::object("id", lexical_cast<string>(id))("amounts", lexical_cast<string>(payment.amount()))("txs", json::array(lexical_cast<string>(payment.hash().toString())))("fees", lexical_cast<string>(payment.fee()));
+    stringstream ss;
+    ss << json::style(json::compact) << res;
+    ss.str();
+    
+    json::value res;
+    stringstream ss(response);
+    ss >> json::schema("{type:object, properties:{ id:{type:string,required:true}, {id:amounts,required:true}, {fee:}") >> res;
+    res["txs"].push_back(lexical_cast<string>(payment.hash().toString()));
+    res["amounts"] = lexical_cast<int64_t>(res["amounts"]) + payment.amount();
+    res["fees"] = lexical_cast<int64_t>(res["fees"]) + payment.amount();
+    ss << res;
+    ss.str();
 
-    
-    
+*/    
+    /*
     cout << boost::interprocess::ipcdetail::get_current_process_id() << endl;
     
     CBigNum pow;
@@ -404,6 +442,7 @@ int main(int argc, char* argv[]) {
     cout << DecimalFormatter()(amount) << endl;
     
     cout << DecimalFormatter()("0.01") << endl;
+     */
     /*
     try {
         coin::f3();

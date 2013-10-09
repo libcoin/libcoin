@@ -25,9 +25,12 @@ typedef std::vector<std::string> strings;
 
 class Configuration {
 public:
-    Configuration(int argc, char* argv[], boost::program_options::options_description extra = boost::program_options::options_description());
-    const Chain& chain() const {
+    Configuration(int argc, char* argv[], const boost::program_options::options_description& extra);
+    const Currency& currency() const {
         return *_chain;
+    }
+    const Chain& chain() const {
+        return dynamic_cast<const Chain&>(*_chain);
     }
     std::string url() const {
         std::string url = "http://" + _rpc_connect + ":" + boost::lexical_cast<std::string>(_rpc_port);
@@ -103,7 +106,7 @@ private:
     bool _portmap, _gen, _ssl;
     unsigned int _timeout;
     std::string _certchain, _privkey;
-    const Chain* _chain;
+    const Currency* _chain;
     std::ofstream _olog;
 };
 

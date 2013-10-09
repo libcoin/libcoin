@@ -6,7 +6,7 @@ using namespace std;
 using namespace boost;
 using namespace boost::program_options;
 
-Configuration::Configuration(int argc, char* argv[], options_description extra) {
+Configuration::Configuration(int argc, char* argv[], const options_description& extra) {
     string prog_name = argv[0];
     size_t slash = prog_name.rfind('/');
     if (slash != string::npos)
@@ -25,6 +25,7 @@ Configuration::Configuration(int argc, char* argv[], options_description extra) 
     ("testnet3", "Use the test network")
     ("litecoin", "Run as a litecoin client")
     ("namecoin", "Run as a namecoin client")
+    ("ripple", "Run as a ripple client")
     ;
     
     options_description config("Config options");
@@ -77,11 +78,15 @@ Configuration::Configuration(int argc, char* argv[], options_description extra) 
         _chain = &litecoin;
     else if(args.count("namecoin") || prog_name.find("namecoin") != string::npos)
         _chain = &namecoin;
+    else if(args.count("ripple") || prog_name.find("ripped") != string::npos)
+        _chain = &ripplecredits;
     else
         _chain = &bitcoin;
     
     if(!args.count("datadir"))
-        _data_dir = default_data_dir(_chain->dataDirSuffix());
+        _data_dir = default_data_dir(_chain->name());
+    else if (_data_dir[0] != '/')  // check that the datadir is absolute
+        _data_dir = default_data_dir(_data_dir);
     
     // if present, parse the config file - if no data dir is specified we always assume bitcoin chain at this stage
     string config_path = _data_dir + "/" + _config_file;

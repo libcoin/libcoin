@@ -119,6 +119,10 @@ public:
         return BN_get_word(this);
     }
 
+	void setuint(unsigned int n) {
+        setulong(static_cast<unsigned long>(n));
+	}
+    
     unsigned int getuint() const
     {
         return BN_get_word(this);
@@ -168,6 +172,25 @@ public:
         BN_mpi2bn(pch, p - pch, this);
     }
 
+    uint64_t getuint64() const {
+#if (ULONG_MAX > UINT_MAX)
+        return static_cast<uint64_t>(getulong());
+#else
+        int len = BN_num_bytes(this);
+        if (len > 8)
+            throw std::runtime_error("BN getuint64 overflow");
+        
+        unsigned char buf[8];
+        memset(buf, 0, sizeof(buf));
+        BN_bn2bin(this, buf + 8 - len);
+        return
+        static_cast<uint64_t>(buf[0]) << 56 | static_cast<uint64_t>(buf[1]) << 48 |
+        static_cast<uint64_t>(buf[2]) << 40 | static_cast<uint64_t>(buf[3]) << 32 |
+        static_cast<uint64_t>(buf[4]) << 24 | static_cast<uint64_t>(buf[5]) << 16 |
+        static_cast<uint64_t>(buf[6]) << 8 | static_cast<uint64_t>(buf[7]);
+#endif
+	}
+    
     void setuint64(uint64_t n)
     {
         unsigned char pch[sizeof(n) + 6];

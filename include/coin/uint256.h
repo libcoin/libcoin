@@ -32,7 +32,17 @@ protected:
     enum { WIDTH=BITS/32 };
     unsigned int pn[WIDTH];
 public:
-
+	bool isZero() const {
+    for (int i = 0; i < WIDTH; i++)
+        if (pn[i] != 0)
+            return false;
+    return true;
+	}
+    
+	bool isNonZero() const {
+    return !isZero();
+	}
+    
     bool operator!() const
     {
         for (int i = 0; i < WIDTH; i++)
@@ -373,7 +383,11 @@ public:
         return sizeof(pn);
     }
 
-
+	void zero()
+	{
+    memset(&pn[0], 0, sizeof(pn));
+	}
+    
     unsigned int GetSerializeSize(int nType=0, int nVersion=PROTOCOL_VERSION) const
     {
         return sizeof(pn);
@@ -392,21 +406,65 @@ public:
     }
 
 
+    friend class uint128;
     friend class uint160;
     friend class uint256;
     friend inline int Testuint256AdHoc(std::vector<std::string> vArg);
 };
 
+typedef base_uint<128> base_uint128;
 typedef base_uint<160> base_uint160;
 typedef base_uint<256> base_uint256;
 
 
 
 //
-// uint160 and uint256 could be implemented as templates, but to keep
+// uint128, uint160 and uint256 could be implemented as templates, but to keep
 // compile errors and debugging cleaner, they're copy and pasted.
 //
 
+//////////////////////////////////////////////////////////////////////////////
+//
+// uint128
+//
+
+class uint128 : public base_uint128
+{
+public:
+	typedef base_uint128 basetype;
+    
+	uint128()
+	{
+    zero();
+	}
+    
+	uint128(const basetype& b)
+	{
+    *this = b;
+	}
+    
+	uint128& operator=(const basetype& b)
+	{
+    for (int i = 0; i < WIDTH; i++)
+        pn[i] = b.pn[i];
+    
+    return *this;
+	}
+    
+	explicit uint128(const base_uint256& b) {
+		for (int i = 0; i < WIDTH; i++)
+			pn[i] = b.pn[i];
+	}
+    
+	explicit uint128(const std::vector<unsigned char>& vch)
+	{
+    if (vch.size() == size())
+        memcpy(pn, &vch[0], size());
+    else
+        zero();
+	}
+    
+};
 
 
 //////////////////////////////////////////////////////////////////////////////

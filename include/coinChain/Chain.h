@@ -18,6 +18,7 @@
 #define CHAIN_H
 
 #include <coin/Block.h>
+#include <coin/Currency.h>
 
 #include <coinChain/Export.h>
 #include <coinChain/BlockTree.h>
@@ -29,9 +30,9 @@
 
 typedef boost::array<char, 4> MessageStart;
 
-class COINCHAIN_EXPORT Chain : private boost::noncopyable
-{
+class COINCHAIN_EXPORT Chain : public Currency {
 public:
+    Chain(const std::string name, const std::string currency_code, size_t decimals) : Currency(name, currency_code, decimals) {}
     enum ChangeIdentifier {
         BIP0016 = 16,
         BIP0030 = 30
@@ -49,7 +50,7 @@ public:
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const { return true; } // optional
     virtual unsigned int totalBlocksEstimate() const { return 0; } // optional
     
-    virtual const std::string dataDirSuffix() const = 0;
+    virtual const std::string dataDirSuffix() const { return name(); };
     
     virtual unsigned int timeStamp(ChangeIdentifier id) const {
         switch(id) {
@@ -97,16 +98,9 @@ public:
     virtual const MessageStart& messageStart() const = 0;
     virtual short defaultPort() const = 0;
 
-    virtual std::string ircChannel() const = 0;
+    virtual std::string ircChannel() const { return name(); }
     virtual unsigned int ircChannels() const = 0; // number of groups to try (100 for bitcoin, 2 for litecoin)
-    virtual std::string cc() const { return ""; }
-    virtual std::string operator()(int64_t amount, bool include_currency_symbol = true) const {
-        std::stringstream ss;
-        ss << amount/100000000 << "." << std::setfill('0') << std::setw(8) << abs(amount%100000000);
-        if (include_currency_symbol) ss << " " << cc();
-        return ss.str();
-    }
-        
+    
     protected:
         PubKey _alert_key;
         std::set<std::string> _seeds;
@@ -125,8 +119,6 @@ public:
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
     virtual unsigned int totalBlocksEstimate() const;
 
-    virtual const std::string dataDirSuffix() const { return "bitcoin"; }
-    
     virtual int64_t min_fee() const {
         return 10000;
     }
@@ -148,9 +140,7 @@ public:
     virtual const MessageStart& messageStart() const { return _messageStart; };
     virtual short defaultPort() const { return 8333; }
     
-    virtual std::string ircChannel() const { return "bitcoin"; }
     virtual unsigned int ircChannels() const { return 100; } // number of groups to try (100 for bitcoin, 2 for litecoin)
-    virtual std::string cc() const { return "BTC"; }
 
 private:
     Block _genesisBlock;
@@ -175,8 +165,6 @@ public:
     virtual const bool checkProofOfWork(const Block& block) const;
     virtual unsigned int nextWorkRequired(BlockIterator blk) const;
     //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const;
-    
-    virtual const std::string dataDirSuffix() const { return "testnet3"; };
     
     virtual unsigned int timeStamp(ChangeIdentifier id) const {
         switch(id) {
@@ -210,7 +198,6 @@ public:
     
     virtual std::string ircChannel() const { return "bitcoinTEST"; }
     virtual unsigned int ircChannels() const { return 1; } // number of groups to try (100 for bitcoin, 2 for litecoin)
-    virtual std::string cc() const { return "TST"; }
 
 private:
     Block _genesisBlock;
@@ -235,8 +222,6 @@ public:
     
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
     virtual unsigned int totalBlocksEstimate() const;
-    
-    virtual const std::string dataDirSuffix() const { return "namecoin"; }
     
     virtual int64_t min_fee() const {
         return 500000;
@@ -289,9 +274,7 @@ public:
     virtual const MessageStart& messageStart() const { return _messageStart; };
     virtual short defaultPort() const { return 8334; }
     
-    virtual std::string ircChannel() const { return "namecoin"; }
     virtual unsigned int ircChannels() const { return 1; } // number of groups to try (100 for bitcoin, 2 for litecoin)
-    virtual std::string cc() const { return "NMC"; }
     
 private:
     Block _genesisBlock;
@@ -317,8 +300,6 @@ public:
     //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const;
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
     virtual unsigned int totalBlocksEstimate() const;
-    
-    virtual const std::string dataDirSuffix() const { return "litecoin"; }
     
     virtual unsigned int timeStamp(ChangeIdentifier id) const {
         switch(id) {
@@ -355,9 +336,7 @@ public:
     virtual const MessageStart& messageStart() const { return _messageStart; };
     virtual short defaultPort() const { return 9333; }
     
-    virtual std::string ircChannel() const { return "litecoin"; }
     virtual unsigned int ircChannels() const { return 1; } // number of groups to try (100 for bitcoin, 2 for litecoin)
-    virtual std::string cc() const { return "LTC"; }
 
 private:
     const uint256 getPoWHash(const Block& block) const;
@@ -386,8 +365,6 @@ public:
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
     virtual unsigned int totalBlocksEstimate() const;
     
-    virtual const std::string dataDirSuffix() const { return "litecoin"; }
-    
     virtual unsigned int timeStamp(ChangeIdentifier id) const {
         switch(id) {
             case BIP0016: return 1349049600; // April 1st
@@ -411,7 +388,6 @@ public:
     virtual const MessageStart& messageStart() const { return _messageStart; };
     virtual short defaultPort() const { return 9333; }
     
-    virtual std::string ircChannel() const { return "litecoin"; }
     virtual unsigned int ircChannels() const { return 1; } // number of groups to try (100 for bitcoin, 2 for litecoin)
     
 private:
@@ -426,5 +402,6 @@ private:
 
 extern const TerracoinChain terracoin;
 
+extern const Currency ripplecredits;
 
 #endif // CHAIN_H
