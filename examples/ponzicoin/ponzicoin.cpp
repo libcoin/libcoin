@@ -52,8 +52,6 @@ public:
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const { return true; }
     virtual unsigned int totalBlocksEstimate() const { return 0; }
     
-    virtual const std::string dataDirSuffix() const { return "ponzicoin"; }
-    
     //    virtual char networkId() const { return 0xff; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
     virtual ChainAddress getAddress(PubKeyHash hash) const { return ChainAddress(0xff, hash); }
     virtual ChainAddress getAddress(ScriptHash hash) const { return ChainAddress(); }
@@ -76,7 +74,7 @@ private:
     MessageStart _messageStart;
 };
 
-PonziChain::PonziChain() {
+PonziChain::PonziChain() : Chain("ponzicoin", "PZC", 8),{
     _messageStart[0] = 0xbe; _messageStart[1] = 0xf9; _messageStart[2] = 0xd9; _messageStart[3] = 0xb4;
     const char* pszTimestamp = "If five-spots were snowflakes, Ponzi would be a three day blizzard";
     Transaction txNew;
