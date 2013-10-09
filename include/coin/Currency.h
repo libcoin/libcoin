@@ -23,6 +23,8 @@
 
 #include <string>
 
+#include <stdint.h>
+
 class COIN_EXPORT DecimalFormatter {
 public:
     DecimalFormatter(unsigned int decimals = 8) : _decimals(decimals) {

@@ -4,8 +4,6 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include <stdint.h>
-
 using namespace std;
 using namespace boost;
 
