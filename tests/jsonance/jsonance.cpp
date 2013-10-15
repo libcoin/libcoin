@@ -400,6 +400,9 @@ void f3() {
 }
  */
 int main(int argc, char* argv[]) {
+    string amount = "299.99998000";
+    cout << DecimalFormatter(6)(amount) << endl;
+
     /*
     json::value res = json::object("id", lexical_cast<string>(id))("amounts", lexical_cast<string>(payment.amount()))("txs", json::array(lexical_cast<string>(payment.hash().toString())))("fees", lexical_cast<string>(payment.fee()));
     stringstream ss;

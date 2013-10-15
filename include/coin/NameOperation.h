@@ -69,7 +69,7 @@ public:
     /// NameEvaluator - Evaluates namescripts
     class Evaluator : public ::Evaluator {
     public:
-        Evaluator();
+        Evaluator(bool ignore_rules = true);
         
         bool was_name_new() const;
         
@@ -84,6 +84,7 @@ public:
     protected:
         virtual boost::tribool eval(opcodetype opcode);    private:
         bool _name_script;
+        bool _ignore_rules;
     };
 
 private:

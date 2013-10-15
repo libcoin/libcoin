@@ -103,7 +103,7 @@ const std::string& NameOperation::value() const {
 
 /// NameEvaluator - Evaluates namescripts
 
-NameOperation::Evaluator::Evaluator() : ::Evaluator(), _name_script(false) {}
+NameOperation::Evaluator::Evaluator(bool ignore_rules) : ::Evaluator(), _name_script(false), _ignore_rules(ignore_rules) {}
 bool NameOperation::Evaluator::was_name_new() const {
     return _stack.size() == 1;
 }
@@ -157,7 +157,7 @@ boost::tribool NameOperation::Evaluator::eval(opcodetype opcode) {
                 Value name = top(-1);
                 rand_name.insert(rand_name.end(), name.begin(), name.end());
                 uint160 hash =  toPubKeyHash(rand_name);
-                if (uint160(top(-4)) == hash) {
+                if (_ignore_rules || uint160(top(-4)) == hash) {
                     swap(top(-2), top(-1));
                     pop(_stack);
                     return true;
@@ -173,7 +173,7 @@ boost::tribool NameOperation::Evaluator::eval(opcodetype opcode) {
                 return boost::indeterminate;
             if (_stack.size() == 4) {
                 // name1, value1, name2, value2 -> name1, value1 :: iff name1==name2
-                if (top(-1) == top(-3)) {
+                if (_ignore_rules || top(-1) == top(-3)) {
                     swap(top(-1), top(-3));
                     swap(top(-2), top(-4));
                     pop(_stack);
