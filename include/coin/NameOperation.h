@@ -50,7 +50,8 @@ public:
     
     NameOperation();
     
-    void input(const Output& coin, int count);
+    // returns true if input is a name update
+    bool input(const Output& coin, int count);
     
     int input_count() const;
     
@@ -63,6 +64,8 @@ public:
     
     const std::string& name() const;
     
+    void name(std::string name) { _name = name; }
+
     const std::string& value() const;
     
 public:

@@ -216,6 +216,9 @@ public:
     /// NameCoin: getNameValue returns the most recent value for a name
     int getNameAge(const std::string& name) const;
     
+    /// NameCoin: getCoinName returns the name, if any for an unspent output
+    std::string getCoinName(int64_t coin) const;
+    
     /// Get the locator for the best index
     const BlockLocator& getBestLocator() const;
     
@@ -272,7 +275,7 @@ private:
     void insertBlockHeader(int64_t count, const Block& block);
 
     /// Mark a spendable spent - throw if already spent (or immature in case of database mode)
-    std::pair<Output, int> redeem(const Input& input, int iidx, Confirmation conf);
+    Unspent redeem(const Input& input, int iidx, Confirmation conf);
     
     /// Issue a new spendable
     int64_t issue(const Output& output, uint256 hash, unsigned int out_idx, Confirmation conf, bool unique = true);

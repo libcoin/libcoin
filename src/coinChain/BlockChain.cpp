@@ -301,8 +301,9 @@ std::pair<Claims::Spents, int64_t> BlockChain::try_claim(const Transaction& txn,
             spents.insert(input.prevout());
             // all OK - spend the coin
 
-            if (_chain.adhere_names())
-                name_op.input(coin.output, coin.count);
+            // lookup name in DB coin -> name lookup, as you cannot trust a coin.name
+            if (_chain.adhere_names() && name_op.input(coin.output, coin.count))
+                name_op.name(getCoinName(coin.coin));
 
             // Check for negative or overflow input values
             if (!MoneyRange(coin.output.value()))
@@ -360,7 +361,7 @@ void BlockChain::claim(const Transaction& txn, bool verify) {
     _claims.insert(txn, res.first, res.second);
 }
 
-std::pair<Output, int> BlockChain::redeem(const Input& input, int iidx, Confirmation iconf) {
+Unspent BlockChain::redeem(const Input& input, int iidx, Confirmation iconf) {
     Unspent coin;
     
     if (_validation_depth == 0) {
@@ -396,7 +397,7 @@ std::pair<Output, int> BlockChain::redeem(const Input& input, int iidx, Confirma
         query("INSERT INTO Spendings (coin, ocnf, hash, idx, value, script, signature, sequence, iidx, icnf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", coin.coin, coin.cnf, input.prevout().hash, input.prevout().index, coin.output.value(), coin.output.script(), input.signature(), input.sequence(), iidx, iconf.cnf);
     query("DELETE FROM Unspents WHERE coin = ?", coin.coin);
     
-    return make_pair(coin.output, coin.count);
+    return coin;
 }
 
 int64_t BlockChain::issue(const Output& output, uint256 hash, unsigned int out_idx, Confirmation conf, bool unique) {
@@ -460,26 +461,37 @@ void BlockChain::insertBlockHeader(int64_t count, const Block& block) {
 
 void BlockChain::updateName(const NameOperation& name_op, int64_t coin, int count) {
     // check the depth of the current (if any) name
-    int latest_count = query<int>("SELECT count FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", name_op.name());
+    string name = name_op.name();
+    Evaluator::Value raw_name(name.begin(), name.end());
+    string value = name_op.value();
+    Evaluator::Value raw_value(value.begin(), value.end());
+
+    int latest_count = query<int>("SELECT count FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", raw_name);
     bool expired = (latest_count == 0) ? true : (latest_count < count - _chain.expirationDepth(count));
     if (name_op.reserve()) {
         if (count - name_op.input_count() < MIN_FIRSTUPDATE_DEPTH)
             throw Error("Tried to reserve a name less than 12 blocks after name_new: " + name_op.name());
         if (expired)
-            query("INSERT INTO Names (name, value, coin, count) VALUES (?, ?, ?, ?)", name_op.name(), name_op.value(), coin, count);
+            query("INSERT INTO Names (name, value, coin, count) VALUES (?, ?, ?, ?)", raw_name, raw_value, coin, count);
         else
-            throw Error("Tried to reserve non expired name: " + name_op.name());
+            throw Error("Tried to reserve non expired name: " + name);
     }
     else {
         if (!expired)
-            query("INSERT INTO Names (name, value, coin, count) VALUES (?, ?, ?, ?)", name_op.name(), name_op.value(), coin, count);
+            query("INSERT INTO Names (name, value, coin, count) VALUES (?, ?, ?, ?)", raw_name, raw_value, coin, count);
         else
-            throw Error("Tried to update an expired name: " + name_op.name());
+            throw Error("Tried to update an expired name: " + name);
     }
 }
 
 int BlockChain::getNameAge(const std::string& name) const {
-    return query<int>("SELECT value, count FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", name);
+    Evaluator::Value raw_name(name.begin(), name.end());
+    return query<int64_t>("SELECT count FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", raw_name);
+}
+
+string BlockChain::getCoinName(int64_t coin) const {
+    Evaluator::Value raw_name = query<Evaluator::Value>("SELECT name FROM Names WHERE coin=?", coin);
+    return string(raw_name.begin(), raw_name.end());
 }
 
 void BlockChain::postTransaction(const Transaction txn, int64_t& fees, int64_t min_fee, BlockIterator blk, int64_t idx, bool verify) {
@@ -503,18 +515,19 @@ void BlockChain::postTransaction(const Transaction txn, int64_t& fees, int64_t m
         NameOperation name_op;
         for (size_t in_idx = 0; in_idx < inputs.size(); ++in_idx) {
             const Input& input = inputs[in_idx];
-            Output coin;
-            int count;
-            tie(coin, count) = redeem(input, in_idx, conf); // this will throw in case of doublespend attempts
-            value_in += coin.value();
-            
-            if (_chain.adhere_names())
-                name_op.input(coin, count);
+            Unspent coin = redeem(input, in_idx, conf); // this will throw in case of doublespend attempts
+            const Output& output = coin.output;
+            int count = coin.count;
+            value_in += output.value();
+
+            // use the name from the UTXO and not from the input - workaround from for bug
+            if (_chain.adhere_names() && name_op.input(output, count))
+                name_op.name(getCoinName(coin.coin));
             
             _verifySignatureTimer -= UnixTime::us();
             
             if (verify) // this is invocation only - the actual verification takes place in other threads
-                _verifier.verify(coin, txn, in_idx, strictPayToScriptHash, 0);
+                _verifier.verify(output, txn, in_idx, strictPayToScriptHash, 0);
             
             _verifySignatureTimer += UnixTime::us();
         }

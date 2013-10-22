@@ -17,9 +17,11 @@
 #include <coin/NameOperation.h>
 #include <coin/Transaction.h>
 
+using namespace std;
+
 NameOperation::NameOperation() : _allow_overwrite(true), _requires_network_fee(false) {}
 
-void NameOperation::input(const Output& coin, int count) {
+bool NameOperation::input(const Output& coin, int count) {
     // we can have only one in script, however, we allow an op_name_new to be overwritten...
     Script dropped = coin.script().getDropped();
     if (!dropped.empty()) {
@@ -39,8 +41,10 @@ void NameOperation::input(const Output& coin, int count) {
             }
             else
                 throw Error("Only one name pr transaction");
+            return !eval.was_name_new();
         }
     }
+    return false;
 }
 bool NameOperation::output(const Output& coin) {
     const Script& script = coin.script();
@@ -68,12 +72,14 @@ bool NameOperation::output(const Output& coin) {
         // this means we had no inputs - don't treat this as a name op - ignore
         if (eval.was_name_new() || allow_only_new)
             return false;
-        
-        _name = eval.name();
+
         _value = eval.value();
         
-        if (eval.was_first_update())
+        if (eval.was_first_update()) {
+            // only set name in case of first update
+            _name = eval.name();
             _requires_network_fee = true;
+        }
         
         return true;
     }
@@ -128,7 +134,7 @@ bool NameOperation::Evaluator::was_name_script() const {
     return _name_script;
 }
 
-/// Subclass Evaluator to implement eval, enbaling evaluation of context dependent operations
+/// Subclass Evaluator to implement eval, enabling evaluation of context dependent operations
 boost::tribool NameOperation::Evaluator::eval(opcodetype opcode) {
     int name_op = (opcode - OP_1 + 1);
     switch (name_op) {
@@ -157,9 +163,14 @@ boost::tribool NameOperation::Evaluator::eval(opcodetype opcode) {
                 Value name = top(-1);
                 rand_name.insert(rand_name.end(), name.begin(), name.end());
                 uint160 hash =  toPubKeyHash(rand_name);
-                if (_ignore_rules || uint160(top(-4)) == hash) {
+                if (uint160(top(-4)) == hash) {
                     swap(top(-2), top(-1));
                     pop(_stack);
+                    return true;
+                }
+                if (_ignore_rules) {
+                    log_warn("NAME_FIRSTUPDATE with mismatching hash for name: %s", string(top(-1).begin(), top(-1).end()));
+                    _name_script = false;
                     return true;
                 }
             }
@@ -172,14 +183,17 @@ boost::tribool NameOperation::Evaluator::eval(opcodetype opcode) {
                 // name, value -> name, value
                 return boost::indeterminate;
             if (_stack.size() == 4) {
-                // name1, value1, name2, value2 -> name1, value1 :: iff name1==name2
-                if (_ignore_rules || top(-1) == top(-3)) {
-                    swap(top(-1), top(-3));
-                    swap(top(-2), top(-4));
-                    pop(_stack);
-                    pop(_stack);
-                    return true;
+                // name1, value1, name2, value2 -> name1, value2 : iff name1==name2
+                if (top(-1) != top(-3)) {
+                    log_warn("NAME_UPDATE with mismatching names: %s, %s", string(top(-1).begin(), top(-1).end()), string(top(-3).begin(), top(-3).end()));
+                    if (!_ignore_rules)
+                        return false;
                 }
+                // note top(-1) aka the name keeps the original name - i.e. the one to update
+                swap(top(-2), top(-4));
+                pop(_stack);
+                pop(_stack);
+                return true;
             }
             return false;
         }
