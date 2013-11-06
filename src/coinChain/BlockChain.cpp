@@ -129,7 +129,21 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
 
     query("CREATE INDEX IF NOT EXISTS SpendingsIn ON Spendings (icnf)");
     query("CREATE INDEX IF NOT EXISTS SpendingsOut ON Spendings (ocnf)");
-
+/*
+    // MerkleTrie store - stores branches of the MerkleTrie in chunks of a certain size:
+    query("CREATE TABLE IF NOT EXISTS Branches ("
+              "lower INTEGER PRIMARY KEY,"
+              "upper INTEGER,"
+              "hash BINARY,"
+              "elements INTEGER,"
+              "branch BINARY"
+          ")");
+    
+    query("CREATE INDEX IF NOT EXISTS BranchesUpper ON Branches(upper)");
+    
+    // Now a query for a branch can be done like: "SELECT branch FROM Branches WHERE lower <= ? AND ? <= upper"
+    //  
+*/    
     // This table stores is the Auxiliary Proof-of-Works when using merged mining.
     query("CREATE TABLE IF NOT EXISTS AuxProofOfWorks ("
           "count INTEGER REFERENCES Blocks(count)," // linking this AuxPOW to the block chain - blocks with version&BLOCK_VERSION_AUXPOW are expected to have a row in this table
@@ -144,10 +158,10 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
     
     // finally we have, for namecoin a name value store
     query("CREATE TABLE IF NOT EXISTS Names ("
-          "coin PRIMARY KEY REFERENCES Unspents(coin),"
-          "count INTEGER REFERENCES Blocks(count),"
-          "name BINARY,"
-          "value BINARY"
+              "coin PRIMARY KEY REFERENCES Unspents(coin),"
+              "count INTEGER REFERENCES Blocks(count),"
+              "name BINARY,"
+              "value BINARY"
           ")");
 
     // enable fast lookup by name and height
