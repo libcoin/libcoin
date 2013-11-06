@@ -213,6 +213,8 @@ unsigned int BlockChain::purge_depth() const {
 }
 
 void BlockChain::purge_depth(unsigned int purge_depth) {
+    if (purge_depth < _purge_depth)
+        log_warn("Requested a purge_depth (Persistance setting) deeper than currently, please re-download the blockchain to enforce this!");
     _purge_depth = purge_depth;
     query("DELETE FROM Spendings WHERE icnf IN (SELECT cnf FROM Confirmations WHERE count <= ?)", _purge_depth);
     query("DELETE FROM Confirmations WHERE count <= ?", _purge_depth);

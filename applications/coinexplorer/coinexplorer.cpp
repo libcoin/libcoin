@@ -304,10 +304,10 @@ int main(int argc, char* argv[])
         }
         Node node(conf.chain(), conf.data_dir(), conf.listen(), lexical_cast<string>(conf.node_port()), proxy_server, conf.timeout()); // it is also here we specify the use of a proxy!
         node.setClientVersion("libcoin/bitcoind", vector<string>());
-        node.verification(Node::MINIMAL);
-        node.validation(Node::NONE);
-        node.persistence(Node::LAZY);
-        node.searchable(true);
+        node.verification(conf.verification());
+        node.validation(conf.validation());
+        node.persistence(conf.persistance());
+        node.searchable(true); // always true - otherwise we cannot explorer the addresses!
 
         // use the connect and addnode options to restrict and supplement the irc and endpoint db.
         for(strings::iterator ep = add_peers.begin(); ep != add_peers.end(); ++ep) node.addPeer(*ep);

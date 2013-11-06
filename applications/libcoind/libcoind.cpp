@@ -112,10 +112,10 @@ int main(int argc, char* argv[])
         }
         Node node(conf.chain(), conf.data_dir(), conf.listen(), lexical_cast<string>(conf.node_port()), proxy_server, conf.timeout()); // it is also here we specify the use of a proxy!
         node.setClientVersion("libcoin/bitcoind", vector<string>());
-        node.verification(Node::MINIMAL);
-        node.validation(Node::NONE);
-        node.persistence(Node::LAZY);
-        //        node.readBlockFile("/Users/gronager/.microbits/");
+        node.verification(conf.verification());
+        node.validation(conf.validation());
+        node.persistence(conf.persistance());
+        node.searchable(conf.searchable());
 
         PortMapper mapper(node.get_io_service(), conf.node_port()); // this will use the Node call
         if(conf.portmap()) mapper.start();

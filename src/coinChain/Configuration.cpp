@@ -6,6 +6,20 @@ using namespace std;
 using namespace boost;
 using namespace boost::program_options;
 
+Node::Strictness strictness(std::string s) {
+    if (s == "NONE")
+        return Node::NONE;
+    if (s == "MINIMAL")
+        return Node::MINIMAL;
+    if (s == "CHECKPOINT")
+        return Node::LAST_CHECKPOINT;
+    if (s == "LAZY")
+        return Node::LAZY;
+    if (s == "FULL")
+        return Node::FULL;
+    throw runtime_error("Cannot parse strictness parameter: " + s);
+}
+
 Configuration::Configuration(int argc, char* argv[], const options_description& extra) {
     string prog_name = argv[0];
     size_t slash = prog_name.rfind('/');
@@ -28,8 +42,14 @@ Configuration::Configuration(int argc, char* argv[], const options_description& 
     ("ripple", "Run as a ripple client")
     ;
     
+    string verification, validation, persistance;
+    
     options_description config("Config options");
     config.add_options()
+    ("verification", value<string>(&verification)->default_value("MINIMAL"), "Specify the signuture verificatin depth: NONE, MINIMAL: last 100 blocks, CHECKPOINT: last checkpoint, FULL")
+    ("validation", value<string>(&validation)->default_value("NONE"), "Specify the depth from which MerkleTrie validation hashes are calculated: NONE, MINIMAL: last 100 blocks, CHECKPOINT: last checkpoint, FULL")
+    ("persistance", value<string>(&persistance)->default_value("LAZY"), "Specify the depth of stored blocks: NONE, MINIMAL: last 100 blocks, LAZY: like MINIMAL, but only purge on restart, CHECKPOINT: last checkpoint, FULL")
+    ("searchable", value<bool>(&_searchable)->default_value(true), "Enable indexing of addresses/scripts")
     ("pid", value<string>(), "Specify pid file (default: bitcoind.pid)")
     ("nolisten", "Don't accept connections from outside")
     ("portmap", value<bool>(&_portmap)->default_value(true), "Use IGD-UPnP or NATPMP to map the listening port")
@@ -124,5 +144,8 @@ Configuration::Configuration(int argc, char* argv[], const options_description& 
     }
     
     _listen = args.count("nolisten") ? "" : "0.0.0.0";
+    _verification = strictness(verification);
+    _validation = strictness(validation);
+    _persistance = strictness(persistance);
 }
 

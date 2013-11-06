@@ -18,6 +18,7 @@
 #define CONFIGURATION_H
 
 #include <coinChain/Chain.h>
+#include <coinChain/Node.h>
 
 #include <boost/program_options.hpp>
 
@@ -91,6 +92,18 @@ public:
     bool generate() const {
         return _gen;
     }
+    Node::Strictness verification() const {
+        return _verification;
+    }
+    Node::Strictness validation() const {
+        return _validation;
+    }
+    Node::Strictness persistance() const {
+        return _persistance;
+    }
+    bool searchable() const {
+        return _searchable;
+    }
     friend std::ostream& operator<<(std::ostream& os, const Configuration&);
 private:
     boost::program_options::options_description _visible;
@@ -104,6 +117,8 @@ private:
     std::string _proxy;
     std::string _listen;
     bool _portmap, _gen, _ssl;
+    Node::Strictness _verification, _validation, _persistance;
+    bool _searchable;
     unsigned int _timeout;
     std::string _certchain, _privkey;
     const Currency* _chain;
