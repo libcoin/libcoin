@@ -153,6 +153,8 @@ public:
     
     void reset(const CBigNum& private_number, const Point& public_point);
     
+    void reset(EC_KEY* eckey);
+    
     Data serialized_pubkey() const;
     
     Data serialized_full_pubkey() const;
@@ -173,6 +175,9 @@ public:
     
     /// Verify an ECDSA signature on a hash
     bool verify(uint256 hash, const Data& signature) const;
+    
+    /// included for debugging purposes
+    const EC_KEY* eckey() const { return _ec_key; }
     
 protected:
     const BIGNUM* private_number() const;

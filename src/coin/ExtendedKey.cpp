@@ -321,6 +321,12 @@ void Key::reset(const CBigNum& private_number, const Point& public_point) {
     EC_KEY_set_conv_form(_ec_key, POINT_CONVERSION_COMPRESSED);
 }
 
+void Key::reset(EC_KEY* eckey) {
+    if (_ec_key)
+        EC_KEY_free(_ec_key);
+    _ec_key = EC_KEY_dup(eckey);
+}
+
 Data Key::serialized_pubkey() const {
     Data data(33, 0); // has to be 33 bytes long!
     unsigned char* begin = &data[0];

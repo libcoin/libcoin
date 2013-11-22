@@ -16,6 +16,7 @@
 
 #include <coin/util.h>
 #include <coin/Transaction.h>
+#include <coin/KeyStore.h>
 
 using namespace std;
 using namespace boost;

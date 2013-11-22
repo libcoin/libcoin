@@ -6,8 +6,12 @@
 #define H_BITCOIN_SCRIPT
 
 #include <coin/Export.h>
+#include <coin/util.h>
+#include <coin/BigNum.h>
+#include <coin/uint256.h>
+
 //#include <coin/Address.h>
-#include <coin/KeyStore.h>
+//#include <coin/KeyStore.h>
 
 #include <string>
 #include <vector>
@@ -342,8 +346,6 @@ inline const char* GetOpName(opcodetype opcode)
     }
 }
 
-
-
 inline std::string ValueString(const std::vector<unsigned char>& vch)
 {
     //    if (vch.size() <= 4)
@@ -365,11 +367,53 @@ inline std::string StackString(const std::vector<std::vector<unsigned char> >& v
 }
 
 
+// This is the raw PubKeyHash - the BitcoinAddress or more correctly the ChainAddress includes the netword Id and is hence better suited for communicating with the outside. For backwards compatability we do, however, need to use the ChainAddress in e.g. the wallet.
 
+typedef std::vector<unsigned char> PubKey;
 
+class COIN_EXPORT PubKeyHash : public uint160 {
+public:
+    PubKeyHash(const uint160& b = uint160(0)) : uint160(b) {}
+    PubKeyHash(uint64_t b) : uint160(b) {}
+    
+    PubKeyHash& operator=(const uint160& b) {
+        uint160::operator=(b);
+        return *this;
+    }
+    PubKeyHash& operator=(uint64_t b) {
+        uint160::operator=(b);
+        return *this;
+    }
+    
+    explicit PubKeyHash(const std::string& str) : uint160(str) {}
+    
+    explicit PubKeyHash(const std::vector<unsigned char>& vch) : uint160(vch) {}
+};
 
+PubKeyHash toPubKeyHash(const PubKey& pubkey);
+PubKeyHash toPubKeyHash(const std::string& str);
 
+class COIN_EXPORT ScriptHash : public uint160 {
+public:
+    ScriptHash(const uint160& b = 0) : uint160(b) {}
+    ScriptHash(uint64_t b) : uint160(b) {}
+    
+    ScriptHash& operator=(const uint160& b) {
+        uint160::operator=(b);
+        return *this;
+    }
+    ScriptHash& operator=(uint64_t b) {
+        uint160::operator=(b);
+        return *this;
+    }
+    
+    explicit ScriptHash(const std::string& str) : uint160(str) {}
+    
+    explicit ScriptHash(const std::vector<unsigned char>& vch) : uint160(vch) {}
+};
 
+class Script;
+ScriptHash toScriptHash(const Script& script);
 
 
 class Script : public std::vector<unsigned char>
@@ -928,17 +972,6 @@ private:
     Script::const_iterator _it;
     size_t _values;
 };
-
-bool Solver(const Script& scriptPubKey, std::vector<std::pair<opcodetype, std::vector<unsigned char> > >& vSolutionRet);
-
-bool IsMine(const KeyStore& keystore, const Script& scriptPubKey);
-
-bool SignSignature(const KeyStore &keystore, const Output& txout, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL);
-bool SignSignature(const KeyStore& keystore, const Transaction& txFrom, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL);
-
-bool ExtractAddress(const Script& scriptPubKey, PubKeyHash& pubKeyHash, ScriptHash& scriptHash);
-
-bool ExtractAddresses(const Script& scriptPubKey, txnouttype& typeRet, std::vector<PubKeyHash>& addressRet, int& nRequiredRet);
 
 int ScriptSigArgsExpected(txnouttype t, const std::vector<std::vector<unsigned char> >& vSolutions);
 

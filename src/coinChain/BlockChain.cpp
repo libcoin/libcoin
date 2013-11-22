@@ -483,6 +483,8 @@ void BlockChain::updateName(const NameOperation& name_op, int64_t coin, int coun
     Evaluator::Value raw_value(value.begin(), value.end());
 
     int latest_count = query<int>("SELECT count FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", raw_name);
+    if (latest_count == 0 && raw_name.empty())
+        latest_count = query<int>("SELECT count FROM Names WHERE name is null ORDER BY count DESC LIMIT 1");
     bool expired = (latest_count == 0) ? true : (latest_count < count - _chain.expirationDepth(count));
     if (name_op.reserve()) {
         if (count - name_op.input_count() < MIN_FIRSTUPDATE_DEPTH)

@@ -20,6 +20,7 @@
 #include <coinPool/Export.h>
 
 #include <coin/Block.h>
+#include <coin/KeyStore.h>
 
 #include <coinChain/Node.h>
 

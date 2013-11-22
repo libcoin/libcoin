@@ -92,4 +92,16 @@ public:
     virtual bool getScript(const ScriptHash& hash, Script& redeemScriptOut) const;
 };
 
+bool IsMine(const KeyStore& keystore, const Script& scriptPubKey);
+
+bool SignSignature(const KeyStore &keystore, const Output& txout, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL);
+bool SignSignature(const KeyStore& keystore, const Transaction& txFrom, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL);
+
+bool Solver(const Script& scriptPubKey, std::vector<std::pair<opcodetype, std::vector<unsigned char> > >& vSolutionRet);
+
+bool ExtractAddress(const Script& scriptPubKey, PubKeyHash& pubKeyHash, ScriptHash& scriptHash);
+
+bool ExtractAddresses(const Script& scriptPubKey, txnouttype& typeRet, std::vector<PubKeyHash>& addressRet, int& nRequiredRet);
+
+
 #endif

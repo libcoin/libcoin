@@ -21,6 +21,7 @@
 #include <vector>
 #include <coin/Export.h>
 #include <coin/BigNum.h>
+#include <coin/Script.h>
 
 // Why base-58 instead of standard base-64 encoding?
 // - Don't want 0OIl characters that look the same in some fonts and
@@ -33,53 +34,7 @@
 std::string EncodeBase58Check(const std::vector<unsigned char>& vchIn, const char* alphabet = NULL);
 bool DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vchRet, const char* alphabet = NULL);
 
-// This is the raw PubKeyHash - the BitcoinAddress or more correctly the ChainAddress includes the netword Id and is hence better suited for communicating with the outside. For backwards compatability we do, however, need to use the ChainAddress in e.g. the wallet. 
 
-typedef std::vector<unsigned char> PubKey;
-
-class COIN_EXPORT PubKeyHash : public uint160 {
-public:
-    PubKeyHash(const uint160& b = uint160(0)) : uint160(b) {}
-    PubKeyHash(uint64_t b) : uint160(b) {}
-    
-    PubKeyHash& operator=(const uint160& b) {
-        uint160::operator=(b);
-        return *this;
-    }
-    PubKeyHash& operator=(uint64_t b) {
-        uint160::operator=(b);
-        return *this;
-    }
-    
-    explicit PubKeyHash(const std::string& str) : uint160(str) {}
-    
-    explicit PubKeyHash(const std::vector<unsigned char>& vch) : uint160(vch) {}
-};
-
-PubKeyHash toPubKeyHash(const PubKey& pubkey);
-PubKeyHash toPubKeyHash(const std::string& str);
-
-class COIN_EXPORT ScriptHash : public uint160 {
-public:
-    ScriptHash(const uint160& b = 0) : uint160(b) {}
-    ScriptHash(uint64_t b) : uint160(b) {}
-    
-    ScriptHash& operator=(const uint160& b) {
-        uint160::operator=(b);
-        return *this;
-    }
-    ScriptHash& operator=(uint64_t b) {
-        uint160::operator=(b);
-        return *this;
-    }
-    
-    explicit ScriptHash(const std::string& str) : uint160(str) {}
-    
-    explicit ScriptHash(const std::vector<unsigned char>& vch) : uint160(vch) {}
-};
-
-class Script;
-ScriptHash toScriptHash(const Script& script);
 
 
 // Base class for all base58-encoded data
@@ -225,6 +180,14 @@ public:
             return getHash();
     }
     
+    Script getStandardScript() const {
+        if (isScriptHash())
+            return Script() << OP_HASH160 << getScriptHash() << OP_EQUAL;
+        else if (isPubKeyHash())
+            return Script() << OP_DUP << OP_HASH160 << getPubKeyHash() << OP_EQUALVERIFY << OP_CHECKSIG;
+        else
+            throw std::runtime_error("Illegal address, cannot form a standard Script");
+    }
     
     ChainAddress() : _type(UNDEFINED) {}
     
