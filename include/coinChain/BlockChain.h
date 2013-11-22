@@ -147,6 +147,8 @@ public:
     /// If the timestamp is 0 (default) everything is included
     void getUnspents(const Script& script, Unspents& unspents, unsigned int before = 0) const;
     
+    int getHeight(Coin coin) const;
+    
     //    int64_t value(Coin coin) const;
     
     /// B L O C K S

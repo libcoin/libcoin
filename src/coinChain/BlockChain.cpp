@@ -695,6 +695,7 @@ void BlockChain::getBlock(int count, Block& block) const {
     }
     block.updateMerkleTree();
     if (!block.checkBlock()) {
+        block.setNull();
         log_warn("getBlock failed for count= %i", count);
     }
     
@@ -1266,6 +1267,20 @@ bool BlockChain::isSpent(Coin coin) const {
         return query<int64_t>("SELECT coin FROM Unspents WHERE hash = ? AND idx = ?", coin.hash, coin.index) == 0;
     else
         return !_spendables.find(coin);
+}
+
+int BlockChain::getHeight(Coin coin) const {
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+    
+    if (_validation_depth == 0) // Database
+        return query<int64_t>("SELECT count FROM Unspents WHERE hash = ? AND idx = ?", coin.hash, coin.index) - 1;
+    else {
+        Spendables::Iterator c = _spendables.find(coin);
+        if (!!c)
+            return c->count - 1;
+        else
+            return -1;
+    }
 }
 
 void BlockChain::getUnspents(const Script& script, Unspents& unspents, unsigned int before) const {
