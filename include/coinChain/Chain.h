@@ -310,7 +310,7 @@ public:
     }
     
     virtual int64_t min_fee() const {
-        return 2000000;
+        return 500000;//2000000; will ensure that txns above 1k get the old minimum fee of 0.02BTC
     }
     
     // To enable upgrade from one block version to another we define a quorum and a majority for acceptance
