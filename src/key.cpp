@@ -12,7 +12,7 @@
 // anonymous namespace with local implementation code (OpenSSL interaction)
 namespace {
 
-// Generate a private key from just the secret parameter
+// Generate a public key from just the secret parameter
 int EC_KEY_regenerate_key(EC_KEY *eckey, BIGNUM *priv_key)
 {
     int ok = 0;
