@@ -25,7 +25,8 @@ class Referenced
 public:
     class Error: public std::runtime_error {
     public:
-        Error(const std::string& s) : std::runtime_error(s.c_str()) {}
+        Error(const std::string& s) : std::runtime_error(s) {}
+        Error(const char* s) : std::runtime_error(s) {}
     };
     
     Referenced() {

@@ -152,19 +152,19 @@ std::string GetBlockTemplate::hex_bits(unsigned int bits) const {
 }
 
 void GetBlockTemplate::install_handler(const CompletionHandler& f, size_t count) {
-    mutex::scoped_lock lock(_handlers_access);
+    boost::mutex::scoped_lock lock(_handlers_access);
     
     _handlers.insert(make_pair(count, f));
 }
 
 void GetBlockTemplate::erase(HandlerRange range) {
-    mutex::scoped_lock lock(_handlers_access);
+    boost::mutex::scoped_lock lock(_handlers_access);
     
     _handlers.erase(range.first, range.second);
 }
 
 GetBlockTemplate::HandlerRange GetBlockTemplate::current_handlers() {
-    mutex::scoped_lock lock(_handlers_access);
+    boost::mutex::scoped_lock lock(_handlers_access);
     
     size_t count = _pool.blockChain().claim_count();
     Handlers::iterator from = _handlers.begin();
@@ -173,7 +173,7 @@ GetBlockTemplate::HandlerRange GetBlockTemplate::current_handlers() {
 }
 
 GetBlockTemplate::HandlerRange GetBlockTemplate::all_handlers() {
-    mutex::scoped_lock lock(_handlers_access);
+    boost::mutex::scoped_lock lock(_handlers_access);
     
     Handlers::iterator from = _handlers.begin();
     Handlers::iterator to = _handlers.end();

@@ -1,118 +1,0 @@
-Ttest_claims
-v5
-r1
-cCheck dependencies
-cCompileC tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claims.o /Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
-cLd /Users/gronager/Development/libcoin/libcoin/bin/claimsd normal x86_64
-cPhaseScriptExecution "CMake PostBuild Rules" /Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Script-E667515C6668400988661438.sh
-
-N/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk
-c000000005130312F00000000000000AA
-t1362112815
-s170
-
-N/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/4.2/include/stdint.h
-c000000005229D5F000000000000056A4
-t1378473456
-s22180
-
-N/Users/gronager/Development/libcoin/libcoin/bin/claimsd
-t2
-s0
-
-N/Users/gronager/Development/libcoin/libcoin/include/coin/uint256.h
-c0000000052153D79000000000000620B
-t1377123705
-s25099
-
-N/Users/gronager/Development/libcoin/libcoin/include/coin/util.h
-c000000005215313E0000000000005079
-t1377120574
-s20601
-
-N/Users/gronager/Development/libcoin/libcoin/include/coinChain/Claims.h
-c000000005215305D00000000000013B9
-t1377120349
-s5049
-
-N/Users/gronager/Development/libcoin/libcoin/include/coinChain/Spendables.h
-c000000005215305D0000000000000EAE
-t1377120349
-s3758
-
-N/Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp
-c000000005215305C00000000000010D7
-t1377120348
-s4311
-i<coinChain/Claims.h>
-i<coinChain/Spendables.h>
-i<coin/uint256.h>
-i<coin/util.h>
-i<string>
-i<iostream>
-i<boost/lexical_cast.hpp>
-i<stdint.h>
-
-N/Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claims.o
-t2
-s0
-
-N/Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claimsd.LinkFileList
-c000000005229D882000000000000007E
-t1378474114
-s126
-
-N/Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Script-E667515C6668400988661438.sh
-c000000005229D88200000000000000C6
-t1378474114
-s198
-
-N/usr/local/include/boost/lexical_cast.hpp
-c0000000050A15C3E0000000000017A7D
-t1352752190
-s96893
-
-CBuild AST from /Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp
-r0
-
-CCheck dependencies
-r0
-lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection18"Check dependencies17f4460210dab741^bc1f4b0210dab741^---0#1#0#--18"Check dependencies36"9580B2D2-05B2-4153-BEE4-18D3350FDE33-
-
-CCompileC tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claims.o /Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
-s400166914.295328
-e400166918.967495
-r1
-xCompileC
-xtests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claims.o
-x/Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp
-xnormal
-xx86_64
-xc++
-xcom.apple.compilers.llvm.clang.1_0.compiler
-oclang: warning: argument unused during compilation: '-ftree-vectorize'
-lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection75"Compile /Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp01be4b0210dab741^71acf70610dab741^-71"clang: warning: argument unused during compilation: '-ftree-vectorize'-0#0#0#-19%DVTDocumentLocation2@83"file://localhost/Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp0000000000000000^2275"CompileC tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claims.o tests/claims/claims.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/gronager/Development/libcoin/libcoin    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-return-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wno-unused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions "-DCMAKE_INTDIR=\"Debug\"" -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -Wno-sign-conversion -I/Users/gronager/Development/libcoin/libcoin/bin/include -I/Users/gronager/Development/libcoin/libcoin/include -I/usr/local/include -I/Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/DerivedSources/x86_64 -I/Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/DerivedSources -Wmost -Wno-four-char-constants -Wno-unknown-pragmas -F/Users/gronager/Development/libcoin/libcoin/bin -mmacosx-version-min=10.8 -ftree-vectorize -fvisibility-inlines-hidden -D_DEBUG -MMD -MT dependencies -MF /Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claims.d --serialize-diagnostics /Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claims.dia -c /Users/gronager/Development/libcoin/libcoin/tests/claims/claims.cpp -o /Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claims.o36"AC51370A-FF25-4A3D-A3B1-B125029F2374-
-
-CLd /Users/gronager/Development/libcoin/libcoin/bin/claimsd normal x86_64
-s400166919.054136
-e400166919.137219
-r1
-xLd
-x/Users/gronager/Development/libcoin/libcoin/bin/claimsd
-xnormal
-xx86_64
-lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection60"Link /Users/gronager/Development/libcoin/libcoin/bin/claimsd5c040e0710dab741^da20230710dab741^---0#0#0#--2001"Ld bin/claimsd normal x86_64    cd /Users/gronager/Development/libcoin/libcoin    setenv MACOSX_DEPLOYMENT_TARGET 10.8    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++ -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -L/Users/gronager/Development/libcoin/libcoin/bin -F/Users/gronager/Development/libcoin/libcoin/bin -filelist /Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Objects-normal/x86_64/claimsd.LinkFileList -mmacosx-version-min=10.8 -Wl,-search_paths_first -Wl,-headerpad_max_install_names /Users/gronager/Development/libcoin/libcoin/lib/libcoind.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPd.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinChaind.dylib /usr/lib/libm.dylib /usr/local/Cellar/openssl/1.0.1c/lib/libssl.dylib /usr/local/Cellar/openssl/1.0.1c/lib/libcrypto.dylib /usr/local/lib/libboost_chrono-mt.dylib /usr/local/lib/libboost_date_time-mt.dylib /usr/local/lib/libboost_regex-mt.dylib /usr/local/lib/libboost_system-mt.dylib /usr/local/lib/libboost_filesystem-mt.dylib /usr/local/lib/libboost_thread-mt.dylib /usr/local/lib/libboost_program_options-mt.dylib /usr/lib/libdl.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPd.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoind.dylib /usr/lib/libm.dylib /usr/local/Cellar/openssl/1.0.1c/lib/libssl.dylib /usr/local/Cellar/openssl/1.0.1c/lib/libcrypto.dylib /usr/local/lib/libboost_chrono-mt.dylib /usr/local/lib/libboost_date_time-mt.dylib /usr/local/lib/libboost_regex-mt.dylib /usr/local/lib/libboost_system-mt.dylib /usr/local/lib/libboost_filesystem-mt.dylib /usr/local/lib/libboost_thread-mt.dylib /usr/local/lib/libboost_program_options-mt.dylib /usr/local/lib/libdb_cxx.dylib /usr/local/lib/libsqlite3.dylib /usr/lib/libdl.dylib -o /Users/gronager/Development/libcoin/libcoin/bin/claimsd36"90E620C9-15DB-434D-9B9D-DC1EC4FF2125-
-
-CPhaseScriptExecution "CMake PostBuild Rules" /Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Script-E667515C6668400988661438.sh
-s400166924.963094
-e400166925.034661
-r1
-xPhaseScriptExecution
-xCMake PostBuild Rules
-x/Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Script-E667515C6668400988661438.sh
-oecho "Depend check for xcode"
-oDepend check for xcode
-ocd /Users/gronager/Development/libcoin/libcoin && make -C /Users/gronager/Development/libcoin/libcoin -f /Users/gronager/Development/libcoin/libcoin/CMakeScripts/XCODE_DEPEND_HELPER.make PostBuild.test_claims.Debug
-omake[1]: Nothing to be done for `PostBuild.test_claims.Debug'.
-lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection47"Run custom shell script 'CMake PostBuild Rules'2845f70c10dab741^d7dd080d10dab741^-331"echo "Depend check for xcode"Depend check for xcodecd /Users/gronager/Development/libcoin/libcoin && make -C /Users/gronager/Development/libcoin/libcoin -f /Users/gronager/Development/libcoin/libcoin/CMakeScripts/XCODE_DEPEND_HELPER.make PostBuild.test_claims.Debugmake[1]: Nothing to be done for `PostBuild.test_claims.Debug'.4(21%IDEActivityLogMessage2@30"echo "Depend check for xcode"-400166924#0#30#-0#-----2@23"Depend check for xcode-400166925#30#23#-0#-----2@215"cd /Users/gronager/Development/libcoin/libcoin && make -C /Users/gronager/Development/libcoin/libcoin -f /Users/gronager/Development/libcoin/libcoin/CMakeScripts/XCODE_DEPEND_HELPER.make PostBuild.test_claims.Debug-400166925#53#215#-0#-----2@63"make[1]: Nothing to be done for `PostBuild.test_claims.Debug'.-400166925#268#63#-0#-----0#0#0#--327"PhaseScriptExecution "CMake PostBuild Rules" tests/claims/libcoin.build/Debug/test_claims.build/Script-E667515C6668400988661438.sh    cd /Users/gronager/Development/libcoin/libcoin    /bin/sh -c /Users/gronager/Development/libcoin/libcoin/tests/claims/libcoin.build/Debug/test_claims.build/Script-E667515C6668400988661438.sh36"67115289-6E92-4BE0-8A62-77CBDBEAADCD-
-

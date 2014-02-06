@@ -75,6 +75,11 @@ public:
         Error(const std::string& s) : std::runtime_error(s.c_str()) {}
     };
     
+    class Listener {
+    public:
+        virtual void operator()(const Transaction& txn, int conf) = 0;
+    };
+    
     /// The constructor - reference to a Chain definition is obligatory, if no dataDir is provided, the location for the db and the file is chosen from the Chain definition and the CDB::defaultDir method
     BlockChain(const Chain& chain = bitcoin, const std::string dataDir = "");
 
@@ -104,6 +109,10 @@ public:
     void verification_depth(unsigned int v) { _verification_depth = v; }
     
     /// T R A N S A C T I O N S    
+    
+    void subscribe(Listener& listener) {
+        _listeners.push_back(boost::ref(listener));
+    }
     
     /// Get transactions from db or memory.
     void getTransaction(const int64_t cnf, Transaction &txn) const;
@@ -215,6 +224,10 @@ public:
         return _tree.best();
     }
     
+    BlockIterator getBestInvalid() const {
+        return _tree.best_invalid();
+    }
+    
     /// NameCoin: getNameValue returns the most recent value for a name
     int getNameAge(const std::string& name) const;
     
@@ -230,7 +243,7 @@ public:
 
     typedef std::vector<Script> Payees;
     typedef std::vector<unsigned int> Fractions;
-    Block getBlockTemplate(Payees scripts, Fractions fractions = Fractions(), Fractions fee_fractions = Fractions()) const;
+    Block getBlockTemplate(BlockIterator blk, Payees scripts, Fractions fractions = Fractions(), Fractions fee_fractions = Fractions()) const;
     
     const Chain& chain() const { return _chain; }
     
@@ -320,6 +333,11 @@ private:
     Spendables _share_spendables;
     
     Claims _claims;
+
+    typedef boost::reference_wrapper<Listener> ListenerRef;
+    typedef std::vector<ListenerRef> Listeners;
+    
+    Listeners _listeners;
     
     int64_t _bestReceivedTime;
 

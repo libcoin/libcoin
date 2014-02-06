@@ -22,10 +22,21 @@ using namespace std;
 using namespace boost;
 using namespace json_spirit;
 
-Block Pool::getBlockTemplate() {
+Block Pool::getBlockTemplate(bool invalid) {
+    BlockIterator blk;
+    if (invalid) {
+        blk = _blockChain.getBestInvalid();
+        if (!blk) {
+            blk = _blockChain.getBest();
+            --blk;
+        }
+    }
+    else
+        blk = _blockChain.getBest();
+
     BlockChain::Payees payees;
     payees.push_back(_payee.current_script());
-    Block block = _blockChain.getBlockTemplate(payees);
+    Block block = _blockChain.getBlockTemplate(blk, payees);
     // add the block to the list of work
     return block;
 }
@@ -89,7 +100,7 @@ std::string Pool::submitBlock(const Block& stub, std::string workid) {
     }
 }
 
-Pool::Work Pool::getWork() {
+Pool::Work Pool::getWork(bool invalid) {
     unsigned int now = UnixTime::s();
     uint256 prev = _blockChain.getBestChain();
     if (_templates.empty() || prev != _latest_work->second.getPrevBlock() || _latest_work->second.getTime() + 30 > now) {
@@ -97,7 +108,7 @@ Pool::Work Pool::getWork() {
             _templates.clear();
             _latest_work = _templates.end(); // reset _latest_work
         }
-        Block block = getBlockTemplate();
+        Block block = getBlockTemplate(invalid);
         _latest_work = _templates.insert(make_pair(block.getMerkleRoot(), block)).first;
     }
     // note that if called more often that each second there will be dublicate searches
@@ -108,7 +119,10 @@ Pool::Work Pool::getWork() {
 }
 
 uint256 Pool::target() const {
-    CBigNum t = CBigNum().SetCompact(_latest_work->second.getBits());
+    CBigNum t = 0xffffffff;
+    t = t*t*t*t*t*t*t;
+    if (_templates.size())
+        t = CBigNum().SetCompact(_latest_work->second.getBits());
     t *= 0xfffffff;
     return t.getuint256();
 }

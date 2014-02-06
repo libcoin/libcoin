@@ -38,7 +38,7 @@ Verifier::~Verifier() {
 }
 
 void Verifier::reset() {
-    unique_lock< boost::shared_mutex > lock(_state_access);
+    boost::unique_lock< boost::shared_mutex > lock(_state_access);
     _reason = "";
     _failed = false;
     _pending_verifications.clear();
@@ -66,7 +66,7 @@ bool Verifier::do_verify(const Output& output, const Transaction& txn, unsigned 
 }
 
 void Verifier::failed_with_reason(std::string reason) {
-    unique_lock< shared_mutex > lock(_state_access);
+    boost::unique_lock< shared_mutex > lock(_state_access);
     _failed = true;
     _reason = reason;
 }

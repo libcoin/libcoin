@@ -44,13 +44,13 @@ public:
     typedef std::map<uint256, Block> BlockTemplates;
     
     /// subclass this to implement other schemes for coinbase payout
-    virtual Block getBlockTemplate();
+    virtual Block getBlockTemplate(bool invalid = false);
     
     virtual std::string submitBlock(const Block& stub, std::string workid = "");
     
     typedef std::pair<Block, uint256> Work;
     
-    virtual Work getWork();
+    virtual Work getWork(bool invalid = false);
     
     uint256 target() const;
     
@@ -74,7 +74,7 @@ public:
     }
     
     /// generate a block template that adheres to the current share chain, i.e. pays out dividend to the other share holders
-    virtual Block getBlockTemplate() {
+    virtual Block getBlockTemplate(bool invalid = false) {
         // iterate over all dividend and add
         BlockChain::Payees payees;
         payees.push_back(_payee.current_script()); // insert our script as the first
@@ -85,7 +85,8 @@ public:
             payees.push_back(d->first);
             fractions.push_back(d->second);
         }
-        Block block = _blockChain.getBlockTemplate(payees, fractions);
+        BlockIterator blk = _blockChain.getBest();
+        Block block = _blockChain.getBlockTemplate(blk, payees, fractions);
         // add the block to the list of work
         return block;
     }

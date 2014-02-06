@@ -141,13 +141,17 @@ public:
     void post(const Transaction& tx, size_t n = 0);
         
     /// Post a Block to the Node. (Note that we use dispatch - no need to post if we are already in the same thread)
-    void post(const Block& block) {
+    void post(const Block& block, bool relay = true) {
         uint256 hash = block.getHash();
-        
+
+        Peers peers;
+        if (relay)
+            peers = _peerManager.getAllPeers();
+
         if (_blockChain.chain().checkProofOfWork(block))
-            _io_service.dispatch(boost::bind(&BlockFilter::process, static_cast<BlockFilter*>(_blockFilter.get()), block, _peerManager.getAllPeers()));
+            _io_service.dispatch(boost::bind(&BlockFilter::process, static_cast<BlockFilter*>(_blockFilter.get()), block, peers));
             else if (hash < block.getShareTarget() )
-                _io_service.dispatch(boost::bind(&ShareFilter::process, static_cast<ShareFilter*>(_shareFilter.get()), block, _peerManager.getAllPeers()));
+                _io_service.dispatch(boost::bind(&ShareFilter::process, static_cast<ShareFilter*>(_shareFilter.get()), block, peers));
     }
         
     /// Subscribe to Transaction accept notifications

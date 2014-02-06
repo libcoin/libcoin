@@ -21,7 +21,7 @@
 using namespace std;
 using namespace boost;
 
-Miner::Miner(Pool& pool) : _pool(pool), _io_service(), _generate(true) {}
+Miner::Miner(Pool& pool) : _pool(pool), _io_service(), _delay(_io_service), _generate(true) {}
 
 // run the miner
 void Miner::run() {
@@ -50,9 +50,14 @@ void Miner::handle_stop() {
 
 // return true on success
 bool Miner::mine() {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(2000));
     int tries = 65536;
     
-    Block block = _pool.getBlockTemplate();
+    // reorganize roughly every 11'th block
+    bool invalid = !(rand()%3);
+    Pool::Work work = _pool.getWork(invalid);
+    Block& block = work.first;
+//    Block block = _pool.getBlockTemplate();
     
     uint256 target = _pool.target();
     
@@ -60,8 +65,10 @@ bool Miner::mine() {
     while (block.getHash() > target && tries--)
         block.setNonce(block.getNonce() + 1);
     
-    if (block.getHash() <= target)
+    if (block.getHash() <= target) {
+        block.stripTransactions();
         _pool.submitBlock(block);
+    }
     
     if (_generate)
         _io_service.post(boost::bind(&Miner::mine, this));

@@ -124,7 +124,14 @@ int main(int argc, char* argv[])
         for(strings::iterator ep = add_peers.begin(); ep != add_peers.end(); ++ep) node.addPeer(*ep);
         for(strings::iterator ep = connect_peers.begin(); ep != connect_peers.end(); ++ep) node.connectPeer(*ep);
         
+        // connect the accounts - first assume there is only one - the wallet.dat
+        
+        
         Wallet wallet(node, "wallet.dat", conf.data_dir()); // this will also register the needed callbacks
+        
+        //
+        //node.subscribe(wallet); // which will first sync the wallet, then install it as a callback to the blockchain
+        // question was how to get 
         
         thread nodeThread(&Node::run, &node); // run this as a background thread
 

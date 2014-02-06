@@ -375,6 +375,11 @@ void BlockChain::claim(const Transaction& txn, bool verify) {
     
     // we insert the unconfirmed transaction into a list/map according to the key: fee/size and delta-spendings    
     _claims.insert(txn, res.first, res.second);
+    
+    for (Listeners::const_iterator l = _listeners.begin(); l != _listeners.end(); ++l) {
+        Listener& listener = (*l);
+        listener(txn, UnixTime::s());
+    }
 }
 
 Unspent BlockChain::redeem(const Input& input, int iidx, Confirmation iconf) {
@@ -999,6 +1004,21 @@ void BlockChain::append(const Block &block) {
         throw Error(string("append(Block): ") + e.what());
     }
 
+    // the block(s) has been committed, now notify the listeners
+    for (BlockTree::Hashes::const_iterator h = changes.inserted.begin(); h != changes.inserted.end(); ++h) {
+        BlockIterator blk = _tree.find(hash);
+        Block& block = _branches[hash];
+        int height = blk.height();
+    
+        // iterate over transactions
+        for (Transactions::const_iterator tx = block.getTransactions().begin(); tx != block.getTransactions().end(); ++tx) {
+            for (Listeners::const_iterator l = _listeners.begin(); l != _listeners.end(); ++l) {
+                Listener& listener = (*l);
+                listener(*tx, height);
+            }
+        }
+    }
+    
     // switch on validation if we have more blocks than the validation depth
     if (_validation_depth > 0)
         _spendables.authenticated(_tree.count() >= _validation_depth);
@@ -1366,7 +1386,7 @@ int BlockChain::getMinEnforcedBlockVersion() const {
 
 // getBlockTemplate returns a block template - i.e. a block that has not yet been mined. An optional list of scripts with rewards given as :
 // absolute of reward, absolute of fee, fraction of reward, fraction of fee, denominator
-Block BlockChain::getBlockTemplate(Payees payees, Fractions fractions, Fractions fee_fractions) const {
+Block BlockChain::getBlockTemplate(BlockIterator blk, Payees payees, Fractions fractions, Fractions fee_fractions) const {
     // sanity check of the input parameters
     if (payees.size() == 0) throw Error("Trying the generate a Block Template with no payees");
     if (fractions.size() > 0 && fractions.size() != payees.size()) throw Error("Fractions should be either 0 or match the number of payees");
@@ -1374,9 +1394,9 @@ Block BlockChain::getBlockTemplate(Payees payees, Fractions fractions, Fractions
     
     const int version = 3; // version 3 stores the block height as well as the merkle trie root hash in the coinbase
     const int timestamp = UnixTime::s();
-    const unsigned int bits = _chain.nextWorkRequired(_tree.best());
+    const unsigned int bits = _chain.nextWorkRequired(blk);
     const int nonce = 0;
-    Block block(version, _tree.best()->hash, uint256(0), timestamp, bits, nonce);
+    Block block(version, blk->hash, uint256(0), timestamp, bits, nonce);
     
     // now get the optimal set of transactions
     typedef vector<Transaction> Txns;
@@ -1396,7 +1416,7 @@ Block BlockChain::getBlockTemplate(Payees payees, Fractions fractions, Fractions
     }
     
     // insert the matured coinbase from block #-100
-    int count = _tree.count();
+    int count = abs(blk.count());
     if (count > 0) {
         Unspents coinbase_unspents = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count = ?", -(count-COINBASE_MATURITY));
         
@@ -1404,7 +1424,9 @@ Block BlockChain::getBlockTemplate(Payees payees, Fractions fractions, Fractions
             spendables.insert(*cb);
     }
     
-    uint256 spendables_hash = spendables.root()->hash();
+    uint256 spendables_hash(0);
+    if (false)
+        spendables_hash = spendables.root()->hash();
     // insert the coinbase:
     // * calculate the merkle trie root hash
     // * if we are creating a block for distributed mining use that chain to determine the coinbase output

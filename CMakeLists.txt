@@ -120,7 +120,7 @@ IF(CMAKE_SYSTEM MATCHES IRIX)
     SET(CMAKE_THREAD_LIBS_INIT "" CACHE INTERNAL "")
 ENDIF()
 
-SET(LIBCOIN_OSX_SDK_NAME "macosx10.8")
+SET(LIBCOIN_OSX_SDK_NAME "macosx10.9")
 
 IF(NOT ANDROID)
 IF(APPLE)
@@ -370,6 +370,7 @@ IF(Boost_FOUND)
 	include_directories(${Boost_INCLUDE_DIR})
 ENDIF(Boost_FOUND)
 
+SET(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
 FIND_PACKAGE(OpenSSL)
 IF(OpenSSL_FOUND)
 	include_directories(${OpenSSL_INCLUDE_DIR})
@@ -658,7 +659,12 @@ IF(APPLE)
         # FORCE is used because the options are not reflected in the UI otherwise.
         # Seems like a good place to add version specific compiler flags too.
          IF(NOT LIBCOIN_CONFIG_HAS_BEEN_RUN_BEFORE)
-	            IF(${LIBCOIN_OSX_SDK_NAME} STREQUAL "macosx10.8")
+	            IF(${LIBCOIN_OSX_SDK_NAME} STREQUAL "macosx10.9")
+	                SET(LIBCOIN_DEFAULT_IMAGE_PLUGIN_FOR_OSX "imageio" CACHE STRING "Forced imageio default image plugin for OSX" FORCE)
+	                # 64 Bit Works, PPC is not supported any more
+	                SET(CMAKE_OSX_ARCHITECTURES "x86_64" CACHE STRING "Build architectures for OSX" FORCE)
+	                SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.9 -ftree-vectorize -fvisibility-inlines-hidden -v -stdlib=libc++" CACHE STRING "Flags used by the compiler during all build types." FORCE)
+	            ELSEIF(${LIBCOIN_OSX_SDK_NAME} STREQUAL "macosx10.8")
 	                SET(LIBCOIN_DEFAULT_IMAGE_PLUGIN_FOR_OSX "imageio" CACHE STRING "Forced imageio default image plugin for OSX" FORCE)
 	                # 64 Bit Works, PPC is not supported any more
 	                SET(CMAKE_OSX_ARCHITECTURES "x86_64" CACHE STRING "Build architectures for OSX" FORCE)

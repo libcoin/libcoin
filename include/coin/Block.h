@@ -88,6 +88,7 @@ public:
     Transaction& getTransaction(size_t i) { return _transactions[i]; }
     const Transaction& getTransaction(size_t i) const { return _transactions[i]; }
     void keepOnlyCoinbase() { _transactions.resize(1); }
+    void stripTransactions() { _transactions.clear(); }
 
     const AuxPow& getAuxPoW() const {
         return _aux_pow;

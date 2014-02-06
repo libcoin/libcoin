@@ -454,6 +454,45 @@ public:
     }
 };
 
+class Monotonic {
+public:
+    inline static int s() {
+        static int last = 0;
+        int t = UnixTime::s();
+        if (t <= last)
+            t = ++last;
+        else
+            last = t;
+        return t;
+    }
+    inline static int64_t ms() {
+        static int64_t last = 0;
+        int64_t t = UnixTime::ms();
+        if (t <= last)
+            t = ++last;
+        else
+            last = t;
+        return t;
+    }
+    inline static int64_t us() {
+        static int64_t last = 0;
+        int64_t t = UnixTime::us();
+        if (t <= last)
+            t = ++last;
+        else
+            last = t;
+        return t;
+    }
+    inline static int64_t ns() {
+        static int64_t last = 0;
+        int64_t t = UnixTime::ns();
+        if (t <= last)
+            t = ++last;
+        else
+            last = t;
+        return t;
+    }
+};
 
 inline int64_t GetTimeMillis()
 {

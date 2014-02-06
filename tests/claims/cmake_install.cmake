@@ -33,9 +33,9 @@ IF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspeci
     IF(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/claimsd" AND
        NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/claimsd")
       EXECUTE_PROCESS(COMMAND "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/install_name_tool"
-        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinChaind.dylib" "libcoinChaind.dylib"
-        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPd.dylib" "libcoinHTTPd.dylib"
-        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoind.dylib" "libcoind.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinChaind.0.dylib" "libcoinChaind.0.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPd.0.dylib" "libcoinHTTPd.0.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoind.0.dylib" "libcoind.0.dylib"
         "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/claimsd")
       IF(CMAKE_INSTALL_DO_STRIP)
         EXECUTE_PROCESS(COMMAND "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/claimsd")
@@ -46,9 +46,9 @@ IF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspeci
     IF(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/claims" AND
        NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/claims")
       EXECUTE_PROCESS(COMMAND "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/install_name_tool"
-        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoin.dylib" "libcoin.dylib"
-        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinChain.dylib" "libcoinChain.dylib"
-        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTP.dylib" "libcoinHTTP.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoin.0.dylib" "libcoin.0.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinChain.0.dylib" "libcoinChain.0.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTP.0.dylib" "libcoinHTTP.0.dylib"
         "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/claims")
       IF(CMAKE_INSTALL_DO_STRIP)
         EXECUTE_PROCESS(COMMAND "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/claims")
@@ -59,9 +59,9 @@ IF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspeci
     IF(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/claimss" AND
        NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/claimss")
       EXECUTE_PROCESS(COMMAND "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/install_name_tool"
-        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinChains.dylib" "libcoinChains.dylib"
-        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPs.dylib" "libcoinHTTPs.dylib"
-        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoins.dylib" "libcoins.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinChains.0.dylib" "libcoinChains.0.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPs.0.dylib" "libcoinHTTPs.0.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoins.0.dylib" "libcoins.0.dylib"
         "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/claimss")
       IF(CMAKE_INSTALL_DO_STRIP)
         EXECUTE_PROCESS(COMMAND "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/claimss")
@@ -72,9 +72,9 @@ IF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspeci
     IF(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/claimsrd" AND
        NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/claimsrd")
       EXECUTE_PROCESS(COMMAND "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/install_name_tool"
-        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinChainrd.dylib" "libcoinChainrd.dylib"
-        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPrd.dylib" "libcoinHTTPrd.dylib"
-        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinrd.dylib" "libcoinrd.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinChainrd.0.dylib" "libcoinChainrd.0.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinHTTPrd.0.dylib" "libcoinHTTPrd.0.dylib"
+        -change "/Users/gronager/Development/libcoin/libcoin/lib/libcoinrd.0.dylib" "libcoinrd.0.dylib"
         "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/claimsrd")
       IF(CMAKE_INSTALL_DO_STRIP)
         EXECUTE_PROCESS(COMMAND "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/libcoin/bin/claimsrd")

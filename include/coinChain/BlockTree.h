@@ -301,6 +301,19 @@ public:
         return Iterator(&_trunk.back(), this);
     }
     
+    Iterator best_invalid() const {
+        // find the best invalid chain - i.e. the chain with the most negative number
+        Iterator invalid;
+        int invalid_height = 0;
+        for (Heights::const_iterator h = _heights.begin(); h != _heights.end(); ++h) {
+            if (h->second < invalid_height) {
+                invalid = find(h->first);
+                invalid_height = h->second;
+            }
+        }
+        return invalid;
+    }
+    
     /// Trim the trunk, removing all branches ending below the trim_height
     Pruned trim(size_t trim_height) {
         // ignore branches for now...

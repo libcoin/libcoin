@@ -21,6 +21,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/asio/io_service.hpp>
+#include <boost/asio/deadline_timer.hpp>
 
 class Pool;
 
@@ -51,7 +52,8 @@ protected:
     Pool& _pool;
     
     boost::asio::io_service _io_service;
-    
+    boost::asio::deadline_timer _delay;
+
     bool _generate;
 };
 

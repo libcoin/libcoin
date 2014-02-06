@@ -978,7 +978,7 @@ public:
         else
             vch.insert(it, first, last);
     }
-
+/*
     void insert(iterator it, std::vector<char>::const_iterator first, std::vector<char>::const_iterator last)
     {
         if (it == vch.begin() + nReadPos && last - first <= nReadPos)
@@ -990,7 +990,7 @@ public:
         else
             vch.insert(it, first, last);
     }
-
+*/
 #if !defined(_MSC_VER) || _MSC_VER >= 1300
     void insert(iterator it, const char* first, const char* last)
     {
@@ -1179,6 +1179,44 @@ uint256 SerializeHash(const T& obj, int nType=SER_GETHASH, int nVersion=PROTOCOL
     return Hash(ss.begin(), ss.end());
 }
 
+class CHashWriter
+{
+private:
+    SHA256_CTX ctx;
+    
+public:
+    int nType;
+    int nVersion;
+    
+    void Init() {
+        SHA256_Init(&ctx);
+    }
+    
+    CHashWriter(int nTypeIn, int nVersionIn) : nType(nTypeIn), nVersion(nVersionIn) {
+        Init();
+    }
+    
+    CHashWriter& write(const char *pch, size_t size) {
+        SHA256_Update(&ctx, pch, size);
+        return (*this);
+    }
+    
+    // invalidates the object
+    uint256 GetHash() {
+        uint256 hash1;
+        SHA256_Final((unsigned char*)&hash1, &ctx);
+        uint256 hash2;
+        SHA256((unsigned char*)&hash1, sizeof(hash1), (unsigned char*)&hash2);
+        return hash2;
+    }
+    
+    template<typename T>
+    CHashWriter& operator<<(const T& obj) {
+        // Serialize to this stream
+        ::Serialize(*this, obj, nType, nVersion);
+        return (*this);
+    }
+};
 
 
 

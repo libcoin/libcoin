@@ -151,6 +151,8 @@ std::ostream& operator<<(std::ostream& os, const KeyEnvelope& envelope) {
 ///     account.sync(blockChain());
 ///     cout << account.balance() << endl;
 
+class Account;
+
 class BlockChainAccessor : protected sqliterate::Database {
     private: // noncopyable
         BlockChainAccessor(const BlockChainAccessor&);
@@ -181,9 +183,9 @@ class BlockChainAccessor : protected sqliterate::Database {
         }
     }
 
-
+    void sync(Account* acct) const;
 };
-
+/*
 class Account {
 public:
     virtual void sync(const BlockChainAccessor& blockChain, bool ignore_age = false) = 0;
@@ -271,6 +273,7 @@ private:
     ChainAddresses _addrs;
     int _min;
 };
+*/
 
 /// Cryptoshi is a commandline client that enables you to use a running libcoind daemon as a gateway to the bitcoin network.
 /// You can e.g. use it to determine balance for addresses through the blockchain as stored in blockchain.sqlite3
@@ -279,6 +282,311 @@ private:
 /// cryptoshi tfiransaction 17uY6a7zUidQrJVvpnFchD1MX1untuAufd 0.10 17uY6a7zUidQrJVvpnFchD1MX1untuAufd
 /// cryptoshi sign []
 /// cryptoshi post ...
+
+
+// find a loader based on the extension
+// * .dat ->
+// * .pem
+// * any chain currency code
+// loader interface:
+// balance, credit, debit, callbacks for when "paytome",
+// also a handle to resend transactions
+// open file to get the "magic" use that, together with the ext to choose a handler.
+// Account acct = coinAcct::openFile("wallet.dat");
+// setup various callbacks
+
+class Asset {
+public:
+    Asset(const uint256& hash, int idx, int64_t value, const Script& script, int count) : _hash(hash), _idx(idx), _value(value), _script(script), _count(count) {}
+    
+    Asset(const Coin& coin, const Output& output, int count) : _hash(coin.hash), _idx(coin.index), _value(output.value()), _script(output.script()), _count(count) {}
+    
+    Asset(const Asset& a) : _hash(a._hash), _idx(a._idx), _value(a._value), _script(a._script), _count(a._count) {}
+    
+    Asset() : _hash(0), _idx(0), _value(0), _count(0) {}
+    
+    uint256 hash() const {
+        return _hash;
+    }
+    
+    int index() const {
+        return _idx;
+    }
+    
+    int64_t value() const {
+        return _value;
+    }
+    
+    const Script& script() const {
+        return _script;
+    }
+    
+    int count() const {
+        return _count;
+    }
+    
+    Coin coin() const {
+        return Coin(_hash, _idx);
+    }
+    
+    Output output() const {
+        return Output(_value, _script);
+    }
+private:
+    uint256 _hash;
+    int _idx;
+    int64_t _value;
+    Script _script;
+    int _count;
+};
+
+/// Account base class interface
+class Account : public Referenced {
+public:
+    
+    /// invoice will create a new invoice - i.e. a new payment descriptor.
+    /// Generate a script assignd to either the NULL account, the acct_id account or the account with name acct_name
+    virtual Script invoice(const std::string& name, bool change = false) {
+        throw std::runtime_error("account with given name (" + name + ") does not exist");
+    }
+    
+    virtual Script invoice(const int64_t id, bool change = false) {
+        throw std::runtime_error("account with given id (" + boost::lexical_cast<std::string>(id) + ") does not exist");
+    }
+    
+    virtual Script invoice(bool change = false) = 0;
+    
+    /// debit will be called with all transactions via a callback - count is either the block count or the posix timestamp
+    /// callbacks registered to the account will be called if the content is changed
+    virtual void debit(const Coin& coin, const Output& txn, int count) = 0;
+    virtual void debit(const Transaction& txn, int count = 0) = 0;
+    
+    // total balance
+    virtual int64_t balance(int confirmations = 0) const = 0;
+    
+    // account balance - will throw if the id or account does not exist
+    virtual int64_t balance(int64_t id, int confirmations = 0)  {
+        throw std::runtime_error("account with given id (" + boost::lexical_cast<std::string>(id) + ") does not exist");
+    }
+    
+    virtual int64_t balance(const std::string& name, int confirmations = 0) {
+        throw std::runtime_error("account with given name (" + name + ") does not exist");
+    }
+    
+    /// credit creates a transaction - will throw if the account or id does not exist
+    virtual Transaction credit(std::string name, const Script& script, int64_t amount, int64_t fee) {
+        throw std::runtime_error("account with given name (" + name + ") does not exist");
+    }
+    
+    virtual Transaction credit(int64_t id, const Script& script, int64_t amount, int64_t fee) {
+        throw std::runtime_error("account with given id (" + boost::lexical_cast<std::string>(id) + ") does not exist");
+    }
+    
+    virtual Transaction credit(const Script& script, int64_t amount, int64_t fee) = 0;
+    
+    /// call settle to settle a credit - i.e. once the transaction has been signed and is ready to broadcast.
+    //// settle will return the fee spent in settling this transaction
+    virtual int64_t settle(const Transaction& txn, int count = -1) { return 0; }
+    
+    /// if signing fails or for some other reason the transfer is cancelled revoke the transaction
+    virtual void revoke(const Transaction& txn) {}
+    
+    /// return nonfirmed transactions for reposting
+    virtual Transactions resettle(size_t older_than = 60*60) { return Transactions(); }
+    
+    typedef std::vector<Script> Scripts;
+    
+    virtual Scripts scripts() const = 0;
+    
+    typedef std::vector<int64_t> Ids;
+    typedef std::vector<std::string> Names;
+    
+    virtual const Ids& ids() const { return Ids(); }
+    virtual const Names& names() const { return Names(); }
+    
+    virtual bool has(int64_t id) { return false; }
+    virtual bool has(const std::string& name) { return false; }
+};
+
+
+/// The ChainAddressAccount takes a bitcoin address (fingerprint) and exposes that as an account
+class ChainAddressAccount : public Account {
+public:
+    struct by_age : std::binary_function<Asset, Asset, bool> {
+        bool operator()(const Asset& x, const Asset& y) const
+        {
+            return x.count() < y.count();
+        }
+    };
+    
+    ChainAddressAccount(const ChainAddress& addr) : _addr(addr) {}
+    
+    virtual int64_t balance(int confirmations = 0) const {
+        // sum over all assets older than conf - 0 means everything
+        int64_t sum = 0;
+        for (Assets::const_iterator a = _assets.begin(); a != _assets.end(); ++a) {
+            if (!confirmations || a->second.count() < confirmations)
+                sum += a->second.value();
+        }
+        return sum;
+    }
+    
+    virtual void debit(const Coin& coin, const Output& output, int count) {
+        // check that this output is in fact for us
+        if (output.script() != _addr.getStandardScript())
+            return;
+        
+        _assets[coin] = Asset(coin, output, count);
+    }
+    
+    virtual void debit(const Transaction& txn, int count) {
+        for (int i = 0; i < txn.getNumInputs(); ++i) {
+            const Input& input = txn.getInput(i);
+            Assets::iterator spent = _assets.find(input.prevout());
+            if (spent != _assets.end()) {
+                _assets.erase(spent); // need further work!!!
+            }
+        }
+        for (int o = 0; o < txn.getNumOutputs(); ++o) {
+            const Output& output = txn.getOutput(o);
+            if (_addr.getStandardScript() == output.script()) {
+                Coin coin(txn.getHash(), o);
+                _assets[coin] = Asset(coin, output, count);
+            }
+        }
+    }
+    
+    virtual Script invoice(bool change = false) {
+        return _addr.getStandardScript();
+    }
+    
+    // credit will return an unsigned transaction, however, specifications to sign the transaction is included in it.
+    virtual Transaction credit(const Script& script, int64_t amount, int64_t rfee) {
+        // fee is considered a fee pr 200 bytes - so we need to calculate the fee during the iteration
+        
+        // a non input transaction is 78, of which 25 is the size of the invoice script(boilerplate + invoice + change)
+        int64_t fee = (78-25+script.size())*rfee/200;
+        
+        // we assume a size of an input of 149 (could also be 148) bytes, so the delta is:
+        int64_t dfee = 149*rfee/200;
+        
+        int64_t sum = amount + fee; // this is an approximation assuming one input and 2 outputs - for each output we add we should add
+        // first check the balance
+        int64_t bal = balance();
+        if (sum +1*dfee > bal) // require at least to be able to pay for 1 input
+            throw std::runtime_error("Not enough funds!");
+        
+        Transaction txn;
+        
+        // iterate over coins - we take the old coins first
+        
+        typedef std::multiset<Asset, by_age> AssetsByAge;
+
+        AssetsByAge assets;
+        
+        for (Assets::const_iterator a = _assets.begin(); a != _assets.end(); ++a)
+            assets.insert(a->second);
+        
+        int64_t total = 0;
+        for (AssetsByAge::const_iterator a = assets.begin(); a != assets.end(); ++a) {
+            
+            Script signature = Script() << ((vector<unsigned char>)a->script()) << _addr.getPubKeyHash() << OP_RESOLVEANDSIGN << _addr.getPubKeyHash() << OP_RESOLVE;
+            
+            Input input(a->hash(), a->index(), signature);
+            total += a->value();
+            txn.addInput(input);
+            sum += dfee;
+            if (total >= sum) break;
+        }
+        
+        Output output(amount, script);
+        txn.addOutput(output);
+        // get a change key script
+        if (total-sum > rfee) { // never create change that is considered dust...
+            Script invoice_script = invoice(true); // default is a pubkeyhash script from the default (first seed)
+            Output change(total-sum, invoice_script);
+            txn.addOutput(change);
+        }
+        
+        return txn;
+    }
+    
+    virtual Scripts scripts() const {
+        Scripts ss;
+        ss.push_back(_addr.getStandardScript());
+        return ss;
+    }
+    
+    typedef std::map<Coin, Asset> Assets;
+    
+private:
+    ChainAddress _addr;
+    
+    Assets _assets;
+};
+
+void BlockChainAccessor::sync(Account *acct) const {
+    Account::Scripts scripts = acct->scripts();
+    for (const Script& script : scripts) {
+        Unspents unspents;
+        getUnspents(script, unspents);
+        for (const Unspent& unspent : unspents)
+            acct->debit(unspent.key, unspent.output, unspent.count);
+    }
+}
+
+class Registry : public Referenced {
+public:
+    static Registry* instance() {
+        static ref_ptr<Registry> s_registry = new Registry;
+        return s_registry.get();
+    }
+    
+    Account* account(std::string) {
+        // check if we can load it right away
+        // if not, look for matching plugins (coinAdapter_dat.so, coinAdapter_pem.so, coinAdapter_sqlite3, acct etc.)
+        // finally throw if we cannot load it.
+        // Account::
+    }
+
+    void addAccountAdapter(AccountAdapter* aa) {
+        // register the extension and the magic mappings
+        ee = aa->getExtensions();
+        
+        _extensions.insert(ee.begin(), ee.end());
+        
+    }
+
+    void removeAccountAdapter(AccountAdapter* aa) {
+        
+    }
+
+protected:
+    ~Registry();
+};
+
+template<class T>
+class RegisterAccountAdapterProxy {
+public:
+    RegisterAccountAdapterProxy() {
+        if (Registry::instance()) {
+            _aa = new T;
+            Registry::instance()->addAccountAdapter(_aa.get());
+        }
+    }
+    
+    ~RegisterAccountAdapterProxy() {
+        if (Registry::instance()) {
+            Registry::instance()->removeAccountAdapter(_aa.get());
+        }
+    }
+    
+    T* get() { return _aa.get(); }
+    
+protected:
+    ref_ptr<T> _aa;
+};
+
 
 int main(int argc, char* argv[])
 {
@@ -306,6 +614,32 @@ int main(int argc, char* argv[])
             // load the block chain;
             const BlockChainAccessor blockChain(conf.chain(), conf.data_dir());
 
+            ref_ptr<Account> acct = new ChainAddressAccount(conf.chain().getAddress("14cZMQk89mRYQkDEj8Rn25AnGoBi5H6uer"));
+            
+            
+            
+            // ref_ptr<Account> acct = Registry::instance()->account("14cZMQk89mRYQkDEj8Rn25AnGoBi5H6uer");
+
+//            Transaction txn = acct->credit(conf.chain().getAddress("17uY6a7zUidQrJVvpnFchD1MX1untuAufd").getStandardScript(), 1000000, conf.chain().min_fee());
+            
+            // options: key, key and password, password alone, several machines co signing, 2 of 3 etc...
+            // so it calls for quite some flexibility - however, the account should provide more than a hint towards how to sign
+            // so say it is a brainwallet - we keep a public extended key - the brainwallet should have some standard interfaces - e.g. know what pem file to load, know to ask for a password etc...
+            // We could have some info in the Account - like Account::keytype (password/
+            // well lets just start out with the registry.
+            
+//            ref_ptr<Signer> signer = acct->getSigner();
+//            signer->sign(txn);
+
+//            acct->settle(txn);
+            
+            blockChain.sync(acct.get());
+            
+            cout << "Balance: " << conf.chain()(acct->balance()) << endl;
+            
+            
+            
+            /*
             if (conf.method() == "balance") {
                 // next arg is an address / pem file / wallet.dat / cash.btc file
                 filesystem::path file(conf.param(0));
@@ -326,7 +660,7 @@ int main(int argc, char* argv[])
                     cout << account.balance() << endl;
                 }
             }
-            
+            */
             // -----BEGIN BITCOIN EXTENDED KEY----- // a number, which is the deterministic generator and a bitcoin public key, formatted as a private key
             // -----BEGIN BITCOIN PRIVATE KEY----- // a normal ec private key
             // -----BEGIN BITCOIN PUBLIC KEY----- // a normal ec public key
@@ -343,7 +677,10 @@ int main(int argc, char* argv[])
             ///  normal, deterministic, multi, etc...
             ///  databases hold different things like special keys etc...
             ///  
-            
+
+            /// generate a multisig address:
+            // cryptoshi invoice a.btc b.btc c.btc (options --no-sort, --escrow, --and, --or)
+            // 
             
             // new creates the specified : .pem or cash.xbt
             // new mywallet.pem // will create a private key in a file
