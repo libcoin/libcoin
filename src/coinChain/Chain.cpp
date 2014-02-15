@@ -600,6 +600,13 @@ LitecoinChain::LitecoinChain() : Chain("litecoin", "LTC", 8), _genesis("0x12a765
     (161500, uint256("0xdbe89880474f4bb4f75c227c77ba1cdc024991123b28b8418dbbf7798471ff43"))
     (179620, uint256("0x2ad9c65c990ac00426d18e446e0fd7be2ffa69e9a7dcb28358a50b2b78b9f709"))
     ;
+    
+    _seeds = boost::assign::list_of
+    ("dnsseed.litecointools.com")
+    ("dnsseed.litecoinpool.org")
+    ("dnsseed.ltc.xurious.com")
+    ("dnsseed.koin-project.com")
+    ("dnsseed.weminemnc.com");
 }
 
 unsigned int LitecoinChain::totalBlocksEstimate() const {
@@ -917,6 +924,10 @@ DogecoinChain::DogecoinChain() : Chain("dogecoin", "DGE", 8), _genesis("0x1a91e3
     ( 42279, uint256("0x8444c3ef39a46222e87584ef956ad2c9ef401578bd8b51e8e4b9a86ec3134d3a"))
     ( 42400, uint256("0x557bb7c17ed9e6d4a6f9361cfddf7c1fc0bdc394af7019167442b41f507252b4"))
     ;
+    
+    _seeds = boost::assign::list_of
+    ("seed.dogecoin.com");
+
 }
 
 unsigned int DogecoinChain::totalBlocksEstimate() const {

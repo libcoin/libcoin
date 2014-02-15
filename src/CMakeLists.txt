@@ -13,7 +13,6 @@ FOREACH( mylibfolder
         coinHTTP
         coinNAT
         coinWallet 
-        coinReg 
         coinPool 
     )
 
