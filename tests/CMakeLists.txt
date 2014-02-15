@@ -29,7 +29,6 @@ ADD_SUBDIRECTORY(extended_key)
 ADD_SUBDIRECTORY(jsonance)
 ADD_SUBDIRECTORY(merkletrie)
 ADD_SUBDIRECTORY(namecoin)
-ADD_SUBDIRECTORY(reorganization)
 ADD_SUBDIRECTORY(sqliterate)
 
 #    IF   (wxWidgets_FOUND)
