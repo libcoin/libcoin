@@ -527,10 +527,10 @@ private:
 
 void BlockChainAccessor::sync(Account *acct) const {
     Account::Scripts scripts = acct->scripts();
-    for (const Script& script : scripts) {
+    BOOST_FOREACH (const Script& script , scripts) {
         Unspents unspents;
         getUnspents(script, unspents);
-        for (const Unspent& unspent : unspents)
+        BOOST_FOREACH (const Unspent& unspent, unspents)
             acct->debit(unspent.key, unspent.output, unspent.count);
     }
 }
