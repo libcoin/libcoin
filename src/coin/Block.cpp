@@ -97,41 +97,6 @@ void Block::print() const
 }
 
 //bool Block::checkBlock(const CBigNum& proofOfWorkLimit) const
-bool Block::checkBlock() const
-{
-    // These are checks that are independent of context
-    // that can be verified before saving an orphan block.
-    
-    // Size limits
-    if (_transactions.empty() || _transactions.size() > MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK) > MAX_BLOCK_SIZE)
-        return error("CheckBlock() : size limits failed");
-    
-    // Check timestamp
-    if (getBlockTime() > GetAdjustedTime() + 2 * 60 * 60)
-        return error("CheckBlock() : block timestamp too far in the future");
-    
-    // First transaction must be coinbase, the rest must not be
-    if (_transactions.empty() || !_transactions[0].isCoinBase())
-        return error("CheckBlock() : first tx is not coinbase");
-    for (int i = 1; i < _transactions.size(); i++)
-        if (_transactions[i].isCoinBase())
-            return error("CheckBlock() : more than one coinbase");
-    
-    // Check transactions
-    BOOST_FOREACH(const Transaction& tx, _transactions)
-    if (!tx.checkTransaction())
-        return error("CheckBlock() : checkTransaction failed");
-    
-    // Check that it's not full of nonstandard transactions
-    if (GetSigOpCount() > MAX_BLOCK_SIGOPS)
-        return error("CheckBlock() : too many nonstandard transactions");
-    
-    // Check merkleroot
-    if (_merkleRoot != buildMerkleTree())
-        return error("CheckBlock() : hashMerkleRoot mismatch");
-    
-    return true;
-}
 
 bool Block::checkHeightInCoinbase(int height) const {
     Script coinbase = getTransaction(0).getInput(0).signature();

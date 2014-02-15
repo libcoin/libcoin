@@ -534,7 +534,7 @@ void BlockChainAccessor::sync(Account *acct) const {
             acct->debit(unspent.key, unspent.output, unspent.count);
     }
 }
-
+/*
 class Registry : public Referenced {
 public:
     static Registry* instance() {
@@ -586,7 +586,7 @@ public:
 protected:
     ref_ptr<T> _aa;
 };
-
+*/
 
 int main(int argc, char* argv[])
 {
@@ -612,7 +612,7 @@ int main(int argc, char* argv[])
             }
             
             // load the block chain;
-            const BlockChainAccessor blockChain(conf.chain(), conf.data_dir());
+            const BlockChain blockChain(conf.chain(), conf.data_dir());
 
             ref_ptr<Account> acct = new ChainAddressAccount(conf.chain().getAddress("14cZMQk89mRYQkDEj8Rn25AnGoBi5H6uer"));
             
@@ -633,7 +633,7 @@ int main(int argc, char* argv[])
 
 //            acct->settle(txn);
             
-            blockChain.sync(acct.get());
+            blockChain.subscribe(acct.get());
             
             cout << "Balance: " << conf.chain()(acct->balance()) << endl;
             

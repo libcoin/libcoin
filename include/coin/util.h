@@ -203,6 +203,8 @@ std::string hexify(const std::vector<T>& t) {
     return ss.str();
 }
 
+long hex2long(const char* hexString);
+
 // Wrapper to automatically initialize mutex
 class CCriticalSection
 {

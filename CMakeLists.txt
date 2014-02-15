@@ -30,8 +30,8 @@ endif()
 PROJECT(libcoin)
 
 SET(LIBCOIN_MAJOR_VERSION 0)
-SET(LIBCOIN_MINOR_VERSION 5)
-SET(LIBCOIN_PATCH_VERSION 92)
+SET(LIBCOIN_MINOR_VERSION 7)
+SET(LIBCOIN_PATCH_VERSION 03)
 SET(LIBCOIN_SOVERSION 0)
 
 # set to 0 when not a release candidate, non zero means that any generated 

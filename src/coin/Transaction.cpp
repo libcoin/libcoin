@@ -87,11 +87,8 @@ int Transaction::getSigOpCount() const {
 int64_t Transaction::getValueOut() const
 {
     int64_t valueOut = 0;
-    BOOST_FOREACH(const Output& output, _outputs)
-    {
-    valueOut += output.value();
-    if (!MoneyRange(output.value()) || !MoneyRange(valueOut))
-        throw std::runtime_error("Transaction::GetValueOut() : value out of range");
+    BOOST_FOREACH(const Output& output, _outputs) {
+        valueOut += output.value();
     }
     return valueOut;
 }
@@ -155,55 +152,6 @@ int64_t Transaction::getMinFee(unsigned int nBlockSize, bool fAllowFree, bool fF
     if (!MoneyRange(nMinFee))
         nMinFee = MAX_MONEY;
     return nMinFee;
-}
-
-
-bool Transaction::checkTransaction() const
-{
-    // Basic checks that don't depend on any context
-    if (_inputs.empty())
-        return error("Transaction::CheckTransaction() : vin empty");
-    if (_outputs.empty())
-        return error("Transaction::CheckTransaction() : vout empty");
-    // Size limits
-    if (::GetSerializeSize(*this, SER_NETWORK) > MAX_BLOCK_SIZE)
-        return error("Transaction::CheckTransaction() : size limits failed");
-
-    // Check for negative or overflow output values
-    int64_t nValueOut = 0;
-    BOOST_FOREACH(const Output& output, _outputs)
-    {
-        if (output.value() < 0)
-            return error("Transaction::CheckTransaction() : txout.nValue negative");
-        if (output.value() > MAX_MONEY)
-            return error("Transaction::CheckTransaction() : txout.nValue too high");
-        nValueOut += output.value();
-        if (!MoneyRange(nValueOut))
-            return error("Transaction::CheckTransaction() : txout total out of range");
-    }
-
-    // Check for duplicate inputs
-    set<Coin> vInOutPoints;
-    BOOST_FOREACH(const Input& input, _inputs)
-    {
-        if (vInOutPoints.count(input.prevout()))
-            return false;
-        vInOutPoints.insert(input.prevout());
-    }
-
-    if (isCoinBase())
-    {
-        if (_inputs[0].signature().size() < 2 || _inputs[0].signature().size() > 100)
-            return error("Transaction::CheckTransaction() : coinbase script size");
-    }
-    else
-    {
-        BOOST_FOREACH(const Input& input, _inputs)
-            if (input.prevout().isNull())
-                return error("Transaction::CheckTransaction() : prevout is null");
-    }
-
-    return true;
 }
 
 uint256 Transaction::getSignatureHash(Script scriptCode, unsigned int n, int type) const {

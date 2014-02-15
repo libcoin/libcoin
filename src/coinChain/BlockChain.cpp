@@ -200,7 +200,6 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
     
     // determine purge_depth from database:
     _purge_depth = query<int64_t>("SELECT CASE WHEN COUNT(*)=0 THEN 0 ELSE MIN(count) END FROM Confirmations");
-    _deepest_depth = _purge_depth + 1;
     
     // determine validation index type from database:
     bool coin_index = query<int64_t>("SELECT COUNT(*) FROM SQLITE_MASTER WHERE name='UnspentIndex'");
@@ -210,16 +209,24 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
         _validation_depth = _chain.totalBlocksEstimate();
 
         // load the elements - i.e. the spendables
-        Unspents spendables = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count >= -?", _tree.count()-COINBASE_MATURITY+1);
+        Unspents spendables = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count >= -?", _tree.count()-_chain.maturity()+1);
         
         for (Unspents::const_iterator u = spendables.begin(); u != spendables.end(); ++u)
             _spendables.insert(*u);
         
-        Unspents immatures = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count < -?", _tree.count()-COINBASE_MATURITY+1);
+        Unspents immatures = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count < -?", _tree.count()-_chain.maturity()+1);
 
         for (Unspents::const_iterator u = immatures.begin(); u != immatures.end(); ++u)
             _immature_coinbases.insert(*u);
-    }    
+    }
+    
+    
+    // experimental - delete 10 blocks from the chain:
+//    for (int i = 0; i < 10; i++) {
+//        rollbackBlock(getBestHeight()+1);
+//        _tree.pop_back();
+//    }
+
 }
 
 unsigned int BlockChain::purge_depth() const {
@@ -232,7 +239,6 @@ void BlockChain::purge_depth(unsigned int purge_depth) {
     _purge_depth = purge_depth;
     query("DELETE FROM Spendings WHERE icnf IN (SELECT cnf FROM Confirmations WHERE count <= ?)", _purge_depth);
     query("DELETE FROM Confirmations WHERE count <= ?", _purge_depth);
-    _deepest_depth = _purge_depth + 1;
 }
 
 void BlockChain::validation_depth(unsigned int v) {
@@ -303,7 +309,7 @@ std::pair<Claims::Spents, int64_t> BlockChain::try_claim(const Transaction& txn,
                     if (!coin)
                         throw Reject("Spent coin not found !");
                     
-                    if (coin.count < 0 && _tree.count() + coin.count < COINBASE_MATURITY)
+                    if (coin.count < 0 && _tree.count() + coin.count < _chain.maturity())
                         throw Error(cformat("Tried to spend immature (%d confirmations) coinbase: %s", _tree.count() + coin.count, hash.toString()).text());
                 }
                 else {
@@ -322,7 +328,7 @@ std::pair<Claims::Spents, int64_t> BlockChain::try_claim(const Transaction& txn,
                 name_op.name(getCoinName(coin.coin));
 
             // Check for negative or overflow input values
-            if (!MoneyRange(coin.output.value()))
+            if (!_chain.range(coin.output.value()))
                 throw Error("Input values out of range");
             
             value_in += coin.output.value();
@@ -391,7 +397,7 @@ Unspent BlockChain::redeem(const Input& input, int iidx, Confirmation iconf) {
         if (!coin)
             throw Reject("Spent coin not found !");
 
-        if (coin.count < 0 && iconf.count + coin.count < COINBASE_MATURITY)
+        if (coin.count < 0 && iconf.count + coin.count < _chain.maturity())
             throw Error("Tried to spend immature coinbase");
     }
     else {
@@ -411,7 +417,7 @@ Unspent BlockChain::redeem(const Input& input, int iidx, Confirmation iconf) {
     // all OK - spend the coin
     
     // Check for negative or overflow input values
-    if (!MoneyRange(coin.output.value()))
+    if (!_chain.range(coin.output.value()))
         throw Error("Input values out of range");
 
     if (iconf.count >= _purge_depth)
@@ -562,7 +568,7 @@ void BlockChain::postTransaction(const Transaction txn, int64_t& fees, int64_t m
         if (fee < min_fee)
             throw Error("fee < min_fee");
         fees += fee;
-        if (!MoneyRange(fees))
+        if (!_chain.range(fees))
             throw Error("fees out of range");
         
         // issue the outputs
@@ -608,7 +614,8 @@ void BlockChain::postSubsidy(const Transaction txn, BlockIterator blk, int64_t f
     
     // insert coinbase into spendings
     const Input& input = txn.getInput(0);
-    int64_t value_in = _chain.subsidy(blk.height()) + fees;
+    uint256 prev = blk.count() == 1 ? uint256(0) : (blk-1)->hash;
+    int64_t value_in = _chain.subsidy(blk.height(), prev) + fees;
     if (value_in < txn.getValueOut())
         throw Error("value in < value out");
     if (blk.count() >= _purge_depth)
@@ -623,8 +630,8 @@ void BlockChain::postSubsidy(const Transaction txn, BlockIterator blk, int64_t f
     for (size_t out_idx = 0; out_idx < outputs.size(); ++out_idx)
         issue(outputs[out_idx], hash, out_idx, conf, unique);
 
-    if (_validation_depth > 0 && blk.count() > COINBASE_MATURITY)
-        maturate(blk.count()-COINBASE_MATURITY+1);
+    if (_validation_depth > 0 && blk.count() > _chain.maturity())
+        maturate(blk.count()-_chain.maturity()+1);
 }
 
 void BlockChain::rollbackConfirmation(int64_t cnf) {
@@ -650,10 +657,14 @@ void BlockChain::rollbackConfirmation(int64_t cnf) {
         }
     }
     
-    if (cnf < 0) count = -count;
-    
-    query("INSERT INTO Unspents (coin, hash, idx, value, script, count, ocnf) SELECT coin, hash, idx, value, script, ?, ocnf FROM Spendings WHERE icnf = ?", count, cnf);
-    query("DELETE FROM Spendings WHERE icnf = ?", cnf);
+    if (cnf < 0) { // if coinbase don't create a matching unspent - but delete the Spending
+        count = -count;
+        query("DELETE FROM Spendings WHERE coin=?", count);
+    }
+    else {
+        query("INSERT INTO Unspents (coin, hash, idx, value, script, count, ocnf) SELECT coin, hash, idx, value, script, ?, ocnf FROM Spendings WHERE icnf = ?", count, cnf);
+        query("DELETE FROM Spendings WHERE icnf = ?", cnf);
+    }
     
     if (_chain.adhere_names()) query("DELETE FROM Names WHERE coin = (SELECT coin FROM Unspents WHERE ocnf = ?)", cnf);
     
@@ -680,7 +691,7 @@ void BlockChain::getBlockHeader(int count, Block& block) const {
 void BlockChain::getBlock(int count, Block& block) const {
     block.setNull();
 
-    if (count < _deepest_depth)
+    if (count < getDeepestDepth())
         return;
     
     getBlockHeader(count, block);
@@ -699,9 +710,12 @@ void BlockChain::getBlock(int count, Block& block) const {
         block.addTransaction(txn);
     }
     block.updateMerkleTree();
-    if (!block.checkBlock()) {
+    try {
+        _chain.check(block);
+    }
+    catch (std::exception& e) {
         block.setNull();
-        log_warn("getBlock failed for count= %i", count);
+        log_warn("getBlock failed for count= %i with: %s", count, e.what());
     }
     
     // and get the AuxPoW if it is a merged mined block
@@ -755,7 +769,7 @@ void BlockChain::detach(BlockIterator &blk, Txns& unconfirmed) {
     getBlock(blk.count(), block);
     rollbackBlock(blk.count()); // this will also remove spendable coins and immature_coinbases
     Transactions& txns = block.getTransactions();
-    for (Transactions::const_iterator tx = txns.begin(); tx != txns.end(); ++tx)
+    for (Transactions::const_iterator tx = txns.begin() + 1; tx != txns.end(); ++tx) // skip the coinbase!
         unconfirmed[tx->getHash()] = *tx;
     _branches[blk->hash] = block; // store it in the branches map
 }
@@ -943,7 +957,6 @@ void BlockChain::append(const Block &block) {
         if (_purge_depth && !_lazy_purging && blk.count() >= _purge_depth) { // no need to purge during download as we don't store spendings anyway
             query("DELETE FROM Spendings WHERE icnf IN (SELECT cnf FROM Confirmations WHERE count <= ?)", _purge_depth);
             query("DELETE FROM Confirmations WHERE count <= ?", _purge_depth);
-            _deepest_depth = _purge_depth + 1;
         }
         
         // Check that the block is conforming to its block version constraints
@@ -1204,6 +1217,10 @@ bool BlockChain::isInMainChain(const uint256 hash) const {
     return blk.height() >= 0;
 }
 
+int BlockChain::getDeepestDepth() const {
+    return query<int64_t>("SELECT MIN(count) From Confirmations");
+}
+
 int BlockChain::getHeight(const uint256 hash) const
 {
     // lock the pool and chain for reading
@@ -1418,7 +1435,7 @@ Block BlockChain::getBlockTemplate(BlockIterator blk, Payees payees, Fractions f
     // insert the matured coinbase from block #-100
     int count = abs(blk.count());
     if (count > 0) {
-        Unspents coinbase_unspents = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count = ?", -(count-COINBASE_MATURITY));
+        Unspents coinbase_unspents = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count = ?", -(count-_chain.maturity()));
         
         for (Unspents::const_iterator cb = coinbase_unspents.begin(); cb != coinbase_unspents.end(); ++cb)
             spendables.insert(*cb);
@@ -1432,7 +1449,7 @@ Block BlockChain::getBlockTemplate(BlockIterator blk, Payees payees, Fractions f
     // * if we are creating a block for distributed mining use that chain to determine the coinbase output
 
     Script coinbase;
-    coinbase << count << spendables_hash;
+    coinbase << count << spendables_hash; // a bit ugly: we are inserting the height of the block which is the count of the prev block
     Transaction coinbase_txn;
     coinbase_txn.addInput(Input(Coin(), coinbase));
 
@@ -1444,7 +1461,7 @@ Block BlockChain::getBlockTemplate(BlockIterator blk, Payees payees, Fractions f
     if (denominator == 0) denominator = payees.size();
     if (fee_denominator == 0) fee_denominator = denominator;
 
-    int64_t subsidy = _chain.subsidy(count);
+    int64_t subsidy = _chain.subsidy(count, blk->hash); // a bit ugly: the height of the block which is the count of the prev block
     for (size_t i = 0; i < payees.size(); ++i) {
         int64_t nominator = fractions.size() ? fractions[i] : 1;
         int64_t fee_nominator = fee_fractions.size() ? fee_fractions[i] : nominator;

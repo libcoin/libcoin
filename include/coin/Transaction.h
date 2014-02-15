@@ -33,7 +33,6 @@ static const int64_t MIN_TX_FEE = 50000;
 static const int64_t MIN_RELAY_TX_FEE = 10000;
 static const int64_t MAX_MONEY = 21000000 * COIN;
 inline bool MoneyRange(int64_t nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
-static const int COINBASE_MATURITY = 100;
 // Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp.
 static const int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 
@@ -394,9 +393,6 @@ public:
         log_info("%s", toString().c_str());
     }
 
-    /// Check if all internal settings of a transaction are valid. This is not a check if e.g. the inputs are spent.
-    bool checkTransaction() const;
-    
 protected:
     int _version;
     Inputs _inputs;

@@ -39,7 +39,7 @@ public:
     };
     virtual const Block& genesisBlock() const = 0;
     virtual const uint256& genesisHash() const = 0;
-    virtual const int64_t subsidy(unsigned int height) const = 0;
+    virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const = 0;
     virtual bool isStandard(const Transaction& tx) const = 0;
     virtual unsigned int nextWorkRequired(BlockIterator blk) const = 0;
     virtual const CBigNum proofOfWorkLimit() const = 0;
@@ -50,6 +50,9 @@ public:
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const { return true; } // optional
     virtual unsigned int totalBlocksEstimate() const { return 0; } // optional
     
+    virtual void check(const Transaction& txn) const;
+    virtual void check(const Block& block) const;
+    
     virtual const std::string dataDirSuffix() const { return name(); };
     
     virtual unsigned int timeStamp(ChangeIdentifier id) const {
@@ -58,6 +61,22 @@ public:
             case BIP0030: return 1331769600; // 03/15/2012 12:00am GMT.
         }
         return 0;
+    }
+    
+    virtual int maturity() const {
+        return 100;
+    }
+    
+    virtual int64_t max_money() const {
+        return 2100000000000000;
+    }
+
+    virtual size_t max_block_size() const {
+        return 1000000;
+    }
+    
+    virtual bool range(int64_t value) const {
+        return (value >= 0 && value <= max_money());
     }
     
     virtual int64_t min_fee() const {
@@ -111,7 +130,7 @@ public:
     BitcoinChain();
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
-    virtual const int64_t subsidy(unsigned int height) const ;
+    virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 32); }
     virtual unsigned int nextWorkRequired(BlockIterator blk) const;
@@ -158,7 +177,7 @@ public:
     TestNet3Chain();
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
-    virtual const int64_t subsidy(unsigned int height) const ;
+    virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 32); }
     virtual const int maxInterBlockTime() const { return 2*10*60; }
@@ -212,7 +231,7 @@ public:
     NamecoinChain();
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
-    virtual const int64_t subsidy(unsigned int height) const ;
+    virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 32); }
     virtual unsigned int nextWorkRequired(BlockIterator blk) const;
@@ -292,7 +311,7 @@ public:
     LitecoinChain();
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
-    virtual const int64_t subsidy(unsigned int height) const ;
+    virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 20); } // Litecoin: starting difficulty is 1 / 2^12
     virtual const bool checkProofOfWork(const Block& block) const;
@@ -356,7 +375,7 @@ public:
     TerracoinChain();
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
-    virtual const int64_t subsidy(unsigned int height) const ;
+    virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 32); } 
     virtual const bool checkProofOfWork(const Block& block) const;
@@ -373,6 +392,10 @@ public:
         return 0;
     }
     
+    virtual int64_t max_money() const {
+        return 8400000000000000;
+    }
+
     //    virtual char networkId() const { return 0x00; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
     virtual ChainAddress getAddress(PubKeyHash hash) const { return ChainAddress(0x30, hash); }
     virtual ChainAddress getAddress(ScriptHash hash) const { return ChainAddress(0x05, hash); }
@@ -401,6 +424,77 @@ private:
 };
 
 extern const TerracoinChain terracoin;
+
+class COINCHAIN_EXPORT DogecoinChain : public Chain {
+public:
+    DogecoinChain();
+    virtual const Block& genesisBlock() const ;
+    virtual const uint256& genesisHash() const { return _genesis; }
+    virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;
+    virtual bool isStandard(const Transaction& tx) const ;
+    virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 20); } // Litecoin: starting difficulty is 1 / 2^12
+    virtual const bool checkProofOfWork(const Block& block) const;
+    virtual unsigned int nextWorkRequired(BlockIterator blk) const;
+    //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const;
+    virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
+    virtual unsigned int totalBlocksEstimate() const;
+    
+    virtual unsigned int timeStamp(ChangeIdentifier id) const {
+        switch(id) {
+            case BIP0016: return 1349049600; // April 1st
+            case BIP0030: return 1349049600; // 03/15/2012 12:00am GMT.
+        }
+        return 0;
+    }
+    
+    virtual int maturity() const {
+        return 30;
+    }
+    
+    virtual int64_t max_money() const {
+        return 1000000000000000000; // actually wrong - max money is 100bill coins, but that is above maxuint64
+    }
+
+    virtual int64_t min_fee() const {
+        return 500000;//2000000; will ensure that txns above 1k get the old minimum fee of 0.02BTC
+    }
+    
+    // To enable upgrade from one block version to another we define a quorum and a majority for acceptance
+    // of minimum this version as well as a quorum and majority for when the checks of that block version should be enforced.
+    virtual size_t accept_quorum() const { return 1000;}
+    virtual size_t accept_majority() const { return 1001; } // 95% of the last 1000
+    
+    virtual size_t enforce_quorum() const { return 1000; }
+    virtual size_t enforce_majority() const { return 1001; } // 75% of the last 1000
+    
+    //    virtual char networkId() const { return 0x00; } // 0x00, 0x6f, 0x34 (bitcoin, testnet, namecoin)
+    virtual ChainAddress getAddress(PubKeyHash hash) const { return ChainAddress(0x1e, hash); }
+    virtual ChainAddress getAddress(ScriptHash hash) const { return ChainAddress(0x16, hash); }
+    virtual ChainAddress getAddress(std::string str) const {
+        ChainAddress addr(str);
+        if(addr.version() == 0x1e)
+            addr.setType(ChainAddress::PUBKEYHASH);
+        else if (addr.version() == 0x16)
+            addr.setType(ChainAddress::SCRIPTHASH);
+        return addr;
+    }
+    
+    virtual const MessageStart& messageStart() const { return _messageStart; };
+    virtual short defaultPort() const { return 22556; }
+    
+    virtual unsigned int ircChannels() const { return 1; } // number of groups to try (100 for bitcoin, 2 for litecoin)
+    
+private:
+    const uint256 getPoWHash(const Block& block) const;
+private:
+    Block _genesisBlock;
+    uint256 _genesis;
+    MessageStart _messageStart;
+    typedef std::map<int, uint256> Checkpoints;
+    Checkpoints _checkpoints;
+};
+
+extern const DogecoinChain dogecoin;
 
 extern const Currency ripplecredits;
 

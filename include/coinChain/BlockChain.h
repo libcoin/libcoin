@@ -78,6 +78,7 @@ public:
     class Listener {
     public:
         virtual void operator()(const Transaction& txn, int conf) = 0;
+        virtual void operator()(const Coin& coin, const Output& txn, int count) = 0;
     };
     
     /// The constructor - reference to a Chain definition is obligatory, if no dataDir is provided, the location for the db and the file is chosen from the Chain definition and the CDB::defaultDir method
@@ -204,7 +205,7 @@ public:
     int getBlocksToMaturity(const Transaction& tx) const {
         if (!tx.isCoinBase())
             return 0;
-        return std::max(0, (COINBASE_MATURITY+20) - getDepthInMainChain(tx.getHash()));
+        return std::max(0, (_chain.maturity()+20) - getDepthInMainChain(tx.getHash()));
     }
     
     /// Check if the hash of a block belongs to a block in the main chain:
@@ -216,9 +217,7 @@ public:
     }
     
     /// Get the deepest block height, that have not been purged
-    int getDeepestDepth() const {
-        return _deepest_depth;
-    }
+    int getDeepestDepth() const;
     
     BlockIterator getBest() const {
         return _tree.best();
@@ -313,8 +312,6 @@ private:
     unsigned int _purge_depth;
 
     unsigned int _verification_depth;
-    
-    unsigned int _deepest_depth;
     
     BlockLocator _bestLocator;
     

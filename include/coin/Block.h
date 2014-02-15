@@ -109,9 +109,6 @@ public:
     static uint256 checkMerkleBranch(uint256 hash, const MerkleBranch& merkleBranch, int index);
 
     void print() const;
-
-    //    bool checkBlock(const CBigNum& proofOfWorkLimit) const;
-    bool checkBlock() const;
     
     /// Version 2 check according to BIP 0034: Height should be in the coinbase
     bool checkHeightInCoinbase(int height) const;

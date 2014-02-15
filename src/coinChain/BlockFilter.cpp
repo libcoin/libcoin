@@ -52,8 +52,13 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         
         // Preliminary checks
         //        if (!block.checkBlock(_blockChain.chain().proofOfWorkLimit()))
-        if (!block.checkBlock())
-            return error("ProcessBlock() : CheckBlock FAILED");
+        try {
+            _blockChain.chain().check(block);
+        }
+        catch (std::exception& e ) {
+            log_error("BlockFilter()(): %s", e.what());
+            return false;
+        }
         
         // as the block is valid we obviously got what we asked for and we can delete the request (no matter if the block was useful or not)
         origin->dequeue(inv);
@@ -75,7 +80,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         
         process(block, origin->getAllPeers());
     }
-    else if (msg.command() == "getblocks") {
+    else if (msg.command() == "getblocks") { // here we should simply ignore requests below
         BlockLocator locator;
         uint256 hashStop;
         CDataStream data(msg.payload());
