@@ -633,7 +633,7 @@ int main(int argc, char* argv[])
 
 //            acct->settle(txn);
             
-            blockChain.subscribe(acct.get());
+//            blockChain.subscribe(acct.get());
             
             cout << "Balance: " << conf.chain()(acct->balance()) << endl;
             
