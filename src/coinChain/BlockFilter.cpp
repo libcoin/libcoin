@@ -75,8 +75,12 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
             
             // Ask this guy to fill in what we're missing
             if (origin)
-                origin->PushGetBlocks(_blockChain.getBestLocator(), getOrphanRoot(block_copy));            
+                origin->PushGetBlocks(_blockChain.getBestLocator(), getOrphanRoot(block_copy));
+
+            return false; // don't process orphan blocks
         }
+        
+        // the block is now part of the chain and has a valid proof of work
         
         process(block, origin->getAllPeers());
     }
@@ -228,18 +232,19 @@ uint256 BlockFilter::getOrphanRoot(const Block* pblock) {
 }
 
 /// Need access to mapOrphanBlocks/ByPrev and a call to GetOrphanRoot
-bool BlockFilter::process(const Block& block, Peers peers) {
+void BlockFilter::process(const Block& block, Peers peers) {
     uint256 hash = block.getHash();
     // Store in DB
     try {
         _blockChain.append(block);
+        // notify all listeners
+        for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
+            (*listener->get())(block);
+        log_debug("ProcessBlock: ACCEPTED");
     }
     catch (std::exception &e) {
-        return error((string("append(Block) failed: ") + e.what()).c_str());
+        log_error("append(Block) failed: %s", e.what());
     }
-    // notify all listeners
-    for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
-        (*listener->get())(block);
 
     // Relay inventory, but don't relay old inventory during initial block download
     uint256 bestChain = _blockChain.getBestChain();
@@ -260,22 +265,23 @@ bool BlockFilter::process(const Block& block, Peers peers) {
             Block* orphan = (*mi).second;
             try {
                 _blockChain.append(*orphan);
-                // notify all listeners
+                // notify all listeners only if append does not throw
                 for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
                     (*listener->get())(block);
-                
-                workQueue.push_back(orphan->getHash());
-                // Relay inventory, but don't relay old inventory during initial block download
-                uint256 bestChain = _blockChain.getBestChain();
-                uint256 blockHash = block.getHash();
-                if (bestChain == blockHash) {
-                    for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
-                        if (_blockChain.getBestHeight() > ((*peer)->getStartingHeight() != -1 ? (*peer)->getStartingHeight() - 2000 : _blockChain.getTotalBlocksEstimate()))
-                            (*peer)->PushInventory(Inventory(MSG_BLOCK, blockHash));
-                }
+                log_debug("ProcessBlock: ACCEPTED ORPHAN");
             }
             catch (std::exception &e) {
-                log_warn((string("append(Block) orphan failed: ") + e.what()).c_str());
+                log_warn("append(Block) orphan failed: %s", e.what());
+            }
+            
+            workQueue.push_back(orphan->getHash());
+            // Relay inventory, but don't relay old inventory during initial block download
+            uint256 bestChain = _blockChain.getBestChain();
+            uint256 blockHash = block.getHash();
+            if (bestChain == blockHash) {
+                for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
+                    if (_blockChain.getBestHeight() > ((*peer)->getStartingHeight() != -1 ? (*peer)->getStartingHeight() - 2000 : _blockChain.getTotalBlocksEstimate()))
+                        (*peer)->PushInventory(Inventory(MSG_BLOCK, blockHash));
             }
             _orphanBlocks.erase(orphan->getHash());
             delete orphan;
@@ -283,8 +289,6 @@ bool BlockFilter::process(const Block& block, Peers peers) {
         _orphanBlocksByPrev.erase(hashPrev);
     }
     //    _blockChain.outputPerformanceTimings();
-    log_debug("ProcessBlock: ACCEPTED");
-    return true;
 }
 
 /*

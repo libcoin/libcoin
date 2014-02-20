@@ -171,11 +171,14 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
     // populate the tree
     vector<BlockRef> blockchain = queryColRow<BlockRef(int, uint256, uint256, unsigned int, unsigned int)>("SELECT version, hash, prev, time, bits FROM Blocks ORDER BY count");
     _tree.assign(blockchain);
+    _invalid_tree.assign(blockchain); // also assign the current tree to the invalid tree
         
     if (_tree.count() == 0) { // there are no blocks, insert the genesis block
         Block block = _chain.genesisBlock();
         blockchain.push_back(BlockRef(block.getVersion(), block.getHash(), block.getPrevBlock(), block.getBlockTime(), block.getBits()));
         _tree.assign(blockchain);
+        _invalid_tree.assign(blockchain);
+        
         _branches[block.getHash()] = block;
         try {
             query("BEGIN --GENESIS");
@@ -278,6 +281,9 @@ std::pair<Claims::Spents, int64_t> BlockChain::try_claim(const Transaction& txn,
     
     if (_claims.have(hash)) // transaction already exist
         throw Error("Transaction already exists!");
+    
+    if (txn.isCoinBase())
+        throw Error("Cannot claim coinbase transactions!");
     
     Claims::Spents spents;
     
@@ -893,6 +899,12 @@ void BlockChain::append(const Block &block) {
     if (blk != _tree.end())
         throw Error("Block already accepted");
 
+    if (_invalid_tree.find(hash) != _invalid_tree.end())
+        throw Error("Block already accepted as invalid");
+    
+    // this is enough to accept it as an invalid block - we simply do an insert:
+    _invalid_tree.insert(BlockRef(block.getVersion(), hash, block.getPrevBlock(), block.getBlockTime(), block.getBits()));
+    
     BlockIterator prev = _tree.find(block.getPrevBlock());
     
     // do the version check: If a super-majority of blocks within the last 1000 blocks are of version N type - reject blocks of versions below this
@@ -1044,8 +1056,14 @@ void BlockChain::append(const Block &block) {
     _claims.purge(UnixTime::s() - 24*60*60);
     
     // Claim transactions that didn't make it into a block, however, don't vaste time verifying, as we have done so already
-    for (Txns::iterator tx = unconfirmed.begin(); tx != unconfirmed.end(); ++tx)
-        claim(tx->second, false);
+    for (Txns::iterator tx = unconfirmed.begin(); tx != unconfirmed.end(); ++tx) {
+        try {
+            claim(tx->second, false);
+        }
+        catch (std::exception& e) {
+            log_warn("append(Block): Transaction: %s was replaced - possible double spend or tx malleation!", tx->first.toString());
+        }
+    }
 
     size_t claims_after = _claims.count();
 
@@ -1277,7 +1295,7 @@ bool BlockChain::isFinal(const Transaction& tx, int nBlockHeight, int64_t nBlock
 }
 
 bool BlockChain::haveBlock(uint256 hash) const {
-    return _tree.find(hash) != _tree.end();
+    return _tree.find(hash) != _tree.end() || _invalid_tree.find(hash) != _invalid_tree.end();
 }
 
 void BlockChain::getTransaction(const uint256& hash, Transaction& txn) const {

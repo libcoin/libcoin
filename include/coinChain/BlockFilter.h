@@ -58,7 +58,7 @@ public:
     }
     
     /// Call process to get a hook into the block processing, e.g. if for injecting mining generated blocks
-    bool process(const Block& block, Peers peers);
+    void process(const Block& block, Peers peers);
     
 private:
     uint256 getOrphanRoot(const Block* pblock);

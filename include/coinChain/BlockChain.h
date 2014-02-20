@@ -316,6 +316,8 @@ private:
     BlockLocator _bestLocator;
     
     BlockTree _tree;
+    BlockTree _invalid_tree;
+    
     ShareTree _share_tree;
     
     Branches _branches;
