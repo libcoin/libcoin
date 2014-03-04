@@ -147,6 +147,11 @@ public:
         return _claims.count();
     }
     
+    /// S C R I P T S
+    
+    /// Get the balance of a script up to block <height> - will throw if <height> < pruned height
+    int64_t balance(const Script& script, int height = -1) const;
+    
     /// C O I N S
     
     bool isSpent(Coin coin) const;

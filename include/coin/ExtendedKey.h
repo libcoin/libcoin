@@ -132,6 +132,9 @@ public:
     
     Key(const std::string& filename);
     Key(const std::string& filename, PassphraseFunctor& pf);
+
+    /// extract the public key from a signature and the hash - will throw if signature is invalid.
+    Key(uint256 hash, const Data& signature);
     
     void file(const std::string& filename, bool overwrite = false);
     
@@ -159,6 +162,10 @@ public:
     
     Data serialized_full_pubkey() const;
 
+    PubKeyHash serialized_pubkeyhash(bool compact = true) const {
+        return compact ? toPubKeyHash(serialized_pubkey()) : toPubKeyHash(serialized_full_pubkey());
+    }
+    
     SecureData serialized_privkey() const;
 
     /// Get the public point - usefull for ECC math
@@ -172,6 +179,9 @@ public:
 
     /// Sign a hash using ECDSA
     Data sign(uint256 hash) const;
+    
+    /// Compact signature including both the signature and the pubkey - if the signature is given, sign is not called
+    Data sign_compact(uint256 hash, Data signature = Data()) const;
     
     /// Verify an ECDSA signature on a hash
     bool verify(uint256 hash, const Data& signature) const;
@@ -275,7 +285,7 @@ public:
         uint160 _fingerprint;
         Path _path;
     };
-    
+
     ExtendedKey operator()(const Derivation& generator, unsigned int upto = 0) const;
     
     Data serialize(const Derivation& generator, bool serialize_private = false, unsigned int version = 0) const;
@@ -283,6 +293,15 @@ public:
 private:
     SecureData _chain_code;
 };
+
+inline bool operator==(const ExtendedKey::Derivation& lhs, const ExtendedKey::Derivation& rhs) {
+    return lhs.fingerprint() == rhs.fingerprint() && lhs.path() == rhs.path();
+}
+
+inline bool operator!=(const ExtendedKey::Derivation& lhs, const ExtendedKey::Derivation& rhs) {
+    return !operator==(lhs,rhs);
+}
+
 
 
 namespace BIP0032 {

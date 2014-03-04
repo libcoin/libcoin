@@ -224,9 +224,14 @@ void Node::addPeer(string hostport) {
     ip::tcp::resolver resolver(_io_service);
     ip::tcp::resolver::query query(address, port);
     // iterate over all endpoints returned....
-    for (ip::tcp::resolver::iterator ep = resolver.resolve(query); ep != ip::tcp::resolver::iterator(); ++ep) {
-        if (ep->endpoint().address().is_v4())
-            addPeer(*ep);
+    try {
+        for (ip::tcp::resolver::iterator ep = resolver.resolve(query); ep != ip::tcp::resolver::iterator(); ++ep) {
+            if (ep->endpoint().address().is_v4())
+                addPeer(*ep);
+        }
+    }
+    catch (std::exception& e) {
+        log_warn("addPeer failed resolving %s", hostport);
     }
 }
 

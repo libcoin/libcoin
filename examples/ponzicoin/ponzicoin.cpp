@@ -45,7 +45,7 @@ public:
     PonziChain();
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
-    virtual const int64_t subsidy(unsigned int height) const ;
+    virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 20); }
     virtual unsigned int nextWorkRequired(BlockIterator blk) const;
@@ -112,7 +112,7 @@ const Block& PonziChain::genesisBlock() const {
     return _genesisBlock;
 }
 
-const int64_t PonziChain::subsidy(unsigned int height) const {
+const int64_t PonziChain::subsidy(unsigned int height, uint256 prev) const {
     int64_t s = 50 * COIN;
     
     // Subsidy is cut in half every week

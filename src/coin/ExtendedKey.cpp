@@ -258,6 +258,32 @@ Key::Key(const std::string& filename, PassphraseFunctor& pf) : _ec_key(NULL) {
         throw runtime_error(filename + " did not cointain a valid PEM formatted key");
 }
 
+Key::Key(uint256 hash, const Data& signature) {
+    if (signature.size() != 65)
+        throw runtime_error("Key::Key signature size != 65 bytes");
+
+    // the first byte of the signature is the rec:
+    int rec = (signature[0] - 27) & ~4;
+    const unsigned char* p64 = &signature[1];
+
+    if (rec<0 || rec>=3)
+        throw runtime_error("Key::Key signature malformed");
+
+    if (!((signature[0] - 27) & 4))
+        throw runtime_error("Key::Key verification of uncompressed keys not supported");
+    
+    ECDSA_SIG *sig = ECDSA_SIG_new();
+    BN_bin2bn(&p64[0],  32, sig->r);
+    BN_bin2bn(&p64[32], 32, sig->s);
+    _ec_key = EC_KEY_new_by_curve_name(NID_secp256k1);
+    EC_KEY_set_conv_form(_ec_key, POINT_CONVERSION_COMPRESSED);
+    bool ret = ECDSA_SIG_recover_key_GFp(_ec_key, sig, (unsigned char*)&hash, sizeof(hash), rec, 0) == 1;
+    ECDSA_SIG_free(sig);
+    
+    if (!ret)
+        throw runtime_error("Key::Key pub key recovery failed");
+}
+
 void Key::file(const std::string& filename, bool overwrite) {
     if (!overwrite) {
         FILE* f = fopen(filename.c_str(), "r");
@@ -385,6 +411,52 @@ Data Key::sign(uint256 hash) const {
         throw runtime_error("Could not sign!");
     signature.resize(size); // Shrink to fit actual size
     return signature;
+}
+
+Data Key::sign_compact(uint256 hash, Data signature) const {
+    Data compact;
+    
+    if (signature.size() == 0)
+        signature = sign(hash);
+    
+    bool fOk = false;
+    const unsigned char *pp = &signature[0];
+    ECDSA_SIG *sig = d2i_ECDSA_SIG(NULL, &pp, signature.size());
+    
+    if (sig==NULL)
+        throw runtime_error("Key::sign_compact failed: wrong signature provided.");
+    compact.resize(65,0);
+    int nBitsR = BN_num_bits(sig->r);
+    int nBitsS = BN_num_bits(sig->s);
+    if (nBitsR <= 256 && nBitsS <= 256) {
+        int nRecId = -1;
+        for (int i=0; i<4; i++) {
+            EC_KEY* eckey = EC_KEY_new_by_curve_name(NID_secp256k1);
+            EC_KEY_set_conv_form(eckey, POINT_CONVERSION_COMPRESSED);
+            if (ECDSA_SIG_recover_key_GFp(eckey, sig, (unsigned char*)&hash, sizeof(hash), i, 1) == 1) {
+                Key key;
+                key.reset(eckey);
+                if (key.serialized_pubkey() == serialized_pubkey()) {
+                    nRecId = i;
+                    break;
+                }
+            }
+            EC_KEY_free(eckey);
+        }
+        
+        if (nRecId == -1)
+            throw key_error("Key::sign_compact : unable to construct recoverable key");
+        
+        compact[0] = nRecId+27+(true ? 4 : 0);
+        BN_bn2bin(sig->r,&compact[33-(nBitsR+7)/8]);
+        BN_bn2bin(sig->s,&compact[65-(nBitsS+7)/8]);
+        fOk = true;
+    }
+    ECDSA_SIG_free(sig);
+    if (!fOk)
+        throw runtime_error("Could not generate compact signature!");
+    
+    return compact;
 }
 
 bool Key::verify(uint256 hash, const Data& signature) const {

@@ -268,10 +268,14 @@ bool BlockChain::script_to_unspents() const {
 }
 
 void BlockChain::script_to_unspents(bool enable) {
-    if (enable)
+    if (enable) {
         query("CREATE INDEX IF NOT EXISTS ScriptIndex ON Unspents (script)");
-    else
+        query("CREATE INDEX IF NOT EXISTS SScriptIndex ON Spendings (script)");
+    }
+    else {
         query("DROP INDEX IF EXISTS ScriptIndex");
+        query("DROP INDEX IF EXISTS SScriptIndex");
+    }
 }
 
 std::pair<Claims::Spents, int64_t> BlockChain::try_claim(const Transaction& txn, bool verify) const {
@@ -392,6 +396,31 @@ void BlockChain::claim(const Transaction& txn, bool verify) {
         Listener& listener = (*l);
         listener(txn, UnixTime::s());
     }
+}
+
+int64_t BlockChain::balance(const Script& script, int height) const {
+    int count = height + 1;
+    
+    // we calculate two balances
+    int64_t unspent = 0;
+    if (count == 0)
+        unspent = query<int64_t>("SELECT SUM(value) FROM Unspents WHERE script = ?", script);
+    else
+        unspent = query<int64_t>("SELECT SUM(value) FROM Unspents WHERE script = ? AND ABS(count) <= ?", script, count);
+    
+    if (count == 0)
+        return unspent;
+    
+    int purged = query<int>("SELECT MIN(count) FROM Confirmations");
+
+    if (count < purged)
+        throw runtime_error("Cannot calculate balances from purged past!");
+    
+    int64_t created = query<int64_t>("SELECT SUM(value) FROM Spendings AS s, Confirmations AS o WHERE s.ocnf=o.cnf AND s.script = ? AND o.count > ?", script, count);
+    
+    int64_t spent = query<int64_t>("SELECT SUM(value) FROM Spendings AS s, Confirmations AS i WHERE s.icnf=i.cnf AND s.script = ? AND i.count > ?", script, count);
+
+    return unspent-created+spent;
 }
 
 Unspent BlockChain::redeem(const Input& input, int iidx, Confirmation iconf) {

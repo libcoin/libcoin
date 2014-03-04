@@ -588,6 +588,29 @@ protected:
 };
 */
 
+class MessageVerifier {
+public:
+    MessageVerifier(const std::string& magic) : _magic(magic) {}
+    
+    uint256 serialize(const std::string& message) const {
+        CHashWriter ss(SER_GETHASH, 0);
+        ss << _magic;
+        ss << message;
+        
+        return ss.GetHash();
+    }
+    
+    PubKeyHash verify(const std::string& message, const std::string& signature) const {
+        string raw = Auth::decode64(signature);
+        Data compact = Data(raw.begin(), raw.end());
+        uint256 hash = serialize(message);
+        Key key(hash, compact);
+        return key.serialized_pubkeyhash();
+    }
+private:
+    const std::string _magic;
+};
+
 int main(int argc, char* argv[])
 {
     SSL_library_init();
@@ -611,33 +634,60 @@ int main(int argc, char* argv[])
                 return 1;
             }
             
-            // load the block chain;
-            const BlockChain blockChain(conf.chain(), conf.data_dir());
+            if (conf.method() == "audit") {
+                // load an audit file .json and audits its content
+                json_spirit::Value root;
+                std::ifstream ifs(conf.param(0));
+                json_spirit::read(ifs, root);
+                
+                // find the params:
+                json_spirit::Object json = root.get_obj();
+                uint256 hash(json_spirit::find_value(json, "blockhash").get_str());
+                int height = json_spirit::find_value(json, "blockheight").get_int();
+                string message = json_spirit::find_value(json, "message").get_str();
+                json_spirit::Array assets = json_spirit::find_value(json, "assets").get_array();
+                int64_t total = lexical_cast<int64_t>(json_spirit::find_value(json, "total").get_str());
+                
+                // load the block chain;
+                const BlockChain blockChain(conf.chain(), conf.data_dir());
 
-            ref_ptr<Account> acct = new ChainAddressAccount(conf.chain().getAddress("14cZMQk89mRYQkDEj8Rn25AnGoBi5H6uer"));
-            
-            
-            
-            // ref_ptr<Account> acct = Registry::instance()->account("14cZMQk89mRYQkDEj8Rn25AnGoBi5H6uer");
+                // check that height and hash matches:
+                if (height != blockChain.getHeight(hash))
+                    cout << "WARNING! height does not match hash - could be due to a reorganization" << endl;
+                
+                MessageVerifier verifier(conf.chain().signedMessageMagic());
+                
+                int64_t total_check = 0;
+                
+                // loop over all assets
+                for (size_t i = 0; i < assets.size(); ++i) {
+                    json_spirit::Object asset = assets[i].get_obj();
+                    ChainAddress addr = conf.chain().getAddress(json_spirit::find_value(asset, "asset").get_str());
+                    string signature = json_spirit::find_value(asset, "signature").get_str();
+                    int64_t balance = lexical_cast<int64_t>(json_spirit::find_value(asset, "balance").get_str());
+                    if ( addr.getPubKeyHash() == verifier.verify(message, signature) ) {
+                        // cout << addr.toString() << " PASSED!" << endl;
+                        int64_t balance_check = blockChain.balance(addr.getStandardScript(), height);
+                        if (balance != balance_check) {
+                            cout << "WARNING: wrong balance for " << addr.toString() << " - should be: " << balance_check << endl;
+                        }
+                        total_check += balance_check;
+                    }
+                    else {
+                        cout << addr.toString() << " FAILED! - will not be counted as part of the total sum" << endl;
+                    }
+                }
 
-//            Transaction txn = acct->credit(conf.chain().getAddress("17uY6a7zUidQrJVvpnFchD1MX1untuAufd").getStandardScript(), 1000000, conf.chain().min_fee());
-            
-            // options: key, key and password, password alone, several machines co signing, 2 of 3 etc...
-            // so it calls for quite some flexibility - however, the account should provide more than a hint towards how to sign
-            // so say it is a brainwallet - we keep a public extended key - the brainwallet should have some standard interfaces - e.g. know what pem file to load, know to ask for a password etc...
-            // We could have some info in the Account - like Account::keytype (password/
-            // well lets just start out with the registry.
-            
-//            ref_ptr<Signer> signer = acct->getSigner();
-//            signer->sign(txn);
 
-//            acct->settle(txn);
-            
-//            blockChain.subscribe(acct.get());
-            
-            cout << "Balance: " << conf.chain()(acct->balance()) << endl;
-            
-            
+                if (total_check >= total) {
+                    cout << "PASSES audit with " << total_check << " Satoshis" << endl;
+                }
+                else {
+                    cout << "FAILS audit with " << total_check << " Satoshis - should be at least " << total << endl;
+                }
+                
+                return 0;
+            }
             
             /*
             if (conf.method() == "balance") {
