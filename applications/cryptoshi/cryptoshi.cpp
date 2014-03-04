@@ -637,7 +637,7 @@ int main(int argc, char* argv[])
             if (conf.method() == "audit") {
                 // load an audit file .json and audits its content
                 json_spirit::Value root;
-                std::ifstream ifs(conf.param(0));
+                std::ifstream ifs(conf.param(0).c_str());
                 json_spirit::read(ifs, root);
                 
                 // find the params:
