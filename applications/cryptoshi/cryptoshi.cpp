@@ -662,10 +662,11 @@ int main(int argc, char* argv[])
                 // loop over all assets
                 for (size_t i = 0; i < assets.size(); ++i) {
                     json_spirit::Object asset = assets[i].get_obj();
-                    ChainAddress addr = conf.chain().getAddress(json_spirit::find_value(asset, "asset").get_str());
+                    string address = json_spirit::find_value(asset, "asset").get_str();
+                    ChainAddress addr = conf.chain().getAddress(address);
                     string signature = json_spirit::find_value(asset, "signature").get_str();
                     int64_t balance = lexical_cast<int64_t>(json_spirit::find_value(asset, "balance").get_str());
-                    if ( addr.getPubKeyHash() == verifier.verify(message, signature) ) {
+                    if ( addr.getPubKeyHash() == verifier.verify(address + " " + message, signature) ) {
                         // cout << addr.toString() << " PASSED!" << endl;
                         int64_t balance_check = blockChain.balance(addr.getStandardScript(), height);
                         if (balance != balance_check) {

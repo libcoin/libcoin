@@ -112,7 +112,7 @@ public:
     virtual ChainAddress getAddress(std::string str) const = 0;
     
     /// signedMessageMagic is for using the wallet keys to sign messages - you can overload "Bitcoin" in other chains or leave it as is.
-    virtual std::string signedMessageMagic() const { return "Bitcoin Signed Message:\n"; }
+    virtual std::string signedMessageMagic() const { return "LibCoin Signed Message:\n"; }
     
     virtual const MessageStart& messageStart() const = 0;
     virtual short defaultPort() const = 0;
@@ -156,6 +156,8 @@ public:
         return addr;
     }
     
+    virtual std::string signedMessageMagic() const { return "Bitcoin Signed Message:\n"; }
+
     virtual const MessageStart& messageStart() const { return _messageStart; };
     virtual short defaultPort() const { return 8333; }
     
@@ -211,6 +213,8 @@ public:
             addr.setType(ChainAddress::SCRIPTHASH);
         return addr;
     }
+
+    virtual std::string signedMessageMagic() const { return "Bitcoin Signed Message:\n"; }
 
     virtual const MessageStart& messageStart() const { return _messageStart; };
     virtual short defaultPort() const { return 18333; }
@@ -290,6 +294,8 @@ public:
         return addr;
     }
     
+    virtual std::string signedMessageMagic() const { return "Namecoin Signed Message:\n"; }
+    
     virtual const MessageStart& messageStart() const { return _messageStart; };
     virtual short defaultPort() const { return 8334; }
     
@@ -352,6 +358,8 @@ public:
         return addr;
     }
     
+    virtual std::string signedMessageMagic() const { return "Litecoin Signed Message:\n"; }
+
     virtual const MessageStart& messageStart() const { return _messageStart; };
     virtual short defaultPort() const { return 9333; }
     
@@ -479,6 +487,8 @@ public:
         return addr;
     }
     
+    virtual std::string signedMessageMagic() const { return "Dogecoin Signed Message:\n"; }
+
     virtual const MessageStart& messageStart() const { return _messageStart; };
     virtual short defaultPort() const { return 22556; }
     
