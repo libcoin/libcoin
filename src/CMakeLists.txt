@@ -12,6 +12,7 @@ FOREACH( mylibfolder
         coinChain 
         coinHTTP
         coinNAT
+        coinName
         coinWallet 
         coinPool 
     )
