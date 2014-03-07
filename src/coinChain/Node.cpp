@@ -421,6 +421,10 @@ void Node::post(const Transaction& tx, size_t n)
     Peers peers = _peerManager.getAllPeers();
     Peers some;
     size_t s = peers.size();
+    if (s == 0) {
+        log_warn("Cannot post txn: %s as no peers are available, relying on a later repost", tx.getHash().toString());
+        return;
+    }
     if (n != 0 && n < s) {
         for(int i = 0; i < n; i++) {
             size_t r = GetRand(s);

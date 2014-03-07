@@ -284,7 +284,7 @@ std::pair<Claims::Spents, int64_t> BlockChain::try_claim(const Transaction& txn,
     int64_t min_fee = 0;
     
     if (_claims.have(hash)) // transaction already exist
-        throw Error("Transaction already exists!");
+        throw Error("Transaction already exists : " + txn.getHash().toString());
     
     if (txn.isCoinBase())
         throw Error("Cannot claim coinbase transactions!");
@@ -1344,9 +1344,15 @@ void BlockChain::getTransaction(const uint256& hash, Transaction& txn, int64_t& 
     getTransaction(cnf, txn, height, time);
 }
 
-bool BlockChain::isSpent(Coin coin) const {
+bool BlockChain::isSpent(Coin coin, int confirmations) const {
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
 
+    if (confirmations > 1) {
+        int count = query<int64_t>("SELECT count FROM Spendings AS s INNER JOIN Confirmations AS c WHERE s.icnf = c.cnf AND s.hash=? AND s.idx=?", coin.hash, coin.index);
+        if (count && (getBestHeight() - abs(count) + 1 < confirmations - 1))
+            return false;
+    }
+    
     if (_validation_depth == 0) // Database
         return query<int64_t>("SELECT coin FROM Unspents WHERE hash = ? AND idx = ?", coin.hash, coin.index) == 0;
     else

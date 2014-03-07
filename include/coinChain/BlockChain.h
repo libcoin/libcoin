@@ -154,7 +154,7 @@ public:
     
     /// C O I N S
     
-    bool isSpent(Coin coin) const;
+    bool isSpent(Coin coin, int confirmations = 1) const;
     
     /// getUnspents return unspent coins and values before a certain timestamp.
     /// If the timestamp is less than 500.000.000 it is assumed that it refers to a certain block,
