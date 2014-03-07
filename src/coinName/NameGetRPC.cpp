@@ -22,33 +22,19 @@
 #include <coinHTTP/Server.h>
 #include <coinHTTP/RPC.h>
 
-/*
-Value GetDebit::operator()(const Array& params, bool fHelp) {
-    if (fHelp || params.size() != 1)
-        throw RPC::error(RPC::invalid_params, "getdebit <btcaddr>\n"
-                         "Get debit coins of <btcaddr>");
-    
-    ChainAddress addr = _explorer.blockChain().chain().getAddress(params[0].get_str());
-    if (!addr.isValid())
-        throw RPC::error(RPC::invalid_params, "getdebit <btcaddr>\n"
-                         "btcaddr invalid!");
-    
-    PubKeyHash address = addr.getPubKeyHash();
-    
-    Coins coins;
-    
-    _explorer.getDebit(address, coins);
-    
-    Array list;
-    
-    for(Coins::iterator coin = coins.begin(); coin != coins.end(); ++coin) {
-        Object obj;
-        obj.clear();
-        obj.push_back(Pair("hash", coin->hash.toString()));
-        obj.push_back(Pair("n", boost::uint64_t(coin->index)));
-        list.push_back(obj);
-    }
-    
-    return list;
+json_spirit::Value
+NameShow::operator() (const json_spirit::Array& params, bool fHelp)
+{
+  if (fHelp || params.size () != 1)
+    throw RPC::error (RPC::invalid_params,
+                      "name_show <name>\n"
+                      "Show information about <name>.");
+
+  /* FIXME: Correctly handle integer parameters (convert to string).  */
+  const std::string name = params[0].get_str ();
+
+  json_spirit::Object res;
+  res.push_back (json_spirit::Pair ("name", name));
+
+  return res;
 }
-*/

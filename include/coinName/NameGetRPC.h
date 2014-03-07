@@ -71,7 +71,9 @@ public:
   explicit inline
   NameShow (Node& n)
     : NameGetMethod(n)
-  {}
+  {
+    setName ("name_show");
+  }
 
   /**
    * Perform the call.
