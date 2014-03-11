@@ -48,7 +48,7 @@ public:
     };
 
     
-    NameOperation();
+    NameOperation(bool ignore_rules);
     
     // returns true if input is a name update
     bool input(const Output& coin, int count);
@@ -72,7 +72,7 @@ public:
     /// NameEvaluator - Evaluates namescripts
     class Evaluator : public ::Evaluator {
     public:
-        Evaluator(bool ignore_rules = true);
+        Evaluator(bool ignore_rules);
         
         bool was_name_new() const;
         
@@ -97,6 +97,7 @@ private:
     Script _name_out;
     int64_t _network_fee;
     bool _requires_network_fee;
+    bool _ignore_rules;
     std::string _name;
     std::string _value;
 };

@@ -299,7 +299,7 @@ std::pair<Claims::Spents, int64_t> BlockChain::try_claim(const Transaction& txn,
         // redeem the inputs
         const Inputs& inputs = txn.getInputs();
         int64_t value_in = 0;
-        NameOperation name_op;
+        NameOperation name_op(_chain.adhere_names()?_chain.enforce_name_rules(UnixTime::s()):false);
         for (size_t in_idx = 0; in_idx < inputs.size(); ++in_idx) {
             Unspent coin;
             const Input& input = inputs[in_idx];
@@ -576,7 +576,7 @@ void BlockChain::postTransaction(const Transaction txn, int64_t& fees, int64_t m
         // redeem the inputs
         const Inputs& inputs = txn.getInputs();
         int64_t value_in = 0;
-        NameOperation name_op;
+        NameOperation name_op(_chain.adhere_names()?_chain.enforce_name_rules(blk.count()):false);
         for (size_t in_idx = 0; in_idx < inputs.size(); ++in_idx) {
             const Input& input = inputs[in_idx];
             Unspent coin = redeem(input, in_idx, conf); // this will throw in case of doublespend attempts
@@ -697,6 +697,8 @@ void BlockChain::rollbackConfirmation(int64_t cnf) {
         query("DELETE FROM Spendings WHERE coin=?", count);
     }
     else {
+        // now set count to when the unspent was originally introduced
+        count = query<int64_t, int64_t>("SELECT count FROM Confirmations WHERE cnf = (SELECT ocnf FROM Spendings WHERE icnf=?)" , cnf);
         query("INSERT INTO Unspents (coin, hash, idx, value, script, count, ocnf) SELECT coin, hash, idx, value, script, ?, ocnf FROM Spendings WHERE icnf = ?", count, cnf);
         query("DELETE FROM Spendings WHERE icnf = ?", cnf);
     }

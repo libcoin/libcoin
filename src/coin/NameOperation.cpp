@@ -19,13 +19,13 @@
 
 using namespace std;
 
-NameOperation::NameOperation() : _allow_overwrite(true), _requires_network_fee(false) {}
+NameOperation::NameOperation(bool ignore_rules) : _allow_overwrite(true), _requires_network_fee(false), _ignore_rules(ignore_rules) {}
 
 bool NameOperation::input(const Output& coin, int count) {
     // we can have only one in script, however, we allow an op_name_new to be overwritten...
     Script dropped = coin.script().getDropped();
     if (!dropped.empty()) {
-        Evaluator eval;
+        Evaluator eval(_ignore_rules);
         eval(dropped);
         if (eval.was_name_script()) {
             if (_allow_overwrite) {
@@ -57,7 +57,7 @@ bool NameOperation::output(const Output& coin) {
         _name_out = dropped;
         
         // evaluate the name stuff
-        Evaluator eval;
+        Evaluator eval(_ignore_rules);
         bool allow_only_new = false;
         if (_name_in.empty())
             allow_only_new = true;

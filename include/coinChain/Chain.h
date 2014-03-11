@@ -46,6 +46,7 @@ public:
     virtual const int maxInterBlockTime() const { return INT_MAX; }
     virtual bool adhere_aux_pow() const { return false; }
     virtual bool adhere_names() const { return false; }
+    virtual bool enforce_name_rules(int count) const { return false; }
     virtual const bool checkProofOfWork(const Block& block) const = 0;
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const { return true; } // optional
     virtual unsigned int totalBlocksEstimate() const { return 0; } // optional
@@ -242,6 +243,13 @@ public:
     virtual const bool checkProofOfWork(const Block& block) const;
     virtual bool adhere_aux_pow() const { return true; }
     virtual bool adhere_names() const { return true; }
+    virtual bool enforce_name_rules(int count) const { // see: https://bitcointalk.org/index.php?topic=310954
+        if (count > 500000000)
+            return count > 1386499470; // the timestamp of block 150000 - so will always return true...
+        else
+            return count > 150000; // enforce from block 150000
+    }
+
     
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
     virtual unsigned int totalBlocksEstimate() const;
