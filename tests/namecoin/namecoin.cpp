@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
             cout << "name_in part (reversed): " << name_in.toString() << endl;
             cout << "name_out part (reversed): " << name_out.toString() << endl;
             
-            NameOperation::Evaluator eval;
+            NameOperation::Evaluator eval(false);
             bool allow_only_new = false;
             if (name_in.empty())
                 allow_only_new = true;
