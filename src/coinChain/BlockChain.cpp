@@ -654,7 +654,7 @@ void BlockChain::postSubsidy(const Transaction txn, BlockIterator blk, int64_t f
     if (value_in < txn.getValueOut())
         throw Error("value in < value out");
     if (blk.count() >= _purge_depth)
-        query("INSERT INTO Spendings (ocnf, coin, hash, idx, value, script, signature, sequence, iidx, icnf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)", 0, -blk.count(), uint256(0), -1, value_in, Script(), input.signature(), input.sequence(), blk.count());
+        query("INSERT INTO Spendings (ocnf, coin, hash, idx, value, script, signature, sequence, iidx, icnf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)", 0, -blk.count(), uint256(0), -1, value_in, Script(), input.signature(), input.sequence(), -blk.count());
     
     // issue the outputs
     
@@ -737,7 +737,7 @@ void BlockChain::getBlock(int count, Block& block) const {
     vector<Confirmation> confs = queryColRow<Confirmation(int, unsigned int, int64_t, int64_t)>("SELECT cnf, version, locktime, count FROM Confirmations WHERE count = ? ORDER BY idx", count);
     
     for (size_t idx = 0; idx < confs.size(); idx++) {
-        Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY iidx", abs(confs[idx].cnf)); // note that "ABS" as cnf for coinbases is negative!
+        Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY iidx", confs[idx].cnf); // note that "ABS" as cnf for coinbases is negative!
         
         Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1) ORDER BY idx", confs[idx].cnf);
 

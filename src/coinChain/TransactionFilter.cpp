@@ -95,6 +95,11 @@ void TransactionFilter::process(Transaction& tx, Peers peers) {
     Inventory inv(MSG_TX, tx.getHash());
     CDataStream payload;
     payload << tx;
+    if (_blockChain.haveTx(tx.getHash())) {
+        // we have it already - just relay and exit
+        relayMessage(peers, inv, payload);
+        return;
+    }
     //    bool fMissingInputs = false;
     try {
         _blockChain.claim(tx);
