@@ -195,7 +195,7 @@ enum opcodetype
 
 typedef std::vector<unsigned char> valtype;
 
-
+static const size_t MAX_SCRIPT_ELEMENT_SIZE = 520;
 
 
 inline const char* GetOpName(opcodetype opcode)

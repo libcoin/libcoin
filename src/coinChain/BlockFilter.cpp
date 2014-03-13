@@ -16,6 +16,8 @@
 
 #include <coinChain/BlockFilter.h>
 #include <coinChain/BlockChain.h>
+#include <coinChain/MerkleBlock.h>
+
 #include <coin/Block.h>
 #include <coin/Logger.h>
 #include <coinChain/Peer.h>
@@ -39,15 +41,15 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         
         log_debug("received block %s", block.getHash().toString().substr(0,20).c_str());
         
-        Inventory inv(MSG_BLOCK, block.getHash());
+        Inventory inv(block);
         origin->AddInventoryKnown(inv);
         
         // Check for duplicate
-        uint256 hash = block.getHash();
+        uint256 hash = inv.getHash();
         if (_blockChain.haveBlock(hash))
             return error("ProcessBlock() : already have block %d %s", _blockChain.getHeight(hash), hash.toString().substr(0,20).c_str());
     
-        if (_orphanBlocks.count(hash))
+        if (_orphans.count(hash))
             return error("ProcessBlock() : already have block (orphan) %s", hash.toString().substr(0,20).c_str());
         
         // Preliminary checks
@@ -70,8 +72,8 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         if (!_blockChain.haveBlock(block.getPrevBlock())) {
             log_debug("ProcessBlock: ORPHAN BLOCK, prev=%s", block.getPrevBlock().toString().substr(0,20).c_str());
             Block* block_copy = new Block(block);
-            _orphanBlocks.insert(make_pair(hash, block_copy));
-            _orphanBlocksByPrev.insert(make_pair(block_copy->getPrevBlock(), block_copy));
+            _orphans.insert(make_pair(hash, block_copy));
+            _orphansByPrev.insert(make_pair(block_copy->getPrevBlock(), block_copy));
             
             // Ask this guy to fill in what we're missing
             if (origin)
@@ -110,7 +112,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                 log_debug("  getblocks stopping at %d %s (%u bytes)", height, hash.toString().substr(0,20).c_str(), nBytes);
                 break;
             }
-            origin->PushInventory(Inventory(MSG_BLOCK, hash));
+            origin->push(Inventory(MSG_BLOCK, hash));
             Block block;
             _blockChain.getBlock(blk, block);
             nBytes += block.GetSerializeSize(SER_NETWORK);
@@ -165,13 +167,28 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         BOOST_FOREACH(const Inventory& inv, vInv) {
             log_debug("received getdata for: %s", inv.toString().c_str());
             
-            if (inv.getType() == MSG_BLOCK) {
+            if (inv.getType() == MSG_BLOCK || inv.getType() == MSG_FILTERED_BLOCK) {
                 // Send block from disk
                 Block block;
                 _blockChain.getBlock(inv.getHash(), block);
                 if (!block.isNull()) {
-                    origin->PushMessage("block", block);
-                    
+                    if (inv.getType() == MSG_BLOCK)
+                        origin->PushMessage("block", block);
+                    else {
+                        MerkleBlock merkleBlock(block, origin->filter);
+                        origin->PushMessage("merkleblock", merkleBlock);
+                        // MerkleBlock just contains hashes, so also push any transactions in the block the client did not see
+                        // This avoids hurting performance by pointlessly requiring a round-trip
+                        // Note that there is currently no way for a node to request any single transactions we didnt send here -
+                        // they must either disconnect and retry or request the full block.
+                        // Thus, the protocol spec specified allows for us to provide duplicate txn here,
+                        // however we MUST always provide at least what the remote peer needs
+                        for (size_t i = 0; i < merkleBlock.getNumFilteredTransactions(); ++i) {
+                            const Transaction& txn = block.getTransaction(merkleBlock.getTransactionBlockIndex(i));
+                            if (!origin->setInventoryKnown.count(Inventory(txn)))
+                                origin->push(txn);
+                        }
+                    }
                     // Trigger them to send a getblocks request for the next batch of inventory
                     if (inv.getHash() == origin->hashContinue) {
                         // Bypass PushInventory, this must send even if redundant,
@@ -204,8 +221,8 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                 
                 if (!fAlreadyHave)
                     origin->queue(inv);
-                else if (_orphanBlocks.count(inv.getHash()))
-                    origin->PushGetBlocks(_blockChain.getBestLocator(), getOrphanRoot(_orphanBlocks[inv.getHash()]));
+                else if (_orphans.count(inv.getHash()))
+                    origin->PushGetBlocks(_blockChain.getBestLocator(), getOrphanRoot(_orphans[inv.getHash()]));
             }
     
         }
@@ -226,8 +243,8 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
 
 uint256 BlockFilter::getOrphanRoot(const Block* pblock) {
     // Work back to the first block in the orphan chain
-    while (_orphanBlocks.count(pblock->getPrevBlock()))
-        pblock = _orphanBlocks[pblock->getPrevBlock()];
+    while (_orphans.count(pblock->getPrevBlock()))
+        pblock = _orphans[pblock->getPrevBlock()];
     return pblock->getHash();
 }
 
@@ -251,7 +268,7 @@ void BlockFilter::process(const Block& block, Peers peers) {
     if (bestChain == hash) {
         for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
             if (_blockChain.getBestHeight() > ((*peer)->getStartingHeight() != -1 ? (*peer)->getStartingHeight() - 2000 : _blockChain.getTotalBlocksEstimate()))
-                (*peer)->PushInventory(Inventory(MSG_BLOCK, hash));
+                (*peer)->push(Inventory(MSG_BLOCK, hash));
     }
     
     // Recursively process any orphan blocks that depended on this one
@@ -259,8 +276,8 @@ void BlockFilter::process(const Block& block, Peers peers) {
     workQueue.push_back(hash);
     for (int i = 0; i < workQueue.size(); i++) {
         uint256 hashPrev = workQueue[i];
-        for (multimap<uint256, Block*>::iterator mi = _orphanBlocksByPrev.lower_bound(hashPrev);
-             mi != _orphanBlocksByPrev.upper_bound(hashPrev);
+        for (multimap<uint256, Block*>::iterator mi = _orphansByPrev.lower_bound(hashPrev);
+             mi != _orphansByPrev.upper_bound(hashPrev);
              ++mi) {
             Block* orphan = (*mi).second;
             try {
@@ -281,28 +298,19 @@ void BlockFilter::process(const Block& block, Peers peers) {
             if (bestChain == blockHash) {
                 for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
                     if (_blockChain.getBestHeight() > ((*peer)->getStartingHeight() != -1 ? (*peer)->getStartingHeight() - 2000 : _blockChain.getTotalBlocksEstimate()))
-                        (*peer)->PushInventory(Inventory(MSG_BLOCK, blockHash));
+                        (*peer)->push(Inventory(MSG_BLOCK, blockHash));
             }
-            _orphanBlocks.erase(orphan->getHash());
+            _orphans.erase(orphan->getHash());
             delete orphan;
         }
-        _orphanBlocksByPrev.erase(hashPrev);
+        _orphansByPrev.erase(hashPrev);
     }
     //    _blockChain.outputPerformanceTimings();
 }
 
-/*
-void BlockFilter::pushBlock(Block& block)
-{
-    _block_queue.push_back(block);
-    _blockProcessor
-    
-}
-*/
- 
 bool BlockFilter::alreadyHave(const Inventory& inv) {
     if (inv.getType() == MSG_BLOCK)
-        return _orphanBlocks.count(inv.getHash()) || _blockChain.haveBlock(inv.getHash());
+        return _orphans.count(inv.getHash()) || _blockChain.haveBlock(inv.getHash());
     else // Don't know what it is, just say we already got one
         return true;
 }

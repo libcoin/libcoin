@@ -147,6 +147,10 @@ public:
         return _claims.count();
     }
     
+    std::vector<uint256> claims(BloomFilter& filter) const {
+        return _claims.claims(filter);
+    }
+    
     /// S C R I P T S
     
     /// Get the balance of a script up to block <height> - will throw if <height> < pruned height

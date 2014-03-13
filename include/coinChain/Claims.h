@@ -22,6 +22,8 @@
 #include <coin/Script.h>
 #include <coin/Transaction.h>
 
+class BloomFilter;
+
 class Claims {
 public:
     // Inserting a claim means looking up if it depends on other transactions and then sum up the size and fee for those
@@ -114,6 +116,9 @@ public:
     
     // Transactions ordered in dependent order
     std::vector<Transaction> transactions(int64_t& fee, size_t header_and_coinbase = 1000) const;
+    
+    // Transaction hashes for all claims
+    std::vector<uint256> claims(BloomFilter& filter) const;
     
     // current transaction fee threshold to get into a block
     int64_t threshold(size_t header_and_coinbase = 1000) const;

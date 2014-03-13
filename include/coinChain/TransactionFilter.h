@@ -65,6 +65,7 @@ public:
         c.insert("tx");
         c.insert("inv");
         c.insert("getdata");
+        c.insert("mempool");
         return c;
     }
     
@@ -76,26 +77,31 @@ private:
     Listeners _listeners;
     Reminders _reminders;
 
-    std::map<uint256, CDataStream*> _orphanTransactions;
-    std::multimap<uint256, CDataStream*> _orphanTransactionsByPrev;
+    typedef std::map<uint256, Transaction> Orphans;
+    Orphans _orphans;
+    typedef std::multimap<uint256, Orphans::iterator> OrphansByPrev;
+//    std::multimap<uint256, CDataStream*> _orphanTransactionsByPrev;
+    OrphansByPrev _orphansByPrev;
     
-    void addOrphanTx(const Transaction& tx);
+    void addOrphan(const Transaction& tx);
     
-    void eraseOrphanTx(uint256 hash);
+    void eraseOrphan(uint256 hash);
     
-    bool alreadyHave(const Inventory& inv);
+    bool have(const Inventory& inv);
     
     /// The Relay system is only used for Transactions - hence we put it here.
+    typedef std::map<Inventory, Transaction> Relay;
+    Relay _relay;
+    typedef std::deque<std::pair<int64_t, Inventory> > Expiration;
+    Expiration _relayExpiration;
     
-    std::map<Inventory, CDataStream> _relay;
-    std::deque<std::pair<int64_t, Inventory> > _relayExpiration;
-    
-    inline void relayInventory(const Peers& peers, const Inventory& inv);
+//    inline void relayInventory(const Peers& peers, const Inventory& inv);
+    void relay(const Peers& peers, const Transaction& txn);
 
-    template<typename T> void relayMessage(const Peers& peers, const Inventory& inv, const T& a);    
+//    template<typename T> void relayMessage(const Peers& peers, const Inventory& inv, const T& a);
 };
 
-template<> inline void TransactionFilter::relayMessage<>(const Peers& peers, const Inventory& inv, const CDataStream& ss);
+//template<> inline void TransactionFilter::relayMessage<>(const Peers& peers, const Inventory& inv, const CDataStream& ss);
 
 
 #endif // TRANSACTIONFILTER_H

@@ -69,8 +69,8 @@ private:
     BlockChain& _blockChain;
     Listeners _listeners;
     
-    std::map<uint256, Block*> _orphanBlocks;
-    std::multimap<uint256, Block*> _orphanBlocksByPrev;
+    std::map<uint256, Block*> _orphans;
+    std::multimap<uint256, Block*> _orphansByPrev;
 };
 
 class COINCHAIN_EXPORT ShareFilter : public Filter {

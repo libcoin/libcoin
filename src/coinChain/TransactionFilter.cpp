@@ -54,14 +54,26 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
             
             if (inv.getType() == MSG_TX) {
                 // Send stream from relay memory
-                map<Inventory, CDataStream>::iterator mi = _relay.find(inv);
+                Relay::iterator mi = _relay.find(inv);
                 if (mi != _relay.end())
-                    origin->PushMessage(inv.getCommand(), (*mi).second);
+                    origin->push((*mi).second);
             }
-            
-            // Track requests for our stuff
-            //            Inventory(inv.hash);
         }
+    }
+    else if (msg.command() == "mempool") {
+        // get all claims and forward invs them to anyone querying
+        vector<uint256> claims = _blockChain.claims(origin->filter);
+        vector<Inventory> invs;
+        
+        BOOST_FOREACH(uint256& hash, claims) {
+            invs.push_back(Inventory(MSG_TX, hash));
+            if (invs.size() == MAX_INV_SZ) {
+                origin->PushMessage("inv", invs);
+                invs.clear();
+            }
+        }
+        if (invs.size() > 0)
+            origin->PushMessage("inv", invs);
     }
     else if (msg.command() == "inv") {
         vector<Inventory> vInv;
@@ -70,56 +82,49 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
         if (vInv.size() > 50000)
             return error("message inv size() = %d", vInv.size());
         
-        //        CTxDB txdb("r");
         BOOST_FOREACH(const Inventory& inv, vInv) {
             if (inv.getType() == MSG_TX) {
                 origin->AddInventoryKnown(inv);
                 
-                bool fAlreadyHave = alreadyHave(inv);
-                log_debug("  got inventory: %s  %s\n", inv.toString().c_str(), fAlreadyHave ? "have" : "new");
+                bool already_have = have(inv);
+                log_debug("  got inventory: %s  %s\n", inv.toString().c_str(), already_have ? "have" : "new");
                 
-                if (!fAlreadyHave)
+                if (!already_have)
                     origin->queue(inv);
-                    //                    origin->AskFor(inv);
-            }            
+            }
         }
     }
     
-    // We could call the wallet reminders here - it is not the ideal spot ???    
-
     return true;
 }
 
-void TransactionFilter::process(Transaction& tx, Peers peers) {
+void TransactionFilter::process(Transaction& txn, Peers peers) {
     vector<uint256> workQueue;
-    Inventory inv(MSG_TX, tx.getHash());
-    CDataStream payload;
-    payload << tx;
-    if (_blockChain.haveTx(tx.getHash())) {
+    Inventory inv(txn);
+    
+    if (_blockChain.haveTx(inv.getHash())) {
         // we have it already - just relay and exit
-        relayMessage(peers, inv, payload);
+        relay(peers, txn);
         return;
     }
     //    bool fMissingInputs = false;
     try {
-        _blockChain.claim(tx);
-        log_debug("accepted txn: %s", tx.getHash().toString().substr(0,10));
+        _blockChain.claim(txn);
+        log_debug("accepted txn: %s", inv.getHash().toString().substr(0,10));
 
         for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
-            (*listener->get())(tx);
-        relayMessage(peers, inv, payload);
+            (*listener->get())(txn);
+        relay(peers, txn);
         workQueue.push_back(inv.getHash());
         
         // Recursively process any orphan transactions that depended on this one
         for (int i = 0; i < workQueue.size(); i++) {
             uint256 hashPrev = workQueue[i];
-            for (multimap<uint256, CDataStream*>::iterator mi = _orphanTransactionsByPrev.lower_bound(hashPrev);
-                 mi != _orphanTransactionsByPrev.upper_bound(hashPrev);
+            for (OrphansByPrev::iterator mi = _orphansByPrev.lower_bound(hashPrev);
+                 mi != _orphansByPrev.upper_bound(hashPrev);
                  ++mi) {
-                const CDataStream& payload = *((*mi).second);
-                Transaction tx;
-                CDataStream(payload) >> tx;
-                Inventory inv(MSG_TX, tx.getHash());
+                Transaction& tx = mi->second->second;
+                Inventory inv(tx);
                 
                 try {
                     _blockChain.claim(tx);
@@ -127,7 +132,7 @@ void TransactionFilter::process(Transaction& tx, Peers peers) {
                         (*listener->get())(tx);
                     log_debug("   accepted orphan tx %s", inv.getHash().toString().substr(0,10).c_str());
                     //                        SyncWithWallets(tx, NULL, true);
-                    relayMessage(peers, inv, payload);
+                    relay(peers, tx);
                     workQueue.push_back(inv.getHash());
                 }
                 catch (...) {
@@ -137,12 +142,12 @@ void TransactionFilter::process(Transaction& tx, Peers peers) {
         }
         
         BOOST_FOREACH(uint256 hash, workQueue)
-        eraseOrphanTx(hash);
+            eraseOrphan(hash);
     }
     catch (BlockChain::Reject& e) {
         log_debug("acceptTransaction Warning: %s", e.what());
         log_debug("storing orphan tx %s", inv.getHash().toString().substr(0,10).c_str());
-        addOrphanTx(tx);
+        addOrphan(txn);
     }
     catch (BlockChain::Error& e) {
         log_warn("acceptTransaction Error: %s", e.what());
@@ -151,69 +156,60 @@ void TransactionFilter::process(Transaction& tx, Peers peers) {
 
 
 // Private methods
-void TransactionFilter::addOrphanTx(const Transaction& tx) {
-    uint256 hash = tx.getHash();
-    CDataStream payload;
-    payload << tx;
-    if (_orphanTransactions.count(hash))
+void TransactionFilter::addOrphan(const Transaction& txn) {
+    uint256 hash = txn.getHash();
+
+    bool inserted;
+    Orphans::iterator o;
+    pair<Orphans::iterator, bool>(o, inserted) = _orphans.insert(make_pair(hash, txn));
+
+    if (!inserted)
         return;
-    CDataStream* p = _orphanTransactions[hash] = new CDataStream(payload);
-    BOOST_FOREACH(const Input& txin, tx.getInputs())
-    _orphanTransactionsByPrev.insert(make_pair(txin.prevout().hash, p));
+    
+    BOOST_FOREACH(const Input& txin, txn.getInputs())
+        _orphansByPrev.insert(make_pair(txin.prevout().hash, o));
 }
 
-void TransactionFilter::eraseOrphanTx(uint256 hash) {
-    if (!_orphanTransactions.count(hash))
+void TransactionFilter::eraseOrphan(uint256 hash) {
+    if (!_orphans.count(hash))
         return;
-    const CDataStream* p = _orphanTransactions[hash];
-    Transaction tx;
-    CDataStream(*p) >> tx;
-    BOOST_FOREACH(const Input& txin, tx.getInputs()) {
-        for (multimap<uint256, CDataStream*>::iterator mi = _orphanTransactionsByPrev.lower_bound(txin.prevout().hash);
-             mi != _orphanTransactionsByPrev.upper_bound(txin.prevout().hash);) {
-            if ((*mi).second == p)
-                _orphanTransactionsByPrev.erase(mi++);
+
+    Orphans::iterator o = _orphans.find(hash);
+    Transaction txn = o->second;
+
+    BOOST_FOREACH(const Input& txin, txn.getInputs()) {
+        for (OrphansByPrev::iterator mi = _orphansByPrev.lower_bound(txin.prevout().hash);
+             mi != _orphansByPrev.upper_bound(txin.prevout().hash);) {
+            if ((*mi).second == o)
+                _orphansByPrev.erase(mi++);
             else
                 mi++;
         }
     }
-    delete p;
-    _orphanTransactions.erase(hash);
+    _orphans.erase(o);
 }
 
-bool TransactionFilter::alreadyHave(const Inventory& inv) {
+bool TransactionFilter::have(const Inventory& inv) {
     if (inv.getType() == MSG_TX)
-        return _orphanTransactions.count(inv.getHash()) || _blockChain.haveTx(inv.getHash());
+        return _orphans.count(inv.getHash()) || _blockChain.haveTx(inv.getHash());
     else // Don't know what it is, just say we already got one
         return true;
 }
 
-
-// The Relay system is only used for Transactions - hence we put it here.
-
-inline void TransactionFilter::relayInventory(const Peers& peers, const Inventory& inv) {
-    // Put on lists to offer to the other nodes
-    for(Peers::const_iterator peer = peers.begin(); peer != peers.end(); ++peer)
-        (*peer)->PushInventory(inv);
-}
-
-template<typename T> void TransactionFilter::relayMessage(const Peers& peers, const Inventory& inv, const T& a) {
-    CDataStream ss(SER_NETWORK);
-    ss.reserve(10000);
-    ss << a;
-    relayMessage(peers, inv, ss);
-}
-
-template<> inline void TransactionFilter::relayMessage<>(const Peers& peers, const Inventory& inv, const CDataStream& ss) {
+void TransactionFilter::relay(const Peers& peers, const Transaction& txn) {
     // Expire old relay messages
     while (!_relayExpiration.empty() && _relayExpiration.front().first < UnixTime::s()) {
         _relay.erase(_relayExpiration.front().second);
         _relayExpiration.pop_front();
     }
+
+    Inventory inv(txn);
     
     // Save original serialized message so newer versions are preserved
-    _relay[inv] = ss;
+    _relay[inv] = txn;
     _relayExpiration.push_back(std::make_pair(UnixTime::s() + 15 * 60, inv));
     
-    relayInventory(peers, inv);
+    // Put on lists to offer to the other nodes
+    for(Peers::const_iterator peer = peers.begin(); peer != peers.end(); ++peer)
+        (*peer)->push(txn);
 }

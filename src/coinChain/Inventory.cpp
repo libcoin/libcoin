@@ -15,6 +15,10 @@
  */
 
 #include <coinChain/Inventory.h>
+#include <coin/Transaction.h>
+#include <coin/Block.h>
+//#include <coinChain/MerkleBlock.h>
+
 #include <coin/util.h>
 
 static const char* ppszTypeName[] =
@@ -51,6 +55,23 @@ Inventory::Inventory(const std::string& type_name, const uint256& hash)
         throw std::out_of_range(strprintf("Inventory::Inventory(string, uint256) : unknown type '%s'", type_name.c_str()));
     _hash = hash;
 }
+
+Inventory::Inventory(const Block& blk) {
+    _type = MSG_BLOCK;
+    _hash = blk.getHash();
+}
+/*
+Inventory::Inventory(const MerkleBlock& blk) {
+    _type = MSG_FILTERED_BLOCK;
+    _hash = blk.getHash();
+}
+*/
+Inventory::Inventory(const Transaction& txn) {
+    _type = MSG_BLOCK;
+    _hash = txn.getHash();
+}
+
+
 
 bool operator<(const Inventory& a, const Inventory& b)
 {

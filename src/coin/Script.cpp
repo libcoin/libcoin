@@ -95,7 +95,7 @@ bool Evaluator::operator()(const Script& script) {
             // Read instruction
             if (!script.getOp(_current, opcode, value))
                 return false;
-            if (value.size() > 520)
+            if (value.size() > MAX_SCRIPT_ELEMENT_SIZE)
                 return false;
             if (opcode > OP_16 && ++_op_count > 201)
                 return false;
@@ -420,7 +420,7 @@ boost::tribool Evaluator::eval(opcodetype opcode) {
             Value& vch2 = top(-1);
             vch1.insert(vch1.end(), vch2.begin(), vch2.end());
             pop(_stack);
-            if (top(-1).size() > 520)
+            if (top(-1).size() > MAX_SCRIPT_ELEMENT_SIZE)
                 return false;
             break;
         }

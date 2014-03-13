@@ -28,7 +28,16 @@ enum
 {
     MSG_TX = 1,
     MSG_BLOCK,
+    // Nodes may always request a MSG_FILTERED_BLOCK in a getdata, however,
+    // MSG_FILTERED_BLOCK should not appear in any invs except as a part of getdata.
+    MSG_FILTERED_BLOCK
 };
+
+static const unsigned int MAX_INV_SZ = 50000;
+
+class Block;
+class MerkleBlock;
+class Transaction;
 
 class COINCHAIN_EXPORT Inventory
 {
@@ -36,6 +45,10 @@ public:
     Inventory();
     Inventory(int type, const uint256& hash);
     Inventory(const std::string& type_name, const uint256& hash);
+    
+    Inventory(const Block& blk);
+    Inventory(const MerkleBlock& blk);
+    Inventory(const Transaction& txn);
     
     IMPLEMENT_SERIALIZE
     (

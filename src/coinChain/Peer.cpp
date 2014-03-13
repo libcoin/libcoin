@@ -359,9 +359,17 @@ void Peer::AddInventoryKnown(const Inventory& inv) {
     setInventoryKnown.insert(inv);
 }
 
-void Peer::PushInventory(const Inventory& inv) {
-    if (!setInventoryKnown.count(inv))
+void Peer::push(const Inventory& inv) {
+    if (!setInventoryKnown.count(inv)) {
         vInventoryToSend.push_back(inv);
+    }
+}
+
+void Peer::push(const Transaction& txn) {
+    if(!relayTxes)
+        return;
+    if (filter.isRelevantAndUpdate(txn))
+        push(Inventory(MSG_TX, txn.getHash()));
 }
 
 void Peer::BeginMessage(const char* pszCommand) {
@@ -435,7 +443,7 @@ void Peer::PushVersion() {
     RAND_bytes((unsigned char*)&_nonce, sizeof(_nonce));
     uint64_t nLocalServices = NODE_NETWORK;
     PushMessage("version", PROTOCOL_VERSION, nLocalServices, nTime, addrYou, addrMe,
-                _nonce, _sub_version, _startingHeight);
+                _nonce, _sub_version, _startingHeight, true);
 }
 
 void Peer::PushGetBlocks(const BlockLocator locatorBegin, uint256 hashEnd)

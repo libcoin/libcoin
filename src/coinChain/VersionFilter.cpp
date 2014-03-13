@@ -45,13 +45,18 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
         data >> origin->nVersion >> origin->nServices >> nTime >> addrMe;
         if (origin->nVersion == 10300)
             origin->nVersion = 300;
-        if (origin->nVersion >= 106 && !msg.payload().empty())
+        if (origin->nVersion >= 106 && !data.empty())
             data >> addrFrom >> nNonce;
-        if (origin->nVersion >= 106 && !msg.payload().empty())
+        if (origin->nVersion >= 106 && !data.empty())
             data >> origin->strSubVer;
         int bestHeight;
-        if (origin->nVersion >= 209 && !msg.payload().empty())
+        if (origin->nVersion >= 209 && !data.empty())
             data >> bestHeight;
+        
+        if (!data.empty())
+            data >> origin->relayTxes; // set to true after we get the first filter* message
+        else
+            origin->relayTxes = true;
         
         if (origin->nVersion == 0)
             return false;

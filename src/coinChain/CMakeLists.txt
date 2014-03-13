@@ -14,6 +14,7 @@ SET(TARGET_H
     ${HEADER_PATH}/AlertFilter.h
     ${HEADER_PATH}/BlockChain.h
     ${HEADER_PATH}/BlockFilter.h
+    ${HEADER_PATH}/BloomFilter.h
     ${HEADER_PATH}/BlockTree.h
     ${HEADER_PATH}/Chain.h
     ${HEADER_PATH}/ChatClient.h
@@ -25,7 +26,9 @@ SET(TARGET_H
     ${HEADER_PATH}/EndpointFilter.h
     ${HEADER_PATH}/Export.h
     ${HEADER_PATH}/Filter.h
+    ${HEADER_PATH}/FilterHandler.h
     ${HEADER_PATH}/Inventory.h    
+    ${HEADER_PATH}/MerkleBlock.h
     ${HEADER_PATH}/MerkleTrie.h
     ${HEADER_PATH}/MessageHeader.h
     ${HEADER_PATH}/MessageHandler.h
@@ -51,6 +54,7 @@ SET(TARGET_SRC
     Alert.cpp
     AlertFilter.cpp
     BlockFilter.cpp
+    BloomFilter.cpp
     BlockChain.cpp
     BlockTree.cpp
     Chain.cpp
@@ -61,7 +65,9 @@ SET(TARGET_SRC
     Endpoint.cpp
     EndpointPool.cpp
     EndpointFilter.cpp
+    FilterHandler.cpp
     Inventory.cpp
+    MerkleBlock.cpp
     MerkleTrie.cpp
     MessageHeader.cpp
     MessageHandler.cpp

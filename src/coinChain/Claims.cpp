@@ -15,6 +15,7 @@
  */
 
 #include <coinChain/Claims.h>
+#include <coinChain/BloomFilter.h>
 
 using namespace std;
 using namespace boost;
@@ -95,6 +96,20 @@ vector<Transaction> Claims::transactions(int64_t& fee, size_t header_and_coinbas
     
     return txns;
 }
+
+vector<uint256> Claims::claims(BloomFilter& filter) const {
+    int64_t fee;
+    vector<Transaction> txns = transactions(fee);
+
+    vector<uint256> hashes;
+    for (vector<Transaction>::const_iterator tx = txns.begin(); tx != txns.end(); ++tx) {
+        if (filter.isRelevantAndUpdate(*tx))
+            hashes.push_back(tx->getHash());
+    }
+    
+    return hashes;
+}
+
 
 size_t Claims::insert_claim(const Claim& claim, vector<Transaction>& txns, set<uint256>& inserted ) const {
     size_t size = 0;

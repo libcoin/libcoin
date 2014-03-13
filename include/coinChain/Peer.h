@@ -23,6 +23,7 @@
 #include <coinChain/Endpoint.h>
 #include <coinChain/MessageParser.h>
 #include <coinChain/Inventory.h>
+#include <coinChain/BloomFilter.h>
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -104,10 +105,13 @@ public:
     Endpoint addr;
     int nVersion;
     std::string strSubVer;
+    bool relayTxes;
     bool fClient;
     bool fInbound;
     bool fNetworkNode;
     bool fDisconnect;
+    
+    BloomFilter filter;
     
 public:
     int64_t nReleaseTime;
@@ -132,7 +136,8 @@ public:
     
     void AddInventoryKnown(const Inventory& inv);
     
-    void PushInventory(const Inventory& inv);
+    void push(const Inventory& inv);
+    void push(const Transaction& inv);
     
     void AskFor(const Inventory& inv);
     
@@ -183,11 +188,11 @@ public:
         }
     }
     
-    template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-    void PushMessage(const char* pszCommand, const T1& a1, const T2& a2, const T3& a3, const T4& a4, const T5& a5, const T6& a6, const T7& a7, const T8& a8) {
+    template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+    void PushMessage(const char* pszCommand, const T1& a1, const T2& a2, const T3& a3, const T4& a4, const T5& a5, const T6& a6, const T7& a7, const T8& a8, const T9& a9) {
         try {
             BeginMessage(pszCommand);
-            vSend << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8;
+            vSend << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9;
             EndMessage();
         }
         catch (...) {
