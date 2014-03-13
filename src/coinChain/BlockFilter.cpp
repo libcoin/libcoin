@@ -71,13 +71,14 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         // If don't already have its previous block, shunt it off to holding area until we get it
         if (!_blockChain.haveBlock(block.getPrevBlock())) {
             log_debug("ProcessBlock: ORPHAN BLOCK, prev=%s", block.getPrevBlock().toString().substr(0,20).c_str());
-            Block* block_copy = new Block(block);
-            _orphans.insert(make_pair(hash, block_copy));
-            _orphansByPrev.insert(make_pair(block_copy->getPrevBlock(), block_copy));
+            bool inserted;
+            Orphans::iterator o;
+            pair<Orphans::iterator, bool>(o, inserted) = _orphans.insert(make_pair(hash, block));
+            _orphansByPrev.insert(make_pair(block.getPrevBlock(), o));
             
             // Ask this guy to fill in what we're missing
             if (origin)
-                origin->PushGetBlocks(_blockChain.getBestLocator(), getOrphanRoot(block_copy));
+                origin->PushGetBlocks(_blockChain.getBestLocator(), getOrphanRoot(block));
 
             return false; // don't process orphan blocks
         }
@@ -241,11 +242,12 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
 
 // Private interface
 
-uint256 BlockFilter::getOrphanRoot(const Block* pblock) {
+uint256 BlockFilter::getOrphanRoot(const Block& block) {
     // Work back to the first block in the orphan chain
-    while (_orphans.count(pblock->getPrevBlock()))
-        pblock = _orphans[pblock->getPrevBlock()];
-    return pblock->getHash();
+    Block b = block;
+    while (_orphans.count(b.getPrevBlock()))
+        b = _orphans[b.getPrevBlock()];
+    return b.getHash();
 }
 
 /// Need access to mapOrphanBlocks/ByPrev and a call to GetOrphanRoot
@@ -276,12 +278,12 @@ void BlockFilter::process(const Block& block, Peers peers) {
     workQueue.push_back(hash);
     for (int i = 0; i < workQueue.size(); i++) {
         uint256 hashPrev = workQueue[i];
-        for (multimap<uint256, Block*>::iterator mi = _orphansByPrev.lower_bound(hashPrev);
+        for (OrphansByPrev::iterator mi = _orphansByPrev.lower_bound(hashPrev);
              mi != _orphansByPrev.upper_bound(hashPrev);
              ++mi) {
-            Block* orphan = (*mi).second;
+            const Block& orphan = mi->second->second;
             try {
-                _blockChain.append(*orphan);
+                _blockChain.append(orphan);
                 // notify all listeners only if append does not throw
                 for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
                     (*listener->get())(block);
@@ -291,7 +293,7 @@ void BlockFilter::process(const Block& block, Peers peers) {
                 log_warn("append(Block) orphan failed: %s", e.what());
             }
             
-            workQueue.push_back(orphan->getHash());
+            workQueue.push_back(orphan.getHash());
             // Relay inventory, but don't relay old inventory during initial block download
             uint256 bestChain = _blockChain.getBestChain();
             uint256 blockHash = block.getHash();
@@ -300,8 +302,7 @@ void BlockFilter::process(const Block& block, Peers peers) {
                     if (_blockChain.getBestHeight() > ((*peer)->getStartingHeight() != -1 ? (*peer)->getStartingHeight() - 2000 : _blockChain.getTotalBlocksEstimate()))
                         (*peer)->push(Inventory(MSG_BLOCK, blockHash));
             }
-            _orphans.erase(orphan->getHash());
-            delete orphan;
+            _orphans.erase(orphan.getHash());
         }
         _orphansByPrev.erase(hashPrev);
     }

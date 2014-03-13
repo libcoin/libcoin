@@ -61,7 +61,7 @@ public:
     void process(const Block& block, Peers peers);
     
 private:
-    uint256 getOrphanRoot(const Block* pblock);
+    uint256 getOrphanRoot(const Block& pblock);
     
     bool alreadyHave(const Inventory& inv);
     
@@ -69,8 +69,10 @@ private:
     BlockChain& _blockChain;
     Listeners _listeners;
     
-    std::map<uint256, Block*> _orphans;
-    std::multimap<uint256, Block*> _orphansByPrev;
+    typedef std::map<uint256, Block> Orphans;
+    Orphans _orphans;
+    typedef std::multimap<uint256, Orphans::iterator> OrphansByPrev;
+    OrphansByPrev _orphansByPrev;
 };
 
 class COINCHAIN_EXPORT ShareFilter : public Filter {
@@ -100,7 +102,7 @@ public:
     bool process(const Block& block, Peers peers);
     
 private:
-    uint256 getOrphanRoot(const Block* pblock);
+    uint256 getOrphanRoot(const Block* block);
     
     bool alreadyHave(const Inventory& inv);
     
