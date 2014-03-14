@@ -214,7 +214,7 @@ public:
     int getBlocksToMaturity(const Transaction& tx) const {
         if (!tx.isCoinBase())
             return 0;
-        return std::max(0, (_chain.maturity()+20) - getDepthInMainChain(tx.getHash()));
+        return std::max(0, (_chain.maturity(getBestHeight())+20) - getDepthInMainChain(tx.getHash()));
     }
     
     /// Check if the hash of a block belongs to a block in the main chain:

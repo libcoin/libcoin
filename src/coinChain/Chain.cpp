@@ -975,6 +975,14 @@ const int64_t DogecoinChain::subsidy(unsigned int height, uint256 prev) const {
     if(height < 100000) {
         s = (1 + rand) * COIN;
     }
+    else if(height < 145000) {
+        cseed_str = prev.toString().substr(7,7);
+        cseed = cseed_str.c_str();
+        seed = hex2long(cseed);
+        rand1 = generateMTRandom(seed, 499999);
+        s = (1 + rand1) * COIN;
+    }
+    /*
     else if(height < 200000) {
         cseed_str = prev.toString().substr(7,7);
         cseed = cseed_str.c_str();
@@ -1013,6 +1021,14 @@ const int64_t DogecoinChain::subsidy(unsigned int height, uint256 prev) const {
         rand5 = generateMTRandom(seed, 31249);
         s = (1 + rand5) * COIN;
     }
+     */
+    else if(height < 600000) {
+        s >>= (height / 100000);
+    }
+    else {
+        s = 10000 * COIN;
+    }
+
     
     return s;
 }
@@ -1021,7 +1037,30 @@ bool DogecoinChain::isStandard(const Transaction& tx) const {
     // on the test net everything is allowed
     return true;
 }
-
+/*
+unsigned int ComputeMinWork(unsigned int nBase, int64_t nTime) {
+    
+    CBigNum bnResult;
+    bnResult.SetCompact(nBase);
+    
+    while (nTime > 0 && bnResult < bnProofOfWorkLimit) {
+        if(nBestHeight+1<nDiffChangeTarget){
+            // Maximum 400% adjustment...
+            bnResult *= 4;
+            // ... in best-case exactly 4-times-normal target time
+            nTime -= nTargetTimespan*4;
+        } else {
+            // Maximum 10% adjustment...
+            bnResult = (bnResult * 110) / 100;
+            // ... in best-case exactly 4-times-normal target time
+            nTime -= nTargetTimespanNEW*4;
+        }
+    }
+    if (bnResult > bnProofOfWorkLimit)
+        bnResult = bnProofOfWorkLimit;
+    return bnResult.GetCompact();
+}
+*/
 const bool DogecoinChain::checkProofOfWork(const Block& block) const {
     uint256 hash = getPoWHash(block);
     
@@ -1042,6 +1081,7 @@ const bool DogecoinChain::checkProofOfWork(const Block& block) const {
 
 unsigned int DogecoinChain::nextWorkRequired(BlockIterator blk) const {
     const int64_t nTargetTimespan = 4 * 60 * 60; // Dogecoin every 4 hours
+    const int64_t nTargetTimespanNEW = 60; // Dogecoin every minute
     const int64_t nTargetSpacing = 60; // Dogecoin: Every minute
     const int64_t nInterval = nTargetTimespan / nTargetSpacing;
     
@@ -1050,15 +1090,26 @@ unsigned int DogecoinChain::nextWorkRequired(BlockIterator blk) const {
     if (h == 0) // trick to test that it is asking for the genesis block
         return _genesisBlock.getBits(); // proofOfWorkLimit().GetCompact(); Actually not for the genesisblock - here it is 0x1e0ffff0, not 0x1e0fffff
     
+    bool fNewDifficultyProtocol = h + 1 >= 145000;
+    
+    int64_t retargetTimespan = nTargetTimespan;
+    int64_t retargetSpacing = nTargetSpacing;
+    int64_t retargetInterval = nInterval;
+    
+    if (fNewDifficultyProtocol) {
+        retargetInterval = nTargetTimespanNEW / nTargetSpacing;
+        retargetTimespan = nTargetTimespanNEW;
+    }
+    
     // Only change once per interval
-    if ((h + 1) % nInterval != 0)
+    if ((h + 1) % retargetInterval != 0)
         return blk->bits;
     
     // Litecoin/Dogecoin: This fixes an issue where a 51% attack can change difficulty at will.
     // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
-    int blockstogoback = nInterval-1;
-    if ((h + 1) != nInterval)
-        blockstogoback = nInterval;
+    int blockstogoback = retargetInterval-1;
+    if ((h + 1) != retargetInterval)
+        blockstogoback = retargetInterval;
     
     // Go back by what we want to be 3.5 days worth of blocks
     BlockIterator former = blk - blockstogoback;
@@ -1066,7 +1117,14 @@ unsigned int DogecoinChain::nextWorkRequired(BlockIterator blk) const {
     // Limit adjustment step
     int nActualTimespan = blk->time - former->time;
     log_debug("  nActualTimespan = %"PRI64d"  before bounds", nActualTimespan);
-    if(h+1 > 10000) {
+    if(fNewDifficultyProtocol) { //DigiShield implementation - thanks to RealSolid & WDC for this code
+        // amplitude filter - thanks to daft27 for this code
+        nActualTimespan = retargetTimespan + (nActualTimespan - retargetTimespan)/8;
+        printf("DIGISHIELD RETARGET\n");
+        if (nActualTimespan < (retargetTimespan - (retargetTimespan/4)) ) nActualTimespan = (retargetTimespan - (retargetTimespan/4));
+        if (nActualTimespan > (retargetTimespan + (retargetTimespan/2)) ) nActualTimespan = (retargetTimespan + (retargetTimespan/2));
+    }
+    else if(h+1 > 10000) {
         if (nActualTimespan < nTargetTimespan/4)
             nActualTimespan = nTargetTimespan/4;
         if (nActualTimespan > nTargetTimespan*4)

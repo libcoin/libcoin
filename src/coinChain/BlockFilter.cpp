@@ -71,10 +71,8 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         // If don't already have its previous block, shunt it off to holding area until we get it
         if (!_blockChain.haveBlock(block.getPrevBlock())) {
             log_debug("ProcessBlock: ORPHAN BLOCK, prev=%s", block.getPrevBlock().toString().substr(0,20).c_str());
-            bool inserted;
-            Orphans::iterator o;
-            pair<Orphans::iterator, bool>(o, inserted) = _orphans.insert(make_pair(hash, block));
-            _orphansByPrev.insert(make_pair(block.getPrevBlock(), o));
+            pair<Orphans::iterator, bool> ret = _orphans.insert(make_pair(hash, block));
+            _orphansByPrev.insert(make_pair(block.getPrevBlock(), ret.first));
             
             // Ask this guy to fill in what we're missing
             if (origin)

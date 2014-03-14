@@ -130,7 +130,17 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
     query("CREATE INDEX IF NOT EXISTS SpendingsIn ON Spendings (icnf)");
     query("CREATE INDEX IF NOT EXISTS SpendingsOut ON Spendings (ocnf)");
 /*
-    // MerkleTrie store - stores branches of the MerkleTrie in chunks of a certain size:
+    // MerkleTrie store - stores branch nodes of the merkle trie - so a lookup in the trie is done by:
+    // * lookup branchnode by key
+    // * if cached - lookup key
+    // * if not cached - load branch, lookup key
+    // * if branch altered, mark node dirty
+    // * save
+    // how to determine the optimal size of the branches ???
+    // 
+ 
+ // MerkleTrie store - stores branches of the MerkleTrie in chunks of a certain size:
+ 
     query("CREATE TABLE IF NOT EXISTS Branches ("
               "lower INTEGER PRIMARY KEY,"
               "upper INTEGER,"
@@ -212,12 +222,12 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
         _validation_depth = _chain.totalBlocksEstimate();
 
         // load the elements - i.e. the spendables
-        Unspents spendables = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count >= -?", _tree.count()-_chain.maturity()+1);
+        Unspents spendables = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count >= -?", _tree.count()-_chain.maturity(_tree.height())+1);
         
         for (Unspents::const_iterator u = spendables.begin(); u != spendables.end(); ++u)
             _spendables.insert(*u);
         
-        Unspents immatures = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count < -?", _tree.count()-_chain.maturity()+1);
+        Unspents immatures = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count < -?", _tree.count()-_chain.maturity(_tree.height())+1);
 
         for (Unspents::const_iterator u = immatures.begin(); u != immatures.end(); ++u)
             _immature_coinbases.insert(*u);
@@ -319,7 +329,7 @@ std::pair<Claims::Spents, int64_t> BlockChain::try_claim(const Transaction& txn,
                     if (!coin)
                         throw Reject("Spent coin not found !");
                     
-                    if (coin.count < 0 && _tree.count() + coin.count < _chain.maturity())
+                    if (coin.count < 0 && _tree.count() + coin.count < _chain.maturity(_tree.height()))
                         throw Error(cformat("Tried to spend immature (%d confirmations) coinbase: %s", _tree.count() + coin.count, hash.toString()).text());
                 }
                 else {
@@ -432,7 +442,7 @@ Unspent BlockChain::redeem(const Input& input, int iidx, Confirmation iconf) {
         if (!coin)
             throw Reject("Spent coin not found !");
 
-        if (coin.count < 0 && iconf.count + coin.count < _chain.maturity())
+        if (coin.count < 0 && iconf.count + coin.count < _chain.maturity(-coin.count))
             throw Error("Tried to spend immature coinbase");
     }
     else {
@@ -665,8 +675,8 @@ void BlockChain::postSubsidy(const Transaction txn, BlockIterator blk, int64_t f
     for (size_t out_idx = 0; out_idx < outputs.size(); ++out_idx)
         issue(outputs[out_idx], hash, out_idx, conf, unique);
 
-    if (_validation_depth > 0 && blk.count() > _chain.maturity())
-        maturate(blk.count()-_chain.maturity()+1);
+    if (_validation_depth > 0 && blk.count() > _chain.maturity(blk.height()))
+        maturate(blk.count()-_chain.maturity(blk.height())+1);
 }
 
 void BlockChain::rollbackConfirmation(int64_t cnf) {
@@ -1490,7 +1500,7 @@ Block BlockChain::getBlockTemplate(BlockIterator blk, Payees payees, Fractions f
     // insert the matured coinbase from block #-100
     int count = abs(blk.count());
     if (count > 0) {
-        Unspents coinbase_unspents = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count = ?", -(count-_chain.maturity()));
+        Unspents coinbase_unspents = queryColRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE count = ?", -(count-_chain.maturity(blk.height())));
         
         for (Unspents::const_iterator cb = coinbase_unspents.begin(); cb != coinbase_unspents.end(); ++cb)
             spendables.insert(*cb);

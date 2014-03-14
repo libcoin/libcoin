@@ -64,7 +64,7 @@ public:
         return 0;
     }
     
-    virtual int maturity() const {
+    virtual int maturity(int height) const {
         return 100;
     }
     
@@ -463,8 +463,17 @@ public:
         return 0;
     }
     
-    virtual int maturity() const {
-        return 30;
+    virtual int maturity(int height) const {
+        const int COINBASE_MATURITY = 30;
+        /** Coinbase maturity after block 145000 **/
+        const int COINBASE_MATURITY_NEW = 60*4;
+        /** Block at which COINBASE_MATURITY_NEW comes into effect **/
+        const int COINBASE_MATURITY_SWITCH = 145000;
+
+        if (height >= COINBASE_MATURITY_SWITCH)
+            return COINBASE_MATURITY_NEW;
+        else
+            return COINBASE_MATURITY;
     }
     
     virtual int64_t max_money() const {

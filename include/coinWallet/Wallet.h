@@ -94,7 +94,7 @@ public:
         // Do this infrequently and randomly to avoid giving away
         // that these are our transactions.
         _resend_timer.expires_from_now(boost::posix_time::seconds(GetRand(30 * 60)));
-        _resend_timer.async_wait(boost::bind(&Wallet::resend, this));
+//        _resend_timer.async_wait(boost::bind(&Wallet::resend, this));
     }
 
     const Chain& chain() const { return _blockChain.chain(); }

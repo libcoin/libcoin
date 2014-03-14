@@ -159,15 +159,13 @@ void TransactionFilter::process(Transaction& txn, Peers peers) {
 void TransactionFilter::addOrphan(const Transaction& txn) {
     uint256 hash = txn.getHash();
 
-    bool inserted;
-    Orphans::iterator o;
-    pair<Orphans::iterator, bool>(o, inserted) = _orphans.insert(make_pair(hash, txn));
+    pair<Orphans::iterator, bool> ret = _orphans.insert(make_pair(hash, txn));
 
-    if (!inserted)
+    if (!ret.second)
         return;
     
     BOOST_FOREACH(const Input& txin, txn.getInputs())
-        _orphansByPrev.insert(make_pair(txin.prevout().hash, o));
+        _orphansByPrev.insert(make_pair(txin.prevout().hash, ret.first));
 }
 
 void TransactionFilter::eraseOrphan(uint256 hash) {

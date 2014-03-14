@@ -118,7 +118,7 @@ void Node::update_verification() {
             _blockChain.verification_depth(_blockChain.chain().totalBlocksEstimate());
             break;
         case MINIMAL:
-            _blockChain.verification_depth(_peerManager.getPeerMedianNumBlocks()-_blockChain.chain().maturity());
+            _blockChain.verification_depth(_peerManager.getPeerMedianNumBlocks()-_blockChain.chain().maturity(_blockChain.getBestHeight()));
             break;
         case NONE:
             _blockChain.verification_depth(0);
@@ -140,7 +140,7 @@ void Node::update_validation() {
             _blockChain.validation_depth(_blockChain.chain().totalBlocksEstimate());
             break;
         case MINIMAL:
-            _blockChain.validation_depth(_peerManager.getPeerMedianNumBlocks()-_blockChain.chain().maturity());
+            _blockChain.validation_depth(_peerManager.getPeerMedianNumBlocks()-_blockChain.chain().maturity(_blockChain.getBestHeight()));
             break;
         case NONE:
             _blockChain.validation_depth(0);
@@ -167,8 +167,8 @@ void Node::update_persistence() {
         case LAZY:
             _blockChain.lazy_purging(true);
         case MINIMAL: {
-            unsigned int network_depth = _peerManager.getPeerMedianNumBlocks()-_blockChain.chain().maturity();
-            unsigned int internal_depth = _blockChain.getBestHeight()-_blockChain.chain().maturity();
+            unsigned int network_depth = _peerManager.getPeerMedianNumBlocks()-_blockChain.chain().maturity(_blockChain.getBestHeight());
+            unsigned int internal_depth = _blockChain.getBestHeight()-_blockChain.chain().maturity(_blockChain.getBestHeight());
             _blockChain.purge_depth(std::min(network_depth, internal_depth));
             break;
         }
