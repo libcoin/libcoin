@@ -33,6 +33,7 @@ class COINHTTP_EXPORT RPC
 public:
     enum Error {
         unknown_error = -1,
+        name_not_found = -4,
         invalid_request = -32600,
         method_not_found = -32601,
         invalid_params = -32602,

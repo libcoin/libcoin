@@ -37,6 +37,7 @@
 
 class Transaction;
 class NameOperation;
+class NameDbRow;
 
 typedef std::vector<Transaction> Transactions;
 typedef std::map<uint256, Block> Branches;
@@ -240,6 +241,9 @@ public:
     
     /// NameCoin: getNameValue returns the most recent value for a name
     int getNameAge(const std::string& name) const;
+
+    /// NameCoin: query for full row in Names table
+    NameDbRow getNameRow(const std::string& name) const;
     
     /// NameCoin: getCoinName returns the name, if any for an unspent output
     std::string getCoinName(int64_t coin) const;

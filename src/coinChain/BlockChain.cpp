@@ -25,6 +25,8 @@
 #include <coin/NameOperation.h>
 #include <coin/Logger.h>
 
+#include <coinName/Names.h>
+
 #include <boost/lexical_cast.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -596,6 +598,11 @@ void BlockChain::updateName(const NameOperation& name_op, int64_t coin, int coun
 int BlockChain::getNameAge(const std::string& name) const {
     Evaluator::Value raw_name(name.begin(), name.end());
     return query<int64_t>("SELECT count FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", raw_name);
+}
+
+NameDbRow BlockChain::getNameRow(const std::string& name) const {
+    Evaluator::Value raw_name(name.begin(), name.end());
+    return queryRow<NameDbRow(int64_t, int, Evaluator::Value, Evaluator::Value)>("SELECT * FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", raw_name);
 }
 
 string BlockChain::getCoinName(int64_t coin) const {

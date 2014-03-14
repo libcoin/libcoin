@@ -22,6 +22,8 @@
 #include <coinHTTP/Server.h>
 #include <coinHTTP/RPC.h>
 
+#include <coinName/Names.h>
+
 json_spirit::Value
 NameShow::operator() (const json_spirit::Array& params, bool fHelp)
 {
@@ -33,8 +35,18 @@ NameShow::operator() (const json_spirit::Array& params, bool fHelp)
   /* FIXME: Correctly handle integer parameters (convert to string).  */
   const std::string name = params[0].get_str ();
 
+  /* Query for the name in the block chain database.  */
+  NameDbRow row = node.blockChain ().getNameRow (name);
+
+  /* Error if the name was not found.  */
+  if (!row.found)
+    throw RPC::error (RPC::name_not_found,
+                      "The requested name doesn't exist in the database");
+
   json_spirit::Object res;
   res.push_back (json_spirit::Pair ("name", name));
+  std::string val(row.value.begin (), row.value.end ());
+  res.push_back (json_spirit::Pair ("value", val));
 
   return res;
 }

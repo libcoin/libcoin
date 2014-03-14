@@ -11,6 +11,7 @@ SET(LIB_NAME coinName)
 SET(HEADER_PATH ${PROJECT_SOURCE_DIR}/include/${LIB_NAME})
 SET(TARGET_H
     ${HEADER_PATH}/Export.h
+    ${HEADER_PATH}/Names.h
     ${HEADER_PATH}/NameGetRPC.h
     ${LIBCOIN_CONFIG_HEADER}
 )
