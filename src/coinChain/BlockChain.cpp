@@ -376,11 +376,11 @@ std::pair<Claims::Spents, int64_t> BlockChain::try_claim(const Transaction& txn,
                     // finally check for conflicts with the name database
                     int count = getNameAge(name_op.name());
                     if (name_op.reserve()) {
-                        if (count && count > _tree.count() - _chain.expirationDepth(_tree.count()))
+                        if (!isExpired (count))
                             throw Reject("Trying to reserve existing and not expired name: " + name_op.name());
                     }
                     else {
-                        if (count == 0 || count <= _tree.count() - _chain.expirationDepth(_tree.count()))
+                        if (isExpired (count))
                             throw Error("Trying to update expired or non existing name: " + name_op.name());
                     }
                 }
@@ -578,7 +578,7 @@ void BlockChain::updateName(const NameOperation& name_op, int64_t coin, int coun
     int latest_count = query<int>("SELECT count FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", raw_name);
     if (latest_count == 0 && raw_name.empty())
         latest_count = query<int>("SELECT count FROM Names WHERE name is null ORDER BY count DESC LIMIT 1");
-    bool expired = (latest_count == 0) ? true : (latest_count < count - _chain.expirationDepth(count));
+    const bool expired = isExpired (latest_count, count);
     if (name_op.reserve()) {
         if (count - name_op.input_count() < MIN_FIRSTUPDATE_DEPTH)
             throw Error("Tried to reserve a name less than 12 blocks after name_new: " + name_op.name());

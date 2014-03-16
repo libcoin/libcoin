@@ -242,6 +242,30 @@ public:
     /// NameCoin: getNameValue returns the most recent value for a name
     int getNameAge(const std::string& name) const;
 
+    /// Namecoin: Return expiration count at given block height.
+    inline int
+    getExpirationCount (int count) const
+    {
+      return count - _chain.expirationDepth (count);
+    }
+    inline int
+    getExpirationCount () const
+    {
+      return getExpirationCount (_tree.count ());
+    }
+
+    /// NameCoin: check if a name is expired.
+    inline bool
+    isExpired (int count) const
+    {
+      return isExpired (count, _tree.count ());
+    }
+    inline bool
+    isExpired (int count, int treeCount) const
+    {
+      return (count == 0 || count <= getExpirationCount (treeCount));
+    }
+
     /// NameCoin: query for full row in Names table
     NameDbRow getNameRow(const std::string& name) const;
     
