@@ -37,6 +37,7 @@ NameShow::operator() (const json_spirit::Array& params, bool fHelp)
 
   /* Query for the name in the block chain database.  */
   NameDbRow row = node.blockChain ().getNameRow (name);
+  NameStatus nm(row, node.blockChain ());
 
   /* Error if the name was not found.  */
   if (!row.found)
@@ -44,9 +45,11 @@ NameShow::operator() (const json_spirit::Array& params, bool fHelp)
                       "The requested name doesn't exist in the database");
 
   json_spirit::Object res;
-  res.push_back (json_spirit::Pair ("name", name));
-  std::string val(row.value.begin (), row.value.end ());
-  res.push_back (json_spirit::Pair ("value", val));
+  res.push_back (json_spirit::Pair ("name", nm.getName ()));
+  res.push_back (json_spirit::Pair ("value", nm.getValue ()));
+  res.push_back (json_spirit::Pair ("expires_in", nm.getExpireCounter ()));
+  if (nm.isExpired ())
+    res.push_back (json_spirit::Pair ("expired", 1));
 
   return res;
 }

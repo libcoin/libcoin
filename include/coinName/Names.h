@@ -17,13 +17,20 @@
 #ifndef COINNAME_NAMES_H
 #define COINNAME_NAMES_H
 
+#include <coinChain/BlockChain.h>
+
 #include <coinName/Export.h>
+
+#include <string>
+
+/* ************************************************************************** */
+/* NameDbRow.  */
 
 /**
  * Struct to hold data about one name history entry, corresponding to
  * the Names database table.
  */
-struct NameDbRow
+struct COINNAME_EXPORT NameDbRow
 {
 
   bool found;
@@ -41,6 +48,78 @@ struct NameDbRow
                     const Evaluator::Value& v)
     : found(true), coin(co), count(cnt), name(n), value(v)
   {}
+
+};
+
+/* ************************************************************************** */
+/* Name base class.  */
+
+/**
+ * Represent information about a name as per name_show.  This uses the NameDbRow
+ * as back-end data, but allows further information retrieval.
+ */
+class COINNAME_EXPORT NameStatus
+{
+
+private:
+
+  /** Data from the DB.  */
+  NameDbRow data;
+
+  /** Blockchain backing this.  */
+  const BlockChain& chain;
+
+public:
+
+  /**
+   * Construct it with the given data.
+   * @param d Data from the DB to use.
+   * @param c Blockchain object.
+   */
+  inline
+  NameStatus (const NameDbRow& d, const BlockChain& c)
+    : data(d), chain(c)
+  {}
+
+  /**
+   * Retrieve the name's name.
+   * @return The name's "name" as string.
+   */
+  inline std::string
+  getName () const
+  {
+    return std::string (data.name.begin (), data.name.end ());
+  }
+
+  /**
+   * Retrieve the name's value.
+   * @return The name's "value" as string.
+   */
+  inline std::string
+  getValue () const
+  {
+    return std::string (data.value.begin (), data.value.end ());
+  }
+
+  /**
+   * Get expire counter (as in "expires_in").
+   * @return The name's expire counter.
+   */
+  inline int
+  getExpireCounter () const
+  {
+    return data.count - chain.getExpirationCount ();
+  }
+
+  /**
+   * Check if the name is expired.
+   * @return True iff the name is expired.
+   */
+  inline bool
+  isExpired () const
+  {
+    return chain.isExpired (data.count);
+  }
 
 };
 
