@@ -369,7 +369,7 @@ void Peer::push(const Transaction& txn) {
     if(!relayTxes)
         return;
     if (filter.isRelevantAndUpdate(txn))
-        push(Inventory(MSG_TX, txn.getHash()));
+        PushMessage("tx", txn);
 }
 
 void Peer::BeginMessage(const char* pszCommand) {

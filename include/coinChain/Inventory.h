@@ -46,9 +46,9 @@ public:
     Inventory(int type, const uint256& hash);
     Inventory(const std::string& type_name, const uint256& hash);
     
-    Inventory(const Block& blk);
-    Inventory(const MerkleBlock& blk);
-    Inventory(const Transaction& txn);
+    explicit Inventory(const Block& blk);
+    explicit Inventory(const MerkleBlock& blk);
+    explicit Inventory(const Transaction& txn);
     
     IMPLEMENT_SERIALIZE
     (

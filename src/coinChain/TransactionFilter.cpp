@@ -209,5 +209,5 @@ void TransactionFilter::relay(const Peers& peers, const Transaction& txn) {
     
     // Put on lists to offer to the other nodes
     for(Peers::const_iterator peer = peers.begin(); peer != peers.end(); ++peer)
-        (*peer)->push(txn);
+        (*peer)->push(inv);
 }

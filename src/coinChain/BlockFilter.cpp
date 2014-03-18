@@ -184,8 +184,9 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                         // however we MUST always provide at least what the remote peer needs
                         for (size_t i = 0; i < merkleBlock.getNumFilteredTransactions(); ++i) {
                             const Transaction& txn = block.getTransaction(merkleBlock.getTransactionBlockIndex(i));
-                            if (!origin->setInventoryKnown.count(Inventory(txn)))
-                                origin->push(txn);
+                            Inventory inv(txn);
+                            if (!origin->setInventoryKnown.count(inv))
+                                origin->push(inv);
                         }
                     }
                     // Trigger them to send a getblocks request for the next batch of inventory

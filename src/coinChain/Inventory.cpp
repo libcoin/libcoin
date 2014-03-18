@@ -67,7 +67,7 @@ Inventory::Inventory(const MerkleBlock& blk) {
 }
 */
 Inventory::Inventory(const Transaction& txn) {
-    _type = MSG_BLOCK;
+    _type = MSG_TX;
     _hash = txn.getHash();
 }
 
