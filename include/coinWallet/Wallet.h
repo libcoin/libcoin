@@ -89,7 +89,7 @@ public:
         
         bool firstRun = false;
         LoadWallet(firstRun);
-        if(firstRun) log_info("Created a new wallet!");
+        if(firstRun) log_info("Created a new wallet!", "");
         
         // Do this infrequently and randomly to avoid giving away
         // that these are our transactions.

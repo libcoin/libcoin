@@ -248,7 +248,7 @@ void CWalletTx::AddSupportingTransactions(const BlockChain& blockChain)
                 ;
             }
             else {
-                log_warn("ERROR: AddSupportingTransactions() : unsupported transaction\n");
+                log_warn("ERROR: AddSupportingTransactions() : unsupported transaction\n", "");
                 continue;
             }
             

@@ -258,7 +258,7 @@ void BlockFilter::process(const Block& block, Peers peers) {
         // notify all listeners
         for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
             (*listener->get())(block);
-        log_debug("ProcessBlock: ACCEPTED");
+        log_debug("ProcessBlock: ACCEPTED", "");
     }
     catch (std::exception &e) {
         log_error("append(Block) failed: %s", e.what());
@@ -286,7 +286,7 @@ void BlockFilter::process(const Block& block, Peers peers) {
                 // notify all listeners only if append does not throw
                 for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
                     (*listener->get())(block);
-                log_debug("ProcessBlock: ACCEPTED ORPHAN");
+                log_debug("ProcessBlock: ACCEPTED ORPHAN", "");
             }
             catch (std::exception &e) {
                 log_warn("append(Block) orphan failed: %s", e.what());
@@ -328,7 +328,7 @@ bool ShareFilter::process(const Block& block, Peers peers) {
     for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
         (*listener->get())(block);
     
-    log_debug("ProcessShare: ACCEPTED");
+    log_debug("ProcessShare: ACCEPTED", "");
     return true;
 }
 

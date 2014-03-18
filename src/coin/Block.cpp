@@ -87,13 +87,13 @@ void Block::print() const
            _transactions.size());
     for (int i = 0; i < _transactions.size(); i++)
         {
-        log_info("  ");
+        log_info("  ", "");
         _transactions[i].print();
         }
-    log_info("  vMerkleTree: ");
+    log_info("  vMerkleTree: ", "");
     for (int i = 0; i < _merkleTree.size(); i++)
         log_info("%s ", _merkleTree[i].toString().substr(0,10).c_str());
-    log_info("\n");
+    log_info("\n", "");
 }
 
 //bool Block::checkBlock(const CBigNum& proofOfWorkLimit) const

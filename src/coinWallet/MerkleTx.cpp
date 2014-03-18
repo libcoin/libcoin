@@ -24,7 +24,7 @@ int CMerkleTx::setMerkleBranch(const Block& block, const BlockChain& blockChain)
     if (_index == txes.size()) {
         _merkleBranch.clear();
         _index = -1;
-        log_debug("ERROR: SetMerkleBranch() : couldn't find tx in block\n");
+        log_debug("ERROR: SetMerkleBranch() : couldn't find tx in block\n", "");
         return 0;
     }
     
