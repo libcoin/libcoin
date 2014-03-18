@@ -150,7 +150,7 @@ public:
     bool appliesTo(int version, std::string subversion) const {
     // TODO: rework for client-version-embedded-in-strSubVer ?
         return (isInEffect() &&
-                _min_version <= _version && _version <= _max_version &&
+                _min_version <= version && version <= _max_version &&
                 (_subversions.empty() || _subversions.count(subversion)));
     }
 

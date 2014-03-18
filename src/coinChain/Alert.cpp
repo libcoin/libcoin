@@ -181,7 +181,6 @@ bool Alert::processAlert()
     // Add to mapAlerts
     mapAlerts.insert(make_pair(getHash(), *this));
 
-    string msg(_message.begin(), _message.end());
-    log_warn("accepted alert %d : %s", _id, msg);
+    log_warn("accepted alert %d : %s", _id, _status_bar);
     return true;
 }

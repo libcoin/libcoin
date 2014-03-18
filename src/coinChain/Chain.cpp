@@ -908,7 +908,7 @@ bool TerracoinChain::checkPoints(const unsigned int height, const uint256& hash)
 const TerracoinChain terracoin;
 
 DogecoinChain::DogecoinChain() : Chain("dogecoin", "DGE", 8), _genesis("0x1a91e3dace36e2be3bf030a65679fe821aa1d6ef92e7c9902eb318182c355691") {
-    _alert_key = ParseHex("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9");    _messageStart[0] = 0xc0; _messageStart[1] = 0xc0; _messageStart[2] = 0xc0; _messageStart[3] = 0xc0; // Litecoin: increase each by adding 2 to bitcoin's value.
+    _alert_key = ParseHex("04d4da7a5dae4db797d9b0644d57a5cd50e05a70f36091cd62e2fc41c98ded06340be5a43a35e185690cd9cde5d72da8f6d065b499b06f51dcfba14aad859f443a");    _messageStart[0] = 0xc0; _messageStart[1] = 0xc0; _messageStart[2] = 0xc0; _messageStart[3] = 0xc0; // Litecoin: increase each by adding 2 to bitcoin's value.
     
     const char* pszTimestamp = "Nintondo";
     Transaction txNew;
@@ -960,17 +960,13 @@ int static generateMTRandom(unsigned int s, int range)
 const int64_t DogecoinChain::subsidy(unsigned int height, uint256 prev) const {
     if (height == 0) return 88 * COIN;
     
-    int64_t s = 10000 * COIN;
+    int64_t s = 500000 * COIN;
     
     std::string cseed_str = prev.toString().substr(7,7);
     const char* cseed = cseed_str.c_str();
     long seed = hex2long(cseed);
     int rand = generateMTRandom(seed, 999999);
     int rand1 = 0;
-    int rand2 = 0;
-    int rand3 = 0;
-    int rand4 = 0;
-    int rand5 = 0;
     
     if(height < 100000) {
         s = (1 + rand) * COIN;
@@ -982,46 +978,6 @@ const int64_t DogecoinChain::subsidy(unsigned int height, uint256 prev) const {
         rand1 = generateMTRandom(seed, 499999);
         s = (1 + rand1) * COIN;
     }
-    /*
-    else if(height < 200000) {
-        cseed_str = prev.toString().substr(7,7);
-        cseed = cseed_str.c_str();
-        seed = hex2long(cseed);
-        rand1 = generateMTRandom(seed, 499999);
-        s = (1 + rand1) * COIN;
-    }
-    else if(height < 300000) {
-        cseed_str = prev.toString().substr(6,7);
-        cseed = cseed_str.c_str();
-        seed = hex2long(cseed);
-        rand2 = generateMTRandom(seed, 249999);
-        s = (1 + rand2) * COIN;
-    }
-    else if(height < 400000)
-    {
-        cseed_str = prev.toString().substr(7,7);
-        cseed = cseed_str.c_str();
-        seed = hex2long(cseed);
-        rand3 = generateMTRandom(seed, 124999);
-        s = (1 + rand3) * COIN;
-    }
-    else if(height < 500000)
-    {
-        cseed_str = prev.toString().substr(7,7);
-        cseed = cseed_str.c_str();
-        seed = hex2long(cseed);
-        rand4 = generateMTRandom(seed, 62499);
-        s = (1 + rand4) * COIN;
-    }
-    else if(height < 600000)
-    {
-        cseed_str = prev.toString().substr(6,7);
-        cseed = cseed_str.c_str();
-        seed = hex2long(cseed);
-        rand5 = generateMTRandom(seed, 31249);
-        s = (1 + rand5) * COIN;
-    }
-     */
     else if(height < 600000) {
         s >>= (height / 100000);
     }
@@ -1084,13 +1040,15 @@ unsigned int DogecoinChain::nextWorkRequired(BlockIterator blk) const {
     const int64_t nTargetTimespanNEW = 60; // Dogecoin every minute
     const int64_t nTargetSpacing = 60; // Dogecoin: Every minute
     const int64_t nInterval = nTargetTimespan / nTargetSpacing;
+    const int64_t nDiffChangeTarget = 145000;
     
-    // Genesis block
-    int h = blk.height();
-    if (h == 0) // trick to test that it is asking for the genesis block
-        return _genesisBlock.getBits(); // proofOfWorkLimit().GetCompact(); Actually not for the genesisblock - here it is 0x1e0ffff0, not 0x1e0fffff
+    unsigned int nProofOfWorkLimit = _genesisBlock.getBits();
+    CBigNum bnProofOfWorkLimit;
+    bnProofOfWorkLimit.SetCompact(nProofOfWorkLimit);
+    int nHeight = blk.height() + 1;
+    bool fNewDifficultyProtocol = (nHeight >= nDiffChangeTarget);
     
-    bool fNewDifficultyProtocol = h + 1 >= 145000;
+    
     
     int64_t retargetTimespan = nTargetTimespan;
     int64_t retargetSpacing = nTargetSpacing;
@@ -1101,66 +1059,78 @@ unsigned int DogecoinChain::nextWorkRequired(BlockIterator blk) const {
         retargetTimespan = nTargetTimespanNEW;
     }
     
-    // Only change once per interval
-    if ((h + 1) % retargetInterval != 0)
-        return blk->bits;
+    // Genesis block
+    if (blk.height() == 0)
+        return nProofOfWorkLimit;
     
-    // Litecoin/Dogecoin: This fixes an issue where a 51% attack can change difficulty at will.
+    // Only change once per interval
+    if (nHeight % retargetInterval != 0)
+    {
+        return blk->bits;
+    }
+    
+    // Dogecoin: This fixes an issue where a 51% attack can change difficulty at will.
     // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
     int blockstogoback = retargetInterval-1;
-    if ((h + 1) != retargetInterval)
+    if (nHeight != retargetInterval)
         blockstogoback = retargetInterval;
     
-    // Go back by what we want to be 3.5 days worth of blocks
+    // Go back by what we want to be 14 days worth of blocks
     BlockIterator former = blk - blockstogoback;
     
     // Limit adjustment step
-    int nActualTimespan = blk->time - former->time;
-    log_debug("  nActualTimespan = %"PRI64d"  before bounds", nActualTimespan);
-    if(fNewDifficultyProtocol) { //DigiShield implementation - thanks to RealSolid & WDC for this code
+    int64_t nActualTimespan = blk->time;
+    nActualTimespan -= former->time;
+    log_debug("  nActualTimespan = %d  before bounds\n", nActualTimespan);
+    
+    CBigNum bnNew;
+    bnNew.SetCompact(blk->bits);
+    
+    if(fNewDifficultyProtocol) //DigiShield implementation - thanks to RealSolid & WDC for this code
+    {
         // amplitude filter - thanks to daft27 for this code
         nActualTimespan = retargetTimespan + (nActualTimespan - retargetTimespan)/8;
-        printf("DIGISHIELD RETARGET\n");
+        log_debug("DIGISHIELD RETARGET\n");
         if (nActualTimespan < (retargetTimespan - (retargetTimespan/4)) ) nActualTimespan = (retargetTimespan - (retargetTimespan/4));
         if (nActualTimespan > (retargetTimespan + (retargetTimespan/2)) ) nActualTimespan = (retargetTimespan + (retargetTimespan/2));
     }
-    else if(h+1 > 10000) {
+    else if (nHeight > 10000) {
         if (nActualTimespan < nTargetTimespan/4)
             nActualTimespan = nTargetTimespan/4;
         if (nActualTimespan > nTargetTimespan*4)
             nActualTimespan = nTargetTimespan*4;
     }
-    else if(h+1 > 5000) {
+    else if(nHeight > 5000)
+    {
         if (nActualTimespan < nTargetTimespan/8)
             nActualTimespan = nTargetTimespan/8;
         if (nActualTimespan > nTargetTimespan*4)
             nActualTimespan = nTargetTimespan*4;
     }
-    else {
+    else
+    {
         if (nActualTimespan < nTargetTimespan/16)
             nActualTimespan = nTargetTimespan/16;
         if (nActualTimespan > nTargetTimespan*4)
             nActualTimespan = nTargetTimespan*4;
     }
-
-    // Retarget
-    CBigNum bnNew;
-    bnNew.SetCompact(blk->bits);
-    bnNew *= nActualTimespan;
-    bnNew /= nTargetTimespan;
     
-    if (bnNew > proofOfWorkLimit())
-        bnNew = proofOfWorkLimit();
+    // Retarget
+    
+    bnNew *= nActualTimespan;
+    bnNew /= retargetTimespan;
+    
+    if (bnNew > bnProofOfWorkLimit)
+        bnNew = bnProofOfWorkLimit;
     
     /// debug print
-    log_info("GetNextWorkRequired RETARGET");
-    log_info("\tnTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"", nTargetTimespan, nActualTimespan);
-    log_info("\tBefore: %08x  %s", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
-    log_info("\tAfter:  %08x  %s", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
+    log_debug("GetNextWorkRequired RETARGET\n");
+    log_debug("nTargetTimespan = %d    nActualTimespan = %d\n", retargetTimespan, nActualTimespan);
+    log_debug("Before: %08x  %s\n", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
+    log_debug("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
     
     return bnNew.GetCompact();
 }
-
 
 const uint256 DogecoinChain::getPoWHash(const Block& block) const {
     uint256 hash;

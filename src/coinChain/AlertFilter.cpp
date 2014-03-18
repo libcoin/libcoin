@@ -35,7 +35,7 @@ bool AlertFilter::operator() (Peer* origin, Message& msg) {
             // Relay
             origin->setKnown.insert(alert.getHash());
             Peers peers = origin->getAllPeers();
-            if (!alert.isInEffect()) {
+            if (alert.isInEffect()) {
                 for (Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer) {
                     // returns true if wasn't already contained in the set
                     if ((*peer)->setKnown.insert(alert.getHash()).second) {
