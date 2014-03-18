@@ -39,7 +39,7 @@ public:
         OP_NAME_NEW = 0x01,
         OP_NAME_FIRSTUPDATE = 0x02,
         OP_NAME_UPDATE = 0x03,
-        OP_NAME_NOP = 0x04,
+        OP_NAME_NOP = 0x04
     };
     
     class Error: public std::runtime_error {
