@@ -69,11 +69,8 @@ enum
     unsigned int GetSerializeSize(int nType=0, int nVersion=PROTOCOL_VERSION) const  \
     {                                           \
         CSerActionGetSerializeSize ser_action;  \
-        const bool fGetSize = true;             \
         const bool fWrite = false;              \
         const bool fRead = false;               \
-        bool remove_warnings = fGetSize;        \
-        remove_warnings = fWrite|fRead;         \
         unsigned int nSerSize = 0;              \
         ser_streamplaceholder s;                \
         s.nType = nType;                        \
@@ -85,11 +82,8 @@ enum
     void Serialize(Stream& s, int nType=0, int nVersion=PROTOCOL_VERSION) const  \
     {                                           \
         CSerActionSerialize ser_action;         \
-        const bool fGetSize = false;            \
         const bool fWrite = true;               \
         const bool fRead = false;               \
-        bool remove_warnings = fGetSize;        \
-        remove_warnings = fWrite|fRead;         \
         unsigned int nSerSize = 0;              \
         {statements}                            \
     }                                           \
@@ -97,11 +91,8 @@ enum
     void Unserialize(Stream& s, int nType=0, int nVersion=PROTOCOL_VERSION)  \
     {                                           \
         CSerActionUnserialize ser_action;       \
-        const bool fGetSize = false;            \
         const bool fWrite = false;              \
         const bool fRead = true;                \
-        bool remove_warnings = fGetSize;        \
-        remove_warnings = fWrite|fRead;         \
         unsigned int nSerSize = 0;              \
         {statements}                            \
     }
