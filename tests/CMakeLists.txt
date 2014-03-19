@@ -30,6 +30,7 @@ ADD_SUBDIRECTORY(jsonance)
 ADD_SUBDIRECTORY(merkletrie)
 ADD_SUBDIRECTORY(namecoin)
 ADD_SUBDIRECTORY(sqliterate)
+ADD_SUBDIRECTORY(serialize)
 
 #    IF   (wxWidgets_FOUND)
 #        ADD_SUBDIRECTORY(bitsimpleWX)

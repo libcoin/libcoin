@@ -1,0 +1,11 @@
+SET(TARGET_SRC serialize.cpp)
+
+SET(TARGET_EXTERNAL_LIBRARIES
+    ${CMAKE_THREAD_LIBS_INIT}    
+    ${MATH_LIBRARY} 
+    ${OPENSSL_LIBRARIES} 
+    ${Boost_LIBRARIES} 
+    ${DL_LIBRARY}
+)
+
+SETUP_TEST(serialize)

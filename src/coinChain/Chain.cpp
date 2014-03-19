@@ -1045,7 +1045,7 @@ unsigned int DogecoinChain::nextWorkRequired(BlockIterator blk) const {
     unsigned int nProofOfWorkLimit = _genesisBlock.getBits();
     CBigNum bnProofOfWorkLimit;
     bnProofOfWorkLimit.SetCompact(nProofOfWorkLimit);
-    int nHeight = blk.height() + 1;
+    int nHeight = blk.count();
     bool fNewDifficultyProtocol = (nHeight >= nDiffChangeTarget);
     
     
