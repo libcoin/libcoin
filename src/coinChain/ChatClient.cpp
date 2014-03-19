@@ -137,7 +137,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                     async_write(_socket, _send, boost::bind(&ChatClient::handle_write_request, this, boost::asio::placeholders::error));
                 }
                 else if (rx.find(" 433 ") != string::npos) { // 
-                    log_debug("IRC name already in use\n");
+                    log_debug("IRC name already in use\n", "");
                     _name_in_use = true;
                     // close and rejoin
                     _socket.close();
@@ -216,7 +216,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                     // index 7 is limited to 16 characters
                     // could get full length name at index 10, but would be different from join messages
                     name = words[7];
-                    log_debug("IRC got who\n");
+                    log_debug("IRC got who\n", "");
                 }
                 
                 if (words[1] == "JOIN" && words[0].size() > 1) {
@@ -227,7 +227,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                         name = words[0].substr(1, exclamation_pos-1); // the 1, -1 is due to the colon
                                                                       //                    if (strchr(pszName, '!'))
                                                                       //                        *strchr(pszName, '!') = '\0';
-                    log_debug("IRC got join\n");
+                    log_debug("IRC got join\n", "");
                 }
                 
                 if (name[0] == 'u') {
@@ -241,7 +241,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                         //                        nGotIREndpointes++;
                     }
                     else {
-                        log_debug("IRC decode failed\n");
+                        log_debug("IRC decode failed\n", "");
                     }
                 }
                 break;
@@ -267,7 +267,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
 void ChatClient::handle_write_request(const boost::system::error_code& err) {
     if (err) {
         // check if we were kicked out, then rejoin
-        log_debug(err.message());
+        log_debug(err.message(), "");
         // close and rejoin - we should add a postpone to this...
         _socket.close();
         _mode = wait_for_notice;

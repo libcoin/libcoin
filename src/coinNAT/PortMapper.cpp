@@ -116,7 +116,7 @@ void PortMapper::handle_mapping(const boost::system::error_code& e) {
 }
         
 void PortMapper::reqIDGportmap(unsigned short p) {
-    log_debug("PortMapper::getIDGdevice()...\n");
+    log_debug("PortMapper::getIDGdevice()...\n", "");
     
     const char * multicastif = 0;
     const char * minissdpdpath = 0;
@@ -140,7 +140,7 @@ void PortMapper::reqIDGportmap(unsigned short p) {
         FreeUPNPUrls(&_impl->urls);        
     }
     else {
-        log_debug("No valid UPnP IGDs found\n");
+        log_debug("No valid UPnP IGDs found\n", "");
         _idg_mapping = false;
         freeUPNPDevlist(_impl->devlist); _impl->devlist = 0;
         if (r != 0)
@@ -180,7 +180,7 @@ boost::tribool PortMapper::repPMPportmap() {
                _impl->response.pnu.newportmapping.privateport,
                _impl->response.pnu.newportmapping.lifetime);
     else
-        log_warn("NATPMP: PORTMAP FAILED");
+        log_warn("NATPMP: PORTMAP FAILED", "");
     
     return (r == 0);
 }

@@ -264,7 +264,7 @@ unsigned int BitcoinChain::nextWorkRequired(BlockIterator blk) const {
         bnNew = proofOfWorkLimit();
     
     /// debug print
-    log_info("GetNextWorkRequired RETARGET");
+    log_info("GetNextWorkRequired RETARGET", "");
     log_info("\tnTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"", nTargetTimespan, nActualTimespan);
     log_info("\tBefore: %08x  %s", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
     log_info("\tAfter:  %08x  %s", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
@@ -381,7 +381,7 @@ unsigned int TestNet3Chain::nextWorkRequired(BlockIterator blk) const {
         bnNew = proofOfWorkLimit();
     
     /// debug print
-    log_info("GetNextWorkRequired RETARGET");
+    log_info("GetNextWorkRequired RETARGET", "");
     log_info("\tnTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"", nTargetTimespan, nActualTimespan);
     log_info("\tBefore: %08x  %s", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
     log_info("\tAfter:  %08x  %s", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
@@ -554,7 +554,7 @@ unsigned int NamecoinChain::nextWorkRequired(BlockIterator blk) const {
         bnNew = proofOfWorkLimit();
     
     /// debug print
-    log_info("GetNextWorkRequired RETARGET");
+    log_info("GetNextWorkRequired RETARGET", "");
     log_info("\tnTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"", nTargetTimespan, nActualTimespan);
     log_info("\tBefore: %08x  %s", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
     log_info("\tAfter:  %08x  %s", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
@@ -702,7 +702,7 @@ unsigned int LitecoinChain::nextWorkRequired(BlockIterator blk) const {
         bnNew = proofOfWorkLimit();
     
     /// debug print
-    log_info("GetNextWorkRequired RETARGET");
+    log_info("GetNextWorkRequired RETARGET", "");
     log_info("\tnTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"", nTargetTimespan, nActualTimespan);
     log_info("\tBefore: %08x  %s", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
     log_info("\tAfter:  %08x  %s", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
@@ -888,7 +888,7 @@ unsigned int TerracoinChain::nextWorkRequired(BlockIterator blk) const {
         bnNew = proofOfWorkLimit();
     
     /// debug print
-    log_info("GetNextWorkRequired RETARGET");
+    log_info("GetNextWorkRequired RETARGET", "");
     log_info("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"", nTargetTimespan, nActualTimespan);
     log_info("Before: %08x  %s", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
     log_info("After:  %08x  %s", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
@@ -1090,7 +1090,7 @@ unsigned int DogecoinChain::nextWorkRequired(BlockIterator blk) const {
     {
         // amplitude filter - thanks to daft27 for this code
         nActualTimespan = retargetTimespan + (nActualTimespan - retargetTimespan)/8;
-        log_debug("DIGISHIELD RETARGET\n");
+        log_debug("DIGISHIELD RETARGET\n", "");
         if (nActualTimespan < (retargetTimespan - (retargetTimespan/4)) ) nActualTimespan = (retargetTimespan - (retargetTimespan/4));
         if (nActualTimespan > (retargetTimespan + (retargetTimespan/2)) ) nActualTimespan = (retargetTimespan + (retargetTimespan/2));
     }
@@ -1124,7 +1124,7 @@ unsigned int DogecoinChain::nextWorkRequired(BlockIterator blk) const {
         bnNew = bnProofOfWorkLimit;
     
     /// debug print
-    log_debug("GetNextWorkRequired RETARGET\n");
+    log_debug("GetNextWorkRequired RETARGET\n", "");
     log_debug("nTargetTimespan = %d    nActualTimespan = %d\n", retargetTimespan, nActualTimespan);
     log_debug("Before: %08x  %s\n", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
     log_debug("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());

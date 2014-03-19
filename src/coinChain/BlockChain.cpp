@@ -248,7 +248,7 @@ unsigned int BlockChain::purge_depth() const {
 
 void BlockChain::purge_depth(unsigned int purge_depth) {
     if (purge_depth < _purge_depth)
-        log_warn("Requested a purge_depth (Persistance setting) deeper than currently, please re-download the blockchain to enforce this!");
+        log_warn("Requested a purge_depth (Persistance setting) deeper than currently, please re-download the blockchain to enforce this!", "");
     _purge_depth = purge_depth;
     query("DELETE FROM Spendings WHERE icnf IN (SELECT cnf FROM Confirmations WHERE count <= ?)", _purge_depth);
     query("DELETE FROM Confirmations WHERE count <= ?", _purge_depth);
@@ -1113,8 +1113,8 @@ void BlockChain::append(const Block &block) {
     log_info("\theight: %d @ %s, txns: %d", prev_height + 1, posix_time::to_simple_string(posix_time::from_time_t(block.getTime())), block.getNumTransactions());
     log_info("\tclaims: %d --> %d (resolved: %d)", claims_before, claims_after, claims_before-claims_after);
     if ((prev_height + 1)%1000 == 0) {
-        log_info(statistics());
-        log_info(_spendables.statistics());
+        log_info(statistics(), "");
+        log_info(_spendables.statistics(), "");
         log_info("Redeem: %s", _redeemStats.str());
         log_info("Issue: %s", _issueStats.str());
         log_info("Signature verification time: %f.3s", 0.000001*_verifySignatureTimer);

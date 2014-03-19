@@ -17,6 +17,7 @@ with the preferred generator. E.g. on Mac OS X building with Xcode can be accomp
 Then open libcore.xcodeproj using Xcode and build libcoin from here.
 
 Cheat sheet for Ubuntu:
+* sudo apt-get install git cmake build-essential
 * sudo apt-get install libboost-all-dev
 * sudo apt-get install libssl-dev
 * sudo apt-get install libsqlite3-dev

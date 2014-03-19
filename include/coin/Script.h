@@ -27,7 +27,7 @@ enum
     SIGHASH_ALL = 1,
     SIGHASH_NONE = 2,
     SIGHASH_SINGLE = 3,
-    SIGHASH_ANYONECANPAY = 0x80,
+    SIGHASH_ANYONECANPAY = 0x80
 };
 
 enum txnouttype
@@ -37,7 +37,7 @@ enum txnouttype
     TX_PUBKEY,
     TX_PUBKEYHASH,
     TX_SCRIPTHASH,
-    TX_MULTISIG,
+    TX_MULTISIG
 };
 
 
@@ -190,7 +190,7 @@ enum opcodetype
     OP_SCRIPTHASH = 0xfd,
     OP_PUBKEY = 0xfe,
     
-    OP_INVALIDOPCODE = 0xff,
+    OP_INVALIDOPCODE = 0xff
 };
 
 typedef std::vector<unsigned char> valtype;

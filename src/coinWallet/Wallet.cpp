@@ -528,7 +528,7 @@ void Wallet::resend() {
     nLastTime = UnixTime::s();
 
     // Rebroadcast any of our txes that aren't in a block yet
-    log_info("ResendWalletTransactions()\n");
+    log_info("ResendWalletTransactions()\n", "");
     CRITICAL_BLOCK(cs_wallet) {
         // Sort them in chronological order
         multimap<unsigned int, CWalletTx*> mapSorted;
@@ -734,7 +734,7 @@ bool Wallet::SelectCoinsMinConf(int64_t nTargetValue, int nConfMine, int nConfTh
             }
 
         //// debug print
-        log_debug("SelectCoins() best subset: ");
+        log_debug("SelectCoins() best subset: ", "");
         for (int i = 0; i < vValue.size(); i++)
             if (vfBest[i])
                 log_debug("%s ", FormatMoney(vValue[i].first).c_str());
@@ -919,7 +919,7 @@ bool Wallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
         // Broadcast
         if (!acceptTransaction(wtxNew)) {
             // This must not fail. The transaction has already been signed and recorded.
-            log_info("CommitTransaction() : Error: Transaction not valid");
+            log_info("CommitTransaction() : Error: Transaction not valid", "");
             return false;
         }
     //        wtxNew.RelayWalletTransaction(); // this is included in the acceptTransaction
@@ -1045,7 +1045,7 @@ void Wallet::PrintWallet(const Block& block)
             log_info("    mine:  %d  %d  %d", _blockChain.getDepthInMainChain(wtx.getHash()), _blockChain.getBlocksToMaturity(wtx), wtx.GetCredit());
         }
     }
-    log_info("\n");
+    log_info("\n", "");
 }
 
 bool Wallet::GetTransaction(const uint256 &hashTx, CWalletTx& wtx)
@@ -1206,7 +1206,7 @@ vector<unsigned char> CReserveKey::GetReservedKey()
             vchPubKey = keypool.vchPubKey;
         else
         {
-            log_warn("CReserveKey::GetReservedKey(): Warning: using default key instead of a new key, top up your keypool.");
+            log_warn("CReserveKey::GetReservedKey(): Warning: using default key instead of a new key, top up your keypool.", "");
             vchPubKey = pwallet->vchDefaultKey;
         }
     }

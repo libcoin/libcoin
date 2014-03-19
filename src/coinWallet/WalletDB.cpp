@@ -158,7 +158,7 @@ int CWalletDB::LoadWallet(Wallet* pwallet)
                 wtx.pwallet = pwallet;
 
                 if (wtx.getHash() != hash)
-                    log_error("Error in wallet.dat, hash mismatch\n");
+                    log_error("Error in wallet.dat, hash mismatch\n", "");
 
                 // Undo serialize changes in 31600
                 if (31404 <= wtx.fTimeReceivedIsTxTime && wtx.fTimeReceivedIsTxTime <= 31703)

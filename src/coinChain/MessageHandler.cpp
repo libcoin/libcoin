@@ -70,6 +70,6 @@ bool MessageHandler::handleMessage(Peer* origin, Message& msg) {
     //    catch (...) {
     //        PrintExceptionContinue(NULL, "ProcessMessage()");
     //    }
-    log_trace("exit: false");
+    log_trace("exit: false", "");
     return false;
 }

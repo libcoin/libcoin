@@ -169,7 +169,7 @@ unsigned int PonziChain::nextWorkRequired(BlockIterator blk) const {
         bnNew = proofOfWorkLimit();
     
     /// debug print
-    log_debug("GetNextWorkRequired RETARGET");
+    log_debug("GetNextWorkRequired RETARGET", "");
     log_debug("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"", nTargetTimespan, nActualTimespan);
     log_debug("Before: %08x  %s", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
     log_debug("After:  %08x  %s", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
@@ -307,7 +307,7 @@ int main(int argc, char* argv[])
         
         server.run();
         
-        log_info("Server exitted, shutting down Node and Miner...\n");
+        log_info("Server exitted, shutting down Node and Miner...\n", "");
         // getting here means that we have exited from the server (e.g. by the quit method)
         
         miner.shutdown();

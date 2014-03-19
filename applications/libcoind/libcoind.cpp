@@ -202,7 +202,7 @@ int main(int argc, char* argv[])
             cerr << "Error: " << e.what() << endl; 
         }
 
-        log_info("Server exited, shutting down Node and Miner...\n");
+        log_info("Server exited, shutting down Node and Miner...\n", "");
         // getting here means that we have exited from the server (e.g. by the quit method)
         
         miner.shutdown();

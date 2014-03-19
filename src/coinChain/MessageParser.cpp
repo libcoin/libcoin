@@ -46,7 +46,7 @@ tribool MessageParser::consume(const Chain& chain, Message& msg, char input)
             }
         case start_2:
             if (input != chain.messageStart()[1]) {
-                log_warn("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND\n\n");
+                log_warn("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND\n\n", "");
                 reset();
                 return false;
             }
@@ -57,7 +57,7 @@ tribool MessageParser::consume(const Chain& chain, Message& msg, char input)
             }
         case start_3:
             if (input != chain.messageStart()[2]) {
-                log_warn("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND\n\n");
+                log_warn("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND\n\n", "");
                 reset();
                 return false;
             }
