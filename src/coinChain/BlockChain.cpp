@@ -713,7 +713,8 @@ void BlockChain::rollbackConfirmation(int64_t cnf) {
         query("DELETE FROM Spendings WHERE icnf = ?", cnf);
     }
     
-    if (_chain.adhere_names()) query("DELETE FROM Names WHERE coin = (SELECT coin FROM Unspents WHERE ocnf = ?)", cnf);
+    if (_chain.adhere_names())
+        query("DELETE FROM Names WHERE coin IN (SELECT coin FROM Unspents WHERE ocnf = ?)", cnf);
     
     query("DELETE FROM Unspents WHERE ocnf = ?", cnf);
     
