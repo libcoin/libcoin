@@ -43,6 +43,7 @@ class PonziChain : public Chain
 {
 public:
     PonziChain();
+    virtual const int protocol_version() const { return 00000001; } // 0.0.0.1
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
     virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;
