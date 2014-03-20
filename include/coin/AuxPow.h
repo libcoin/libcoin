@@ -7,6 +7,7 @@
 #include <coin/MerkleTx.h>
 
 #include <coin/BlockHeader.h>
+#include <coin/Serialization.h>
 
 // this is for merged mining support
 enum {
@@ -35,6 +36,14 @@ public:
     // Index of chain in chains merkle tree
     int nChainIndex;
     BlockHeader parentBlock;
+
+    inline friend std::ostream& operator<<(std::ostream& os, const AuxPow& ap) {
+        return os << (const MerkleTx&)ap << ap.vChainMerkleBranch << const_binary<int>(ap.nChainIndex) << ap.parentBlock;
+    }
+    
+    inline friend std::istream& operator>>(std::istream& is, AuxPow& ap) {
+        return is >> (MerkleTx&) ap >> ap.vChainMerkleBranch >> binary<int>(ap.nChainIndex) >> ap.parentBlock;
+    }
 
     IMPLEMENT_SERIALIZE
     (

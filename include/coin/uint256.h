@@ -6,6 +6,7 @@
 #define BITCOIN_UINT256_H
 
 #include <coin/Version.h>
+#include <coin/Serialization.h>
 
 #include <limits.h>
 #include <stdint.h>
@@ -690,6 +691,13 @@ inline const uint256 operator|(const uint256& a, const uint256& b)      { return
 inline const uint256 operator+(const uint256& a, const uint256& b)      { return (base_uint256)a +  (base_uint256)b; }
 inline const uint256 operator-(const uint256& a, const uint256& b)      { return (base_uint256)a -  (base_uint256)b; }
 
+inline std::ostream& operator<<(std::ostream& os, const uint256& n) {
+    return os << const_binary<uint256>(n);
+}
+
+inline std::istream& operator>>(std::istream& is, uint256& n) {
+    return is >> binary<uint256>(n);
+}
 
 
 

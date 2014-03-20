@@ -343,6 +343,16 @@ public:
     
     BlockLocator() {}
     
+    inline friend std::ostream& operator<<(std::ostream& os, const BlockLocator& bl) {
+        int nVersion = 70000;
+        return os << const_binary<int>(nVersion) << bl.have;;
+    }
+    
+    inline friend std::istream& operator>>(std::istream& is, BlockLocator& bl) {
+        int nVersion = 0;
+        return is >> binary<int>(nVersion) >> bl.have;
+    }
+
     IMPLEMENT_SERIALIZE
     (
      if (!(nType & SER_GETHASH))

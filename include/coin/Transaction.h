@@ -21,6 +21,7 @@
 #include <coin/BigNum.h>
 #include <coin/Key.h>
 #include <coin/Script.h>
+#include <coin/Serialization.h>
 
 static const unsigned int MAX_BLOCK_SIZE = 1000000;
 static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
@@ -48,6 +49,14 @@ struct Coin { // was COutPoint
 
     IMPLEMENT_SERIALIZE( READWRITE(FLATDATA(*this)); )
     
+    inline friend std::ostream& operator<<(std::ostream& os, const Coin& coin) {
+        return os << const_binary<Coin>(coin);
+    }
+    
+    inline friend std::istream& operator>>(std::istream& is, Coin& coin) {
+        return is >> binary<Coin>(coin);
+    }
+
     void setNull() { hash = 0; index = -1; }
     bool isNull() const { return (hash == 0 && index == -1); }
     
@@ -101,6 +110,14 @@ public:
         READWRITE(_signature);
         READWRITE(_sequence);
     )
+
+    inline friend std::ostream& operator<<(std::ostream& os, const Input& i) {
+        return os << i._prevout << i._signature << const_binary<unsigned int>(i._sequence);
+    }
+    
+    inline friend std::istream& operator>>(std::istream& is, Input& i) {
+        return is >> i._prevout >> i._signature >> binary<unsigned int>(i._sequence);
+    }
 
     const Coin prevout() const { return _prevout; }
 
@@ -171,6 +188,14 @@ public:
         _script = script;
     }
 
+    inline friend std::ostream& operator<<(std::ostream& os, const Output& o) {
+        return os << const_binary<int64_t>(o._value) << o._script;
+    }
+    
+    inline friend std::istream& operator>>(std::istream& is, Output& o) {
+        return is >> binary<int64_t>(o._value) >> o._script;
+    }
+    
     IMPLEMENT_SERIALIZE
     (
         READWRITE(_value);
@@ -260,6 +285,14 @@ public:
             _inputs.push_back(*i);
         for(Outputs::const_iterator o = tx._outputs.begin(); o != tx._outputs.end(); ++o)
             _outputs.push_back(*o);
+    }
+    
+    inline friend std::ostream& operator<<(std::ostream& os, const Transaction& txn) {
+        return os << const_binary<int>(txn._version) << txn._inputs << txn._outputs << const_binary<unsigned int>(txn._lockTime);
+    }
+    
+    inline friend std::istream& operator>>(std::istream& is, Transaction& txn) {
+        return is >> binary<int>(txn._version) >> txn._inputs >> txn._outputs >> binary<unsigned int>(txn._lockTime);
     }
     
     IMPLEMENT_SERIALIZE

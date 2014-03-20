@@ -28,6 +28,7 @@ SET(TARGET_H
     ${HEADER_PATH}/MerkleTx.h
     ${HEADER_PATH}/NameOperation.h
     ${HEADER_PATH}/Script.h
+    ${HEADER_PATH}/Serialization.h
     ${HEADER_PATH}/Transaction.h
     ${HEADER_PATH}/Version.h
     ${LIBCOIN_CONFIG_HEADER}
@@ -53,6 +54,7 @@ SET(TARGET_SRC
     NameOperation.cpp
     Transaction.cpp
     Script.cpp
+    Serialization.cpp
     ${LIBCOIN_VERSIONINFO_RC}
 )
 SET(TARGET_LIBRARIES )

@@ -9,6 +9,7 @@
 #include <coin/util.h>
 #include <coin/BigNum.h>
 #include <coin/uint256.h>
+#include <coin/Serialization.h>
 
 //#include <coin/Address.h>
 //#include <coin/KeyStore.h>
@@ -977,5 +978,12 @@ int ScriptSigArgsExpected(txnouttype t, const std::vector<std::vector<unsigned c
 
 void checkCanonicalPubKey(const std::vector<unsigned char> &vchPubKey);
 void checkCanonicalSignature(const std::vector<unsigned char> &vchSig);
+
+inline std::istream& operator>>(std::istream& is, Script& script) {
+    uint64_t size = 0;
+    is >> varint(size);
+    script.resize(size);
+    return is.read((char*)&script[0], size);
+}
 
 #endif

@@ -39,6 +39,14 @@ public:
         _index = -1;
         _merkleVerified = false;
     }    
+
+    inline friend std::ostream& operator<<(std::ostream& os, const MerkleTx& mtx) {
+        return os << (const Transaction&)mtx << mtx._blockHash << mtx._merkleBranch << const_binary<int>(mtx._index);
+    }
+    
+    inline friend std::istream& operator>>(std::istream& is, MerkleTx& mtx) {
+        return is >> (Transaction&)mtx >> mtx._blockHash >> mtx._merkleBranch >> binary<int>(mtx._index);
+    }
     
     IMPLEMENT_SERIALIZE
     (

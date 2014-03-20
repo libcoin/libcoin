@@ -21,6 +21,7 @@
 #include <coin/serialize.h>
 #include <coin/uint256.h>
 #include <coin/BigNum.h>
+#include <coin/Serialization.h>
 
 class COIN_EXPORT BlockHeader {
 public:
@@ -29,6 +30,14 @@ public:
     }
     
     BlockHeader(const int version, const uint256 prevBlock, const uint256 merkleRoot, const int time, const int bits, const int nonce) : _version(version), _prevBlock(prevBlock), _merkleRoot(merkleRoot), _time(time), _bits(bits), _nonce(nonce) {
+    }
+    
+    inline friend std::ostream& operator<<(std::ostream& os, const BlockHeader& bh) {
+        return os << const_binary<int>(bh._version) << bh._prevBlock << bh._merkleRoot << const_binary<unsigned int>(bh._time) << const_binary<unsigned int>(bh._bits) << const_binary<unsigned int>(bh._nonce);
+    }
+    
+    inline friend std::istream& operator>>(std::istream& is, BlockHeader& bh) {
+        return is >> binary<int>(bh._version) >> bh._prevBlock >> bh._merkleRoot >> binary<unsigned int>(bh._time) >> binary<unsigned int>(bh._bits) >> binary<unsigned int>(bh._nonce);
     }
     
     IMPLEMENT_SERIALIZE
@@ -82,6 +91,19 @@ public:
     const int getNonce() const { return _nonce; }
     
     void setNonce(unsigned int nonce) { _nonce = nonce; }
+    
+    friend bool operator==(const BlockHeader& l, const BlockHeader& r) {
+        return (l._version == r._version &&
+                l._prevBlock == r._prevBlock &&
+                l._merkleRoot == r._merkleRoot &&
+                l._time == r._time &&
+                l._bits == r._bits &&
+                l._nonce == r._nonce);
+    }
+    
+    friend bool operator!=(const BlockHeader& l, const BlockHeader& r) {
+        return !(l == r);
+    }
     
 protected:
     int _version;
