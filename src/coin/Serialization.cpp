@@ -1,4 +1,5 @@
 #include <coin/Serialization.h>
+#include <climits>
 
 using namespace std;
 
