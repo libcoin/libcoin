@@ -19,6 +19,7 @@
 
 #include <vector>
 #include <iostream>
+#include <stdint.h>
 
 template <typename T>
 class binary {
