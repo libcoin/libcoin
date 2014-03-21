@@ -66,6 +66,25 @@ class COINCHAIN_EXPORT MerkleBlock : public BlockHeader {
 public:
     MerkleBlock(const Block& block, BloomFilter& filter);
     
+    inline friend std::ostream& operator<<(std::ostream& os, const MerkleBlock& mb) {
+        std::vector<unsigned char> bytes;
+        bytes.resize((mb._matches.size()+7)/8);
+        for (unsigned int p = 0; p < mb._matches.size(); p++)
+            bytes[p / 8] |= mb._matches[p] << (p % 8);
+        
+        return os << (const BlockHeader&) mb << const_binary<unsigned int>(mb._transactions) << mb._hashes << bytes;
+    }
+    
+    inline friend std::istream& operator>>(std::istream& is, MerkleBlock& mb) {
+        std::vector<unsigned char> bytes;
+        is >> (BlockHeader&) mb >> binary<unsigned int>(mb._transactions) >> mb._hashes >> bytes;
+        mb._matches.resize(bytes.size() * 8);
+        for (unsigned int p = 0; p < mb._matches.size(); p++)
+            mb._matches[p] = (bytes[p / 8] & (1 << (p % 8))) != 0;
+        mb._bad = false;
+        return is;
+    }
+    
     size_t getNumTransactions() const {
         return _transactions;
     }

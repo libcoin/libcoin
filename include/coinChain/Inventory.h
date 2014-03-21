@@ -50,6 +50,14 @@ public:
     explicit Inventory(const MerkleBlock& blk);
     explicit Inventory(const Transaction& txn);
     
+    inline friend std::ostream& operator<<(std::ostream& os, const Inventory& inv) {
+        return os << const_binary<int>(inv._type) << inv._hash;
+    }
+    
+    inline friend std::istream& operator>>(std::istream& is, Inventory& inv) {
+        return is >> binary<int>(inv._type) >> inv._hash;
+    }
+
     IMPLEMENT_SERIALIZE
     (
      READWRITE(_type);
@@ -57,6 +65,14 @@ public:
      )
     
     friend bool operator<(const Inventory& a, const Inventory& b);
+
+    friend bool operator==(const Inventory& a, const Inventory& b) {
+        return (a._type == b._type && a._hash == b._hash);
+    }
+    
+    friend bool operator!=(const Inventory& a, const Inventory& b) {
+        return !(a == b);
+    }
     
     bool isKnownType() const;
     const char* getCommand() const;

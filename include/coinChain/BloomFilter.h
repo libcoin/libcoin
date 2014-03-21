@@ -63,6 +63,14 @@ public:
     BloomFilter(unsigned int nElements, double nFPRate, unsigned int nTweak, unsigned char nFlagsIn);
     BloomFilter() : _full(true) {}
     
+    inline friend std::ostream& operator<<(std::ostream& os, const BloomFilter& bf) {
+        return os << bf._data << const_binary<unsigned int>(bf._hash_funcs) << const_binary<unsigned int>(bf._tweak) << const_binary<unsigned char>(bf._flags);
+    }
+    
+    inline friend std::istream& operator>>(std::istream& is, BloomFilter& bf) {
+        return is >> bf._data >> binary<unsigned int>(bf._hash_funcs) >> binary<unsigned int>(bf._tweak) >> binary<unsigned char>(bf._flags);
+    }
+
     IMPLEMENT_SERIALIZE
     (
      READWRITE(_data);
@@ -89,6 +97,16 @@ public:
     // Checks for empty and full filters to avoid wasting cpu
     void updateEmptyFull();
 
+    inline friend bool operator==(const BloomFilter& l, const BloomFilter& r) {
+        return (l._data == r._data &&
+                l._hash_funcs == r._hash_funcs &&
+                l._tweak == r._tweak &&
+                l._flags == r._flags);
+    }
+    
+    inline friend bool operator!=(const BloomFilter& l, const BloomFilter& r) {
+        return !(l == r);
+    }
 private:
     unsigned int hash(unsigned int num, const std::vector<unsigned char>& data) const;
 

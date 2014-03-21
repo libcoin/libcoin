@@ -523,9 +523,12 @@ void BlockChain::insertBlockHeader(int64_t count, const Block& block) {
     // also insert the AuxPow extra header into the db:
     if (_chain.adhere_aux_pow() && block.getVersion()&BLOCK_VERSION_AUXPOW) {
         // serialize the AuxPow
-        CDataStream ds;
-        ds << block.getAuxPoW();
-        Data auxpow(ds.begin(), ds.end());
+        ostringstream os;
+        os << block.getAuxPoW();
+        string s = os.str();
+//        CDataStream ds;
+//        ds << block.getAuxPoW();
+        Data auxpow(s.begin(), s.end());
         uint256 hash = block.getAuxPoW().getHash();
         query("INSERT INTO AuxProofOfWorks (count, hash, auxpow) VALUES (?, ?, ?)", count, hash, auxpow);
     }
@@ -770,7 +773,9 @@ void BlockChain::getBlock(int count, Block& block) const {
     if (_chain.adhere_aux_pow() && block.getVersion()&BLOCK_VERSION_AUXPOW) {
         Data data = query<Data>("SELECT auxpow FROM AuxProofOfWorks WHERE count = ?", count);
         AuxPow auxpow;
-        CDataStream(data) >> auxpow;
+        istringstream is(string(data.begin(), data.end()));
+        is >> auxpow;
+//        CDataStream(data) >> auxpow;
         block.setAuxPoW(auxpow);
     }
     //    cout << block.getHash().toString() << endl;

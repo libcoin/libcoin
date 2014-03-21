@@ -237,7 +237,7 @@ extern const TestNet3Chain testnet3;
 class COINCHAIN_EXPORT NamecoinChain : public Chain {
 public:
     NamecoinChain();
-    virtual const int protocol_version() const { return 00035003; } // 0.3.50.3
+    virtual const int protocol_version() const { return 00037200; } // 0.3.72.0
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
     virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;

@@ -720,14 +720,6 @@ const uint256 LitecoinChain::getPoWHash(const Block& block) const {
 
 const LitecoinChain litecoin;
 
-/* LITECOIN TESTNET
- pchMessageStart[0] = 0xfc;
- pchMessageStart[1] = 0xc1;
- pchMessageStart[2] = 0xb7;
- pchMessageStart[3] = 0xdc;
- hashGenesisBlock = uint256("0xf5ae71e26c74beacc88382716aced69cddf3dffff24f384e1808905e0188f68f");
-*/
-
 TerracoinChain::TerracoinChain() : Chain("terracoin", "TRC", 8), _genesis("0x00000000804bbc6a621a9dbb564ce469f492e1ccf2d70f8a6b241e26a277afa2") {
     _alert_key = ParseHex("04302390343f91cc401d56d68b123028bf52e5fca1939df127f63c6467cdf9c8e2c14b61104cf817d0b780da337893ecc4aaff1309e536162dabbdb45200ca2b0a");
     _messageStart[0] = 0xfb; _messageStart[1] = 0xc0; _messageStart[2] = 0xb6; _messageStart[3] = 0xdb; // Terracoin: increase each by adding 2 to bitcoin's value.

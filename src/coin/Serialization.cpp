@@ -56,3 +56,19 @@ ostream& operator<<(ostream& os, const const_varint& var) {
         return os.write((const char*)&data, sizeof(data));
     }
 }
+
+ostream& operator<<(ostream& os, const const_varstr& var) {
+    os << const_varint(var._str.size());
+    if (!var._str.empty())
+        os.write((const char*)&var._str[0], var._str.size());
+    return os;
+}
+
+istream& operator>>(istream& is, const varstr& var) {
+    uint64_t size;
+    is >> varint(size);
+    var._str.resize(size);
+    if (!var._str.empty())
+        is.read((char*)&var._str[0], var._str.size());
+    return is;
+}

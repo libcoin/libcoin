@@ -107,6 +107,14 @@ struct Unspent {
         return 0;
     }
     
+    inline friend std::ostream& operator<<(std::ostream& os, const Unspent& u) {
+        return os << u.key << u.output;
+    }
+    
+    inline friend std::istream& operator>>(std::istream& is, Unspent& u) {
+        return is >> u.key >> u.output;
+    }
+    
     IMPLEMENT_SERIALIZE
     (
         READWRITE(key);

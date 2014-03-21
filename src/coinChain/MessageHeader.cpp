@@ -33,7 +33,7 @@ static const char* ppszTypeName[] =
 MessageHeader::MessageHeader()
 {
     memset(_messageStart.elems, 0, sizeof(_messageStart.elems));
-    memset(pchCommand, 0, sizeof(pchCommand));
+    memset(&pchCommand, 0, sizeof(pchCommand));
     pchCommand[1] = 1;
     nMessageSize = -1;
     nChecksum = 0;
@@ -42,17 +42,22 @@ MessageHeader::MessageHeader()
 MessageHeader::MessageHeader(const Chain& chain, const char* pszCommand, unsigned int nMessageSizeIn) : _messageStart(chain.messageStart())
 {
     //    memcpy(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart));
-    strncpy(pchCommand, pszCommand, COMMAND_SIZE);
+    strncpy(&pchCommand[0], pszCommand, COMMAND_SIZE);
     nMessageSize = nMessageSizeIn;
     nChecksum = 0;
 }
 
 std::string MessageHeader::GetCommand() const
 {
+    size_t len = COMMAND_SIZE;
+    while (pchCommand[--len] == 0 && len);
+    return std::string(&pchCommand[0], &pchCommand[0] + len + 1);
+/*
     if (pchCommand[COMMAND_SIZE-1] == 0)
-        return std::string(pchCommand, pchCommand + strlen(pchCommand));
+        return std::string(&pchCommand[0], &pchCommand[0] + strlen(pchCommand));
     else
         return std::string(pchCommand, pchCommand + COMMAND_SIZE);
+*/
 }
 
 bool MessageHeader::IsValid(const Chain& chain) const
@@ -62,12 +67,12 @@ bool MessageHeader::IsValid(const Chain& chain) const
         return false;
 
     // Check the command string for errors
-    for (const char* p1 = pchCommand; p1 < pchCommand + COMMAND_SIZE; p1++)
+    for (const char* p1 = &pchCommand[0]; p1 < &pchCommand[0] + COMMAND_SIZE; p1++)
     {
         if (*p1 == 0)
         {
             // Must be all zeros after the first zero
-            for (; p1 < pchCommand + COMMAND_SIZE; p1++)
+            for (; p1 < &pchCommand[0] + COMMAND_SIZE; p1++)
                 if (*p1 != 0)
                     return false;
         }

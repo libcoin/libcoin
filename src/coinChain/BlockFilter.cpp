@@ -36,8 +36,10 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
     if (msg.command() == "block") {
         Block block;
         if (_blockChain.chain().adhere_aux_pow()) block.adhere_aux_pow();
-        CDataStream data(msg.payload());
-        data >> block;
+        istringstream is(msg.payload());
+        is >> block;
+//        CDataStream data(msg.payload());
+//        data >> block;
         
         log_debug("received block %s", block.getHash().toString().substr(0,20).c_str());
         
@@ -88,10 +90,12 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
     else if (msg.command() == "getblocks") { // here we should simply ignore requests below
         BlockLocator locator;
         uint256 hashStop;
-        CDataStream data(msg.payload());
-
-        data >> locator >> hashStop;
+        istringstream is(msg.payload());
+        is >> locator >> hashStop;
         
+//        CDataStream data(msg.payload());
+//        data >> locator >> hashStop;
+
         // Find the last block the caller has in the main chain
         BlockIterator blk = _blockChain.iterator(locator);
         
@@ -127,8 +131,12 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
     else if (msg.command() == "getheaders") {
         BlockLocator locator;
         uint256 hashStop;
-        CDataStream data(msg.payload());
-        data >> locator >> hashStop;
+
+        istringstream is(msg.payload());
+        is >> locator >> hashStop;
+
+//        CDataStream data(msg.payload());
+//        data >> locator >> hashStop;
         
         BlockIterator blk;
         if (locator.IsNull()) {
@@ -158,8 +166,10 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
     }
     else if (msg.command() == "getdata") { // server, or whatever instance that holds the inv map...
         vector<Inventory> vInv;
-        CDataStream data(msg.payload());
-        data >> vInv;
+        istringstream is(msg.payload());
+        is >> vInv;
+//        CDataStream data(msg.payload());
+//        data >> vInv;
         if (vInv.size() > 50000)
             return error("message getdata size() = %d", vInv.size());
         
@@ -207,8 +217,10 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
     }
     else if (msg.command() == "inv") {
         vector<Inventory> inventories;
-        CDataStream data(msg.payload());
-        data >> inventories;
+        istringstream is(msg.payload());
+        is >> inventories;
+//        CDataStream data(msg.payload());
+//        data >> inventories;
         if (inventories.size() > 50000)
             return error("message inv size() = %d", inventories.size());
         

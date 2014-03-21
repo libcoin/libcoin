@@ -295,7 +295,7 @@ void Node::start_connect() {
         return; // this will cause the Node to wait for inbound connections only - alternatively we should add a timer
     // TODO: we should check for validity of the candidate - if not valid we could retry later, give up or wait for a new Peer before we try a new connect. 
     stringstream ss;
-    ss << ep;
+    ss << (boost::asio::ip::tcp::endpoint)ep;
     log_debug("Trying connect to: %s", ss.str());
     _new_server.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, false, _proxy, _blockChain.getBestHeight(), getFullClientVersion())); // false means outbound
     _new_server->addr = ep;

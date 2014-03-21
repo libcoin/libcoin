@@ -29,9 +29,12 @@ bool FilterHandler::operator()(Peer* origin, Message& msg) {
     }
     if (msg.command() == "filterload") {
         BloomFilter filter;
-        CDataStream data(msg.payload());
         
-        data >> filter;
+        istringstream is(msg.payload());
+        is >> filter;
+        
+        // CDataStream data(msg.payload());
+        //data >> filter;
         
         if (filter.isWithinSizeConstraints()) {
             origin->filter = filter;
@@ -41,9 +44,13 @@ bool FilterHandler::operator()(Peer* origin, Message& msg) {
         return true;
     }
     else if (msg.command() == "filteradd") {
-        CDataStream data(msg.payload());
+//        CDataStream data(msg.payload());
         vector<unsigned char> bloom_data;
-        data >> bloom_data;
+        
+        istringstream is(msg.payload());
+        is >> bloom_data;
+        
+        //        data >> bloom_data;
         
         // Nodes must NEVER send a data item > 520 bytes (the max size for a script data object,
         // and thus, the maximum size any matched object can have) in a filteradd message

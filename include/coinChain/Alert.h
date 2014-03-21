@@ -36,6 +36,38 @@
 class COINCHAIN_EXPORT UnsignedAlert
 {
 public:
+    inline friend std::ostream& operator<<(std::ostream& os, const UnsignedAlert& a) {
+        return (os << const_binary<int>(a._version)
+                << const_binary<int64_t>(a._relay_until)
+                << const_binary<int64_t>(a._expiration)
+                << const_binary<int>(a._id)
+                << const_binary<int>(a._cancel)
+                << a._cancels
+                << const_binary<int>(a._min_version)
+                << const_binary<int>(a._max_version)
+                << a._subversions
+                << const_binary<int>(a._priority)
+                << const_varstr(a._comment)
+                << const_varstr(a._status_bar)
+                << const_varstr(a._reserved));
+    }
+    
+    inline friend std::istream& operator>>(std::istream& is, UnsignedAlert& a) {
+        return (is >> binary<int>(a._version)
+                >> binary<int64_t>(a._relay_until)
+                >> binary<int64_t>(a._expiration)
+                >> binary<int>(a._id)
+                >> binary<int>(a._cancel)
+                >> a._cancels
+                >> binary<int>(a._min_version)
+                >> binary<int>(a._max_version)
+                >> a._subversions
+                >> binary<int>(a._priority)
+                >> varstr(a._comment)
+                >> varstr(a._status_bar)
+                >> varstr(a._reserved));
+    }
+    
     IMPLEMENT_SERIALIZE
     (
         READWRITE(this->_version);
@@ -86,6 +118,26 @@ public:
     
     const std::string& getStatusBar() const { return _status_bar; }
     
+    inline friend bool operator==(const UnsignedAlert& l, const UnsignedAlert& r) {
+        return (l._version == r._version &&
+                l._relay_until == r._relay_until &&
+                l._expiration == r._expiration &&
+                l._id == r._id &&
+                l._cancel == r._cancel &&
+                l._cancels == r._cancels &&
+                l._min_version == r._min_version &&
+                l._max_version == r._max_version &&
+                l._subversions == r._subversions &&
+                l._priority == r._priority &&
+                l._comment == r._comment &&
+                l._status_bar == r._status_bar &&
+                l._reserved == r._reserved);
+    }
+    
+    inline friend bool operator!=(const UnsignedAlert& l, const UnsignedAlert& r) {
+        return !(l == r);
+    }
+    
 protected:
     int _version;
     int64_t _relay_until;      // when newer nodes stop relaying to newer nodes
@@ -117,6 +169,14 @@ public:
         setNull();
     }
 
+    inline friend std::ostream& operator<<(std::ostream& os, const Alert& a) {
+        return os << a._message << a._signature;
+    }
+    
+    inline friend std::istream& operator>>(std::istream& is, Alert& a) {
+        return is >> a._message >> a._signature;
+    }
+    
     IMPLEMENT_SERIALIZE
     (
         READWRITE(_message);
@@ -163,6 +223,17 @@ public:
     bool checkSignature();
 
     bool processAlert();
+    
+    inline friend bool operator==(const Alert& l, const Alert& r) {
+        return ((const UnsignedAlert&)l == (const UnsignedAlert&)r &&
+                l._pub_key == r._pub_key &&
+                l._message == r._message &&
+                l._signature == r._signature);
+    }
+
+    inline friend bool operator!=(const Alert& l, const Alert& r) {
+        return !(l == r);
+    }
     
 private:
     const PubKey& _pub_key;

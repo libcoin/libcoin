@@ -39,9 +39,29 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
         int64_t nTime;
         Endpoint addrMe;
         Endpoint addrFrom;
+        addrFrom.setLastTry(UINT_MAX);
+        addrMe.setLastTry(UINT_MAX);
         uint64_t nNonce = 1;
-        CDataStream data(msg.payload(), SER_NETWORK, 0); // this is to ensure we dont reread the time and version for the endpoints (see Endpoint serializer)
+        istringstream is(msg.payload());
+        
+        is >> binary<int>(origin->nVersion) >> binary<uint64_t>(origin->nServices) >> binary<int64_t>(nTime) >> addrMe;
+        if (origin->nVersion == 10300)
+            origin->nVersion = 300;
+        if (origin->nVersion >= 106 && !is.eof())
+            is >> addrFrom >> binary<uint64_t>(nNonce);
+        if (origin->nVersion >= 106 && !is.eof())
+            is >> varstr(origin->strSubVer);
+        int bestHeight;
+        if (origin->nVersion >= 209 && !is.eof())
+            is >> bestHeight;
+        
+        if (!is.eof())
+            is >> binary<bool>(origin->relayTxes); // set to true after we get the first filter* message
+        else
+            origin->relayTxes = true;
 
+//        CDataStream data(msg.payload(), SER_NETWORK, 0); // this is to ensure we dont reread the time and version for the endpoints (see Endpoint serializer)
+/*
         data >> origin->nVersion >> origin->nServices >> nTime >> addrMe;
         if (origin->nVersion == 10300)
             origin->nVersion = 300;
@@ -57,7 +77,7 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
             data >> origin->relayTxes; // set to true after we get the first filter* message
         else
             origin->relayTxes = true;
-        
+*/
         if (origin->nVersion == 0)
             return false;
         
@@ -83,9 +103,9 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
         // Change version
         if (origin->nVersion >= 209)
             origin->PushMessage("verack");
-        origin->vSend.SetVersion(min(origin->nVersion, PROTOCOL_VERSION));
-        if (origin->nVersion < 209)
-            origin->vRecv.SetVersion(min(origin->nVersion, PROTOCOL_VERSION));
+//        origin->vSend.SetVersion(min(origin->nVersion, PROTOCOL_VERSION));
+//        if (origin->nVersion < 209)
+//            origin->vRecv.SetVersion(min(origin->nVersion, PROTOCOL_VERSION));
                 
         origin->successfullyConnected();
         
@@ -95,7 +115,7 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
         if (origin->nVersion == 0) {
             throw OriginNotReady();
         }
-        origin->vRecv.SetVersion(min(origin->nVersion, PROTOCOL_VERSION)); // this is where the version is - this triggers the parser to expect checksums too! (UGLY!)
+//        origin->vRecv.SetVersion(min(origin->nVersion, PROTOCOL_VERSION)); // this is where the version is - this triggers the parser to expect checksums too! (UGLY!)
         return true;
     }  
     return false;

@@ -30,9 +30,12 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
     }
     if (msg.command() == "addr") {
         vector<Endpoint> endpoints;
-        CDataStream data(msg.payload());
+
+        istringstream is(msg.payload());
+        is >> endpoints;
         
-        data >> endpoints;
+//        CDataStream data(msg.payload());
+//        data >> endpoints;
         
         // Don't want addr from older versions unless seeding
         if (origin->nVersion < 209)
@@ -116,8 +119,12 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
     else if (msg.command() == "ping") {
         if (origin->nVersion > BIP0031_VERSION) {
             uint64_t nonce = 0;
-            CDataStream data(msg.payload());
-            data >> nonce;
+
+            istringstream is(msg.payload());
+            is >> binary<uint64_t>(nonce);
+
+//            CDataStream data(msg.payload());
+//            data >> nonce;
             // Echo the message back with the nonce. This allows for two useful features:
             //
             // 1) A remote node can quickly check if the connection is operational

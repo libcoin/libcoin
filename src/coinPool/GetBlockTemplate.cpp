@@ -118,8 +118,11 @@ Value GetBlockTemplate::operator()(const Array& params, bool fHelp) {
     
     Object coinbasetxn;
     const Transaction& txn = block.getTransaction(0);
-    CDataStream ds(SER_NETWORK, PROTOCOL_VERSION);
-    ds << txn;
+//    CDataStream ds(SER_NETWORK, PROTOCOL_VERSION);
+//    ds << txn;
+    ostringstream os;
+    os << txn;
+    string ds = os.str();
     coinbasetxn.push_back(Pair("data", HexStr(ds.begin(), ds.end())));
     
     result.push_back(Pair("coinbasetxn", coinbasetxn));
@@ -131,8 +134,11 @@ Value GetBlockTemplate::operator()(const Array& params, bool fHelp) {
     for (size_t i = 1; i < block.getNumTransactions(); ++i) {
         Object transaction;
         const Transaction& txn = block.getTransaction(i);
-        CDataStream ds(SER_NETWORK, PROTOCOL_VERSION);
-        ds << txn;
+//        CDataStream ds(SER_NETWORK, PROTOCOL_VERSION);
+//        ds << txn;
+        ostringstream os;
+        os << txn;
+        string ds = os.str();
         transaction.push_back(Pair("data", HexStr(ds.begin(), ds.end())));
         transactions.push_back(transaction);
     }

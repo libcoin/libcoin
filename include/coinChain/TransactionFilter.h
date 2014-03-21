@@ -31,7 +31,7 @@
 
 class BlockChain;
 class Inventory;
-class CDataStream;
+//class CDataStream;
 
 class COINCHAIN_EXPORT TransactionFilter : public Filter
 {

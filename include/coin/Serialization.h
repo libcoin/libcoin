@@ -18,8 +18,11 @@
 #define SERIALIZATION_H
 
 #include <vector>
+#include <set>
 #include <iostream>
 #include <stdint.h>
+
+#include <boost/type_traits.hpp>
 
 template <typename T>
 class binary {
@@ -73,11 +76,34 @@ private:
     uint64_t& _int;
 };
 
+class const_varstr {
+public:
+    const_varstr(const std::string& str) : _str(str) {}
+    
+    friend std::ostream& operator<<(std::ostream& os, const const_varstr& var);
+    
+private:
+    const std::string& _str;
+};
+
+class varstr {
+public:
+    varstr(std::string& str) : _str(str) {}
+    
+    friend std::istream& operator>>(std::istream& is, const varstr& var);
+private:
+    std::string& _str;
+};
+
 template <class T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& array) {
     os << const_varint(array.size());
-    for (typename std::vector<T>::const_iterator t = array.begin(); t != array.end(); ++t)
-        os << *t;
+    for (typename std::vector<T>::const_iterator t = array.begin(); t != array.end(); ++t) {
+        if (boost::is_class<T>())
+            os << *t;
+        else
+            os << const_binary<T>(*t);
+    }
     return os;
 }
 
@@ -86,9 +112,74 @@ std::istream& operator>>(std::istream& is, std::vector<T>& array) {
     uint64_t size = 0;
     is >> varint(size);
     array.resize(size);
-    for (typename std::vector<T>::iterator t = array.begin(); t != array.end(); ++t)
-        is >> *t;
+    for (typename std::vector<T>::iterator t = array.begin(); t != array.end(); ++t) {
+        if (boost::is_class<T>())
+            is >> *t;
+        else
+            is >> binary<T>(*t);
+    }
     return is;
+}
+
+template <class T>
+std::ostream& operator<<(std::ostream& os, const std::set<T>& array) {
+    os << const_varint(array.size());
+    for (typename std::set<T>::const_iterator t = array.begin(); t != array.end(); ++t) {
+        if (boost::is_class<T>())
+            os << *t;
+        else
+            os << const_binary<T>(*t);
+    }
+    return os;
+}
+
+template <class T>
+std::istream& operator>>(std::istream& is, std::set<T>& array) {
+    uint64_t size = 0;
+    is >> varint(size);
+    for (size_t i = 0; i < size; ++i) {
+        T t;
+        if (boost::is_class<T>())
+            is >> t;
+        else
+            is >> binary<T>(t);
+        array.insert(t);
+    }
+    return is;
+}
+
+template <typename T>
+std::string serialize(const T& t) {
+    std::ostringstream os;
+    if (boost::is_class<T>())
+        os << t;
+    else
+        os << const_binary<T>(t);
+    return os.str();
+}
+
+inline std::string serialize(const std::string& t) {
+    std::ostringstream os;
+    os << const_varstr(t);
+    return os.str();
+}
+
+template <typename T>
+T deserialize(const std::string& s) {
+    std::istringstream is(s);
+    T t;
+    if (boost::is_class<T>())
+        is >> t;
+    else
+        is >> binary<T>(t);
+    return t;
+}
+
+inline std::string deserialize(const std::string& s) {
+    std::istringstream is(s);
+    std::string t;
+    is >> varstr(t);
+    return t;
 }
 
 #endif // SERIALIZATION_H

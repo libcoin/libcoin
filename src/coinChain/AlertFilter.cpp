@@ -28,8 +28,10 @@ bool AlertFilter::operator() (Peer* origin, Message& msg) {
     }
     if (msg.command() == "alert") { // alert might need to be created with something; all peers/Node, like node->broadcast(alert)
         Alert alert(_pub_key);
-        CDataStream data(msg.payload());
-        data >> alert;
+        istringstream is(msg.payload());
+        is >> alert;
+//        CDataStream data(msg.payload());
+//        data >> alert;
         
         if (alert.processAlert()) {
             // Relay

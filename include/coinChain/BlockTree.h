@@ -339,24 +339,24 @@ typedef BlockTree::Iterator BlockIterator;
 class COINCHAIN_EXPORT BlockLocator {
 public:
     std::vector<uint256> have;
+    int _version;
 public:
     
-    BlockLocator() {}
+    BlockLocator() : _version(PROTOCOL_VERSION) {}
     
     inline friend std::ostream& operator<<(std::ostream& os, const BlockLocator& bl) {
-        int nVersion = 70000;
-        return os << const_binary<int>(nVersion) << bl.have;;
+        return os << const_binary<int>(bl._version) << bl.have;;
     }
     
     inline friend std::istream& operator>>(std::istream& is, BlockLocator& bl) {
-        int nVersion = 0;
-        return is >> binary<int>(nVersion) >> bl.have;
+        return is >> binary<int>(bl._version) >> bl.have;
     }
 
     IMPLEMENT_SERIALIZE
     (
+     int ver = PROTOCOL_VERSION;
      if (!(nType & SER_GETHASH))
-     READWRITE(nVersion);
+     READWRITE(ver);
      READWRITE(have);
      )
     
@@ -369,6 +369,9 @@ public:
     }
     
     friend bool operator==(const BlockLocator& a, const BlockLocator& b);
+    inline friend bool operator!=(const BlockLocator& a, const BlockLocator& b) {
+        return !(a == b);
+    }
 };
 
 struct ShareRef {

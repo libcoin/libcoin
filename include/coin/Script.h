@@ -28,7 +28,7 @@ enum
     SIGHASH_ALL = 1,
     SIGHASH_NONE = 2,
     SIGHASH_SINGLE = 3,
-    SIGHASH_ANYONECANPAY = 0x80,
+    SIGHASH_ANYONECANPAY = 0x80
 };
 
 enum txnouttype
@@ -38,7 +38,7 @@ enum txnouttype
     TX_PUBKEY,
     TX_PUBKEYHASH,
     TX_SCRIPTHASH,
-    TX_MULTISIG,
+    TX_MULTISIG
 };
 
 
@@ -191,7 +191,7 @@ enum opcodetype
     OP_SCRIPTHASH = 0xfd,
     OP_PUBKEY = 0xfe,
     
-    OP_INVALIDOPCODE = 0xff,
+    OP_INVALIDOPCODE = 0xff
 };
 
 typedef std::vector<unsigned char> valtype;
@@ -978,12 +978,5 @@ int ScriptSigArgsExpected(txnouttype t, const std::vector<std::vector<unsigned c
 
 void checkCanonicalPubKey(const std::vector<unsigned char> &vchPubKey);
 void checkCanonicalSignature(const std::vector<unsigned char> &vchSig);
-
-inline std::istream& operator>>(std::istream& is, Script& script) {
-    uint64_t size = 0;
-    is >> varint(size);
-    script.resize(size);
-    return is.read((char*)&script[0], size);
-}
 
 #endif

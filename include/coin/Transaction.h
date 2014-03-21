@@ -401,8 +401,11 @@ public:
     }
 
     std::string hexify() const {
-        CDataStream ss;
-        ss << *this;
+        std::ostringstream os;
+        os << *this;
+        std::string ss = os.str();
+//        CDataStream ss;
+//        ss << *this;
         return HexStr(ss.begin(), ss.end());
     }
 

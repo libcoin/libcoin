@@ -440,6 +440,9 @@ void Peer::PushVersion() {
     Endpoint local = _socket.local_endpoint();
     Endpoint addrYou = (_proxy ? Endpoint("0.0.0.0") : addr);
     Endpoint addrMe = (_proxy ? Endpoint("0.0.0.0") : local);
+    // hack to avoid serializing the time
+    addrYou.setLastTry(UINT_MAX);
+    addrMe.setLastTry(UINT_MAX);
     RAND_bytes((unsigned char*)&_nonce, sizeof(_nonce));
     uint64_t nLocalServices = NODE_NETWORK;
     PushMessage("version", PROTOCOL_VERSION, nLocalServices, nTime, addrYou, addrMe,

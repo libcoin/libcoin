@@ -287,7 +287,9 @@ public:
     }
 };
 
-
+inline std::ostream& operator<<(std::ostream& os, const CFlatData& fd) {
+    return os.write(fd.begin(), fd.end() - fd.begin());
+}
 
 //
 // string stored as a fixed length field
@@ -1153,16 +1155,44 @@ public:
     template<typename T>
     CDataStream& operator<<(const T& obj)
     {
+        // first serialize to string
+        std::string s = serialize(obj);
+        // save CDataStream state
+        size_t pos = str().size();
         // Serialize to this stream
         ::Serialize(*this, obj, nType, nVersion);
+        std::string stream = str();
+        stream = stream.substr(pos);
+        if (s != stream)
+            log_warn("Serialization ERROR for %s\n\twas: %s\n\tshould be: stream: %s", typeid(obj).name(), HexStr(s.begin(), s.end()), HexStr(stream.begin(), stream.end()));
         return (*this);
     }
 
     template<typename T>
     CDataStream& operator>>(T& obj)
     {
+        T t = obj;
+        std::istringstream is(str());
+        if (boost::is_class<T>())
+            is >> t;
+        else
+            is >> binary<T>(t);
         // Unserialize from this stream
         ::Unserialize(*this, obj, nType, nVersion);
+        if (t != obj)
+            log_warn("Deserialization ERROR for ", typeid(obj).name());
+        return (*this);
+    }
+
+    CDataStream& operator>>(std::string& obj)
+    {
+        std::string t = obj;
+        std::istringstream is(str());
+        is >> varstr(t);
+        // Unserialize from this stream
+        ::Unserialize(*this, obj, nType, nVersion);
+        if (t != obj)
+            log_warn("Deserialization ERROR for ", typeid(obj).name());
         return (*this);
     }
 };
@@ -1276,6 +1306,25 @@ int main(int argc, char *argv[])
 
 
 
+
+template <class T>
+void check_serialization(const CDataStream& ds, const T& t, std::string file, int line) {
+    std::ostringstream oss;
+    oss << t;
+    if (ds.str() != oss.str())
+        log_warn("check_serialization issue in serializing in: %s:%d ", file, line);
+}
+
+template <class T>
+void check_serialization(const T& t, const CDataStream& ds, std::string file, int line) {
+    T t1 = t;
+    std::istringstream iss(ds.str());
+    iss >> t1;
+    std::ostringstream oss;
+    oss << t1;
+    if (ds.str() != oss.str())
+        log_warn("check_serialization issue in serializing in: %s:%d ", file, line);
+}
 
 
 

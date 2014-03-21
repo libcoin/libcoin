@@ -23,6 +23,7 @@
 #include <coin/util.h>
 
 #include <coinChain/Chain.h>
+#include <coinChain/Endpoint.h>
 
 #include <string>
 #include <iostream>
@@ -61,14 +62,14 @@ void serialization_test(string name, T t) {
         ostringstream oss;
         oss << t;
         
-        CDataStream ds;
+        CDataStream ds(SER_NETWORK, PROTOCOL_VERSION);
         ds << t;
         
         string s1 = oss.str();
         string s2 = ds.str();
         
         if (s1 != s2)
-            throw runtime_error(name + " serialization error: length of DataStream: " + lexical_cast<string>(s2.size())+ " length of stringstream: "+ lexical_cast<string>(s1.size()));
+            throw runtime_error(" output serialization error: length of DataStream: " + lexical_cast<string>(s2.size())+ " length of stringstream: "+ lexical_cast<string>(s1.size()));
         
         T t1;
         T t2;
@@ -80,7 +81,7 @@ void serialization_test(string name, T t) {
         is2 >> t2;
         
         if (t1 != t2)
-            throw runtime_error(name + " input serialization error");
+            throw runtime_error(" input serialization error");
         
         cout << name << " Passed" << endl;
     }
@@ -122,6 +123,10 @@ int main(int argc, char* argv[])
         
         serialization_test("Block", bitcoin.genesisBlock());
 
+        serialization_test("Endpoint", Endpoint("1.2.3.4:5678"));
+        serialization_test("Endpoint IPv6", Endpoint("fe80::6203:8ff:fe90:f4ce:5678"));
+        serialization_test("Endpoint IPv6 enc IPv4", Endpoint("::ffff:1:2:3:4:5678"));
+        
         // try to serialize also a block with AuxPow info
         
         return 0;

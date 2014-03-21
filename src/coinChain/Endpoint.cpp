@@ -94,13 +94,13 @@ Endpoint::Endpoint()
 
 Endpoint::Endpoint(tcp::endpoint ep) : tcp::endpoint(ep) {
     _services = NODE_NETWORK;
-    memcpy(_ipv6, pchIPv4, sizeof(_ipv6));
+//    memcpy(_ipv6, pchIPv4, sizeof(_ipv6));
     _time = UnixTime::s() - 3*24*60*60 - GetRand(4*24*60*60);
     _lastTry = 0;    
 }
 
 Endpoint::Endpoint(const Endpoint& ep) : tcp::endpoint(ep), _services(ep._services), _time(ep._time), _lastTry(ep._lastTry)  {
-    memcpy(_ipv6, ep._ipv6, sizeof(_ipv6));
+//    memcpy(_ipv6, ep._ipv6, sizeof(_ipv6));
 }
 
 Endpoint::Endpoint(unsigned int ip, unsigned short p, uint64_t services)
@@ -146,7 +146,7 @@ Endpoint::Endpoint(unsigned int ip, unsigned short p, unsigned int time, unsigne
 void Endpoint::init()
 {
     _services = NODE_NETWORK;
-    memcpy(_ipv6, pchIPv4, sizeof(_ipv6));
+//    memcpy(_ipv6, pchIPv4, sizeof(_ipv6));
     //    address(address_v4(INADDR_NONE));
     //    port(htons(getDefaultPort()));
     address(address_v4(INADDR_NONE));
@@ -158,9 +158,10 @@ void Endpoint::init()
 
 bool operator==(const Endpoint& a, const Endpoint& b)
 {
-    return (memcmp(a._ipv6, b._ipv6, sizeof(a._ipv6)) == 0 &&
-            a.address()   == b.address() &&
-            a.port() == b.port());
+//    return (memcmp(a._ipv6, b._ipv6, sizeof(a._ipv6)) == 0 &&
+      return ((const boost::asio::ip::tcp::endpoint&)a == (const boost::asio::ip::tcp::endpoint&)b &&
+              a._services == b._services &&
+              a._time == b._time);
 }
 
 bool operator!=(const Endpoint& a, const Endpoint& b)
@@ -170,24 +171,45 @@ bool operator!=(const Endpoint& a, const Endpoint& b)
 
 bool operator<(const Endpoint& a, const Endpoint& b)
 {
-    int ret = memcmp(a._ipv6, b._ipv6, sizeof(a._ipv6));
-    if (ret < 0)
-        return true;
-    else if (ret == 0)
+//    int ret = memcmp(a._ipv6, b._ipv6, sizeof(a._ipv6));
+//    if (ret < 0)
+//        return true;
+//    else if (ret == 0)
+    int ret = a.address() == b.address();
+    if (!ret)
+        return a.address() < b.address();
+    else
+        return ntohs(a.port()) < ntohs(b.port());
+    /*
     {
         if (ntohl(a.address().to_v4().to_ulong()) < ntohl(b.address().to_v4().to_ulong()))
             return true;
         else if (a.address() == b.address())
             return ntohs(a.port()) < ntohs(b.port());
     }
-    return false;
+     */
+//    return false;
 }
 
 std::vector<unsigned char> Endpoint::getKey() const
 {
-    CDataStream ss;
-    ss.reserve(18);
-    ss << FLATDATA(_ipv6) << (uint32_t) address().to_v4().to_ulong() << port();
+    boost::asio::ip::address_v6::bytes_type ipv6;
+    if (address().is_v6())
+        ipv6 = address().to_v6().to_bytes();
+    else
+        ipv6 = boost::asio::ip::address_v6::v4_mapped(address().to_v4()).to_bytes();
+    
+//    return os << const_binary<unsigned int>(ep._time) << const_binary<uint64_t>(ep._services) << const_binary<boost::asio::ip::address_v6::bytes_type>(ipv6) << const_binary<unsigned short>(ntohs(ep.port()));
+    
+//    CDataStream ss;
+//    ss.reserve(18);
+//    ss << FLATDATA(_ipv6) << (uint32_t) address().to_v4().to_ulong() << port();
+//    ss << FLATDATA(ipv6) << port();
+
+    ostringstream os;
+    os << const_binary<boost::asio::ip::address_v6::bytes_type>(ipv6) << const_binary<unsigned short>(port());
+    
+    string ss = os.str();
 
     #if defined(_MSC_VER) && _MSC_VER < 1300
     return std::vector<unsigned char>((unsigned char*)&ss.begin()[0], (unsigned char*)&ss.end()[0]);
@@ -208,7 +230,8 @@ struct sockaddr_in Endpoint::getSockAddr() const
 
 bool Endpoint::isIPv4() const
 {
-    return (memcmp(_ipv6, pchIPv4, sizeof(pchIPv4)) == 0);
+    return address().is_v4();
+//    return (memcmp(_ipv6, pchIPv4, sizeof(pchIPv4)) == 0);
 }
 
 bool Endpoint::isRFC1918() const
@@ -244,8 +267,8 @@ bool Endpoint::isValid() const
     // header20 vectorlen3 addr26 addr26 addr26 header20 vectorlen3 addr26 addr26 addr26...
     // so if the first length field is garbled, it reads the second batch
     // of addr misaligned by 3 bytes.
-    if (memcmp(_ipv6, pchIPv4+3, sizeof(pchIPv4)-3) == 0)
-        return false;
+//    if (memcmp(_ipv6, pchIPv4+3, sizeof(pchIPv4)-3) == 0)
+//        return false;
 
     return (address().to_v4().to_ulong() != 0 && address().to_v4().to_ulong() != INADDR_NONE && port() != htons(USHRT_MAX));
 }
@@ -258,12 +281,16 @@ unsigned char Endpoint::getByte(int n) const
 
 std::string Endpoint::toStringIPPort() const
 {
-    return strprintf("%u.%u.%u.%u:%u", getByte(3), getByte(2), getByte(1), getByte(0), port());
+    return toString();
+//    return strprintf("%u.%u.%u.%u:%u", getByte(3), getByte(2), getByte(1), getByte(0), port());
 }
 
 std::string Endpoint::toStringIP() const
 {
-    return strprintf("%u.%u.%u.%u", getByte(3), getByte(2), getByte(1), getByte(0));
+    ostringstream os;
+    os << address();
+    return os.str();
+//    return strprintf("%u.%u.%u.%u", getByte(3), getByte(2), getByte(1), getByte(0));
 }
 
 std::string Endpoint::toStringPort() const
@@ -273,7 +300,10 @@ std::string Endpoint::toStringPort() const
 
 std::string Endpoint::toString() const
 {
-    return strprintf("%u.%u.%u.%u:%u", getByte(3), getByte(2), getByte(1), getByte(0), port());
+    ostringstream os;
+    os << (const boost::asio::ip::tcp::endpoint&)(*this);
+    return os.str();
+//    return strprintf("%u.%u.%u.%u:%u", getByte(3), getByte(2), getByte(1), getByte(0), port());
 }
 
 void Endpoint::print() const

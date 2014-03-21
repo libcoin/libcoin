@@ -40,7 +40,8 @@ json_spirit::Value SubmitBlock::operator()(const json_spirit::Array& params, boo
     }
     
     vector<unsigned char> block_data(ParseHex(params[0].get_str()));
-    CDataStream block_stream(block_data, SER_NETWORK, PROTOCOL_VERSION);
+    istringstream block_stream(string(block_data.begin(), block_data.end()));
+//    CDataStream block_stream(block_data, SER_NETWORK, PROTOCOL_VERSION);
     Block block;
     try {
         block_stream >> block;

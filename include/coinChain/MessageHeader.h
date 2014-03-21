@@ -44,6 +44,22 @@ public:
     //    MessageHeader(const char* pszCommand, unsigned int nMessageSizeIn);
     MessageHeader(const Chain& chain, const char* pszCommand, unsigned int nMessageSizeIn);
     
+    inline friend std::ostream& operator<<(std::ostream& os, const MessageHeader& mh) {
+        return (os << const_binary<MessageStart>(mh._messageStart)
+                << const_binary<Command>(mh.pchCommand)
+                << const_binary<unsigned int>(mh.nMessageSize)
+                << const_binary<unsigned int>(mh.nChecksum)
+                );
+    }
+    
+    inline friend std::istream& operator>>(std::istream& is, MessageHeader& mh) {
+        return (is >> binary<MessageStart>(mh._messageStart)
+                >> binary<Command>(mh.pchCommand)
+                >> binary<unsigned int>(mh.nMessageSize)
+                >> binary<unsigned int>(mh.nChecksum)
+                );
+    }
+    
     std::string GetCommand() const;
     bool IsValid(const Chain& chain) const;
     
@@ -60,7 +76,9 @@ public:
 public:
     enum { COMMAND_SIZE=12 };
     MessageStart _messageStart;
-    char pchCommand[COMMAND_SIZE];
+    typedef boost::array<char, 12> Command;
+    //char pchCommand[COMMAND_SIZE];
+    Command pchCommand;;
     unsigned int nMessageSize;
     unsigned int nChecksum;
 };

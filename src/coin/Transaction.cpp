@@ -203,9 +203,12 @@ uint256 Transaction::getSignatureHash(Script scriptCode, unsigned int n, int typ
     }
     
     // Serialize and hash
-    CDataStream ss(SER_GETHASH);
-    ss.reserve(10000);
-    ss << txn << type;
+    ostringstream os;
+    os << txn << const_binary<int>(type);
+    string ss = os.str();
+    //    CDataStream ss(SER_GETHASH);
+//    ss.reserve(10000);
+//    ss << txn << type;
     
     return Hash(ss.begin(), ss.end());
 }
