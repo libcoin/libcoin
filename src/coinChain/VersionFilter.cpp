@@ -103,9 +103,9 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
         // Change version
         if (origin->nVersion >= 209)
             origin->PushMessage("verack");
-//        origin->vSend.SetVersion(min(origin->nVersion, PROTOCOL_VERSION));
-//        if (origin->nVersion < 209)
-//            origin->vRecv.SetVersion(min(origin->nVersion, PROTOCOL_VERSION));
+        origin->vSend.SetVersion(min(origin->nVersion, PROTOCOL_VERSION));
+        if (origin->nVersion < 209)
+            origin->vRecv.SetVersion(min(origin->nVersion, PROTOCOL_VERSION));
                 
         origin->successfullyConnected();
         
@@ -115,7 +115,7 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
         if (origin->nVersion == 0) {
             throw OriginNotReady();
         }
-//        origin->vRecv.SetVersion(min(origin->nVersion, PROTOCOL_VERSION)); // this is where the version is - this triggers the parser to expect checksums too! (UGLY!)
+        origin->vRecv.SetVersion(min(origin->nVersion, PROTOCOL_VERSION)); // this is where the version is - this triggers the parser to expect checksums too! (UGLY!)
         return true;
     }  
     return false;
