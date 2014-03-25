@@ -48,7 +48,7 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     _connection_timeout(timeout),
     _client_name("libcoin"),
     _client_comments(std::vector<std::string>()),
-    _client_version(PROTOCOL_VERSION) // This is not optimal...
+    _client_version(LIBRARY_VERSION) // This is not optimal...
     {
     
     //    _endpointPool.loadEndpoints(dataDir);
@@ -198,7 +198,7 @@ void Node::run() {
     _messageHandler.installFilter(_shareFilter);
     _messageHandler.installFilter(_transactionFilter);
     _messageHandler.installFilter(filter_ptr(new FilterHandler())); // this only output the alert to stdout
-    _messageHandler.installFilter(filter_ptr(new AlertFilter(_blockChain.chain().alert_key(), getFullClientVersion()))); // this only output the alert to stdout
+    _messageHandler.installFilter(filter_ptr(new AlertFilter(_blockChain.chain().alert_key(), _blockChain.chain().protocol_version(), getFullClientVersion()))); // this only output the alert to stdout
     
     _io_service.run();
 }
@@ -397,8 +397,8 @@ void Node::peer_ready(peer_ptr p) {
     update_persistence();
     update_validation();
     update_verification();
-    log_info("PEER: #%d %s %s", (p->fInbound)?_peerManager.getNumInbound():_peerManager.getNumOutbound(), p->addr.toString(), (p->fInbound)?"inbound":"outbound");
-    log_info("\tversion: %d, blocks: %d", p->nVersion, p->getStartingHeight());
+    log_info("PEER: #%d %s %s", (p->inbound())?_peerManager.getNumInbound():_peerManager.getNumOutbound(), p->addr.toString(), (p->inbound())?"inbound":"outbound");
+    log_info("\tversion: %d, blocks: %d", p->version(), p->getStartingHeight());
 }
 
 void Node::post_accept_or_connect() {

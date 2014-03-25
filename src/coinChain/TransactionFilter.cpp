@@ -25,7 +25,7 @@ using namespace std;
 using namespace boost;
 
 bool TransactionFilter::operator()(Peer* origin, Message& msg) {
-    if (origin->nVersion == 0) {
+    if (!origin->initialized()) {
         throw OriginNotReady();
     }    
     if (msg.command() == "tx") {

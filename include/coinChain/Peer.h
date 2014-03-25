@@ -42,72 +42,9 @@ public:
     /// Construct a peer connection with the given io_service.
     explicit Peer(const Chain& chain, boost::asio::io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, std::string sub_version);
 
-    inline friend std::ostream& operator<<(std::ostream& os, const Peer& p) {
-        /// when NTP implemented, change to just nTime = GetAdjustedTime()
-        int64_t nTime = (p.fInbound ? GetAdjustedTime() : UnixTime::s());
-        //    Endpoint remote = _socket.remote_endpoint();
-        Endpoint local = p._socket.local_endpoint();
-        Endpoint addrYou = (p._proxy ? Endpoint("0.0.0.0") : p.addr);
-        Endpoint addrMe = (p._proxy ? Endpoint("0.0.0.0") : local);
-        // hack to avoid serializing the time
-        os << const_binary<int>(p.nVersion) << const_binary<uint64_t>(NODE_NETWORK) << const_binary<int64_t>(nTime);
-        os << const_binary<uint64_t>(addrYou.getServices()) << const_binary<boost::asio::ip::address_v6::bytes_type>(addrYou.getIPv6()) << const_binary<unsigned short>(htons(addrYou.port()));
-        os << const_binary<uint64_t>(addrMe.getServices()) << const_binary<boost::asio::ip::address_v6::bytes_type>(addrMe.getIPv6()) << const_binary<unsigned short>(htons(addrMe.port()));
-        os << const_binary<uint64_t>(p._nonce) << const_varstr(p._sub_version);
-        os << const_binary<int>(p._peerManager.getBestHeight());
-        os << const_binary<bool>(true);
-        return os;
-    }
+    friend std::ostream& operator<<(std::ostream& os, const Peer& p);
     
-    inline friend std::istream& operator>>(std::istream& is, Peer& p) {
-        int64_t nTime;
-        is >> binary<int>(p.nVersion) >> binary<uint64_t>(p.nServices) >> binary<int64_t>(nTime);
-        // the endpoints in a version message is without time:
-        
-        uint64_t services;
-        boost::asio::ip::address_v6::bytes_type ipv6;
-        unsigned short port;
-        is >> binary<uint64_t>(services) >> binary<boost::asio::ip::address_v6::bytes_type>(ipv6) >> binary<unsigned short>(port);
-        
-//        v._me = Endpoint(services, ipv6, port);
-        
-        if (p.nVersion == 10300)
-            p.nVersion = 300;
-        if (p.nVersion >= 106 && !is.eof()) {
-            is >> binary<uint64_t>(services) >> binary<boost::asio::ip::address_v6::bytes_type>(ipv6) >> binary<unsigned short>(port);
-//            v_from = Endpoint(services, ipv6, port);
-        }
-        uint64_t nonce;
-        is >> binary<uint64_t>(nonce);
-        if (p.nVersion >= 106 && !is.eof())
-            is >> varstr(p._sub_version);
-        if (p.nVersion >= 209 && !is.eof())
-            is >> binary<int>(p._startingHeight);
-        if (!is.eof())
-            is >> binary<bool>(p.relayTxes); // set to true after we get the first filter* message
-        else
-            p.relayTxes = true;
-        
-        if (nonce == p._nonce)
-            p.fDisconnect = true;
-        else
-            p._nonce = nonce;
-        
-        p.fClient = !(p.nServices & NODE_NETWORK);
-        
-        AddTimeData(p.addr.getIP(), nTime);
-        
-        return is;
-    }
-    
-    template<typename Stream>
-    void Serialize(Stream& stream, int nType=0, int nVersion=PROTOCOL_VERSION) const
-    {
-        std::ostringstream os;
-        os << (*this);
-        std::string s = os.str();
-        stream.write((const char*)&s[0], s.size());
-    }
+    friend std::istream& operator>>(std::istream& is, Peer& p);
 
     /// Get the socket associated with the peer connection.
     boost::asio::ip::tcp::socket& socket();
@@ -124,14 +61,19 @@ public:
     /// Flush the various message buffers to the socket.
     void flush();
     
+    int version() const { return _version; }
+    
+    const std::string& sub_version() const { return _sub_version; }
+    
+    bool client() const { return _client; }
+    
+    bool inbound() const { return _inbound; }
+    
     /// Is this connected through a proxy.
     const bool getProxy() const { return _proxy; }
     
     /// Get the local nonce
     const uint64_t getNonce() const { return _nonce; }
-    
-    /// Set and record the Peer starting height
-    void setStartingHeight(int height) { _peerManager.recordPeerBlockCount(_startingHeight = height); }
     
     /// Get the Peer starting height.
     int getStartingHeight() const { return _startingHeight; }
@@ -147,12 +89,12 @@ public:
     
     /// the peer is disconnecting - e.g. due to connection to self
     bool disconnecting() const {
-        return fDisconnect;
+        return _disconnect;
     }
     
     /// has the peer been initialized ?
     bool initialized() const {
-        return (nVersion != 0);
+        return (_version != 0);
     }
     
 private:
@@ -169,16 +111,9 @@ private:
     
 public:
     // socket
-    uint64_t nServices;
-
     Endpoint addr;
-    int nVersion;
-    std::string strSubVer;
     bool relayTxes;
-    bool fClient;
-    bool fInbound;
-    bool fNetworkNode;
-    bool fDisconnect;
+//    bool fNetworkNode;
     
     BloomFilter filter;
     
@@ -237,6 +172,12 @@ public:
     void PushGetBlocks(const BlockLocator locatorBegin, uint256 hashEnd);
 
 private:
+    int _version;
+    uint64_t _services;
+    bool _disconnect;
+    bool _client;
+    bool _inbound;
+
     /// The inital height of the connected node.
     int _startingHeight;
     
@@ -260,9 +201,6 @@ private:
     
     /// The handler delegated from Node.
     MessageHandler& _messageHandler;
-    
-    /// Buffer for incoming data.
-    //    boost::array<char, 8192> _buffer;
     
     /// The message being parsed.
     Message _message;
@@ -288,9 +226,6 @@ private:
     /// Streambufs for reading and writing
     boost::asio::streambuf _send;
     boost::asio::streambuf _recv;
-    
-    /// Buffer for incoming data. Should be changed to streams in the future.
-    boost::array<char, 65536> _buffer;
     
     static const unsigned int _initial_timeout = 60; // seconds. Initial timeout if no read activity
     static const unsigned int _suicide_timeout = 90*60; // seconds. Suicide timeout if no read activity

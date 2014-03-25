@@ -20,6 +20,76 @@
 #include <boost/bind.hpp>
 
 class Wallet;
+/*
+template<typename Stream>
+inline unsigned int SerReadWrite(Stream& s, const MerkleTx& obj, int nType, int nVersion, CSerActionGetSerializeSize ser_action)
+{
+    return serialize_size(obj);
+}
+
+template<typename Stream>
+inline unsigned int SerReadWrite(Stream& s, const MerkleTx& obj, int nType, int nVersion, CSerActionSerialize ser_action)
+{
+    std::string str = serialize(obj);
+    s.write(&str[0], str.size());
+//    ::Serialize(s, obj, nType, nVersion);
+    return 0;
+}
+
+template<typename Stream>
+inline unsigned int SerReadWrite(Stream& s, MerkleTx& obj, int nType, int nVersion, CSerActionUnserialize ser_action)
+{
+    std::istringstream is(s.str());
+    is >> obj;
+    s.clear();
+//    ::Unserialize(s, obj, nType, nVersion);
+    return 0;
+}
+*/
+unsigned int GetSerializeSize(const MerkleTx& obj)
+{
+    return serialize_size(obj);
+    // Tells the size of the object if serialized to this stream
+//    return ::GetSerializeSize(obj, nType, nVersion);
+}
+
+CDataStream& operator<<(CDataStream& s, const MerkleTx& obj)
+{
+    std::string str = serialize(obj);
+    s.write(&str[0], str.size());
+    //    ::Serialize(s, obj, nType, nVersion);
+//    return 0;
+    
+//    ::Serialize(*this, obj, nType, nVersion);
+    return s;
+}
+
+CDataStream& operator>>(CDataStream& s, MerkleTx& obj)
+{
+    return s;
+//    ::Unserialize(*this, obj, nType, nVersion);
+//    return (*this);
+}
+
+inline unsigned int GetSerializeSize(const MerkleTx& a, long nType, int nVersion=PROTOCOL_VERSION)
+{
+    return serialize_size(a);
+//    return a.GetSerializeSize((int)nType, nVersion);
+}
+
+template<typename Stream>
+inline void Serialize(Stream& os, const MerkleTx& a, long nType, int nVersion=PROTOCOL_VERSION)
+{
+    os << a;
+//    a.Serialize(os, (int)nType, nVersion);
+}
+
+template<typename Stream>
+inline void Unserialize(Stream& is, MerkleTx& a, long nType, int nVersion=PROTOCOL_VERSION)
+{
+    is >> a;
+//    a.Unserialize(is, (int)nType, nVersion);
+}
 
 /// A transaction with a bunch of additional info that only the owner cares
 /// about.  It includes any unrecorded transactions needed to link it back

@@ -25,7 +25,7 @@ using namespace boost;
 
 bool EndpointFilter::operator()(Peer* origin, Message& msg) {
     log_trace("args: origin: %s, msg: %s", origin->addr.toString(), msg.command());
-    if (origin->nVersion == 0) {
+    if (origin->version() == 0) {
         throw OriginNotReady();
     }
     if (msg.command() == "addr") {
@@ -35,9 +35,9 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
         is >> endpoints;
         
         // Don't want addr from older versions unless seeding
-        if (origin->nVersion < 209)
+        if (origin->version() < 209)
             return true;
-        if (origin->nVersion < 31402 && _endpointPool.getPoolSize() > 1000)
+        if (origin->version() < 31402 && _endpointPool.getPoolSize() > 1000)
             return true;
         if (endpoints.size() > 1000)
             return error("message addr size() = %d", endpoints.size());
@@ -73,7 +73,7 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
                 multimap<uint256, Peer*> mapMix;
                 Peers peers = origin->getAllPeers();
                 for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer) { // vNodes is a list kept in the peerManager - the peerManager is referenced by the Node and the Peer - but we could query it - e.g. from the Node ??
-                    if ((*peer)->nVersion < 31402)
+                    if ((*peer)->version() < 31402)
                         continue;
                     unsigned int nPointer;
                     memcpy(&nPointer, &(*peer), sizeof(nPointer));
@@ -98,7 +98,7 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
             origin->PushAddress(*ep);
     }
     else if (msg.command() == "version") {
-        if (!origin->fInbound) {
+        if (!origin->inbound()) {
             // Advertise our address
             if (_endpointPool.getLocal().isRoutable() && !origin->getProxy()) {
                 Endpoint addr(_endpointPool.getLocal());
@@ -107,14 +107,14 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
             }
             
             // Get recent addresses
-            if (origin->nVersion >= 31402 || _endpointPool.getPoolSize() < 1000) {
+            if (origin->version() >= 31402 || _endpointPool.getPoolSize() < 1000) {
                 origin->PushMessage("getaddr");
                 origin->fGetAddr = true;
             }
         }
     }
     else if (msg.command() == "ping") {
-        if (origin->nVersion > BIP0031_VERSION) {
+        if (origin->version() > BIP0031_VERSION) {
             uint64_t nonce = 0;
 
             istringstream is(msg.payload());
@@ -137,7 +137,7 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
     
     
     // Update the last seen time for this node's address
-    if (origin->fNetworkNode)
+//    if (origin->fNetworkNode)
         if (msg.command() == "version" || msg.command() == "addr" || msg.command() == "inv" || msg.command() == "getdata" || msg.command() == "ping")
             _endpointPool.currentlyConnected(origin->addr);
     

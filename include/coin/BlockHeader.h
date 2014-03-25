@@ -32,14 +32,10 @@ public:
     BlockHeader(const int version, const uint256 prevBlock, const uint256 merkleRoot, const int time, const int bits, const int nonce) : _version(version), _prevBlock(prevBlock), _merkleRoot(merkleRoot), _time(time), _bits(bits), _nonce(nonce) {
     }
     
-    inline friend std::ostream& operator<<(std::ostream& os, const BlockHeader& bh) {
-        return os << const_binary<int>(bh._version) << bh._prevBlock << bh._merkleRoot << const_binary<unsigned int>(bh._time) << const_binary<unsigned int>(bh._bits) << const_binary<unsigned int>(bh._nonce);
-    }
+    friend std::ostream& operator<<(std::ostream& os, const BlockHeader& bh);
     
-    inline friend std::istream& operator>>(std::istream& is, BlockHeader& bh) {
-        return is >> binary<int>(bh._version) >> bh._prevBlock >> bh._merkleRoot >> binary<unsigned int>(bh._time) >> binary<unsigned int>(bh._bits) >> binary<unsigned int>(bh._nonce);
-    }
-
+    friend std::istream& operator>>(std::istream& is, BlockHeader& bh);
+    
     void setNull() {
         _version = 1;
         _prevBlock = 0;

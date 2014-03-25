@@ -37,13 +37,9 @@ public:
     int nChainIndex;
     BlockHeader parentBlock;
 
-    inline friend std::ostream& operator<<(std::ostream& os, const AuxPow& ap) {
-        return os << (const MerkleTx&)ap << ap.vChainMerkleBranch << const_binary<int>(ap.nChainIndex) << ap.parentBlock;
-    }
+    friend std::ostream& operator<<(std::ostream& os, const AuxPow& ap);
     
-    inline friend std::istream& operator>>(std::istream& is, AuxPow& ap) {
-        return is >> (MerkleTx&) ap >> ap.vChainMerkleBranch >> binary<int>(ap.nChainIndex) >> ap.parentBlock;
-    }
+    friend std::istream& operator>>(std::istream& is, AuxPow& ap);
 
     bool Check(uint256 hashAuxBlock, int nChainID) const;
 
@@ -51,34 +47,5 @@ public:
         return parentBlock.getHash();
     }
 };
-/*
-template <typename Stream>
-int ReadWriteAuxPow(Stream& s, const AuxPow& auxpow, int nType, int nVersion, CSerActionGetSerializeSize ser_action) {
-    if (nVersion & BLOCK_VERSION_AUXPOW) {
-        return ::GetSerializeSize(auxpow, nType, nVersion);
-    }
-    return 0;
-}
-
-template <typename Stream>
-int ReadWriteAuxPow(Stream& s, const AuxPow& auxpow, int nType, int nVersion, CSerActionSerialize ser_action) {
-    if (nVersion & BLOCK_VERSION_AUXPOW) {
-        return SerReadWrite(s, auxpow, nType, nVersion, ser_action);
-    }
-    return 0;
-}
-
-template <typename Stream>
-int ReadWriteAuxPow(Stream& s, AuxPow& auxpow, int nType, int nVersion, CSerActionUnserialize ser_action) {
-    if (nVersion & BLOCK_VERSION_AUXPOW) {
-        return SerReadWrite(s, auxpow, nType, nVersion, ser_action);
-    }
-    else {
-        return 0;
-    }
-}
-*/
-//extern void RemoveMergedMiningHeader(std::vector<unsigned char>& vchAux);
-//extern CScript MakeCoinbaseWithAux(unsigned int nBits, unsigned int nExtraNonce, std::vector<unsigned char>& vchAux);
 
 #endif // COIN_AUXPOW_H

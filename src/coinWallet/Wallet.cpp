@@ -308,7 +308,8 @@ bool Wallet::AddToWalletIfInvolvingMe(const Transaction& tx, const Block* pblock
             CWalletTx wtx(this,tx);
             // Get merkle branch if transaction was found in a block
             if (pblock && !pblock->isNull())
-                wtx.setMerkleBranch(*pblock, _blockChain);
+                _blockChain.setMerkleBranch(wtx);
+//                wtx.setMerkleBranch(*pblock, _blockChain);
             return AddToWallet(wtx);
         }
         else
@@ -846,7 +847,7 @@ bool Wallet::CreateTransaction(const vector<pair<Script, int64_t> >& vecSend, CW
                         return false;
 
                 // Limit size
-                unsigned int nBytes = ::GetSerializeSize(*(Transaction*)&wtxNew, SER_NETWORK);
+                unsigned int nBytes = serialize_size(*(Transaction*)&wtxNew);
                 if (nBytes >= MAX_BLOCK_SIZE_GEN/5)
                     return false;
                 dPriority /= nBytes;

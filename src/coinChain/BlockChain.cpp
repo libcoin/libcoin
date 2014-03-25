@@ -408,7 +408,7 @@ void BlockChain::claim(const Transaction& txn, bool verify) {
     }
 }
 
-int BlockChain::setMerkleBranch(MerkleTx& mtxn)
+int BlockChain::setMerkleBranch(MerkleTx& mtxn) const
 {
     Transaction txn;
     Block block;

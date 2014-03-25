@@ -630,7 +630,7 @@ int main(int argc, char* argv[])
             }
             
             if (conf.method() == "version") {
-                cout << argv[0] << " version is: " << FormatVersion(PROTOCOL_VERSION) << "\n";
+                cout << argv[0] << " version is: " << FormatVersion(LIBRARY_VERSION) << "\n";
                 return 1;
             }
             

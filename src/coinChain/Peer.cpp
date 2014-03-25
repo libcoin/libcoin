@@ -29,16 +29,15 @@ using namespace boost;
 using namespace asio;
 
 Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, std::string sub_version) : _chain(chain),_socket(io_service), _peerManager(manager), _messageHandler(handler), _msgParser(), _suicide(io_service), _keep_alive(io_service) {
-    nServices = 0;
-    nVersion = chain.protocol_version();
+    _services = 0;
+    _version = chain.protocol_version();
 
     //    addr = addrIn;
-    strSubVer = "";
-    fClient = false; // set by version message
-    fInbound = inbound;
-    fNetworkNode = false;
+    _client = false; // set by version message
+    _inbound = inbound;
+//    fNetworkNode = false;
     _successfullyConnected = false;
-    fDisconnect = false;
+    _disconnect = false;
     hashContinue = 0;
     locatorLastGetBlocksBegin.SetNull();
     hashLastGetBlocksEnd = 0;
@@ -50,6 +49,64 @@ Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, Mes
     _activity = false;
 }
 
+ostream& operator<<(ostream& os, const Peer& p) {
+    /// when NTP implemented, change to just nTime = GetAdjustedTime()
+    int64_t nTime = (p._inbound ? GetAdjustedTime() : UnixTime::s());
+    //    Endpoint remote = _socket.remote_endpoint();
+    Endpoint local = p._socket.local_endpoint();
+    Endpoint addrYou = (p._proxy ? Endpoint("0.0.0.0") : p.addr);
+    Endpoint addrMe = (p._proxy ? Endpoint("0.0.0.0") : local);
+    // hack to avoid serializing the time
+    os << const_binary<int>(p._version) << const_binary<uint64_t>(NODE_NETWORK) << const_binary<int64_t>(nTime);
+    os << const_binary<uint64_t>(addrYou.getServices()) << const_binary<boost::asio::ip::address_v6::bytes_type>(addrYou.getIPv6()) << const_binary<unsigned short>(htons(addrYou.port()));
+    os << const_binary<uint64_t>(addrMe.getServices()) << const_binary<boost::asio::ip::address_v6::bytes_type>(addrMe.getIPv6()) << const_binary<unsigned short>(htons(addrMe.port()));
+    os << const_binary<uint64_t>(p._nonce) << const_varstr(p._sub_version);
+    os << const_binary<int>(p._peerManager.getBestHeight());
+    os << const_binary<bool>(true);
+    return os;
+}
+
+istream& operator>>(istream& is, Peer& p) {
+    int64_t nTime;
+    is >> binary<int>(p._version) >> binary<uint64_t>(p._services) >> binary<int64_t>(nTime);
+    // the endpoints in a version message is without time:
+    
+    uint64_t services;
+    boost::asio::ip::address_v6::bytes_type ipv6;
+    unsigned short port;
+    is >> binary<uint64_t>(services) >> binary<boost::asio::ip::address_v6::bytes_type>(ipv6) >> binary<unsigned short>(port);
+    
+    //        v._me = Endpoint(services, ipv6, port);
+    
+    if (p._version == 10300)
+        p._version = 300;
+    if (p._version >= 106 && !is.eof()) {
+        is >> binary<uint64_t>(services) >> binary<boost::asio::ip::address_v6::bytes_type>(ipv6) >> binary<unsigned short>(port);
+        //            v_from = Endpoint(services, ipv6, port);
+    }
+    uint64_t nonce;
+    is >> binary<uint64_t>(nonce);
+    if (p._version >= 106 && !is.eof())
+        is >> varstr(p._sub_version);
+    if (p._version >= 209 && !is.eof())
+        is >> binary<int>(p._startingHeight);
+    if (!is.eof())
+        is >> binary<bool>(p.relayTxes); // set to true after we get the first filter* message
+    else
+        p.relayTxes = true;
+    
+    if (nonce == p._nonce)
+        p._disconnect = true;
+    else
+        p._nonce = nonce;
+    
+    p._client = !(p._services & NODE_NETWORK);
+    
+    AddTimeData(p.addr.getIP(), nTime);
+    
+    return is;
+}
+
 ip::tcp::socket& Peer::socket() {
     return _socket;
 }
@@ -57,7 +114,7 @@ ip::tcp::socket& Peer::socket() {
 void Peer::start() {
     log_debug("Starting Peer: %s", addr.toString());
     // Be shy and don't send version until we hear
-    if (!fInbound) {
+    if (!_inbound) {
         PushVersion();
         _socket.async_write_some(_send.data(), boost::bind(&Peer::handle_write, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
@@ -94,7 +151,7 @@ void Peer::show_activity(const system::error_code& e) {
             // Keep-alive ping. We send a nonce of zero because we don't use it anywhere
             // right now.
             uint64_t nonce = 0;
-            if (nVersion > BIP0031_VERSION)
+            if (_version > BIP0031_VERSION)
                 PushMessage("ping", nonce);
             else
                 PushMessage("ping");
@@ -143,7 +200,7 @@ void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferre
 
         // now if fRet is true, something were processed by the filters - we want to send to the peers / we check for which vSends cointains stuff and the we run
         
-        if (fRet && nVersion > 0) {
+        if (fRet && _version > 0) {
             // first reply
             reply();
             
@@ -347,13 +404,16 @@ void Peer::PushVersion() {
 
 void Peer::PushGetBlocks(const BlockLocator locatorBegin, uint256 hashEnd)
 {
+    std::ostringstream os;
+
     // Filter out duplicate requests
     if (locatorBegin == locatorLastGetBlocksBegin && hashEnd == hashLastGetBlocksEnd)
         return;
     locatorLastGetBlocksBegin = locatorBegin;
     hashLastGetBlocksEnd = hashEnd;
     
-    PushMessage("getblocks", locatorBegin, hashEnd);
+    os << const_binary<int>(version()) << locatorBegin << hashEnd;
+    push("getblocks", os.str());
 }
 
 

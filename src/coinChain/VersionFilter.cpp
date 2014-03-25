@@ -49,13 +49,13 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
         }
         
         // Be shy and don't send version until we hear
-        if (origin->fInbound)
+        if (origin->inbound())
             origin->PushVersion();
 
         // We need to wait till after we have sent our data setting the nStartingHeight for the remote. Otherwise the remote will only get its onw height back.
         
         // Change version
-        if (origin->nVersion >= 209)
+        if (origin->version() >= 209)
             origin->PushMessage("verack");
         
         origin->successfullyConnected();

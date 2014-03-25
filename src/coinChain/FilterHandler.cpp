@@ -24,7 +24,7 @@ using namespace std;
 
 bool FilterHandler::operator()(Peer* origin, Message& msg) {
     log_trace("args: origin: %s, msg: %s", origin->addr.toString(), msg.command());
-    if (origin->nVersion == 0) {
+    if (origin->version() == 0) {
         throw OriginNotReady();
     }
     if (msg.command() == "filterload") {

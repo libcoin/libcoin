@@ -92,7 +92,7 @@ const set<unsigned int> PeerManager::getPeerIPList() const {
 const unsigned int PeerManager::getNumOutbound() const {
     unsigned int outbound = 0;
     for (Peers::const_iterator peer = _peers.begin(); peer != _peers.end(); ++peer) {
-        if(!(*peer)->fInbound) outbound++;
+        if(!(*peer)->inbound()) outbound++;
     }
     return outbound;
 }
@@ -100,7 +100,7 @@ const unsigned int PeerManager::getNumOutbound() const {
 const unsigned int PeerManager::getNumInbound() const {
     unsigned int inbound = 0;
     for (Peers::const_iterator peer = _peers.begin(); peer != _peers.end(); ++peer) {
-        if((*peer)->fInbound) inbound++;
+        if((*peer)->inbound()) inbound++;
     }
     return inbound;    
 }

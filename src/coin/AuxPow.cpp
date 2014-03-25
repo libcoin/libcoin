@@ -18,6 +18,14 @@ void RemoveMergedMiningHeader(vector<unsigned char>& vchAux)
     vchAux.erase(vchAux.begin(), vchAux.begin() + sizeof(pchMergedMiningHeader));
 }
 
+ostream& operator<<(ostream& os, const AuxPow& ap) {
+    return os << (const MerkleTx&)ap << ap.vChainMerkleBranch << const_binary<int>(ap.nChainIndex) << ap.parentBlock;
+}
+
+istream& operator>>(istream& is, AuxPow& ap) {
+    return is >> (MerkleTx&) ap >> ap.vChainMerkleBranch >> binary<int>(ap.nChainIndex) >> ap.parentBlock;
+}
+
 
 bool AuxPow::Check(uint256 hashAuxBlock, int nChainID) const
 {

@@ -33,6 +33,39 @@ using namespace boost;
 // Alert
 //
 
+ostream& operator<<(ostream& os, const UnsignedAlert& a) {
+    return (os << const_binary<int>(a._version)
+            << const_binary<int64_t>(a._relay_until)
+            << const_binary<int64_t>(a._expiration)
+            << const_binary<int>(a._id)
+            << const_binary<int>(a._cancel)
+            << a._cancels
+            << const_binary<int>(a._min_version)
+            << const_binary<int>(a._max_version)
+            << a._subversions
+            << const_binary<int>(a._priority)
+            << const_varstr(a._comment)
+            << const_varstr(a._status_bar)
+            << const_varstr(a._reserved));
+}
+
+istream& operator>>(istream& is, UnsignedAlert& a) {
+    return (is >> binary<int>(a._version)
+            >> binary<int64_t>(a._relay_until)
+            >> binary<int64_t>(a._expiration)
+            >> binary<int>(a._id)
+            >> binary<int>(a._cancel)
+            >> a._cancels
+            >> binary<int>(a._min_version)
+            >> binary<int>(a._max_version)
+            >> a._subversions
+            >> binary<int>(a._priority)
+            >> varstr(a._comment)
+            >> varstr(a._status_bar)
+            >> varstr(a._reserved));
+}
+
+
 string UnsignedAlert::toString() const
 {
     std::string cancels;
@@ -133,6 +166,15 @@ bool Alert::relayTo(Peer* peer) const
     return false;
 }
 */
+
+ostream& operator<<(ostream& os, const Alert& a) {
+    return os << a._message << a._signature;
+}
+
+istream& operator>>(istream& is, Alert& a) {
+    return is >> a._message >> a._signature;
+}
+
 bool Alert::checkSignature()
 {
     CKey key;

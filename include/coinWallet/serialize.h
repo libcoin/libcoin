@@ -26,15 +26,12 @@
 #define for  if (false) ; else for
 #endif
 
+static const int PROTOCOL_VERSION = LIBRARY_VERSION;
 
 class Script;
 class CDataStream;
 class CAutoFile;
 static const unsigned int MAX_SIZE = 0x02000000;
-
-//static const int PROTOCOL_VERSION = 40001;
-//static const char* pszSubVer = "libcoin Satoshi release";
-//static const bool PROTOCOL_VERSION_IS_BETA = true;
 
 // Used to bypass the rule against non-const reference to temporary
 // where it makes sense with wrappers such as CFlatData or CTxDB
@@ -1155,45 +1152,20 @@ public:
     template<typename T>
     CDataStream& operator<<(const T& obj)
     {
-        // first serialize to string
-        std::string s = serialize(obj);
-
-        // save CDataStream state
-        size_t pos = str().size();
-        // Serialize to this stream
         ::Serialize(*this, obj, nType, nVersion);
-        std::string stream = str();
-        stream = stream.substr(pos);
-        if (s != stream)
-            log_warn("Serialization ERROR for %s\n\twas: %s\n\tshould be: stream: %s", typeid(obj).name(), HexStr(s.begin(), s.end()), HexStr(stream.begin(), stream.end()));
         return (*this);
     }
 
     template<typename T>
     CDataStream& operator>>(T& obj)
     {
-        T t = obj;
-        std::istringstream is(str());
-        if (boost::is_class<T>())
-            is >> t;
-        else
-            is >> binary<T>(t);
-        // Unserialize from this stream
         ::Unserialize(*this, obj, nType, nVersion);
-        if (t != obj)
-            log_warn("Deserialization ERROR for %s", typeid(obj).name());
         return (*this);
     }
 
     CDataStream& operator>>(std::string& obj)
     {
-        std::string t = obj;
-        std::istringstream is(str());
-        is >> varstr(t);
-        // Unserialize from this stream
         ::Unserialize(*this, obj, nType, nVersion);
-        if (t != obj)
-            log_warn("Deserialization ERROR for %s", typeid(obj).name());
         return (*this);
     }
 };

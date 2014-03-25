@@ -388,7 +388,7 @@ public:
 	{
     memset(&pn[0], 0, sizeof(pn));
 	}
-    
+/*
     unsigned int GetSerializeSize(int nType=0, int nVersion=PROTOCOL_VERSION) const
     {
         return sizeof(pn);
@@ -405,7 +405,7 @@ public:
     {
         s.read((char*)pn, sizeof(pn));
     }
-
+*/
 
     friend class uint128;
     friend class uint160;

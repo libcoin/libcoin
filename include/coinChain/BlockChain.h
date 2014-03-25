@@ -151,7 +151,7 @@ public:
         return _claims.claims(filter);
     }
     
-    int setMerkleBranch(MerkleTx& mtxn);
+    int setMerkleBranch(MerkleTx& mtxn) const;
     
     /// S C R I P T S
     

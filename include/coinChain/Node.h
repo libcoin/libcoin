@@ -91,7 +91,7 @@ public:
     void shutdown() { _io_service.dispatch(boost::bind(&Node::handle_stop, this)); }
     
     /// Set the client name and optionally version
-    void setClientVersion(std::string name, std::vector<std::string> comments = std::vector<std::string>(), int client_version = PROTOCOL_VERSION); 
+    void setClientVersion(std::string name, std::vector<std::string> comments = std::vector<std::string>(), int client_version = LIBRARY_VERSION);
 
     /// Get the client version aka subversion as specified in BIP-0014
     int getClientVersion() const; 

@@ -36,37 +36,9 @@
 class COINCHAIN_EXPORT UnsignedAlert
 {
 public:
-    inline friend std::ostream& operator<<(std::ostream& os, const UnsignedAlert& a) {
-        return (os << const_binary<int>(a._version)
-                << const_binary<int64_t>(a._relay_until)
-                << const_binary<int64_t>(a._expiration)
-                << const_binary<int>(a._id)
-                << const_binary<int>(a._cancel)
-                << a._cancels
-                << const_binary<int>(a._min_version)
-                << const_binary<int>(a._max_version)
-                << a._subversions
-                << const_binary<int>(a._priority)
-                << const_varstr(a._comment)
-                << const_varstr(a._status_bar)
-                << const_varstr(a._reserved));
-    }
+    friend std::ostream& operator<<(std::ostream& os, const UnsignedAlert& a);
     
-    inline friend std::istream& operator>>(std::istream& is, UnsignedAlert& a) {
-        return (is >> binary<int>(a._version)
-                >> binary<int64_t>(a._relay_until)
-                >> binary<int64_t>(a._expiration)
-                >> binary<int>(a._id)
-                >> binary<int>(a._cancel)
-                >> a._cancels
-                >> binary<int>(a._min_version)
-                >> binary<int>(a._max_version)
-                >> a._subversions
-                >> binary<int>(a._priority)
-                >> varstr(a._comment)
-                >> varstr(a._status_bar)
-                >> varstr(a._reserved));
-    }
+    friend std::istream& operator>>(std::istream& is, UnsignedAlert& a);
 
     void setNull()
     {
@@ -150,13 +122,9 @@ public:
         setNull();
     }
 
-    inline friend std::ostream& operator<<(std::ostream& os, const Alert& a) {
-        return os << a._message << a._signature;
-    }
+    friend std::ostream& operator<<(std::ostream& os, const Alert& a);
     
-    inline friend std::istream& operator>>(std::istream& is, Alert& a) {
-        return is >> a._message >> a._signature;
-    }
+    friend std::istream& operator>>(std::istream& is, Alert& a);
 
     void setNull() {
         UnsignedAlert::setNull();

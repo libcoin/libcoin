@@ -23,7 +23,7 @@ using namespace std;
 using namespace boost;
 
 bool AlertFilter::operator() (Peer* origin, Message& msg) {
-    if (origin->nVersion == 0) {
+    if (origin->version() == 0) {
         throw OriginNotReady();
     }
     if (msg.command() == "alert") { // alert might need to be created with something; all peers/Node, like node->broadcast(alert)
@@ -39,8 +39,8 @@ bool AlertFilter::operator() (Peer* origin, Message& msg) {
                 for (Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer) {
                     // returns true if wasn't already contained in the set
                     if ((*peer)->setKnown.insert(alert.getHash()).second) {
-                        if (alert.appliesTo((*peer)->nVersion, (*peer)->strSubVer) ||
-                            alert.appliesTo(PROTOCOL_VERSION, _sub_version) ||
+                        if (alert.appliesTo((*peer)->version(), (*peer)->sub_version()) ||
+                            alert.appliesTo(_version, _sub_version) ||
                             GetAdjustedTime() < alert.until()) {
                             (*peer)->PushMessage("alert", alert);
                         }
@@ -55,7 +55,7 @@ bool AlertFilter::operator() (Peer* origin, Message& msg) {
                 const Alert& alert = item.second;
                 if (!alert.isInEffect()) {
                     if (origin->setKnown.insert(alert.getHash()).second) {
-                        if (alert.appliesTo(origin->nVersion, origin->strSubVer) || alert.appliesTo(PROTOCOL_VERSION, _sub_version) || GetAdjustedTime() < alert.until())
+                        if (alert.appliesTo(origin->version(), origin->sub_version()) || alert.appliesTo(_version, _sub_version) || GetAdjustedTime() < alert.until())
                             origin->PushMessage("alert", alert);
                     }
                 }

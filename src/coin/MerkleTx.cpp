@@ -7,6 +7,16 @@
 #include <coin/Logger.h>
 
 using namespace std;
+
+ostream& operator<<(ostream& os, const MerkleTx& mtx) {
+    return os << (const Transaction&)mtx << mtx._blockHash << mtx._merkleBranch << const_binary<int>(mtx._index);
+}
+
+istream& operator>>(istream& is, MerkleTx& mtx) {
+    return is >> (Transaction&)mtx >> mtx._blockHash >> mtx._merkleBranch >> binary<int>(mtx._index);
+}
+
+
 /*
 int CMerkleTx::setMerkleBranch(const Block& block, const BlockChain& blockChain)
 {

@@ -28,6 +28,18 @@ int Block::GetSigOpCount() const
     return n;
 }
 
+ostream& operator<<(ostream& os, const Block& b) {
+    os << (BlockHeader)b;
+    if (!b._ignore_aux_pow) os << b._aux_pow;
+    return os << b._transactions;
+}
+
+istream& operator>>(istream& is, Block& b) {
+    is >> (BlockHeader&)b;
+    if (!b._ignore_aux_pow) is >> b._aux_pow;
+    return is >> b._transactions;
+}
+
 uint256 Block::buildMerkleTree() const
 {
     _merkleTree.clear();

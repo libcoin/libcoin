@@ -153,7 +153,7 @@ CDB::CDB(const std::string dataDir, const char* pszFile, const char* pszMode) : 
             {
                 bool fTmp = fReadOnly;
                 fReadOnly = false;
-                WriteVersion(PROTOCOL_VERSION);
+                WriteVersion(LIBRARY_VERSION);
                 fReadOnly = fTmp;
             }
 

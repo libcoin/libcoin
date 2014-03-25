@@ -19,6 +19,14 @@
 using namespace std;
 using namespace boost;
 
+ostream& operator<<(ostream& os, const BlockHeader& bh) {
+    return os << const_binary<int>(bh._version) << bh._prevBlock << bh._merkleRoot << const_binary<unsigned int>(bh._time) << const_binary<unsigned int>(bh._bits) << const_binary<unsigned int>(bh._nonce);
+}
+
+istream& operator>>(istream& is, BlockHeader& bh) {
+    return is >> binary<int>(bh._version) >> bh._prevBlock >> bh._merkleRoot >> binary<unsigned int>(bh._time) >> binary<unsigned int>(bh._bits) >> binary<unsigned int>(bh._nonce);
+}
+
 uint256 BlockHeader::getHash() const {
     return Hash(BEGIN(_version), END(_nonce));
 }

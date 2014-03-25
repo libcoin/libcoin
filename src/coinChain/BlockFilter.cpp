@@ -30,7 +30,7 @@ using namespace boost;
 size_t SendBufferSize() { return 10*1000*1000; }
 
 bool BlockFilter::operator()(Peer* origin, Message& msg) {
-    if (origin->nVersion == 0) {
+    if (!origin->initialized()) {
         throw OriginNotReady();
     }
     if (msg.command() == "block") {
@@ -86,10 +86,11 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         process(block, origin->getAllPeers());
     }
     else if (msg.command() == "getblocks") { // here we should simply ignore requests below
+        int version;
         BlockLocator locator;
         uint256 hashStop;
         istringstream is(msg.payload());
-        is >> locator >> hashStop;
+        is >> binary<int>(version) >> locator >> hashStop;
         
         // Find the last block the caller has in the main chain
         BlockIterator blk = _blockChain.iterator(locator);
@@ -124,11 +125,12 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         }
     }
     else if (msg.command() == "getheaders") {
+        int version;
         BlockLocator locator;
         uint256 hashStop;
 
         istringstream is(msg.payload());
-        is >> locator >> hashStop;
+        is >> binary<int>(version) >> locator >> hashStop;
 
         BlockIterator blk;
         if (locator.IsNull()) {
@@ -230,7 +232,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
     else if (msg.command() == "version") {
         // Ask the first connected node for block updates
         static int nAskedForBlocks = 0;
-        if (!origin->fClient && (origin->nVersion < 32000 || origin->nVersion >= 32400) && (nAskedForBlocks < 1 || origin->getAllPeers().size() <= 1)) {
+        if (!origin->client() && (origin->version() < 32000 || origin->version() >= 32400) && (nAskedForBlocks < 1 || origin->getAllPeers().size() <= 1)) {
             nAskedForBlocks++;
             origin->PushGetBlocks(_blockChain.getBestLocator(), uint256(0));
         }

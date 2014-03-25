@@ -53,17 +53,9 @@ public:
         _ignore_aux_pow = false;
     }
     
-    inline friend std::ostream& operator<<(std::ostream& os, const Block& b) {
-        os << (BlockHeader)b;
-        if (!b._ignore_aux_pow) os << b._aux_pow;
-        return os << b._transactions;
-    }
+    friend std::ostream& operator<<(std::ostream& os, const Block& b);
     
-    inline friend std::istream& operator>>(std::istream& is, Block& b) {
-        is >> (BlockHeader&)b;
-        if (!b._ignore_aux_pow) is >> b._aux_pow;
-        return is >> b._transactions;
-    }
+    friend std::istream& operator>>(std::istream& is, Block& b);
 
     void setNull() {
         BlockHeader::setNull();

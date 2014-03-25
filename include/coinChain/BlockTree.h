@@ -339,17 +339,16 @@ typedef BlockTree::Iterator BlockIterator;
 class COINCHAIN_EXPORT BlockLocator {
 public:
     std::vector<uint256> have;
-    int _version;
 public:
     
-    BlockLocator() : _version(PROTOCOL_VERSION) {}
+    BlockLocator() {}
     
     inline friend std::ostream& operator<<(std::ostream& os, const BlockLocator& bl) {
-        return os << const_binary<int>(bl._version) << bl.have;;
+        return os << bl.have;;
     }
     
     inline friend std::istream& operator>>(std::istream& is, BlockLocator& bl) {
-        return is >> binary<int>(bl._version) >> bl.have;
+        return is >> bl.have;
     }
 
     void SetNull() {

@@ -253,9 +253,9 @@ void CWalletTx::AddSupportingTransactions(const BlockChain& blockChain)
                 continue;
             }
             
-            Block block;
-            blockChain.getBlock(tx.getHash(), block);
-            int nDepth = tx.setMerkleBranch(block, blockChain);
+//            Block block;
+//            blockChain.getBlock(tx.getHash(), block);
+            int nDepth = blockChain.setMerkleBranch(tx);
             vtxPrev.push_back(tx);
             
             if (nDepth < COPY_DEPTH)
