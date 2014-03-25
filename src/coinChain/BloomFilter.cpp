@@ -63,11 +63,6 @@ void BloomFilter::insert(const vector<unsigned char>& key) {
 }
 
 void BloomFilter::insert(const Coin& outpoint) {
-/*
-    CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
-    stream << outpoint;
-    vector<unsigned char> data(stream.begin(), stream.end());
- */
     string s = serialize(outpoint);
     insert(vector<unsigned char>(s.begin(), s.end()));
 }
@@ -92,10 +87,6 @@ bool BloomFilter::contains(const vector<unsigned char>& key) const {
 }
 
 bool BloomFilter::contains(const Coin& outpoint) const {
-    /*
-    CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
-    stream << outpoint;
-     */
     string s = serialize(outpoint);
     return contains(vector<unsigned char>(s.begin(), s.end()));
 }

@@ -142,8 +142,6 @@ bool Alert::checkSignature()
         return error("Alert::CheckSignature() : verify signature failed");
     
     // Now unserialize the data
-//    CDataStream s(_message);
-//    s >> *(UnsignedAlert*)this;
 
     istringstream is(string(_message.begin(), _message.end()));
     is >> *(UnsignedAlert*)this;

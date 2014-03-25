@@ -17,7 +17,7 @@
 #include <coinChain/MessageHandler.h>
 #include <coinChain/Peer.h>
 
-#include <coin/serialize.h>
+//#include <coin/serialize.h>
 
 #include <string>
 

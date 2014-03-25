@@ -130,7 +130,7 @@ public:
 class COINCHAIN_EXPORT BitcoinChain : public Chain {
 public:
     BitcoinChain();
-    virtual const int protocol_version() const { return 00070002; } // 0.7.0.2
+    virtual const int protocol_version() const { return 70002; } // 0.7.0.2
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
     virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;
@@ -180,7 +180,7 @@ class COINCHAIN_EXPORT TestNet3Chain : public Chain
 {
 public:
     TestNet3Chain();
-    virtual const int protocol_version() const { return 00070002; } // 0.7.0.2
+    virtual const int protocol_version() const { return 70002; } // 0.7.0.2
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
     virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;
@@ -237,7 +237,7 @@ extern const TestNet3Chain testnet3;
 class COINCHAIN_EXPORT NamecoinChain : public Chain {
 public:
     NamecoinChain();
-    virtual const int protocol_version() const { return 00037200; } // 0.3.72.0
+    virtual const int protocol_version() const { return 37200; } // 0.3.72.0
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
     virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;
@@ -327,7 +327,7 @@ extern const NamecoinChain namecoin;
 class COINCHAIN_EXPORT LitecoinChain : public Chain {
 public:
     LitecoinChain();
-    virtual const int protocol_version() const { return 00070002; } // 0.7.0.2
+    virtual const int protocol_version() const { return 70002; } // 0.7.0.2
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
     virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;
@@ -394,7 +394,7 @@ class COINCHAIN_EXPORT TerracoinChain : public Chain
 {
 public:
     TerracoinChain();
-    virtual const int protocol_version() const { return 00070002; } // 0.7.0.2
+    virtual const int protocol_version() const { return 70002; } // 0.7.0.2
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
     virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;
@@ -450,7 +450,7 @@ extern const TerracoinChain terracoin;
 class COINCHAIN_EXPORT DogecoinChain : public Chain {
 public:
     DogecoinChain();
-    virtual const int protocol_version() const { return 00070002; } // 0.7.0.2
+    virtual const int protocol_version() const { return 70002; } // 0.7.0.2
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
     virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;

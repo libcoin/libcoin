@@ -685,9 +685,11 @@ inline uint256 Hash(const T1 p1begin, const T1 p1end,
     return hash2;
 }
 
-
-
-
+template <typename T>
+uint256 serialize_hash(const T& t) {
+    std::string s = serialize(t);
+    return ::Hash(s.begin(), s.end());
+}
 
 // Median filter over a stream of values
 // Returns the median of the last N numbers

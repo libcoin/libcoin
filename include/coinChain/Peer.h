@@ -40,8 +40,75 @@ class COINCHAIN_EXPORT Peer : public boost::enable_shared_from_this<Peer>, priva
 {
 public:
     /// Construct a peer connection with the given io_service.
-    explicit Peer(const Chain& chain, boost::asio::io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, int bestHeight, std::string sub_version);
+    explicit Peer(const Chain& chain, boost::asio::io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, std::string sub_version);
+
+    inline friend std::ostream& operator<<(std::ostream& os, const Peer& p) {
+        /// when NTP implemented, change to just nTime = GetAdjustedTime()
+        int64_t nTime = (p.fInbound ? GetAdjustedTime() : UnixTime::s());
+        //    Endpoint remote = _socket.remote_endpoint();
+        Endpoint local = p._socket.local_endpoint();
+        Endpoint addrYou = (p._proxy ? Endpoint("0.0.0.0") : p.addr);
+        Endpoint addrMe = (p._proxy ? Endpoint("0.0.0.0") : local);
+        // hack to avoid serializing the time
+        os << const_binary<int>(p.nVersion) << const_binary<uint64_t>(NODE_NETWORK) << const_binary<int64_t>(nTime);
+        os << const_binary<uint64_t>(addrYou.getServices()) << const_binary<boost::asio::ip::address_v6::bytes_type>(addrYou.getIPv6()) << const_binary<unsigned short>(htons(addrYou.port()));
+        os << const_binary<uint64_t>(addrMe.getServices()) << const_binary<boost::asio::ip::address_v6::bytes_type>(addrMe.getIPv6()) << const_binary<unsigned short>(htons(addrMe.port()));
+        os << const_binary<uint64_t>(p._nonce) << const_varstr(p._sub_version);
+        os << const_binary<int>(p._peerManager.getBestHeight());
+        os << const_binary<bool>(true);
+        return os;
+    }
     
+    inline friend std::istream& operator>>(std::istream& is, Peer& p) {
+        int64_t nTime;
+        is >> binary<int>(p.nVersion) >> binary<uint64_t>(p.nServices) >> binary<int64_t>(nTime);
+        // the endpoints in a version message is without time:
+        
+        uint64_t services;
+        boost::asio::ip::address_v6::bytes_type ipv6;
+        unsigned short port;
+        is >> binary<uint64_t>(services) >> binary<boost::asio::ip::address_v6::bytes_type>(ipv6) >> binary<unsigned short>(port);
+        
+//        v._me = Endpoint(services, ipv6, port);
+        
+        if (p.nVersion == 10300)
+            p.nVersion = 300;
+        if (p.nVersion >= 106 && !is.eof()) {
+            is >> binary<uint64_t>(services) >> binary<boost::asio::ip::address_v6::bytes_type>(ipv6) >> binary<unsigned short>(port);
+//            v_from = Endpoint(services, ipv6, port);
+        }
+        uint64_t nonce;
+        is >> binary<uint64_t>(nonce);
+        if (p.nVersion >= 106 && !is.eof())
+            is >> varstr(p._sub_version);
+        if (p.nVersion >= 209 && !is.eof())
+            is >> binary<int>(p._startingHeight);
+        if (!is.eof())
+            is >> binary<bool>(p.relayTxes); // set to true after we get the first filter* message
+        else
+            p.relayTxes = true;
+        
+        if (nonce == p._nonce)
+            p.fDisconnect = true;
+        else
+            p._nonce = nonce;
+        
+        p.fClient = !(p.nServices & NODE_NETWORK);
+        
+        AddTimeData(p.addr.getIP(), nTime);
+        
+        return is;
+    }
+    
+    template<typename Stream>
+    void Serialize(Stream& stream, int nType=0, int nVersion=PROTOCOL_VERSION) const
+    {
+        std::ostringstream os;
+        os << (*this);
+        std::string s = os.str();
+        stream.write((const char*)&s[0], s.size());
+    }
+
     /// Get the socket associated with the peer connection.
     boost::asio::ip::tcp::socket& socket();
     
@@ -78,6 +145,16 @@ public:
     /// dequeue inventory request - indirectly affecting all peers
     void dequeue(const Inventory& inv);
     
+    /// the peer is disconnecting - e.g. due to connection to self
+    bool disconnecting() const {
+        return fDisconnect;
+    }
+    
+    /// has the peer been initialized ?
+    bool initialized() const {
+        return (nVersion != 0);
+    }
+    
 private:
     void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
     void handle_write(const boost::system::error_code& e, std::size_t bytes_transferred);
@@ -93,15 +170,7 @@ private:
 public:
     // socket
     uint64_t nServices;
-    CDataStream vSend;
-    CDataStream vRecv;
 
-    int64_t nLastSend;
-    int64_t nLastRecv;
-    int64_t nLastSendEmpty;
-    int64_t nTimeConnected;
-    unsigned int nHeaderStart;
-    unsigned int nMessageStart;
     Endpoint addr;
     int nVersion;
     std::string strSubVer;
@@ -114,7 +183,6 @@ public:
     BloomFilter filter;
     
 public:
-    int64_t nReleaseTime;
     uint256 hashContinue;
     BlockLocator locatorLastGetBlocksBegin;
     uint256 hashLastGetBlocksEnd;
@@ -139,68 +207,31 @@ public:
     void push(const Inventory& inv);
     void push(const Transaction& inv);
     
+    void push(const std::string& command, const std::string& str);
+    
     void AskFor(const Inventory& inv);
-    
-    void BeginMessage(const char* pszCommand);
-    
-    void AbortMessage();
-    
-    void EndMessage();
-    
-    void EndMessageAbortIfEmpty();
     
     void PushVersion();
     
     void PushMessage(const char* pszCommand) {
-        try {
-            BeginMessage(pszCommand);
-            EndMessage();
-        }
-        catch (...) {
-            AbortMessage();
-            throw;
-        }
+        std::ostringstream os;
+        push(pszCommand, os.str());
     }
     
     template<typename T1>
     void PushMessage(const char* pszCommand, const T1& a1) {
-        try {
-            BeginMessage(pszCommand);
-            vSend << a1;
-            EndMessage();
-        }
-        catch (...) {
-            AbortMessage();
-            throw;
-        }
+        std::ostringstream os;
+        os << a1;
+        push(pszCommand, os.str());
     }
     
     template<typename T1, typename T2>
     void PushMessage(const char* pszCommand, const T1& a1, const T2& a2) {
-        try {
-            BeginMessage(pszCommand);
-            vSend << a1 << a2;
-            EndMessage();
-        }
-        catch (...) {
-            AbortMessage();
-            throw;
-        }
+        std::ostringstream os;
+        os << a1 << a2;
+        push(pszCommand, os.str());
     }
-    
-    template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-    void PushMessage(const char* pszCommand, const T1& a1, const T2& a2, const T3& a3, const T4& a4, const T5& a5, const T6& a6, const T7& a7, const T8& a8, const T9& a9) {
-        try {
-            BeginMessage(pszCommand);
-            vSend << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9;
-            EndMessage();
-        }
-        catch (...) {
-            AbortMessage();
-            throw;
-        }
-    }
-    
+
     bool ProcessMessages();
     
     void PushGetBlocks(const BlockLocator locatorBegin, uint256 hashEnd);

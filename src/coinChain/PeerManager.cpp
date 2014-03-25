@@ -70,6 +70,11 @@ void PeerManager::ready(peer_ptr peer) {
     _node.post_ready(peer);
 }
 
+int PeerManager::getBestHeight() const {
+    return _node.blockChain().getBestHeight();
+}
+
+
 const set<unsigned int> PeerManager::getPeerIPList() const {
     // iterate the list of peers and accumulate their IPv4s
     set<unsigned int> ips;

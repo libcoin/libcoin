@@ -10,7 +10,6 @@ SET(LIB_NAME coin)
 
 SET(HEADER_PATH ${PROJECT_SOURCE_DIR}/include/${LIB_NAME})
 SET(TARGET_H
-    ${HEADER_PATH}/serialize.h
     ${HEADER_PATH}/uint256.h
     ${HEADER_PATH}/util.h
     

@@ -18,7 +18,7 @@
 #define BLOCK_HEADER_H
 
 #include <coin/Export.h>
-#include <coin/serialize.h>
+//#include <coin/serialize.h>
 #include <coin/uint256.h>
 #include <coin/BigNum.h>
 #include <coin/Serialization.h>
@@ -39,18 +39,7 @@ public:
     inline friend std::istream& operator>>(std::istream& is, BlockHeader& bh) {
         return is >> binary<int>(bh._version) >> bh._prevBlock >> bh._merkleRoot >> binary<unsigned int>(bh._time) >> binary<unsigned int>(bh._bits) >> binary<unsigned int>(bh._nonce);
     }
-    
-    IMPLEMENT_SERIALIZE
-    (
-     READWRITE(this->_version);
-     nVersion = this->_version;
-     READWRITE(_prevBlock);
-     READWRITE(_merkleRoot);
-     READWRITE(_time);
-     READWRITE(_bits);
-     READWRITE(_nonce);
-     )
-    
+
     void setNull() {
         _version = 1;
         _prevBlock = 0;

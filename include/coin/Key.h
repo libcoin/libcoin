@@ -14,7 +14,7 @@
 #include <openssl/ecdsa.h>
 #include <openssl/obj_mac.h>
 
-#include <coin/serialize.h>
+//#include <coin/serialize.h>
 #include <coin/uint256.h>
 #include <coin/Address.h>
 

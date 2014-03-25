@@ -64,25 +64,6 @@ public:
         if (!b._ignore_aux_pow) is >> b._aux_pow;
         return is >> b._transactions;
     }
-    
-    IMPLEMENT_SERIALIZE
-    (
-        READWRITE(this->_version);
-        nVersion = this->_version;
-        READWRITE(_prevBlock);
-        READWRITE(_merkleRoot);
-        READWRITE(_time);
-        READWRITE(_bits);
-        READWRITE(_nonce);
-
-        if (!_ignore_aux_pow) nSerSize += ReadWriteAuxPow(s, _aux_pow, nType, _version, ser_action);
-
-        // ConnectBlock depends on vtx being last so it can calculate offset
-        if (!(nType & (SER_GETHASH|SER_BLOCKHEADERONLY)))
-            READWRITE(_transactions);
-        else if (fRead)
-            const_cast<Block*>(this)->_transactions.clear();
-    )
 
     void setNull() {
         BlockHeader::setNull();

@@ -32,9 +32,6 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
         Transaction tx;
         istringstream is(msg.payload());
         is >> tx;
-//        CDataStream data(msg.payload());
-        //        CDataStream payload(msg.payload());
-//        data >> tx;
         
         Inventory inv(MSG_TX, tx.getHash());
 
@@ -48,8 +45,6 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
         vector<Inventory> vInv;
         istringstream is(msg.payload());
         is >> vInv;
-//        CDataStream data(msg.payload());
-//        data >> vInv;
         if (vInv.size() > 50000)
             return error("message getdata size() = %d", vInv.size());
         
@@ -83,8 +78,6 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
         vector<Inventory> vInv;
         istringstream is(msg.payload());
         is >> vInv;
-        //        CDataStream data(msg.payload());
-//        data >> vInv;
         if (vInv.size() > 50000)
             return error("message inv size() = %d", vInv.size());
         

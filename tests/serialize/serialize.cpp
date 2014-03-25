@@ -17,7 +17,7 @@
 /// serialization tests - to check that the serialization follows the same scheme that the old serialization.
 
 #include <coin/Transaction.h>
-#include <coin/serialize.h>
+#include <coinWallet/serialize.h>
 #include <coin/Serialization.h>
 #include <coin/uint256.h>
 #include <coin/util.h>

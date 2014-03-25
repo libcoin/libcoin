@@ -30,8 +30,6 @@ bool AlertFilter::operator() (Peer* origin, Message& msg) {
         Alert alert(_pub_key);
         istringstream is(msg.payload());
         is >> alert;
-//        CDataStream data(msg.payload());
-//        data >> alert;
         
         if (alert.processAlert()) {
             // Relay

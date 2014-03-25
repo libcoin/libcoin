@@ -20,7 +20,7 @@
 #include <string>
 
 #include <coin/uint256.h>
-#include <coin/serialize.h>
+//#include <coin/serialize.h>
 
 #include <coinChain/Export.h>
 
@@ -58,12 +58,6 @@ public:
         return is >> binary<int>(inv._type) >> inv._hash;
     }
 
-    IMPLEMENT_SERIALIZE
-    (
-     READWRITE(_type);
-     READWRITE(_hash);
-     )
-    
     friend bool operator<(const Inventory& a, const Inventory& b);
 
     friend bool operator==(const Inventory& a, const Inventory& b) {

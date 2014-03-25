@@ -3,7 +3,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include <coinWallet/MerkleTx.h>
+#include <coin/MerkleTx.h>
+
 #include <coinWallet/WalletTx.h>
 #include <coinWallet/Wallet.h>
 
@@ -225,7 +226,7 @@ void CWalletTx::AddSupportingTransactions(const BlockChain& blockChain)
     
     // This critsect is OK because txdb is already open
     CRITICAL_BLOCK(pwallet->cs_wallet) {
-        map<uint256, const CMerkleTx*> mapWalletPrev;
+        map<uint256, const MerkleTx*> mapWalletPrev;
         set<uint256> setAlreadyDone;
         for (int i = 0; i < vWorkQueue.size(); i++) {
             uint256 hash = vWorkQueue[i];
@@ -233,11 +234,11 @@ void CWalletTx::AddSupportingTransactions(const BlockChain& blockChain)
                 continue;
             setAlreadyDone.insert(hash);
             
-            CMerkleTx tx;
+            MerkleTx tx;
             map<uint256, CWalletTx>::const_iterator mi = pwallet->mapWallet.find(hash);
             if (mi != pwallet->mapWallet.end()) {
                 tx = (*mi).second;
-                BOOST_FOREACH(const CMerkleTx& txWalletPrev, (*mi).second.vtxPrev)
+                BOOST_FOREACH(const MerkleTx& txWalletPrev, (*mi).second.vtxPrev)
                 mapWalletPrev[txWalletPrev.getHash()] = &txWalletPrev;
             }
             else if (mapWalletPrev.count(hash)) {

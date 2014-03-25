@@ -37,7 +37,8 @@ void Chain::check(const Transaction& txn) const {
         if (txn.getOutputs().empty())
             throw runtime_error("vout empty");
         // Size limits
-        if (::GetSerializeSize(txn, SER_NETWORK) > max_block_size())
+//        if (::GetSerializeSize(txn, SER_NETWORK) > max_block_size())
+        if (serialize_size(txn) > max_block_size())
             throw runtime_error("size limits failed");
         
         // Check for negative or overflow output values
@@ -83,7 +84,8 @@ void Chain::check(const Block& block) const {
         // that can be verified before saving an orphan block.
         
         // Size limits
-        if (block.getTransactions().empty() || block.getTransactions().size() > max_block_size() || ::GetSerializeSize(block, SER_NETWORK) > max_block_size())
+//        if (block.getTransactions().empty() || block.getTransactions().size() > max_block_size() || ::GetSerializeSize(block, SER_NETWORK) > max_block_size())
+        if (block.getTransactions().empty() || block.getTransactions().size() > max_block_size() || serialize_size(block) > max_block_size())
             throw runtime_error("CheckBlock() : size limits failed");
         
         // Check timestamp
@@ -178,7 +180,7 @@ bool BitcoinChain::isStandard(const Transaction& tx) const {
     // almost as much to process as they cost the sender in fees, because
     // computing signature hashes is O(ninputs*txsize). Limiting transactions
     // to MAX_STANDARD_TX_SIZE mitigates CPU exhaustion attacks.
-    unsigned int sz = tx.GetSerializeSize(SER_NETWORK);
+    unsigned int sz = serialize_size(tx);//.GetSerializeSize(SER_NETWORK);
     if (sz >= MAX_STANDARD_TX_SIZE)
         return false;
 
@@ -448,7 +450,7 @@ bool NamecoinChain::isStandard(const Transaction& tx) const {
     // almost as much to process as they cost the sender in fees, because
     // computing signature hashes is O(ninputs*txsize). Limiting transactions
     // to MAX_STANDARD_TX_SIZE mitigates CPU exhaustion attacks.
-    unsigned int sz = tx.GetSerializeSize(SER_NETWORK);
+    unsigned int sz = serialize_size(tx);//tx.GetSerializeSize(SER_NETWORK);
     if (sz >= MAX_STANDARD_TX_SIZE)
         return false;
     
@@ -1043,7 +1045,7 @@ unsigned int DogecoinChain::nextWorkRequired(BlockIterator blk) const {
     
     
     int64_t retargetTimespan = nTargetTimespan;
-    int64_t retargetSpacing = nTargetSpacing;
+//    int64_t retargetSpacing = nTargetSpacing;
     int64_t retargetInterval = nInterval;
     
     if (fNewDifficultyProtocol) {

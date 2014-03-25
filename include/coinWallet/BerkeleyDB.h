@@ -9,7 +9,7 @@
 #include <coin/Transaction.h>
 
 #include <coinWallet/Export.h>
-
+#include <coinWallet/serialize.h>
 
 #include <coin/uint256.h>
 

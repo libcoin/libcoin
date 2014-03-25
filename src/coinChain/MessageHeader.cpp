@@ -23,12 +23,8 @@
 #endif
 
 static const unsigned char pchIPv4[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff };
-static const char* ppszTypeName[] =
-{
-    "ERROR",
-    "tx",
-    "block",
-};
+
+static const unsigned int MAX_SIZE = 0x02000000;
 
 MessageHeader::MessageHeader()
 {
@@ -46,6 +42,30 @@ MessageHeader::MessageHeader(const Chain& chain, const char* pszCommand, unsigne
     nMessageSize = nMessageSizeIn;
     nChecksum = 0;
 }
+
+MessageHeader::MessageHeader(const Chain& chain, const std::string& command, const std::string& message) : _messageStart(chain.messageStart()) {
+    strncpy(&pchCommand[0], &command[0], COMMAND_SIZE);
+    nMessageSize = message.size();
+    uint256 hash = Hash(message.begin(), message.end());
+    memcpy(&nChecksum, &hash, sizeof(nChecksum));
+}
+
+std::ostream& operator<<(std::ostream& os, const MessageHeader& mh) {
+    return (os << const_binary<MessageStart>(mh._messageStart)
+            << const_binary<MessageHeader::Command>(mh.pchCommand)
+            << const_binary<unsigned int>(mh.nMessageSize)
+            << const_binary<unsigned int>(mh.nChecksum)
+            );
+}
+
+std::istream& operator>>(std::istream& is, MessageHeader& mh) {
+    return (is >> binary<MessageStart>(mh._messageStart)
+            >> binary<MessageHeader::Command>(mh.pchCommand)
+            >> binary<unsigned int>(mh.nMessageSize)
+            >> binary<unsigned int>(mh.nChecksum)
+            );
+}
+
 
 std::string MessageHeader::GetCommand() const
 {

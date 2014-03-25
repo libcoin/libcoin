@@ -17,6 +17,8 @@
 #ifndef SPENDABLES_H
 #define SPENDABLES_H
 
+#include <coin/util.h>
+
 #include <coin/Transaction.h>
 
 #include <coinChain/MerkleTrie.h>
@@ -114,14 +116,10 @@ struct Unspent {
     inline friend std::istream& operator>>(std::istream& is, Unspent& u) {
         return is >> u.key >> u.output;
     }
-    
-    IMPLEMENT_SERIALIZE
-    (
-        READWRITE(key);
-        READWRITE(output);
-    )
-    
-    Hash hash() const { return SerializeHash(*this); }
+
+    Hash hash() const {
+        return serialize_hash(*this);
+    }
     static Hash hash(Hash a, Hash b) { return ::Hash(a.begin(), a.end(), b.begin(), b.end()); }
 };
 

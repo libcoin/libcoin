@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include <coin/serialize.h>
+//#include <coin/serialize.h>
 #include <coin/uint256.h>
 #include <coin/util.h>
 #include <coin/Key.h>
@@ -67,25 +67,6 @@ public:
                 >> varstr(a._status_bar)
                 >> varstr(a._reserved));
     }
-    
-    IMPLEMENT_SERIALIZE
-    (
-        READWRITE(this->_version);
-        nVersion = this->_version;
-        READWRITE(_relay_until);
-        READWRITE(_expiration);
-        READWRITE(_id);
-        READWRITE(_cancel);
-        READWRITE(_cancels);
-        READWRITE(_min_version);
-        READWRITE(_max_version);
-        READWRITE(_subversions);
-        READWRITE(_priority);
-
-        READWRITE(_comment);
-        READWRITE(_status_bar);
-        READWRITE(_reserved);
-    )
 
     void setNull()
     {
@@ -176,12 +157,6 @@ public:
     inline friend std::istream& operator>>(std::istream& is, Alert& a) {
         return is >> a._message >> a._signature;
     }
-    
-    IMPLEMENT_SERIALIZE
-    (
-        READWRITE(_message);
-        READWRITE(_signature);
-    )
 
     void setNull() {
         UnsignedAlert::setNull();
@@ -194,7 +169,7 @@ public:
     }
 
     uint256 getHash() const {
-        return SerializeHash(*this);
+        return serialize_hash(*this);
     }
 
     bool isInEffect() const {

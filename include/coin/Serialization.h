@@ -155,13 +155,19 @@ std::string serialize(const T& t) {
         os << t;
     else
         os << const_binary<T>(t);
-    return os.str();
+    std::string s = os.str();
+    return s;//os.str();
 }
 
 inline std::string serialize(const std::string& t) {
     std::ostringstream os;
     os << const_varstr(t);
     return os.str();
+}
+
+template <typename T>
+std::size_t serialize_size(const T& t) {
+    return serialize(t).size();
 }
 
 template <typename T>

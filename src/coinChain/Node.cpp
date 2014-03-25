@@ -32,7 +32,7 @@
 using namespace std;
 using namespace boost;
 using namespace asio;
- 
+
 Node::Node(const Chain& chain, std::string dataDir, const string& address, const string& port, ip::tcp::endpoint proxy, unsigned int timeout, const string& irc) :
     _dataDir(dataDir),
     _fileLock(_dataDir == "" ? "" : _dataDir + "/.lock"),
@@ -86,6 +86,7 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
 }
 
 void Node::readBlockFile(string path, int fileno) {
+    /*
     CAutoFile bf = fopen((path + "blk000" + lexical_cast<string>(fileno) + ".dat").c_str(), "rb");
 
     int magic, size;
@@ -102,6 +103,7 @@ void Node::readBlockFile(string path, int fileno) {
     }
     
     readBlockFile(path, fileno+1);
+     */
 }
 
 void Node::verification(Strictness v) {
@@ -117,6 +119,7 @@ void Node::update_verification() {
         case LAST_CHECKPOINT:
             _blockChain.verification_depth(_blockChain.chain().totalBlocksEstimate());
             break;
+        case LAZY:
         case MINIMAL:
             _blockChain.verification_depth(_peerManager.getPeerMedianNumBlocks()-_blockChain.chain().maturity(_blockChain.getBestHeight()));
             break;
@@ -139,6 +142,7 @@ void Node::update_validation() {
         case LAST_CHECKPOINT:
             _blockChain.validation_depth(_blockChain.chain().totalBlocksEstimate());
             break;
+        case LAZY:
         case MINIMAL:
             _blockChain.validation_depth(_peerManager.getPeerMedianNumBlocks()-_blockChain.chain().maturity(_blockChain.getBestHeight()));
             break;
@@ -188,7 +192,7 @@ void Node::run() {
     //    start_connect();
     
     // Install filters for the messages. First inserted filters are executed first.
-    _messageHandler.installFilter(filter_ptr(new VersionFilter));
+    _messageHandler.installFilter(filter_ptr(new VersionFilter()));
     _messageHandler.installFilter(filter_ptr(new EndpointFilter(_endpointPool)));
     _messageHandler.installFilter(_blockFilter);
     _messageHandler.installFilter(_shareFilter);
@@ -297,7 +301,7 @@ void Node::start_connect() {
     stringstream ss;
     ss << (boost::asio::ip::tcp::endpoint)ep;
     log_debug("Trying connect to: %s", ss.str());
-    _new_server.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, false, _proxy, _blockChain.getBestHeight(), getFullClientVersion())); // false means outbound
+    _new_server.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, false, _proxy, getFullClientVersion())); // false means outbound
     _new_server->addr = ep;
     // Set a deadline for the connect operation.
     _connection_deadline.expires_from_now(posix_time::milliseconds(_connection_timeout));
@@ -352,7 +356,7 @@ void Node::handle_connect(const system::error_code& e) {
 }
 
 void Node::start_accept() {
-    _new_client.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, true, _proxy, _blockChain.getBestHeight(), getFullClientVersion())); // true means inbound
+    _new_client.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, true, _proxy, getFullClientVersion())); // true means inbound
     _acceptor.async_accept(_new_client->socket(), boost::bind(&Node::handle_accept, this, asio::placeholders::error));
 }
 

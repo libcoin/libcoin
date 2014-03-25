@@ -22,6 +22,8 @@
 
 #include <string>
 
+class BlockChain;
+
 class COINCHAIN_EXPORT VersionFilter : public Filter
 {
 public:

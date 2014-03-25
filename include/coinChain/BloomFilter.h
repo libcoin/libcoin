@@ -17,13 +17,13 @@
 #ifndef BLOOMFILTER_H
 #define BLOOMFILTER_H
 
-#include <coin/serialize.h>
+//#include <coin/serialize.h>
 #include <coin/uint256.h>
 
 #include <vector>
 
 class Transaction;
-class Coin;
+struct Coin;
 
 // 20,000 items with fp rate < 0.1% or 10,000 items and <0.0001%
 static const unsigned int MAX_BLOOM_FILTER_SIZE = 36000; // bytes
@@ -71,14 +71,6 @@ public:
         return is >> bf._data >> binary<unsigned int>(bf._hash_funcs) >> binary<unsigned int>(bf._tweak) >> binary<unsigned char>(bf._flags);
     }
 
-    IMPLEMENT_SERIALIZE
-    (
-     READWRITE(_data);
-     READWRITE(_hash_funcs);
-     READWRITE(_tweak);
-     READWRITE(_flags);
-     )
-    
     void insert(const std::vector<unsigned char>& key);
     void insert(const Coin& outpoint);
     void insert(const uint256& hash);

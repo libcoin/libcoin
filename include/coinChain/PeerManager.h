@@ -83,6 +83,8 @@ public:
     /// Notify the connection of a new peer
     void ready(peer_ptr peer);
     
+    int getBestHeight() const;
+    
 private:
     /// The managed connections.
     Peers _peers;

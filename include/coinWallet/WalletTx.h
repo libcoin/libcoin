@@ -10,10 +10,12 @@
 #include <coin/Script.h>
 
 #include <coin/Block.h>
+#include <coin/MerkleTx.h>
+
 #include <coinChain/BlockChain.h>
 
 #include <coinWallet/Export.h>
-#include <coinWallet/MerkleTx.h>
+#include <coinWallet/serialize.h>
 
 #include <boost/bind.hpp>
 
@@ -22,12 +24,12 @@ class Wallet;
 /// A transaction with a bunch of additional info that only the owner cares
 /// about.  It includes any unrecorded transactions needed to link it back
 /// to the block chain.
-class COINWALLET_EXPORT CWalletTx : public CMerkleTx
+class COINWALLET_EXPORT CWalletTx : public MerkleTx
 {
 public:
     Wallet* pwallet;
 
-    std::vector<CMerkleTx> vtxPrev;
+    std::vector<MerkleTx> vtxPrev;
     std::map<std::string, std::string> mapValue;
     std::vector<std::pair<std::string, std::string> > vOrderForm;
     unsigned int fTimeReceivedIsTxTime;
@@ -61,12 +63,12 @@ public:
         Init(pwalletIn);
     }
 
-    CWalletTx(Wallet* pwalletIn, const CMerkleTx& txIn) : CMerkleTx(txIn)
+    CWalletTx(Wallet* pwalletIn, const MerkleTx& txIn) : MerkleTx(txIn)
     {
         Init(pwalletIn);
     }
 
-    CWalletTx(Wallet* pwalletIn, const Transaction& txIn) : CMerkleTx(txIn)
+    CWalletTx(Wallet* pwalletIn, const Transaction& txIn) : MerkleTx(txIn)
     {
         Init(pwalletIn);
     }
@@ -116,7 +118,7 @@ public:
             pthis->mapValue["spent"] = str;
         }
 
-        nSerSize += SerReadWrite(s, *(CMerkleTx*)this, nType, nVersion,ser_action);
+        nSerSize += SerReadWrite(s, *(MerkleTx*)this, nType, nVersion,ser_action);
         READWRITE(vtxPrev);
         READWRITE(mapValue);
         READWRITE(vOrderForm);

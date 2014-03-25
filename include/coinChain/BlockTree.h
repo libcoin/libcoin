@@ -352,14 +352,6 @@ public:
         return is >> binary<int>(bl._version) >> bl.have;
     }
 
-    IMPLEMENT_SERIALIZE
-    (
-     int ver = PROTOCOL_VERSION;
-     if (!(nType & SER_GETHASH))
-     READWRITE(ver);
-     READWRITE(have);
-     )
-    
     void SetNull() {
         have.clear();
     }

@@ -10,7 +10,7 @@
 #include <openssl/bn.h>
 
 #include <coin/util.h>
-#include <coin/serialize.h>
+//#include <coin/serialize.h>
 
 class bignum_error : public std::runtime_error
 {
@@ -373,7 +373,7 @@ public:
     {
         return toString(16);
     }
-
+/*
     unsigned int GetSerializeSize(int nType=0, int nVersion=PROTOCOL_VERSION) const
     {
         return ::GetSerializeSize(getvch(), nType, nVersion);
@@ -392,7 +392,7 @@ public:
         ::Unserialize(s, vch, nType, nVersion);
         setvch(vch);
     }
-
+*/
 
     bool operator!() const
     {

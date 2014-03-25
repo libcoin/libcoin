@@ -34,9 +34,6 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
         istringstream is(msg.payload());
         is >> endpoints;
         
-//        CDataStream data(msg.payload());
-//        data >> endpoints;
-        
         // Don't want addr from older versions unless seeding
         if (origin->nVersion < 209)
             return true;
@@ -123,8 +120,6 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
             istringstream is(msg.payload());
             is >> binary<uint64_t>(nonce);
 
-//            CDataStream data(msg.payload());
-//            data >> nonce;
             // Echo the message back with the nonce. This allows for two useful features:
             //
             // 1) A remote node can quickly check if the connection is operational

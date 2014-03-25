@@ -33,9 +33,6 @@ bool FilterHandler::operator()(Peer* origin, Message& msg) {
         istringstream is(msg.payload());
         is >> filter;
         
-        // CDataStream data(msg.payload());
-        //data >> filter;
-        
         if (filter.isWithinSizeConstraints()) {
             origin->filter = filter;
             origin->filter.updateEmptyFull();
@@ -44,7 +41,6 @@ bool FilterHandler::operator()(Peer* origin, Message& msg) {
         return true;
     }
     else if (msg.command() == "filteradd") {
-//        CDataStream data(msg.payload());
         vector<unsigned char> bloom_data;
         
         istringstream is(msg.payload());

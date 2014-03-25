@@ -14,6 +14,7 @@
 #include <coinChain/BlockChain.h>
 
 #include <coinWallet/Export.h>
+#include <coinWallet/serialize.h>
 
 /// A transaction with a merkle branch linking it to the block chain.
 class COINWALLET_EXPORT CMerkleTx : public Transaction

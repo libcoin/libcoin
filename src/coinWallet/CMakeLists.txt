@@ -15,6 +15,7 @@ SET(TARGET_H
     ${HEADER_PATH}/CryptoKeyStore.h
     ${HEADER_PATH}/Export.h
     ${HEADER_PATH}/MerkleTx.h
+    ${HEADER_PATH}/serialize.h
     ${HEADER_PATH}/Wallet.h
     ${HEADER_PATH}/WalletDB.h
     ${HEADER_PATH}/WalletTx.h

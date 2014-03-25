@@ -151,6 +151,8 @@ public:
         return _claims.claims(filter);
     }
     
+    int setMerkleBranch(MerkleTx& mtxn);
+    
     /// S C R I P T S
     
     /// Get the balance of a script up to block <height> - will throw if <height> < pruned height

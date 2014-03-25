@@ -18,7 +18,7 @@
 #define MESSAGE_HEADER_H
 
 #include <coin/uint256.h>
-#include <coin/serialize.h>
+//#include <coin/serialize.h>
 
 #include <coinChain/Export.h>
 #include <coinChain/Chain.h>
@@ -43,35 +43,14 @@ public:
     //    MessageHeader(const Chain& chain);
     //    MessageHeader(const char* pszCommand, unsigned int nMessageSizeIn);
     MessageHeader(const Chain& chain, const char* pszCommand, unsigned int nMessageSizeIn);
+    MessageHeader(const Chain& chain, const std::string& command, const std::string& message);
     
-    inline friend std::ostream& operator<<(std::ostream& os, const MessageHeader& mh) {
-        return (os << const_binary<MessageStart>(mh._messageStart)
-                << const_binary<Command>(mh.pchCommand)
-                << const_binary<unsigned int>(mh.nMessageSize)
-                << const_binary<unsigned int>(mh.nChecksum)
-                );
-    }
+    friend std::ostream& operator<<(std::ostream& os, const MessageHeader& mh);
     
-    inline friend std::istream& operator>>(std::istream& is, MessageHeader& mh) {
-        return (is >> binary<MessageStart>(mh._messageStart)
-                >> binary<Command>(mh.pchCommand)
-                >> binary<unsigned int>(mh.nMessageSize)
-                >> binary<unsigned int>(mh.nChecksum)
-                );
-    }
+    friend std::istream& operator>>(std::istream& is, MessageHeader& mh);
     
     std::string GetCommand() const;
     bool IsValid(const Chain& chain) const;
-    
-    IMPLEMENT_SERIALIZE
-    (
-     READWRITE(FLATDATA(_messageStart));
-     READWRITE(FLATDATA(pchCommand));
-     READWRITE(nMessageSize);
-     if (nVersion >= 209)
-     READWRITE(nChecksum);
-     )
-    
     // TODO: make private (improves encapsulation)
 public:
     enum { COMMAND_SIZE=12 };

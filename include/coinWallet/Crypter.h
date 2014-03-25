@@ -7,6 +7,7 @@
 #include <coin/Key.h>
 #include <coin/util.h>
 
+#include <coinWallet/serialize.h>
 #include <coinWallet/Export.h>
 
 const unsigned int WALLET_CRYPTO_KEY_SIZE = 32;

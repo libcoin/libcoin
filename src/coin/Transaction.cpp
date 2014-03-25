@@ -116,7 +116,7 @@ int64_t Transaction::getMinFee(unsigned int nBlockSize, bool fAllowFree, bool fF
     // Base fee is either MIN_TX_FEE or MIN_RELAY_TX_FEE
     int64_t nBaseFee = fForRelay ? MIN_RELAY_TX_FEE : MIN_TX_FEE;
     
-    unsigned int nBytes = ::GetSerializeSize(*this, SER_NETWORK);
+    unsigned int nBytes = serialize_size(*this);
     unsigned int nNewBlockSize = nBlockSize + nBytes;
     int64_t nMinFee = (1 + (int64_t)nBytes / 1000) * nBaseFee;
     
@@ -206,9 +206,6 @@ uint256 Transaction::getSignatureHash(Script scriptCode, unsigned int n, int typ
     ostringstream os;
     os << txn << const_binary<int>(type);
     string ss = os.str();
-    //    CDataStream ss(SER_GETHASH);
-//    ss.reserve(10000);
-//    ss << txn << type;
     
     return Hash(ss.begin(), ss.end());
 }

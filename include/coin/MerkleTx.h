@@ -47,16 +47,6 @@ public:
     inline friend std::istream& operator>>(std::istream& is, MerkleTx& mtx) {
         return is >> (Transaction&)mtx >> mtx._blockHash >> mtx._merkleBranch >> binary<int>(mtx._index);
     }
-    
-    IMPLEMENT_SERIALIZE
-    (
-     nSerSize += SerReadWrite(s, *(Transaction*)this, nType, nVersion, ser_action);
-     nVersion = this->_version;
-     READWRITE(_blockHash);
-     READWRITE(_merkleBranch);
-     READWRITE(_index);
-     )
-    
    
     //    int setMerkleBranch(const Block& block, const BlockChain& blockChain);
 

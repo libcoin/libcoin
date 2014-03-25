@@ -199,13 +199,6 @@ std::vector<unsigned char> Endpoint::getKey() const
     else
         ipv6 = boost::asio::ip::address_v6::v4_mapped(address().to_v4()).to_bytes();
     
-//    return os << const_binary<unsigned int>(ep._time) << const_binary<uint64_t>(ep._services) << const_binary<boost::asio::ip::address_v6::bytes_type>(ipv6) << const_binary<unsigned short>(ntohs(ep.port()));
-    
-//    CDataStream ss;
-//    ss.reserve(18);
-//    ss << FLATDATA(_ipv6) << (uint32_t) address().to_v4().to_ulong() << port();
-//    ss << FLATDATA(ipv6) << port();
-
     ostringstream os;
     os << const_binary<boost::asio::ip::address_v6::bytes_type>(ipv6) << const_binary<unsigned short>(port());
     

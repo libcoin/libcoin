@@ -1157,6 +1157,7 @@ public:
     {
         // first serialize to string
         std::string s = serialize(obj);
+
         // save CDataStream state
         size_t pos = str().size();
         // Serialize to this stream
@@ -1180,7 +1181,7 @@ public:
         // Unserialize from this stream
         ::Unserialize(*this, obj, nType, nVersion);
         if (t != obj)
-            log_warn("Deserialization ERROR for ", typeid(obj).name());
+            log_warn("Deserialization ERROR for %s", typeid(obj).name());
         return (*this);
     }
 
@@ -1192,7 +1193,7 @@ public:
         // Unserialize from this stream
         ::Unserialize(*this, obj, nType, nVersion);
         if (t != obj)
-            log_warn("Deserialization ERROR for ", typeid(obj).name());
+            log_warn("Deserialization ERROR for %s", typeid(obj).name());
         return (*this);
     }
 };

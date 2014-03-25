@@ -107,34 +107,6 @@ public:
         return _matched_txes[i].second;
     }
 
-    // serialization implementation
-    IMPLEMENT_SERIALIZE(
-                        READWRITE(this->_version);
-                        nVersion = this->_version;
-                        READWRITE(_prevBlock);
-                        READWRITE(_merkleRoot);
-                        READWRITE(_time);
-                        READWRITE(_bits);
-                        READWRITE(_nonce);
-
-                        READWRITE(_transactions);
-                        READWRITE(_hashes);
-                        std::vector<unsigned char> vBytes;
-                        if (fRead) {
-                            READWRITE(vBytes);
-                            MerkleBlock& mb = *(const_cast<MerkleBlock*>(this));
-                            mb._matches.resize(vBytes.size() * 8);
-                            for (unsigned int p = 0; p < _matches.size(); p++)
-                                mb._matches[p] = (vBytes[p / 8] & (1 << (p % 8))) != 0;
-                            mb._bad = false;
-                        } else {
-                            vBytes.resize((_matches.size()+7)/8);
-                            for (unsigned int p = 0; p < _matches.size(); p++)
-                                vBytes[p / 8] |= _matches[p] << (p % 8);
-                            READWRITE(vBytes);
-                        }
-                        )
-    
     // extract the matching txid's represented by this partial merkle tree.
     // returns the merkle root, or 0 in case of failure
     uint256 extractMatches(std::vector<uint256> &vMatch);

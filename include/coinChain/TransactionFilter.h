@@ -22,7 +22,6 @@
 #include <coinChain/Filter.h>
 #include <coinChain/Inventory.h>
 
-#include <coin/serialize.h> // for CDataStream
 #include <coin/util.h> // for CCriticalSection definition
 
 #include <string>
@@ -31,7 +30,6 @@
 
 class BlockChain;
 class Inventory;
-//class CDataStream;
 
 class COINCHAIN_EXPORT TransactionFilter : public Filter
 {
@@ -80,7 +78,6 @@ private:
     typedef std::map<uint256, Transaction> Orphans;
     Orphans _orphans;
     typedef std::multimap<uint256, Orphans::iterator> OrphansByPrev;
-//    std::multimap<uint256, CDataStream*> _orphanTransactionsByPrev;
     OrphansByPrev _orphansByPrev;
     
     void addOrphan(const Transaction& tx);
@@ -100,8 +97,6 @@ private:
 
 //    template<typename T> void relayMessage(const Peers& peers, const Inventory& inv, const T& a);
 };
-
-//template<> inline void TransactionFilter::relayMessage<>(const Peers& peers, const Inventory& inv, const CDataStream& ss);
 
 
 #endif // TRANSACTIONFILTER_H

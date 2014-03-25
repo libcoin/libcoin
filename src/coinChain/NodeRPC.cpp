@@ -89,7 +89,7 @@ Object tx2json(Transaction &tx, int64_t timestamp, int64_t blockheight)
     entry.push_back(Pair("vin_sz", boost::uint64_t(tx.getNumInputs())));
     entry.push_back(Pair("vout_sz", boost::uint64_t(tx.getNumOutputs())));
     entry.push_back(Pair("lock_time", boost::uint64_t(tx.lockTime())));
-    entry.push_back(Pair("size", boost::uint64_t(::GetSerializeSize(tx, SER_NETWORK))));
+    entry.push_back(Pair("size", boost::uint64_t(serialize_size(tx))));
     
     // now loop over the txins
     Array txins;

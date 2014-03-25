@@ -408,6 +408,40 @@ void BlockChain::claim(const Transaction& txn, bool verify) {
     }
 }
 
+int BlockChain::setMerkleBranch(MerkleTx& mtxn)
+{
+    Transaction txn;
+    Block block;
+    int64_t height;
+    int64_t time;
+    
+    getTransaction(mtxn.getHash(), txn, height, time);
+    getBlock(height+1, block);
+    // Update the tx's hashBlock
+    mtxn._blockHash = block.getHash();
+    
+    // Locate the transaction
+    TransactionList txes = block.getTransactions();
+    mtxn._index = 0;
+    for (TransactionList::const_iterator tx = txes.begin(); tx != txes.end(); ++tx, ++mtxn._index) {
+        if (*tx == *(Transaction*)this)
+            break;
+    }
+    
+    if (mtxn._index == txes.size()) {
+        mtxn._merkleBranch.clear();
+        mtxn._index = -1;
+        log_debug("ERROR: SetMerkleBranch() : couldn't find tx in block\n");
+        return 0;
+    }
+    
+    // Fill in merkle branch
+    mtxn._merkleBranch = block.getMerkleBranch(mtxn._index);
+    
+    return height < 0 ? 0 : height;
+}
+
+
 int64_t BlockChain::balance(const Script& script, int height) const {
     int count = height + 1;
     

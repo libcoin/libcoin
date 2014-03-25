@@ -47,8 +47,6 @@ struct Coin { // was COutPoint
     Coin() { setNull(); }
     Coin(uint256 hashIn, unsigned int nIn) { hash = hashIn; index = nIn; }
 
-    IMPLEMENT_SERIALIZE( READWRITE(FLATDATA(*this)); )
-    
     inline friend std::ostream& operator<<(std::ostream& os, const Coin& coin) {
         return os << const_binary<Coin>(coin);
     }
@@ -103,13 +101,6 @@ public:
         _signature = signature;
         _sequence = sequence;
     }
-
-    IMPLEMENT_SERIALIZE
-    (
-        READWRITE(_prevout);
-        READWRITE(_signature);
-        READWRITE(_sequence);
-    )
 
     inline friend std::ostream& operator<<(std::ostream& os, const Input& i) {
         return os << i._prevout << i._signature << const_binary<unsigned int>(i._sequence);
@@ -195,12 +186,6 @@ public:
     inline friend std::istream& operator>>(std::istream& is, Output& o) {
         return is >> binary<int64_t>(o._value) >> o._script;
     }
-    
-    IMPLEMENT_SERIALIZE
-    (
-        READWRITE(_value);
-        READWRITE(_script);
-    )
 
     void setNull() {
         _value = -1;
@@ -224,11 +209,15 @@ public:
         // need a CTxIn of at least 148 bytes to spend,
         // so dust is a txout less than 54 uBTC
         // (5460 satoshis) with default nMinRelayTxFee
-        return ((_value*1000)/(3*((int)GetSerializeSize(SER_DISK,0)+148)) < min_fee);
+        
+        return ((_value*1000)/(3*(serialize_size(*this)+148)) < min_fee);
     }
     
     uint256 getHash() const {
-        return SerializeHash(*this);
+        std::ostringstream os;
+        os << (*this);
+        std::string ss = os.str();
+        return Hash(ss.begin(), ss.end());
     }
 
     uint160 getAddress() const;
@@ -294,15 +283,6 @@ public:
     inline friend std::istream& operator>>(std::istream& is, Transaction& txn) {
         return is >> binary<int>(txn._version) >> txn._inputs >> txn._outputs >> binary<unsigned int>(txn._lockTime);
     }
-    
-    IMPLEMENT_SERIALIZE
-    (
-        READWRITE(this->_version);
-        nVersion = this->_version;
-        READWRITE(_inputs);
-        READWRITE(_outputs);
-        READWRITE(_lockTime);
-    )
 
     void setNull() {
         _version = 1;
@@ -317,7 +297,7 @@ public:
 
     /// Get the transaction hash. Note it is computed on call, so it is recommended to cache it.
     uint256 getHash() const {
-        return SerializeHash(*this);
+        return serialize_hash(*this);
     }
     
     /// Get the transaction hash used for signatures
@@ -404,8 +384,6 @@ public:
         std::ostringstream os;
         os << *this;
         std::string ss = os.str();
-//        CDataStream ss;
-//        ss << *this;
         return HexStr(ss.begin(), ss.end());
     }
 

@@ -29,7 +29,7 @@ public:
     // Inserting a claim means looking up if it depends on other transactions and then sum up the size and fee for those
     struct Claim : public Transaction {
         Claim(const Transaction& txn, int64_t fee, unsigned int ts = 0) : Transaction(txn), fee(fee) {
-            size = ::GetSerializeSize(txn, SER_NETWORK);
+            size = serialize_size(txn);
             delta_spendables = txn.getNumOutputs()-txn.getNumInputs();
             timestamp = ts ? ts : UnixTime::s();
         }

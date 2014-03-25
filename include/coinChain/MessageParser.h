@@ -50,6 +50,19 @@ public:
         return boost::make_tuple(result, begin);
     }
     
+    template <typename StreamBuf>
+    boost::tuple<boost::tribool, std::streamsize> parse(const Chain& chain, Message& msg, StreamBuf& stream_buf) {
+        std::streamsize counter = 0;
+        while (stream_buf.sgetc() != EOF) {
+            boost::tribool result = consume(chain, msg, stream_buf.sbumpc());
+            counter++;
+            if (result || !result)
+                return boost::make_tuple(result, counter);
+        }
+        boost::tribool result = boost::indeterminate;
+        return boost::make_tuple(result, counter);
+    }
+    
 private:
     /// Handle the next character of input.
     boost::tribool consume(const Chain& chain, Message& msg, char input);

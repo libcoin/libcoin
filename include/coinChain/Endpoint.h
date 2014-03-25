@@ -21,7 +21,7 @@
 #include <boost/asio.hpp>
 
 #include <coin/uint256.h>
-#include <coin/serialize.h>
+//#include <coin/serialize.h>
 
 #include <coinChain/Export.h>
 
@@ -78,47 +78,7 @@ class COINCHAIN_EXPORT Endpoint : public boost::asio::ip::tcp::endpoint
         return is;
     }
 
-        IMPLEMENT_SERIALIZE
-            (
-             if (fRead)
-             const_cast<Endpoint*>(this)->init();
-             if (nType & SER_DISK)
-             READWRITE(nVersion);
-             if ((nType & SER_DISK) || (nVersion >= 31402 && !(nType & SER_GETHASH)))
-                READWRITE(_time);
-             READWRITE(_services);
-//             READWRITE(FLATDATA(_ipv6)); // for IPv6
-             if (fWrite) {
-                 boost::asio::ip::address_v6::bytes_type ipv6;
-                 if (address().is_v6())
-                     ipv6 = address().to_v6().to_bytes();
-                 else
-                     ipv6 = boost::asio::ip::address_v6::v4_mapped(address().to_v4()).to_bytes();
-                 READWRITE(FLATDATA(ipv6));
-//                 unsigned int ip = ntohl(address().to_v4().to_ulong());
-                 unsigned short p = ntohs(port());
-//                 READWRITE(ip);
-                 READWRITE(p);
-             }
-             else if (fRead) {
-                 boost::asio::ip::address_v6::bytes_type ipv6;
-                 READWRITE(FLATDATA(ipv6));
-                 boost::asio::ip::address_v6 addr = boost::asio::ip::address_v6(ipv6);
-                 if (addr.is_v4_mapped())
-                     (*(Endpoint*)this).address(addr.to_v4());
-                 else
-                     (*(Endpoint*)this).address(addr);
-//                 unsigned int ip;
-                 unsigned short p;
-//                 READWRITE(ip);
-                 READWRITE(p);
-//                 const_cast<Endpoint*>(this)->address(boost::asio::ip::address(boost::asio::ip::address_v4(htonl(ip))));
-                 //const_cast<Endpoint*>(this)->address(boost::asio::ip::address(boost::asio::ip::address_v6(bytes)));
-                 const_cast<Endpoint*>(this)->port(htons(p));
-             }
-            )
-
-        friend bool operator==(const Endpoint& a, const Endpoint& b);
+    friend bool operator==(const Endpoint& a, const Endpoint& b);
         friend bool operator!=(const Endpoint& a, const Endpoint& b);
         friend bool operator<(const Endpoint& a, const Endpoint& b);
 
@@ -151,6 +111,13 @@ class COINCHAIN_EXPORT Endpoint : public boost::asio::ip::tcp::endpoint
 
     const uint64_t getServices() const { return _services; }
     void setServices(uint64_t services) { _services = services; }
+    
+    boost::asio::ip::address_v6::bytes_type getIPv6() const {
+        if (address().is_v6())
+            return address().to_v6().to_bytes();
+        else
+            return boost::asio::ip::address_v6::v4_mapped(address().to_v4()).to_bytes();
+    }
     
     private:
         uint64_t _services;

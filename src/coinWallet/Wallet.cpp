@@ -374,13 +374,13 @@ bool Wallet::IsConfirmed(const CWalletTx& tx) const
     
     // If no confirmations but it's from us, we can still
     // consider it confirmed if all dependencies are confirmed
-    std::map<uint256, const CMerkleTx*> mapPrev;
-    std::vector<const CMerkleTx*> vWorkQueue;
+    std::map<uint256, const MerkleTx*> mapPrev;
+    std::vector<const MerkleTx*> vWorkQueue;
     vWorkQueue.reserve(tx.vtxPrev.size()+1);
     vWorkQueue.push_back(&tx);
     for (int i = 0; i < vWorkQueue.size(); i++)
         {
-        const CMerkleTx* ptx = vWorkQueue[i];
+        const MerkleTx* ptx = vWorkQueue[i];
         
         if (!_blockChain.isFinal(*ptx))
             return false;
@@ -390,7 +390,7 @@ bool Wallet::IsConfirmed(const CWalletTx& tx) const
             return false;
         
         if (mapPrev.empty())
-            BOOST_FOREACH(const CMerkleTx& mtx, tx.vtxPrev)
+            BOOST_FOREACH(const MerkleTx& mtx, tx.vtxPrev)
                 mapPrev[tx.getHash()] = &mtx;
         
         BOOST_FOREACH(const Input& txin, ptx->getInputs())
