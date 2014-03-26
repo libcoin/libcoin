@@ -734,7 +734,7 @@ TerracoinChain::TerracoinChain() : Chain("terracoin", "TRC", 8), _genesis("0x000
     Script script = Script() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
     txNew.addOutput(Output(50 * COIN, script));
     
-    _genesisBlock = Block(1, uint256(0), uint256(0), 1351242683, 0x1d00ffff, 2820375594);
+    _genesisBlock = Block(1, uint256(0), uint256(0), 1351242683, 0x1d00ffff, 0xa81b842a);
     _genesisBlock.addTransaction(txNew);
     _genesisBlock.updateMerkleTree(); // genesisBlock
     assert(_genesisBlock.getHash() == _genesis);

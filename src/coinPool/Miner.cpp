@@ -49,7 +49,7 @@ void Miner::handle_stop() {
 }
 
 // return true on success
-bool Miner::mine() {
+void Miner::mine() {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2000));
     int tries = 65536;
     

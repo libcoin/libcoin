@@ -45,8 +45,7 @@ public:
 private:
     void handle_stop();
     
-    // return true on success
-    bool mine();
+    void mine();
     
 protected:
     Pool& _pool;
