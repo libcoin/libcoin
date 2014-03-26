@@ -101,7 +101,7 @@ std::string Pool::submitBlock(const Block& stub, std::string workid) {
 }
 
 Pool::Work Pool::getWork(bool invalid) {
-    unsigned int now = UnixTime::s();
+    int now = UnixTime::s();
     uint256 prev = _blockChain.getBestChain();
     if (_templates.empty() || prev != _latest_work->second.getPrevBlock() || _latest_work->second.getTime() + 30 > now) {
         if (_templates.empty() || prev != _latest_work->second.getPrevBlock()) {

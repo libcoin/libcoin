@@ -49,7 +49,7 @@ public:
     virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 20); }
-    virtual unsigned int nextWorkRequired(BlockIterator blk) const;
+    virtual int nextWorkRequired(BlockIterator blk) const;
     virtual const bool checkProofOfWork(const Block& block) const;
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const { return true; }
     virtual unsigned int totalBlocksEstimate() const { return 0; }
@@ -134,7 +134,7 @@ bool PonziChain::isStandard(const Transaction& tx) const {
     return true;
 }
 
-unsigned int PonziChain::nextWorkRequired(BlockIterator blk) const {
+int PonziChain::nextWorkRequired(BlockIterator blk) const {
     const int64_t nTargetTimespan = 2 * 60 * 60; // two hours
     const int64_t nTargetSpacing = 1 * 60; // one block a minute !
     const int64_t nInterval = nTargetTimespan / nTargetSpacing;
