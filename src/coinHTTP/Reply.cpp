@@ -257,7 +257,7 @@ namespace stock_replies {
 void Reply::status(Reply::Status s) {
     _status = s;
     _content = stock_replies::to_string(_status);
-    _headers["Content-Length"] = boost::lexical_cast<string>(_content.size());;
+    _headers["Content-Length"] = boost::lexical_cast<string>(_content.size());
     _headers["Content-Type"] = "text/html";
 }
 

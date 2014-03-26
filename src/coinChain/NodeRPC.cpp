@@ -31,7 +31,7 @@ Value GetBlockHash::operator()(const Array& params, bool fHelp) {
         throw RPC::error(RPC::invalid_request, "Block number out of range.");
 
     BlockIterator blk = _node.blockChain().iterator(height);
-    return blk->hash.GetHex();;
+    return blk->hash.GetHex();
 }
 
 Value GetBlock::operator()(const Array& params, bool fHelp) {

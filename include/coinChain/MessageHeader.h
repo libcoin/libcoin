@@ -57,7 +57,7 @@ public:
     MessageStart _messageStart;
     typedef boost::array<char, 12> Command;
     //char pchCommand[COMMAND_SIZE];
-    Command pchCommand;;
+    Command pchCommand;
     unsigned int nMessageSize;
     unsigned int nChecksum;
 };

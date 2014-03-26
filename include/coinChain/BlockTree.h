@@ -344,7 +344,7 @@ public:
     BlockLocator() {}
     
     inline friend std::ostream& operator<<(std::ostream& os, const BlockLocator& bl) {
-        return os << bl.have;;
+        return os << bl.have;
     }
     
     inline friend std::istream& operator>>(std::istream& is, BlockLocator& bl) {

@@ -125,7 +125,7 @@ Configuration::Configuration(int argc, char* argv[], const options_description& 
         if (_log_file.size() && _log_file[0] != '/')
             _log_file = _data_dir + "/" + _log_file;
         
-        _olog.open((_log_file).c_str(), std::ios_base::out|std::ios_base::app);;
+        _olog.open((_log_file).c_str(), std::ios_base::out|std::ios_base::app);
     }
     
     Logger::Level ll = Logger::info;

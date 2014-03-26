@@ -395,7 +395,7 @@ namespace sqliterate {
         std::vector<R> eval() {
             int64_t t0 = time_microseconds();
             int result = sqlite3_step(_->stmt);
-            std::vector<R> rs;;
+            std::vector<R> rs;
             while(result == SQLITE_ROW) {
                 R r;
                 get(r, 0);

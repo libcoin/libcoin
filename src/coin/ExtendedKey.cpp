@@ -222,7 +222,7 @@ SecureString Key::GetPassFunctor::operator()(bool verify) {
 }
 
 Key::Key(const std::string& filename) : _ec_key(NULL) {
-    EVP_PKEY* pkey = EVP_PKEY_new();;
+    EVP_PKEY* pkey = EVP_PKEY_new();
     FILE* f = fopen(filename.c_str(), "r");
     if (!f)
         throw runtime_error(filename + " not found, or access not permitted!");
@@ -241,7 +241,7 @@ Key::Key(const std::string& filename) : _ec_key(NULL) {
 }
 
 Key::Key(const std::string& filename, PassphraseFunctor& pf) : _ec_key(NULL) {
-    EVP_PKEY* pkey = EVP_PKEY_new();;
+    EVP_PKEY* pkey = EVP_PKEY_new();
     FILE* f = fopen(filename.c_str(), "r");
     if (!f)
         throw runtime_error(filename + " not found, or access not permitted!");

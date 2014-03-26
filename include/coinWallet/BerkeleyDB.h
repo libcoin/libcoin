@@ -259,7 +259,7 @@ enum DBErrors
     DB_LOAD_OK,
     DB_CORRUPT,
     DB_TOO_NEW,
-    DB_LOAD_FAIL,
+    DB_LOAD_FAIL
 };
 
 void CloseDb(const std::string& strFile);

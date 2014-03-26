@@ -74,7 +74,7 @@ void Connection::handle_handshake(const boost::system::error_code& error) {
         _ssl_socket.async_read_some(buffer(_buffer), boost::bind(&Connection::handle_read, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
     else {
-        _connectionManager.stop(shared_from_this());;
+        _connectionManager.stop(shared_from_this());
     }
 }
 
