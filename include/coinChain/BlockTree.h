@@ -204,7 +204,8 @@ public:
     }
 
     const int distance(const Iterator& a, const Iterator& b) const {
-        
+        throw std::runtime_error("BlockTree::distance not implemented!");
+        return 0;
     }
     
     void advance(Iterator& i, int n) const {
