@@ -43,7 +43,6 @@ SET(TARGET_H
     ${HEADER_PATH}/ref_ptr.h
     ${HEADER_PATH}/TransactionFilter.h
     ${HEADER_PATH}/Verifier.h
-    ${HEADER_PATH}/Version.h
     ${HEADER_PATH}/VersionFilter.h
     ${LIBCOIN_CONFIG_HEADER}
 )
@@ -80,7 +79,6 @@ SET(TARGET_SRC
     Proxy.cpp
     TransactionFilter.cpp
     Verifier.cpp
-    Version.cpp
     VersionFilter.cpp
 
     ${LIBCOIN_VERSIONINFO_RC}
