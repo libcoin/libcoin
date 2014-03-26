@@ -401,8 +401,8 @@ public:
     typedef std::vector<int64_t> Ids;
     typedef std::vector<std::string> Names;
     
-    virtual const Ids& ids() const { return Ids(); }
-    virtual const Names& names() const { return Names(); }
+    virtual const Ids& ids() const = 0;
+    virtual const Names& names() const = 0;
     
     virtual bool has(int64_t id) { return false; }
     virtual bool has(const std::string& name) { return false; }
@@ -440,14 +440,14 @@ public:
     }
     
     virtual void debit(const Transaction& txn, int count) {
-        for (int i = 0; i < txn.getNumInputs(); ++i) {
+        for (unsigned int i = 0; i < txn.getNumInputs(); ++i) {
             const Input& input = txn.getInput(i);
             Assets::iterator spent = _assets.find(input.prevout());
             if (spent != _assets.end()) {
                 _assets.erase(spent); // need further work!!!
             }
         }
-        for (int o = 0; o < txn.getNumOutputs(); ++o) {
+        for (unsigned int o = 0; o < txn.getNumOutputs(); ++o) {
             const Output& output = txn.getOutput(o);
             if (_addr.getStandardScript() == output.script()) {
                 Coin coin(txn.getHash(), o);

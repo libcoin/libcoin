@@ -221,7 +221,7 @@ string test_vector =
     ]";
 
 
-/*
+
  
 namespace json {
     class value {
@@ -455,7 +455,7 @@ int main(int argc, char* argv[]) {
     
     return 0;
     
-    /*
+    
     try {
         try {
             json::value obj = (json::pair("id", 123), json::pair("name", "abc"));

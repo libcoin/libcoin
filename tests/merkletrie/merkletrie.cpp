@@ -191,7 +191,7 @@ int main(int argc, char* argv[])
                 //uint32_t lower_key = (-it)->key;
                 //uint32_t upper_key = (+it)->key;
                 
-                uint32_t key = elems[i].key;
+//                uint32_t key = elems[i].key;
 
                 //                cout << key-lower_key << " " << key << " " << upper_key-key << endl;
                 
