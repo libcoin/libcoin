@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
             if(host_port.size() < 2) host_port.push_back("1080"); 
             proxy_server = asio::ip::tcp::endpoint(asio::ip::address_v4::from_string(host_port[0]), lexical_cast<short>(host_port[1]));
         }
-        Node node(conf.chain(), conf.data_dir(), conf.listen(), lexical_cast<string>(conf.node_port()), proxy_server, conf.timeout(), ""); // it is also here we specify the use of a proxy!
+        Node node(conf.chain(), conf.data_dir(), conf.listen(), lexical_cast<string>(conf.node_port()), proxy_server, conf.timeout()); // it is also here we specify the use of a proxy!
         node.setClientVersion("libcoin/bitcoind", vector<string>());
         node.verification(conf.verification());
         node.validation(conf.validation());

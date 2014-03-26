@@ -20,6 +20,33 @@ class Wallet;
 
 class CWalletTx;
 
+// helpers to enable reading and writing of uint256
+
+inline CDataStream& operator<<(CDataStream& os, const std::pair<std::string, uint256>& obj) {
+    std::ostringstream oss;
+    oss << const_varstr(obj.first) << obj.second;
+    std::string s = oss.str();
+    return os.write(&s[0], s.size());
+}
+
+inline CDataStream& operator>>(CDataStream& is, std::pair<std::string, uint256>& obj) {
+    std::istringstream iss(is.str());
+    std::streampos p = iss.tellg();
+    iss >> varstr(obj.first) >> obj.second;
+    p -= iss.tellg();
+    is.ignore(p);
+    return is;
+}
+
+inline CDataStream& operator>>(CDataStream& is, uint256& n) {
+    std::istringstream iss(is.str());
+    std::streampos p = iss.tellg();
+    iss >> n;
+    p -= iss.tellg();
+    is.ignore(p);
+    return is;
+}
+
 class COINWALLET_EXPORT CKeyPool
 {
 public:

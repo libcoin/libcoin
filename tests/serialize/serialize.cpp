@@ -18,6 +18,7 @@
 
 #include <coin/Transaction.h>
 #include <coinWallet/serialize.h>
+#include <coinWallet/WalletTx.h>
 #include <coin/Serialization.h>
 #include <coin/uint256.h>
 #include <coin/util.h>
@@ -95,14 +96,15 @@ int main(int argc, char* argv[])
     cout << "==== Testing serialization ====\n" << endl;
 
     try {
-        serialization_test("Coin", Coin(rand_hash(), 2));
-
         const char* alphabet = "abcdefghijklmnopqrstuvwxyz";
         vector<char> vec(alphabet, alphabet+26);
         serialization_test("vector<char>", vec);
 
         serialization_test("Script", (Script)rand_data(36));
-        
+/*
+ //     This has been tested and is now considered deprecated
+        serialization_test("Coin", Coin(rand_hash(), 2));
+ 
         serialization_test("Input", Input(Coin(rand_hash(), 10),(Script)rand_data(36)));
         
         serialization_test("Output", Output(time_microseconds(), (Script)rand_data(25)));
@@ -126,9 +128,7 @@ int main(int argc, char* argv[])
         serialization_test("Endpoint", Endpoint("1.2.3.4:5678"));
         serialization_test("Endpoint IPv6", Endpoint("fe80::6203:8ff:fe90:f4ce:5678"));
         serialization_test("Endpoint IPv6 enc IPv4", Endpoint("::ffff:1:2:3:4:5678"));
-        
-        // try to serialize also a block with AuxPow info
-        
+*/
         return 0;
     }
     catch (std::exception &e) {

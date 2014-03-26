@@ -24,6 +24,27 @@
 
 #include <boost/type_traits.hpp>
 
+/// Serialization
+/// Serialization for bitcoin is pretty simple:
+/// * basic types are serialized as their memory representation on a little endian system.
+/// ** use const_binary<>() to write basic types
+/// ** use binary<>() read basic types
+/// * size data can be serialized as varints - to optimize space
+/// ** use const_varint() to write varints
+/// ** use varint() to read varints
+/// * container types are serialized as a "varint" followed by the elements
+/// ** container types can be serialized and deserialized directly
+/// * strings are considered containertypes and are serialized as varstr:
+/// ** use const_varstr() to write
+/// ** use varstr() to read
+/// all other serialization are composed of the elements above.
+/// example:
+///   os << const_binary<int>(version) << const_varstr(version_string) << vector_data
+///   is >> binary<int>(version) >> varstr(version_string) >> vector_data
+/// Where os is a std::ostream and is is a std::istream.
+/// Use of the standard friend ostream& operator<<(ostream&, const Object& object) and
+/// its istream counter part is recommended for all classes.
+
 template <typename T>
 class binary {
 public:

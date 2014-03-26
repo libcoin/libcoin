@@ -560,8 +560,6 @@ void BlockChain::insertBlockHeader(int64_t count, const Block& block) {
         ostringstream os;
         os << block.getAuxPoW();
         string s = os.str();
-//        CDataStream ds;
-//        ds << block.getAuxPoW();
         Data auxpow(s.begin(), s.end());
         uint256 hash = block.getAuxPoW().getHash();
         query("INSERT INTO AuxProofOfWorks (count, hash, auxpow) VALUES (?, ?, ?)", count, hash, auxpow);

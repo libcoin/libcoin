@@ -30,7 +30,7 @@ using namespace asio;
 
 Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, std::string sub_version) : _chain(chain),_socket(io_service), _peerManager(manager), _messageHandler(handler), _msgParser(), _suicide(io_service), _keep_alive(io_service) {
     _services = 0;
-    _version = chain.protocol_version();
+    _version = 0;//chain.protocol_version();
 
     //    addr = addrIn;
     _client = false; // set by version message
@@ -57,7 +57,11 @@ ostream& operator<<(ostream& os, const Peer& p) {
     Endpoint addrYou = (p._proxy ? Endpoint("0.0.0.0") : p.addr);
     Endpoint addrMe = (p._proxy ? Endpoint("0.0.0.0") : local);
     // hack to avoid serializing the time
-    os << const_binary<int>(p._version) << const_binary<uint64_t>(NODE_NETWORK) << const_binary<int64_t>(nTime);
+    if (p._version)
+        os << const_binary<int>(p._version);
+    else // not initialized - we assume we are sending the version info
+        os << const_binary<int>(p._chain.protocol_version());
+    os << const_binary<uint64_t>(NODE_NETWORK) << const_binary<int64_t>(nTime);
     os << const_binary<uint64_t>(addrYou.getServices()) << const_binary<boost::asio::ip::address_v6::bytes_type>(addrYou.getIPv6()) << const_binary<unsigned short>(htons(addrYou.port()));
     os << const_binary<uint64_t>(addrMe.getServices()) << const_binary<boost::asio::ip::address_v6::bytes_type>(addrMe.getIPv6()) << const_binary<unsigned short>(htons(addrMe.port()));
     os << const_binary<uint64_t>(p._nonce) << const_varstr(p._sub_version);
