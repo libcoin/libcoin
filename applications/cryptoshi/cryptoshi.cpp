@@ -593,11 +593,10 @@ public:
     MessageVerifier(const std::string& magic) : _magic(magic) {}
     
     uint256 serialize(const std::string& message) const {
-        CHashWriter ss(SER_GETHASH, 0);
-        ss << _magic;
-        ss << message;
-        
-        return ss.GetHash();
+        ostringstream os;
+        os << _magic << message;
+        string s = os.str();
+        return ::Hash(s.begin(), s.end());
     }
     
     PubKeyHash verify(const std::string& message, const std::string& signature) const {

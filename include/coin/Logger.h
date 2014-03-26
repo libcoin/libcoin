@@ -28,7 +28,7 @@
 #include <deque>
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wno-variadic-macros"
+#pragma GCC diagnostic ignored "-Wvariadic-macros"
 
 class COIN_EXPORT LineBuffer : public std::streambuf {
 public:
