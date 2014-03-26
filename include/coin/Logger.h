@@ -108,19 +108,19 @@ private:
     void operator=(Logger const&);
 };
 
-#define log_fatal(...) log_fatal_(__VA_ARGS__,NULL)
-#define log_error(...) log_error_(__VA_ARGS__,NULL)
-#define log_warn(...) log_warn_(__VA_ARGS__,NULL)
-#define log_info(...) log_info_(__VA_ARGS__,NULL)
-#define log_debug(...) log_debug_(__VA_ARGS__,NULL)
-#define log_trace(...) log_trace_(__VA_ARGS__,NULL)
-
 #define log_fatal_(...) Logger::log(Logger::fatal, __FILE__, __LINE__, __FUNCTION__) << cformat(__VA_ARGS__) << std::endl
 #define log_error_(...) Logger::log(Logger::error, __FILE__, __LINE__, __FUNCTION__) << cformat(__VA_ARGS__) << std::endl
 #define log_warn_(...) Logger::log(Logger::warn, __FILE__, __LINE__, __FUNCTION__) << cformat(__VA_ARGS__) << std::endl
 #define log_info_(...) Logger::log(Logger::info, __FILE__, __LINE__, __FUNCTION__) << cformat(__VA_ARGS__) << std::endl
 #define log_debug_(...) Logger::log(Logger::debug, __FILE__, __LINE__, __PRETTY_FUNCTION__) << cformat(__VA_ARGS__) << std::endl
 #define log_trace_(...) Logger::log(Logger::trace, __FILE__, __LINE__, __PRETTY_FUNCTION__) << cformat(__VA_ARGS__) << std::endl
+
+#define log_fatal(...) log_fatal_(__VA_ARGS__,NULL)
+#define log_error(...) log_error_(__VA_ARGS__,NULL)
+#define log_warn(...) log_warn_(__VA_ARGS__,NULL)
+#define log_info(...) log_info_(__VA_ARGS__,NULL)
+#define log_debug(...) log_debug_(__VA_ARGS__,NULL)
+#define log_trace(...) log_trace_(__VA_ARGS__,NULL)
 
 //#define log_debug(...) do {} while(0)
 //#define log_trace(...) do {} while(0)
