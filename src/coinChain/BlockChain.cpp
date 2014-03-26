@@ -878,13 +878,13 @@ bool BlockChain::checkShare(const Block& share) const {
 
     // work required: if height%144 == 0 calculate - else choose last, if no last choose default
     int height = share.getHeight();
-    int target = 0x1d00ffff;
+    int target;// = 0x1d00ffff;
     if (height%144) {
         target = prev->bits;
     }
     else {
         // iterate backwards to find the last 144 block
-        ShareIterator blk = prev;
+//        ShareIterator blk = prev;
         //        while (
     }
     

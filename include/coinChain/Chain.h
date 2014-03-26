@@ -28,7 +28,7 @@
 
 /// Pure virtual baseclass Chain defining a chain. Using this template you can define any bitcoin based cryptocurrency.
 
-typedef boost::array<char, 4> MessageStart;
+typedef boost::array<unsigned char, 4> MessageStart;
 
 class COINCHAIN_EXPORT Chain : public Currency {
 public:
