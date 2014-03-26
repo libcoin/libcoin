@@ -43,7 +43,7 @@ Inventory::Inventory(int type, const uint256& hash)
 Inventory::Inventory(const std::string& type_name, const uint256& hash)
 {
     int i;
-    for (i = 1; i < ARRAYLEN(ppszTypeName); i++)
+    for (i = 1; (unsigned int)i < ARRAYLEN(ppszTypeName); i++)
     {
         if (type_name == ppszTypeName[i])
         {
@@ -80,7 +80,7 @@ bool operator<(const Inventory& a, const Inventory& b)
 
 bool Inventory::isKnownType() const
 {
-    return (_type >= 1 && _type < ARRAYLEN(ppszTypeName));
+    return (_type >= 1 && (unsigned int)_type < ARRAYLEN(ppszTypeName));
 }
 
 const char* Inventory::getCommand() const

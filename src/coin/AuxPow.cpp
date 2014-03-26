@@ -103,7 +103,7 @@ bool AuxPow::Check(uint256 hashAuxBlock, int nChainID) const
     rand += nChainID;
     rand = rand * 1103515245 + 12345;
 
-    if (nChainIndex != (rand % nSize))
+    if ((unsigned int)nChainIndex != (rand % nSize))
         return error("Aux POW wrong index");
 
     return true;

@@ -242,11 +242,11 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
 
 }
 
-unsigned int BlockChain::purge_depth() const {
+int BlockChain::purge_depth() const {
     return _purge_depth;
 }
 
-void BlockChain::purge_depth(unsigned int purge_depth) {
+void BlockChain::purge_depth(int purge_depth) {
     if (purge_depth < _purge_depth)
         log_warn("Requested a purge_depth (Persistance setting) deeper than currently, please re-download the blockchain to enforce this!");
     _purge_depth = purge_depth;
@@ -254,7 +254,7 @@ void BlockChain::purge_depth(unsigned int purge_depth) {
     query("DELETE FROM Confirmations WHERE count <= ?", _purge_depth);
 }
 
-void BlockChain::validation_depth(unsigned int v) {
+void BlockChain::validation_depth(int v) {
     if (v == _validation_depth) return;
 
     _validation_depth = v;
@@ -428,7 +428,7 @@ int BlockChain::setMerkleBranch(MerkleTx& mtxn) const
             break;
     }
     
-    if (mtxn._index == txes.size()) {
+    if ((unsigned int)mtxn._index == txes.size()) {
         mtxn._merkleBranch.clear();
         mtxn._index = -1;
         log_debug("ERROR: SetMerkleBranch() : couldn't find tx in block\n");
@@ -911,13 +911,13 @@ bool BlockChain::checkShare(const Block& share) const {
         // check that the dividend in this share matches the one in the chain
         int64_t reward = 0;
         const Transaction& cb_txn = share.getTransaction(0);
-        for (int i = 0; i < cb_txn.getNumOutputs(); ++i)
+        for (unsigned int i = 0; i < cb_txn.getNumOutputs(); ++i)
             reward += cb_txn.getOutput(i).value();
         int64_t fraction = reward/360;
         int64_t modulus = reward%360;
         
         unsigned int total = 0;
-        for (int i = 1; i < cb_txn.getNumOutputs(); ++i) {
+        for (unsigned int i = 1; i < cb_txn.getNumOutputs(); ++i) {
             const Script& script = cb_txn.getOutput(i).script();
             int64_t value = cb_txn.getOutput(i).value();
             if (value%fraction)
@@ -1010,7 +1010,7 @@ void BlockChain::append(const Block &block) {
     // keep a snapshot of the spendables trie if we need to rollback, however, don't use it during download.
     Spendables snapshot = _spendables;
 
-    if (prev_height < _chain.totalBlocksEstimate() && changes.inserted.size() == 0)
+    if ((unsigned int)prev_height < _chain.totalBlocksEstimate() && changes.inserted.size() == 0)
         throw Error("Branching disallowed before last checkpoint at: " + lexical_cast<string>(_chain.totalBlocksEstimate()));
     
     _branches[hash] = block;
@@ -1180,7 +1180,7 @@ void BlockChain::updateBestLocator() {
     }
 
     _bestLocator.have.clear();
-    for (int i = 0; i < heights.size(); ++i) {
+    for (unsigned int i = 0; i < heights.size(); ++i) {
         BlockIterator blk = iterator(heights[i]);
         _bestLocator.have.push_back(blk->hash);
     }

@@ -432,7 +432,7 @@ void Node::post(const Transaction& tx, size_t n)
         return;
     }
     if (n != 0 && n < s) {
-        for(int i = 0; i < n; i++) {
+        for(unsigned int i = 0; i < n; i++) {
             size_t r = GetRand(s);
             Peers::const_iterator p = peers.begin();
             advance(p, r);

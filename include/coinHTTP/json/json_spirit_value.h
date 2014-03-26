@@ -24,7 +24,6 @@
 namespace json_spirit
 {
     enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };
-    static const char* Value_type_name[]={"obj", "array", "str", "bool", "int", "real", "null"};
 
     template< class Config >    // Config determines whether the value uses std::string or std::wstring and
                                 // whether JSON Objects are represented as vectors or maps
@@ -338,7 +337,9 @@ namespace json_spirit
     template< class Config >
     void Value_impl< Config >::check_type( const Value_type vtype ) const
     {
-        if( type() != vtype ) 
+        static const char* Value_type_name[]={"obj", "array", "str", "bool", "int", "real", "null"};
+
+        if( type() != vtype )
         {
             std::ostringstream os;
 

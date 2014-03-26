@@ -277,7 +277,7 @@ void BlockFilter::process(const Block& block, Peers peers) {
     // Recursively process any orphan blocks that depended on this one
     vector<uint256> workQueue;
     workQueue.push_back(hash);
-    for (int i = 0; i < workQueue.size(); i++) {
+    for (unsigned int i = 0; i < workQueue.size(); i++) {
         uint256 hashPrev = workQueue[i];
         for (OrphansByPrev::iterator mi = _orphansByPrev.lower_bound(hashPrev);
              mi != _orphansByPrev.upper_bound(hashPrev);

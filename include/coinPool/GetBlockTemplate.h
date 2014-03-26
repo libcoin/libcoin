@@ -108,4 +108,4 @@ private:
     size_t _claim_threshold;
 };
 
-#endif COINPOOL_GETBLOCKTEMPLATE_H
+#endif // COINPOOL_GETBLOCKTEMPLATE_H

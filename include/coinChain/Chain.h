@@ -42,7 +42,7 @@ public:
     virtual const uint256& genesisHash() const = 0;
     virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const = 0;
     virtual bool isStandard(const Transaction& tx) const = 0;
-    virtual unsigned int nextWorkRequired(BlockIterator blk) const = 0;
+    virtual int nextWorkRequired(BlockIterator blk) const = 0;
     virtual const CBigNum proofOfWorkLimit() const = 0;
     virtual const int maxInterBlockTime() const { return INT_MAX; }
     virtual bool adhere_aux_pow() const { return false; }
@@ -57,7 +57,7 @@ public:
     
     virtual const std::string dataDirSuffix() const { return name(); };
     
-    virtual unsigned int timeStamp(ChangeIdentifier id) const {
+    virtual int timeStamp(ChangeIdentifier id) const {
         switch(id) {
             case BIP0016: return 1333238400; // April 1st                
             case BIP0030: return 1331769600; // 03/15/2012 12:00am GMT.
@@ -136,7 +136,7 @@ public:
     virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 32); }
-    virtual unsigned int nextWorkRequired(BlockIterator blk) const;
+    virtual int nextWorkRequired(BlockIterator blk) const;
     virtual const bool checkProofOfWork(const Block& block) const;
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
     virtual unsigned int totalBlocksEstimate() const;
@@ -188,10 +188,10 @@ public:
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 32); }
     virtual const int maxInterBlockTime() const { return 2*10*60; }
     virtual const bool checkProofOfWork(const Block& block) const;
-    virtual unsigned int nextWorkRequired(BlockIterator blk) const;
+    virtual int nextWorkRequired(BlockIterator blk) const;
     //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const;
     
-    virtual unsigned int timeStamp(ChangeIdentifier id) const {
+    virtual int timeStamp(ChangeIdentifier id) const {
         switch(id) {
             case BIP0016: return 1329264000; // Feb 15
             case BIP0030: return 1329696000; // 02/20/2012 12:00am GMT
@@ -243,7 +243,7 @@ public:
     virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 32); }
-    virtual unsigned int nextWorkRequired(BlockIterator blk) const;
+    virtual int nextWorkRequired(BlockIterator blk) const;
     virtual const bool checkProofOfWork(const Block& block) const;
     virtual bool adhere_aux_pow() const { return true; }
     virtual bool adhere_names() const { return true; }
@@ -334,12 +334,12 @@ public:
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 20); } // Litecoin: starting difficulty is 1 / 2^12
     virtual const bool checkProofOfWork(const Block& block) const;
-    virtual unsigned int nextWorkRequired(BlockIterator blk) const;
+    virtual int nextWorkRequired(BlockIterator blk) const;
     //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const;
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
     virtual unsigned int totalBlocksEstimate() const;
     
-    virtual unsigned int timeStamp(ChangeIdentifier id) const {
+    virtual int timeStamp(ChangeIdentifier id) const {
         switch(id) {
             case BIP0016: return 1349049600; // April 1st
             case BIP0030: return 1349049600; // 03/15/2012 12:00am GMT.
@@ -401,12 +401,12 @@ public:
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 32); } 
     virtual const bool checkProofOfWork(const Block& block) const;
-    virtual unsigned int nextWorkRequired(BlockIterator blk) const;
+    virtual int nextWorkRequired(BlockIterator blk) const;
     //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const;
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
     virtual unsigned int totalBlocksEstimate() const;
     
-    virtual unsigned int timeStamp(ChangeIdentifier id) const {
+    virtual int timeStamp(ChangeIdentifier id) const {
         switch(id) {
             case BIP0016: return 1349049600; // April 1st
             case BIP0030: return 1349049600; // 03/15/2012 12:00am GMT.
@@ -457,12 +457,12 @@ public:
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 20); } // Litecoin: starting difficulty is 1 / 2^12
     virtual const bool checkProofOfWork(const Block& block) const;
-    virtual unsigned int nextWorkRequired(BlockIterator blk) const;
+    virtual int nextWorkRequired(BlockIterator blk) const;
     //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const;
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
     virtual unsigned int totalBlocksEstimate() const;
     
-    virtual unsigned int timeStamp(ChangeIdentifier id) const {
+    virtual int timeStamp(ChangeIdentifier id) const {
         switch(id) {
             case BIP0016: return 1349049600; // April 1st
             case BIP0030: return 1349049600; // 03/15/2012 12:00am GMT.

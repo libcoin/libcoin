@@ -55,8 +55,8 @@ struct Coin { // was COutPoint
         return is >> binary<Coin>(coin);
     }
 
-    void setNull() { hash = 0; index = -1; }
-    bool isNull() const { return (hash == 0 && index == -1); }
+    void setNull() { hash = 0; index = 0xffffffff; }
+    bool isNull() const { return (hash == 0 && index == 0xffffffff); }
     
     friend bool operator<(const Coin& a, const Coin& b) {
         return (a.hash < b.hash || (a.hash == b.hash && a.index < b.index));
@@ -210,7 +210,7 @@ public:
         // so dust is a txout less than 54 uBTC
         // (5460 satoshis) with default nMinRelayTxFee
         
-        return ((_value*1000)/(3*(serialize_size(*this)+148)) < min_fee);
+        return (_value*1000)/(3*(serialize_size(*this)+148) < (uint64_t)min_fee);
     }
     
     uint256 getHash() const {
@@ -396,9 +396,9 @@ public:
             _inputs.size(),
             _outputs.size(),
             _lockTime);
-        for (int i = 0; i < _inputs.size(); i++)
+        for (unsigned int i = 0; i < _inputs.size(); i++)
             str += "    " + _inputs[i].toString() + "\n";
-        for (int i = 0; i < _outputs.size(); i++)
+        for (unsigned int i = 0; i < _outputs.size(); i++)
             str += "    " + _outputs[i].toString() + "\n";
         return str;
     }

@@ -184,7 +184,7 @@ getHTTPResponse(int s, int * size)
 							if(i<n && buf[i] == '\n') i++;
 						}
 						while(i<n && isxdigit(buf[i])
-						     && chunksize_buf_index < (sizeof(chunksize_buf)-1))
+						     && (unsigned int)chunksize_buf_index < (sizeof(chunksize_buf)-1))
 						{
 							chunksize_buf[chunksize_buf_index++] = buf[i];
 							chunksize_buf[chunksize_buf_index] = '\0';

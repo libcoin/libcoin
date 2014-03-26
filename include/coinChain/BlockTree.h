@@ -215,7 +215,7 @@ public:
                 i = end();
             else {
                 h += n;
-                if (h >= _trunk.size())
+                if ((unsigned int)h >= _trunk.size())
                     i = end();
                 else
                     i = Iterator(&_trunk[h], this);
@@ -257,8 +257,8 @@ struct BlockRef {
     int version;
     Hash hash;
     Hash prev;
-    unsigned int time;
-    unsigned int bits;
+    int time;
+    int bits;
     
     CBigNum work() const {
         CBigNum target;
@@ -269,7 +269,7 @@ struct BlockRef {
     }
     
     BlockRef() : version(3), hash(0), prev(0), time(0), bits(0) {}
-    BlockRef(int version, Hash hash, Hash prev, unsigned int time, unsigned int bits) : version(version), hash(hash), prev(prev), time(time), bits(bits) {}
+    BlockRef(int version, Hash hash, Hash prev, int time, int bits) : version(version), hash(hash), prev(prev), time(time), bits(bits) {}
 };
 
 class COINCHAIN_EXPORT BlockTree : public SparseTree<BlockRef> {
@@ -315,12 +315,12 @@ public:
     }
     
     /// Trim the trunk, removing all branches ending below the trim_height
-    Pruned trim(size_t trim_height) {
+    Pruned trim(int trim_height) {
         // ignore branches for now...
         if (trim_height > height())
             trim_height = height();
         Pruned pruned;
-        for (size_t h = _trimmed; h < trim_height; ++h)
+        for (int h = _trimmed; h < trim_height; ++h)
             pruned.trunk.push_back(_trunk[h].hash);
         _trimmed = trim_height;
         return pruned;
@@ -440,12 +440,12 @@ public:
     }
     
     /// Trim the trunk, removing all branches ending below the trim_height
-    Pruned trim(size_t trim_height) {
+    Pruned trim(int trim_height) {
         // ignore branches for now...
         if (trim_height > height())
             trim_height = height();
         Pruned pruned;
-        for (size_t h = _trimmed; h < trim_height; ++h)
+        for (int h = _trimmed; h < trim_height; ++h)
             pruned.trunk.push_back(_trunk[h].hash);
         _trimmed = trim_height;
         return pruned;

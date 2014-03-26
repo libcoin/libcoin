@@ -86,8 +86,8 @@ public:
 
     /// The purge depth is the number of blocks kept as spendings and unspents. If purgedepth is set to 0 the client will be a full client
     /// Else it is the number of old blocks served to the bitcoin network.
-    unsigned int purge_depth() const;
-    void purge_depth(unsigned int purge_depth);
+    int purge_depth() const;
+    void purge_depth(int purge_depth);
     
     bool lazy_purging() const { return _lazy_purging; }
     void lazy_purging(bool p) { _lazy_purging = p; }
@@ -100,14 +100,14 @@ public:
     /// if > 0 use Trie for validation as long as block count is below, use MerkleTrie when blockcount is equal or above
     /// e.g. a value of 1 will keep the merkle trie switched on all the time and a value of UINT_MAX will ensure Trie all the time
     /// Default is _chain.totalBlocksEstimate()
-    unsigned int validation_depth() const { return _validation_depth; }
-    void validation_depth(unsigned int v);
+    int validation_depth() const { return _validation_depth; }
+    void validation_depth(int v);
     
     /// Verification Depth: 0 - don't verify x (>0) verify anything later than this
     /// default is x = _chain.totalBlocksEstimate()
     /// Note: verification depth changes does not affect already accpeted blocks!
-    unsigned int verification_depth() const { return _verification_depth; }
-    void verification_depth(unsigned int v) { _verification_depth = v; }
+    int verification_depth() const { return _verification_depth; }
+    void verification_depth(int v) { _verification_depth = v; }
     
     /// T R A N S A C T I O N S    
     
@@ -316,13 +316,13 @@ private:
     
     Verifier _verifier;
 
-    unsigned int _validation_depth;
+    int _validation_depth;
 
     bool _lazy_purging; 
     
-    unsigned int _purge_depth;
+    int _purge_depth;
 
-    unsigned int _verification_depth;
+    int _verification_depth;
     
     BlockLocator _bestLocator;
     

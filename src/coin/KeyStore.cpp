@@ -330,7 +330,7 @@ bool ExtractAddresses(const Script& script, txnouttype& typeRet, vector<PubKeyHa
     
     if (typeRet == TX_MULTISIG) {
         nRequiredRet = vSolutions.front()[0];
-        for (int i = 1; i < vSolutions.size()-1; i++) {
+        for (unsigned int i = 1; i < vSolutions.size()-1; i++) {
             PubKeyHash hash;
             hash = toPubKeyHash(vSolutions[i]);
             hashes.push_back(hash);
@@ -392,7 +392,7 @@ bool IsMine(const KeyStore &keystore, const Script& scriptPubKey)
             // them) enable spend-out-from-under-you attacks, especially
             // in shared-wallet situations.
             std::vector<valtype> keys(vSolutions.begin()+1, vSolutions.begin()+vSolutions.size()-1);
-            return HaveKeys(keys, keystore) == keys.size();
+            return (unsigned int)HaveKeys(keys, keystore) == keys.size();
         }
     }
     return false;

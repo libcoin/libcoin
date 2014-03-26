@@ -117,7 +117,7 @@ void TransactionFilter::process(Transaction& txn, Peers peers) {
         workQueue.push_back(inv.getHash());
         
         // Recursively process any orphan transactions that depended on this one
-        for (int i = 0; i < workQueue.size(); i++) {
+        for (unsigned int i = 0; i < workQueue.size(); i++) {
             uint256 hashPrev = workQueue[i];
             for (OrphansByPrev::iterator mi = _orphansByPrev.lower_bound(hashPrev);
                  mi != _orphansByPrev.upper_bound(hashPrev);

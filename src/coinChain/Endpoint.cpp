@@ -67,7 +67,7 @@ bool Lookup(const string name, vector<Endpoint>& vaddr, int nServices, int nMaxS
         return false;
     
     char** ppAddr = phostent->h_addr_list;
-    while (*ppAddr != NULL && vaddr.size() != nMaxSolutions) {
+    while (*ppAddr != NULL && vaddr.size() != (unsigned int)nMaxSolutions) {
         Endpoint addr(((struct in_addr*)ppAddr[0])->s_addr, port, nServices);
         if (addr.isValid())
             vaddr.push_back(addr);

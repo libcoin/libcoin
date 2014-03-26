@@ -103,7 +103,7 @@ private:
     
     std::string _name;
     std::string _value;
-    int _length;
+    unsigned int _length;
 };
 
 #endif // HTTP_REQUEST_PARSER_H

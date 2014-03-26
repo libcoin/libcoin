@@ -256,7 +256,7 @@ public:
         if (vch.size() > 4)
             vch[4] &= 0x7f;
         uint256 n = uint256(0);
-        for (int i = 0, j = vch.size()-1; i < sizeof(n) && j >= 4; i++, j--)
+        for (unsigned int i = 0, j = vch.size()-1; i < sizeof(n) && j >= 4; i++, j--)
             ((unsigned char*)&n)[i] = vch[j];
         return n;
     }
@@ -288,7 +288,7 @@ public:
         return vch;
     }
 
-    CBigNum& SetCompact(unsigned int nCompact)
+    CBigNum& SetCompact(int nCompact)
     {
         unsigned int nSize = nCompact >> 24;
         std::vector<unsigned char> vch(4 + nSize);
@@ -300,7 +300,7 @@ public:
         return *this;
     }
 
-    unsigned int GetCompact() const
+    int GetCompact() const
     {
         unsigned int nSize = BN_bn2mpi(this, NULL);
         std::vector<unsigned char> vch(nSize);

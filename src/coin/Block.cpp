@@ -97,13 +97,13 @@ void Block::print() const
            _merkleRoot.toString().substr(0,10).c_str(),
            _time, _bits, _nonce,
            _transactions.size());
-    for (int i = 0; i < _transactions.size(); i++)
+    for (unsigned int i = 0; i < _transactions.size(); i++)
         {
         log_info("  ");
         _transactions[i].print();
         }
     log_info("  vMerkleTree: ");
-    for (int i = 0; i < _merkleTree.size(); i++)
+    for (unsigned int i = 0; i < _merkleTree.size(); i++)
         log_info("%s ", _merkleTree[i].toString().substr(0,10).c_str());
     log_info("\n");
 }

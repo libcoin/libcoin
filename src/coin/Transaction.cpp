@@ -54,13 +54,13 @@ uint160 Output::getAddress() const
 bool Transaction::isNewerThan(const Transaction& old) const {
     if (_inputs.size() != old._inputs.size())
         return false;
-    for (int i = 0; i < _inputs.size(); i++)
+    for (unsigned int i = 0; i < _inputs.size(); i++)
         if (_inputs[i].prevout() != old._inputs[i].prevout())
             return false;
     
     bool newer = false;
     unsigned int lowest = UINT_MAX;
-    for (int i = 0; i < _inputs.size(); i++) {
+    for (unsigned int i = 0; i < _inputs.size(); i++) {
         if (_inputs[i].sequence() != old._inputs[i].sequence()) {
             if (_inputs[i].sequence() <= lowest) {
                 newer = false;
@@ -211,7 +211,7 @@ uint256 Transaction::getSignatureHash(Script scriptCode, unsigned int n, int typ
 }
 
 static bool CastToBool(const valtype& vch) {
-    for (int i = 0; i < vch.size(); i++)
+    for (unsigned int i = 0; i < vch.size(); i++)
         {
         if (vch[i] != 0)
             {
@@ -328,7 +328,7 @@ boost::tribool TransactionEvaluator::eval(opcodetype opcode) {
         case OP_CHECKMULTISIGVERIFY: {
             // ([sig ...] num_of_signatures [pubkey ...] num_of_pubkeys -- bool)
             
-            int i = 1;
+            unsigned int i = 1;
             if (_stack.size() < i)
                 return false;
             

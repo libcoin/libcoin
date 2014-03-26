@@ -38,7 +38,7 @@ CBigNum CastToBigNum(const valtype& vch)
 
 bool CastToBool(const valtype& vch)
 {
-    for (int i = 0; i < vch.size(); i++)
+    for (unsigned int i = 0; i < vch.size(); i++)
     {
         if (vch[i] != 0)
         {
@@ -371,7 +371,7 @@ boost::tribool Evaluator::eval(opcodetype opcode) {
                 return false;
             int n = CastToBigNum(top(-1)).getint();
             pop(_stack);
-            if (n < 0 || n >= _stack.size())
+            if (n < 0 || (unsigned int)n >= _stack.size())
                 return false;
             Value vch = top(-n-1);
             if (opcode == OP_ROLL)
@@ -434,9 +434,9 @@ boost::tribool Evaluator::eval(opcodetype opcode) {
             int nEnd = nBegin + CastToBigNum(top(-1)).getint();
             if (nBegin < 0 || nEnd < nBegin)
                 return false;
-            if (nBegin > vch.size())
+            if ((unsigned int)nBegin > vch.size())
                 nBegin = vch.size();
-            if (nEnd > vch.size())
+            if ((unsigned int)nEnd > vch.size())
                 nEnd = vch.size();
             vch.erase(vch.begin() + nEnd, vch.end());
             vch.erase(vch.begin(), vch.begin() + nBegin);
@@ -454,7 +454,7 @@ boost::tribool Evaluator::eval(opcodetype opcode) {
             int nSize = CastToBigNum(top(-1)).getint();
             if (nSize < 0)
                 return false;
-            if (nSize > vch.size())
+            if ((unsigned int)nSize > vch.size())
                 nSize = vch.size();
             if (opcode == OP_LEFT)
                 vch.erase(vch.begin() + nSize, vch.end());
@@ -480,7 +480,7 @@ boost::tribool Evaluator::eval(opcodetype opcode) {
             if (_stack.size() < 1)
                 return false;
             Value& vch = top(-1);
-            for (int i = 0; i < vch.size(); i++)
+            for (unsigned int i = 0; i < vch.size(); i++)
                 vch[i] = ~vch[i];
             break;
         }
@@ -495,15 +495,15 @@ boost::tribool Evaluator::eval(opcodetype opcode) {
             Value& vch2 = top(-1);
             MakeSameSize(vch1, vch2);
             if (opcode == OP_AND) {
-                for (int i = 0; i < vch1.size(); i++)
+                for (unsigned int i = 0; i < vch1.size(); i++)
                     vch1[i] &= vch2[i];
             }
             else if (opcode == OP_OR) {
-                for (int i = 0; i < vch1.size(); i++)
+                for (unsigned int i = 0; i < vch1.size(); i++)
                     vch1[i] |= vch2[i];
             }
             else if (opcode == OP_XOR) {
-                for (int i = 0; i < vch1.size(); i++)
+                for (unsigned int i = 0; i < vch1.size(); i++)
                     vch1[i] ^= vch2[i];
             }
             pop(_stack);

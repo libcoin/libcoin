@@ -95,7 +95,7 @@ void Chain::check(const Block& block) const {
         // First transaction must be coinbase, the rest must not be
         if (block.getTransactions().empty() || !block.getTransaction(0).isCoinBase())
             throw runtime_error("CheckBlock() : first tx is not coinbase");
-        for (int i = 1; i < block.getTransactions().size(); i++)
+        for (unsigned int i = 1; i < block.getTransactions().size(); i++)
             if (block.getTransaction(i).isCoinBase())
                 throw runtime_error("CheckBlock() : more than one coinbase");
         
@@ -231,7 +231,7 @@ const bool BitcoinChain::checkProofOfWork(const Block& block) const {
     return true;
 }
 
-unsigned int BitcoinChain::nextWorkRequired(BlockIterator blk) const {
+int BitcoinChain::nextWorkRequired(BlockIterator blk) const {
     const int64_t nTargetTimespan = 14 * 24 * 60 * 60; // two weeks
     const int64_t nTargetSpacing = 10 * 60;
     const int64_t nInterval = nTargetTimespan / nTargetSpacing;
@@ -344,7 +344,7 @@ const bool TestNet3Chain::checkProofOfWork(const Block& block) const {
 }
 
 
-unsigned int TestNet3Chain::nextWorkRequired(BlockIterator blk) const {
+int TestNet3Chain::nextWorkRequired(BlockIterator blk) const {
     const int64_t nTargetTimespan = 14 * 24 * 60 * 60; // two weeks
     const int64_t nTargetSpacing = 10 * 60;
     const int64_t nInterval = nTargetTimespan / nTargetSpacing;
@@ -518,7 +518,7 @@ const bool NamecoinChain::checkProofOfWork(const Block& block) const {
     return true;
 }
 
-unsigned int NamecoinChain::nextWorkRequired(BlockIterator blk) const {
+int NamecoinChain::nextWorkRequired(BlockIterator blk) const {
     const int64_t nTargetTimespan = 14 * 24 * 60 * 60; // two weeks
     const int64_t nTargetSpacing = 10 * 60;
     const int64_t nInterval = nTargetTimespan / nTargetSpacing;
@@ -663,7 +663,7 @@ const bool LitecoinChain::checkProofOfWork(const Block& block) const {
     return true;
 }
 
-unsigned int LitecoinChain::nextWorkRequired(BlockIterator blk) const {
+int LitecoinChain::nextWorkRequired(BlockIterator blk) const {
     const int64_t nTargetTimespan = 3.5 * 24 * 60 * 60; // two weeks
     const int64_t nTargetSpacing = 2.5 * 60;
     const int64_t nInterval = nTargetTimespan / nTargetSpacing;
@@ -847,7 +847,7 @@ const bool TerracoinChain::checkProofOfWork(const Block& block) const {
     return true;
 }
 
-unsigned int TerracoinChain::nextWorkRequired(BlockIterator blk) const {
+int TerracoinChain::nextWorkRequired(BlockIterator blk) const {
     const int64_t nTargetTimespan = 60 * 60; // one hour weeks
     const int64_t nTargetSpacing = 2 * 60; // new block every two minutes
     const int64_t nInterval = nTargetTimespan / nTargetSpacing;
@@ -1029,7 +1029,7 @@ const bool DogecoinChain::checkProofOfWork(const Block& block) const {
     return true;
 }
 
-unsigned int DogecoinChain::nextWorkRequired(BlockIterator blk) const {
+int DogecoinChain::nextWorkRequired(BlockIterator blk) const {
     const int64_t nTargetTimespan = 4 * 60 * 60; // Dogecoin every 4 hours
     const int64_t nTargetTimespanNEW = 60; // Dogecoin every minute
     const int64_t nTargetSpacing = 60; // Dogecoin: Every minute
