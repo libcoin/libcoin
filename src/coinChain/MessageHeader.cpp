@@ -28,22 +28,21 @@ static const unsigned int MAX_SIZE = 0x02000000;
 
 MessageHeader::MessageHeader()
 {
-    memset(_messageStart.elems, 0, sizeof(_messageStart.elems));
+    memset(_magic.elems, 0, sizeof(_magic.elems));
     memset(&pchCommand, 0, sizeof(pchCommand));
     pchCommand[1] = 1;
     nMessageSize = -1;
     nChecksum = 0;
 }
 
-MessageHeader::MessageHeader(const Chain& chain, const char* pszCommand, unsigned int nMessageSizeIn) : _messageStart(chain.messageStart())
+MessageHeader::MessageHeader(const Chain& chain, const char* pszCommand, unsigned int nMessageSizeIn) : _magic(chain.magic())
 {
-    //    memcpy(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart));
     strncpy(&pchCommand[0], pszCommand, COMMAND_SIZE);
     nMessageSize = nMessageSizeIn;
     nChecksum = 0;
 }
 
-MessageHeader::MessageHeader(const Chain& chain, const std::string& command, const std::string& message) : _messageStart(chain.messageStart()) {
+MessageHeader::MessageHeader(const Chain& chain, const std::string& command, const std::string& message) : _magic(chain.magic()) {
     strncpy(&pchCommand[0], &command[0], COMMAND_SIZE);
     nMessageSize = message.size();
     uint256 hash = Hash(message.begin(), message.end());
@@ -51,7 +50,7 @@ MessageHeader::MessageHeader(const Chain& chain, const std::string& command, con
 }
 
 std::ostream& operator<<(std::ostream& os, const MessageHeader& mh) {
-    return (os << const_binary<MessageStart>(mh._messageStart)
+    return (os << const_binary<Magic>(mh._magic)
             << const_binary<MessageHeader::Command>(mh.pchCommand)
             << const_binary<unsigned int>(mh.nMessageSize)
             << const_binary<unsigned int>(mh.nChecksum)
@@ -59,7 +58,7 @@ std::ostream& operator<<(std::ostream& os, const MessageHeader& mh) {
 }
 
 std::istream& operator>>(std::istream& is, MessageHeader& mh) {
-    return (is >> binary<MessageStart>(mh._messageStart)
+    return (is >> binary<Magic>(mh._magic)
             >> binary<MessageHeader::Command>(mh.pchCommand)
             >> binary<unsigned int>(mh.nMessageSize)
             >> binary<unsigned int>(mh.nChecksum)
@@ -83,7 +82,7 @@ std::string MessageHeader::GetCommand() const
 bool MessageHeader::IsValid(const Chain& chain) const
 {
     // Check start string
-    if (memcmp(_messageStart.elems, chain.messageStart().elems, sizeof(_messageStart.elems)) != 0)
+    if (memcmp(_magic.elems, chain.magic().elems, sizeof(_magic.elems)) != 0)
         return false;
 
     // Check the command string for errors

@@ -64,7 +64,7 @@ public:
         return addr;
     }
 
-    virtual const MessageStart& messageStart() const { return _messageStart; };
+    virtual const Magic& magic() const { return _magic; };
     virtual short defaultPort() const { return 5247; }
     
     virtual std::string ircChannel() const { return "ponzicoin"; }
@@ -73,11 +73,11 @@ public:
 private:
     Block _genesisBlock;
     uint256 _genesis;
-    MessageStart _messageStart;
+    Magic _magic;
 };
 
 PonziChain::PonziChain() : Chain("ponzicoin", "PZC", 8) {
-    _messageStart[0] = 0xbe; _messageStart[1] = 0xf9; _messageStart[2] = 0xd9; _messageStart[3] = 0xb4;
+    _magic[0] = 0xbe; _magic[1] = 0xf9; _magic[2] = 0xd9; _magic[3] = 0xb4;
     const char* pszTimestamp = "If five-spots were snowflakes, Ponzi would be a three day blizzard";
     Transaction txNew;
     

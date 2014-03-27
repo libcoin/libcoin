@@ -265,10 +265,12 @@ Value Search::operator()(const Array& params, bool fHelp) {
 int main(int argc, char* argv[])
 {
     strings add_peers, connect_peers;
+    string blockpath;
     boost::program_options::options_description extra("Extra options");
     extra.add_options()
     ("addnode", boost::program_options::value<strings>(&add_peers), "Add a node to connect to")
     ("connect", boost::program_options::value<strings>(&connect_peers), "Connect only to the specified node")
+    ("blockpath", boost::program_options::value<string>(&blockpath)->default_value(""), "Read blocks from blk* files for fast bootstrap")
     ;
     
     Configuration conf(argc, argv, extra);
@@ -313,6 +315,9 @@ int main(int argc, char* argv[])
         for(strings::iterator ep = add_peers.begin(); ep != add_peers.end(); ++ep) node.addPeer(*ep);
         for(strings::iterator ep = connect_peers.begin(); ep != connect_peers.end(); ++ep) node.connectPeer(*ep);
 
+        if (blockpath.size())
+            node.readBlockFile(blockpath);
+        
         thread nodeThread(&Node::run, &node); // run this as a background thread
         
         string search_page = 

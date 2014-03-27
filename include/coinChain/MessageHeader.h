@@ -18,7 +18,6 @@
 #define MESSAGE_HEADER_H
 
 #include <coin/uint256.h>
-//#include <coin/serialize.h>
 
 #include <coinChain/Export.h>
 #include <coinChain/Chain.h>
@@ -33,8 +32,6 @@
 //  (12) command
 //  (4) size
 //  (4) checksum
-
-//extern unsigned char pchMessageStart[4];
 
 class COINCHAIN_EXPORT MessageHeader
 {
@@ -54,7 +51,7 @@ public:
     // TODO: make private (improves encapsulation)
 public:
     enum { COMMAND_SIZE=12 };
-    MessageStart _messageStart;
+    Magic _magic;
     typedef boost::array<char, 12> Command;
     //char pchCommand[COMMAND_SIZE];
     Command pchCommand;

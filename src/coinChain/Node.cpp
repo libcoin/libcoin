@@ -86,24 +86,23 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
 }
 
 void Node::readBlockFile(string path, int fileno) {
-    /*
-    CAutoFile bf = fopen((path + "blk000" + lexical_cast<string>(fileno) + ".dat").c_str(), "rb");
-
-    int magic, size;
-    
-    if (!bf) return;
+    ostringstream os;
+    os << path << "blk" << setfill('0') << setw(5) << fileno << ".dat";
+    log_info("Processing %s", os.str());
+    ifstream ifs(os.str().c_str(), ios::in|ios::binary);
+    if (!ifs.is_open())
+        return;
     
     Block block;
-    while (bf.good()) {
-        bf >> magic;
-        bf >> size;
-        bf >> block;
-        if (!_blockChain.haveBlock(block.getHash()))
+    Magic magic;
+    unsigned int size;
+    while (ifs >> binary<Magic>(magic) >> binary<unsigned int>(size) >> block) {
+        if (magic != _blockChain.chain().magic())
+            throw runtime_error("Trying to read blockfile from wrong chain - magic mismatch");
+        if (!_blockChain.haveBlock(block.getHash()) && _blockChain.haveBlock(block.getPrevBlock()))
             _blockChain.append(block);
     }
-    
     readBlockFile(path, fileno+1);
-     */
 }
 
 void Node::verification(Strictness v) {

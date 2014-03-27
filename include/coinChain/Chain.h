@@ -28,7 +28,7 @@
 
 /// Pure virtual baseclass Chain defining a chain. Using this template you can define any bitcoin based cryptocurrency.
 
-typedef boost::array<unsigned char, 4> MessageStart;
+typedef boost::array<unsigned char, 4> Magic;
 
 class COINCHAIN_EXPORT Chain : public Currency {
 public:
@@ -116,7 +116,7 @@ public:
     /// signedMessageMagic is for using the wallet keys to sign messages - you can overload "Bitcoin" in other chains or leave it as is.
     virtual std::string signedMessageMagic() const { return "LibCoin Signed Message:\n"; }
     
-    virtual const MessageStart& messageStart() const = 0;
+    virtual const Magic& magic() const = 0;
     virtual short defaultPort() const = 0;
 
     virtual std::string ircChannel() const { return name(); }
@@ -161,7 +161,7 @@ public:
     
     virtual std::string signedMessageMagic() const { return "Bitcoin Signed Message:\n"; }
 
-    virtual const MessageStart& messageStart() const { return _messageStart; };
+    virtual const Magic& magic() const { return _magic; };
     virtual short defaultPort() const { return 8333; }
     
     virtual unsigned int ircChannels() const { return 100; } // number of groups to try (100 for bitcoin, 2 for litecoin)
@@ -169,7 +169,7 @@ public:
 private:
     Block _genesisBlock;
     uint256 _genesis;
-    MessageStart _messageStart;
+    Magic _magic;
     typedef std::map<int, uint256> Checkpoints;
     Checkpoints _checkpoints;
 };
@@ -220,7 +220,7 @@ public:
 
     virtual std::string signedMessageMagic() const { return "Bitcoin Signed Message:\n"; }
 
-    virtual const MessageStart& messageStart() const { return _messageStart; };
+    virtual const Magic& magic() const { return _magic; };
     virtual short defaultPort() const { return 18333; }
     
     virtual std::string ircChannel() const { return "bitcoinTEST"; }
@@ -229,7 +229,7 @@ public:
 private:
     Block _genesisBlock;
     uint256 _genesis;
-    MessageStart _messageStart;
+    Magic _magic;
 };
 
 extern const TestNet3Chain testnet3;
@@ -308,7 +308,7 @@ public:
     
     virtual std::string signedMessageMagic() const { return "Namecoin Signed Message:\n"; }
     
-    virtual const MessageStart& messageStart() const { return _messageStart; };
+    virtual const Magic& magic() const { return _magic; };
     virtual short defaultPort() const { return 8334; }
     
     virtual unsigned int ircChannels() const { return 1; } // number of groups to try (100 for bitcoin, 2 for litecoin)
@@ -316,7 +316,7 @@ public:
 private:
     Block _genesisBlock;
     uint256 _genesis;
-    MessageStart _messageStart;
+    Magic _magic;
     typedef std::map<int, uint256> Checkpoints;
     Checkpoints _checkpoints;
 };
@@ -373,7 +373,7 @@ public:
     
     virtual std::string signedMessageMagic() const { return "Litecoin Signed Message:\n"; }
 
-    virtual const MessageStart& messageStart() const { return _messageStart; };
+    virtual const Magic& magic() const { return _magic; };
     virtual short defaultPort() const { return 9333; }
     
     virtual unsigned int ircChannels() const { return 1; } // number of groups to try (100 for bitcoin, 2 for litecoin)
@@ -383,7 +383,7 @@ private:
 private:
     Block _genesisBlock;
     uint256 _genesis;
-    MessageStart _messageStart;
+    Magic _magic;
     typedef std::map<int, uint256> Checkpoints;
     Checkpoints _checkpoints;
 };
@@ -430,7 +430,7 @@ public:
         return addr;
     }
     
-    virtual const MessageStart& messageStart() const { return _messageStart; };
+    virtual const Magic& magic() const { return _magic; };
     virtual short defaultPort() const { return 9333; }
     
     virtual unsigned int ircChannels() const { return 1; } // number of groups to try (100 for bitcoin, 2 for litecoin)
@@ -440,7 +440,7 @@ private:
 private:
     Block _genesisBlock;
     uint256 _genesis;
-    MessageStart _messageStart;
+    Magic _magic;
     typedef std::map<int, uint256> Checkpoints;
     Checkpoints _checkpoints;
 };
@@ -513,7 +513,7 @@ public:
     
     virtual std::string signedMessageMagic() const { return "Dogecoin Signed Message:\n"; }
 
-    virtual const MessageStart& messageStart() const { return _messageStart; };
+    virtual const Magic& magic() const { return _magic; };
     virtual short defaultPort() const { return 22556; }
     
     virtual unsigned int ircChannels() const { return 1; } // number of groups to try (100 for bitcoin, 2 for litecoin)
@@ -523,7 +523,7 @@ private:
 private:
     Block _genesisBlock;
     uint256 _genesis;
-    MessageStart _messageStart;
+    Magic _magic;
     typedef std::map<int, uint256> Checkpoints;
     Checkpoints _checkpoints;
 };

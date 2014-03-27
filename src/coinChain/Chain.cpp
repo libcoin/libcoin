@@ -118,7 +118,7 @@ void Chain::check(const Block& block) const {
 
 BitcoinChain::BitcoinChain() : Chain("bitcoin", "BTC", 8), _genesis("0x000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f") {
     _alert_key = ParseHex("04fc9702847840aaf195de8442ebecedf5b095cdbb9bc716bda9110971b28a49e0ead8564ff0db22209e0374782c093bb899692d524e9d6a6956e7c5ecbcd68284");
-    _messageStart[0] = 0xf9; _messageStart[1] = 0xbe; _messageStart[2] = 0xb4; _messageStart[3] = 0xd9;
+    _magic[0] = 0xf9; _magic[1] = 0xbe; _magic[2] = 0xb4; _magic[3] = 0xd9;
     const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
     Transaction txNew;
     Script signature = Script() << 0x1d00ffff << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
@@ -288,7 +288,7 @@ const BitcoinChain bitcoin;
 
 TestNet3Chain::TestNet3Chain() : Chain("testnet3", "TST", 8), _genesis("0x000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943") {
     _alert_key = ParseHex("04302390343f91cc401d56d68b123028bf52e5fca1939df127f63c6467cdf9c8e2c14b61104cf817d0b780da337893ecc4aaff1309e536162dabbdb45200ca2b0a");
-    _messageStart[0] = 0x0b; _messageStart[1] = 0x11; _messageStart[2] = 0x09; _messageStart[3] = 0x07;
+    _magic[0] = 0x0b; _magic[1] = 0x11; _magic[2] = 0x09; _magic[3] = 0x07;
 
     const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
     Transaction txNew;
@@ -397,7 +397,7 @@ const TestNet3Chain testnet3;
 
 NamecoinChain::NamecoinChain() : Chain("namecoin", "NMC", 8), _genesis("000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770") {
     _alert_key = ParseHex("04fc9702847840aaf195de8442ebecedf5b095cdbb9bc716bda9110971b28a49e0ead8564ff0db22209e0374782c093bb899692d524e9d6a6956e7c5ecbcd68284");
-    _messageStart[0] = 0xf9; _messageStart[1] = 0xbe; _messageStart[2] = 0xb4; _messageStart[3] = 0xfe;
+    _magic[0] = 0xf9; _magic[1] = 0xbe; _magic[2] = 0xb4; _magic[3] = 0xfe;
     const char* pszTimestamp = "... choose what comes next.  Lives of your own, or a return to chains. -- V";
     Transaction txNew;
     Script signature = Script() << 0x1c007fff << CBigNum(522) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
@@ -577,7 +577,7 @@ const NamecoinChain namecoin;
 
 
 LitecoinChain::LitecoinChain() : Chain("litecoin", "LTC", 8), _genesis("0x12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2") {
-    _alert_key = ParseHex("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9");    _messageStart[0] = 0xfb; _messageStart[1] = 0xc0; _messageStart[2] = 0xb6; _messageStart[3] = 0xdb; // Litecoin: increase each by adding 2 to bitcoin's value.
+    _alert_key = ParseHex("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9");    _magic[0] = 0xfb; _magic[1] = 0xc0; _magic[2] = 0xb6; _magic[3] = 0xdb; // Litecoin: increase each by adding 2 to bitcoin's value.
 
     const char* pszTimestamp = "NY Times 05/Oct/2011 Steve Jobs, Apple’s Visionary, Dies at 56";
     Transaction txNew;
@@ -724,7 +724,7 @@ const LitecoinChain litecoin;
 
 TerracoinChain::TerracoinChain() : Chain("terracoin", "TRC", 8), _genesis("0x00000000804bbc6a621a9dbb564ce469f492e1ccf2d70f8a6b241e26a277afa2") {
     _alert_key = ParseHex("04302390343f91cc401d56d68b123028bf52e5fca1939df127f63c6467cdf9c8e2c14b61104cf817d0b780da337893ecc4aaff1309e536162dabbdb45200ca2b0a");
-    _messageStart[0] = 0xfb; _messageStart[1] = 0xc0; _messageStart[2] = 0xb6; _messageStart[3] = 0xdb; // Terracoin: increase each by adding 2 to bitcoin's value.
+    _magic[0] = 0xfb; _magic[1] = 0xc0; _magic[2] = 0xb6; _magic[3] = 0xdb; // Terracoin: increase each by adding 2 to bitcoin's value.
     
     const char* pszTimestamp = "June 4th 1978 - March 6th 2009 ; Rest In Peace, Stephanie.";
     Transaction txNew;
@@ -902,7 +902,7 @@ bool TerracoinChain::checkPoints(const unsigned int height, const uint256& hash)
 const TerracoinChain terracoin;
 
 DogecoinChain::DogecoinChain() : Chain("dogecoin", "DGE", 8), _genesis("0x1a91e3dace36e2be3bf030a65679fe821aa1d6ef92e7c9902eb318182c355691") {
-    _alert_key = ParseHex("04d4da7a5dae4db797d9b0644d57a5cd50e05a70f36091cd62e2fc41c98ded06340be5a43a35e185690cd9cde5d72da8f6d065b499b06f51dcfba14aad859f443a");    _messageStart[0] = 0xc0; _messageStart[1] = 0xc0; _messageStart[2] = 0xc0; _messageStart[3] = 0xc0; // Litecoin: increase each by adding 2 to bitcoin's value.
+    _alert_key = ParseHex("04d4da7a5dae4db797d9b0644d57a5cd50e05a70f36091cd62e2fc41c98ded06340be5a43a35e185690cd9cde5d72da8f6d065b499b06f51dcfba14aad859f443a");    _magic[0] = 0xc0; _magic[1] = 0xc0; _magic[2] = 0xc0; _magic[3] = 0xc0; // Litecoin: increase each by adding 2 to bitcoin's value.
     
     const char* pszTimestamp = "Nintondo";
     Transaction txNew;
@@ -1037,8 +1037,8 @@ int DogecoinChain::nextWorkRequired(BlockIterator blk) const {
     const int64_t nDiffChangeTarget = 145000;
     
     unsigned int nProofOfWorkLimit = _genesisBlock.getBits();
-    CBigNum bnProofOfWorkLimit;
-    bnProofOfWorkLimit.SetCompact(nProofOfWorkLimit);
+    CBigNum bnProofOfWorkLimit = proofOfWorkLimit();
+    //bnProofOfWorkLimit.SetCompact(nProofOfWorkLimit);
     int nHeight = blk.count();
     bool fNewDifficultyProtocol = (nHeight >= nDiffChangeTarget);
     
@@ -1134,15 +1134,5 @@ const uint256 DogecoinChain::getPoWHash(const Block& block) const {
 
 
 const DogecoinChain dogecoin;
-
-/* DOGECOIN TESTNET
- pchMessageStart[0] = 0xfc;
- pchMessageStart[1] = 0xc1;
- pchMessageStart[2] = 0xb7;
- pchMessageStart[3] = 0xdc;
- hashGenesisBlock = uint256("0xf5ae71e26c74beacc88382716aced69cddf3dffff24f384e1808905e0188f68f");
- */
-
-
 
 const Currency ripplecredits("ripple", "XRP", 6);

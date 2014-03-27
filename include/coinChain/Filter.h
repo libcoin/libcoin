@@ -47,8 +47,6 @@ public:
 
     unsigned char* header_ptr() {return (unsigned char*)&_header; }
     
-    //    static const char start(int i) { return pchMessageStart[i]; }
-    
 private:
     MessageHeader _header;
     std::string _payload;

@@ -82,7 +82,7 @@ public:
     explicit Node(const Chain& chain = bitcoin, std::string dataDir = "", const std::string& address = "0.0.0.0", const std::string& port = "0", boost::asio::ip::tcp::endpoint proxy = boost::asio::ip::tcp::endpoint(), unsigned int timeout = 5000, const std::string& irc = "92.243.23.21");
     
     /// Read an old style block file - this is for rapid initialization.
-    void readBlockFile(std::string path, int fileno = 1);
+    void readBlockFile(std::string path, int fileno = 0);
     
     /// Run the server's io_service loop.
     void run();

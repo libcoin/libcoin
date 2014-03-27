@@ -981,7 +981,8 @@ void BlockChain::append(const Block &block) {
         throw Error("Block already accepted as invalid");
     
     // this is enough to accept it as an invalid block - we simply do an insert:
-    _invalid_tree.insert(BlockRef(block.getVersion(), hash, block.getPrevBlock(), block.getBlockTime(), block.getBits()));
+    if (_invalid_tree.find(block.getPrevBlock()) != _invalid_tree.end())
+        _invalid_tree.insert(BlockRef(block.getVersion(), hash, block.getPrevBlock(), block.getBlockTime(), block.getBits()));
     
     BlockIterator prev = _tree.find(block.getPrevBlock());
     
