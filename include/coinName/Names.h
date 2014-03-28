@@ -18,6 +18,7 @@
 #define COINNAME_NAMES_H
 
 #include <coinChain/BlockChain.h>
+#include <coinChain/Spendables.h>
 
 #include <coinName/Export.h>
 
@@ -36,7 +37,7 @@ struct COINNAME_EXPORT NameDbRow
   bool found;
 
   int64_t coin;
-  int count;
+  int64_t count;
   Evaluator::Value name;
   Evaluator::Value value;
 
@@ -44,7 +45,7 @@ struct COINNAME_EXPORT NameDbRow
     : found(false)
   {}
 
-  inline NameDbRow (int64_t co, int cnt, const Evaluator::Value& n,
+  inline NameDbRow (int64_t co, int64_t cnt, const Evaluator::Value& n,
                     const Evaluator::Value& v)
     : found(true), coin(co), count(cnt), name(n), value(v)
   {}
@@ -66,6 +67,12 @@ private:
   /** Data from the DB.  */
   NameDbRow data;
 
+  /**
+   * The Unspent data (txid, script) associated with the name's coin.  If this
+   * has already been purged from the DB, may not be valid.
+   */
+  Unspent coin;
+
   /** Blockchain backing this.  */
   const BlockChain& chain;
 
@@ -76,10 +83,7 @@ public:
    * @param d Data from the DB to use.
    * @param c Blockchain object.
    */
-  inline
-  NameStatus (const NameDbRow& d, const BlockChain& c)
-    : data(d), chain(c)
-  {}
+  NameStatus (const NameDbRow& d, const BlockChain& c);
 
   /**
    * Retrieve the name's name.
@@ -120,6 +124,13 @@ public:
   {
     return chain.isExpired (data.count);
   }
+
+  /**
+   * Try to get the txid associated to this name.  Returns "" if it is not
+   * available (purged already).
+   * @return This name's txid.
+   */
+  std::string getTransactionId () const;
 
 };
 

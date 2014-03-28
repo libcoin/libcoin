@@ -16,3 +16,20 @@
 
 #include <coinName/Names.h>
 
+/* ************************************************************************** */
+/* Name base class.  */
+
+NameStatus::NameStatus (const NameDbRow& d, const BlockChain& c)
+  : data(d), coin(), chain(c)
+{
+  chain.getCoinById (data.coin, coin, data.count);
+}
+
+std::string
+NameStatus::getTransactionId () const
+{
+  if (!coin)
+    return "";
+
+  return coin.key.hash.GetHex ();
+}

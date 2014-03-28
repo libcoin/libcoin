@@ -44,12 +44,16 @@ NameShow::operator() (const json_spirit::Array& params, bool fHelp)
     throw RPC::error (RPC::name_not_found,
                       "The requested name doesn't exist in the database.");
 
+  const std::string txid = nm.getTransactionId ();
+
   json_spirit::Object res;
   res.push_back (json_spirit::Pair ("name", nm.getName ()));
   res.push_back (json_spirit::Pair ("value", nm.getValue ()));
   res.push_back (json_spirit::Pair ("expires_in", nm.getExpireCounter ()));
   if (nm.isExpired ())
     res.push_back (json_spirit::Pair ("expired", 1));
+  if (txid != "")
+    res.push_back (json_spirit::Pair ("txid", txid));
 
   return res;
 }

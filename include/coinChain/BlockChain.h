@@ -170,6 +170,12 @@ public:
     void getUnspents(const Script& script, Unspents& unspents, unsigned int before = 0) const;
     
     int getHeight(Coin coin) const;
+
+    /// Retrieve the Unspents object corresponding to a coin by its ID
+    /// in the database.  If the ID is not in Unspents and count is non-zero,
+    /// we try to look it up in Spendings.  Return true if the coin was found,
+    /// false else.
+    bool getCoinById(int64_t id, Unspent& res, int64_t count = 0) const;
     
     //    int64_t value(Coin coin) const;
     

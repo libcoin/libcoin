@@ -54,7 +54,7 @@ struct Unspent {
     
     bool is_valid() const { return (!key.isNull()) && (!output.isNull()) && (cnf != 0); }
     
-    bool operator!() { return !is_valid(); }
+    bool operator!() const { return !is_valid(); }
     
 #ifndef _WIN32
     static inline uint32_t log2(const uint32_t x) {

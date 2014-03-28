@@ -602,7 +602,7 @@ int BlockChain::getNameAge(const std::string& name) const {
 
 NameDbRow BlockChain::getNameRow(const std::string& name) const {
     Evaluator::Value raw_name(name.begin(), name.end());
-    return queryRow<NameDbRow(int64_t, int, Evaluator::Value, Evaluator::Value)>("SELECT coin, count, name, value FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", raw_name);
+    return queryRow<NameDbRow(int64_t, int64_t, Evaluator::Value, Evaluator::Value)>("SELECT coin, count, name, value FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", raw_name);
 }
 
 string BlockChain::getCoinName(int64_t coin) const {
@@ -1336,6 +1336,20 @@ int BlockChain::getHeight(const uint256 hash) const
         return abs(blk.height());
 
     return -1;
+}
+
+bool BlockChain::getCoinById(int64_t id, Unspent& res, int64_t count) const
+{
+    res = queryRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE coin = ?", id);
+    if (res.is_valid ())
+        return true;
+
+    if (count == 0)
+        return false;
+
+    res = queryRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, ?, ocnf FROM Spendings WHERE coin = ?", count, id);
+
+    return res.is_valid ();
 }
 
 
