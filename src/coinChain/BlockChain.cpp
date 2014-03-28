@@ -602,7 +602,7 @@ int BlockChain::getNameAge(const std::string& name) const {
 
 NameDbRow BlockChain::getNameRow(const std::string& name) const {
     Evaluator::Value raw_name(name.begin(), name.end());
-    return queryRow<NameDbRow(int64_t, int, Evaluator::Value, Evaluator::Value)>("SELECT * FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", raw_name);
+    return queryRow<NameDbRow(int64_t, int, Evaluator::Value, Evaluator::Value)>("SELECT coin, count, name, value FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", raw_name);
 }
 
 string BlockChain::getCoinName(int64_t coin) const {
