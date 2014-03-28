@@ -45,6 +45,7 @@ NameShow::operator() (const json_spirit::Array& params, bool fHelp)
                       "The requested name doesn't exist in the database.");
 
   const std::string txid = nm.getTransactionId ();
+  const std::string addr = nm.getAddress ();
 
   json_spirit::Object res;
   res.push_back (json_spirit::Pair ("name", nm.getName ()));
@@ -54,6 +55,8 @@ NameShow::operator() (const json_spirit::Array& params, bool fHelp)
     res.push_back (json_spirit::Pair ("expired", 1));
   if (txid != "")
     res.push_back (json_spirit::Pair ("txid", txid));
+  if (addr != "")
+    res.push_back (json_spirit::Pair ("address", addr));
 
   return res;
 }

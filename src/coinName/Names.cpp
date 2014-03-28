@@ -33,3 +33,18 @@ NameStatus::getTransactionId () const
 
   return coin.key.hash.GetHex ();
 }
+
+std::string
+NameStatus::getAddress () const
+{
+  if (!coin)
+    return "";
+
+  /* FIXME: This does not yet work as the name script prefix is
+     not appropriately stripped.  Implement this.  */
+  const PubKeyHash hash = coin.output.getAddress ();
+  if (!hash)
+    return "";
+
+  return chain.chain ().getAddress (hash).toString ();
+}

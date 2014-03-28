@@ -132,6 +132,14 @@ public:
    */
   std::string getTransactionId () const;
 
+  /**
+   * Try to get the address that is holding the name.  May return "" if either
+   * the name's spending is already purged from the database or if the
+   * script can not be parsed.
+   * @return This name's address.
+   */
+  std::string getAddress () const;
+
 };
 
 #endif // NAMES_H
