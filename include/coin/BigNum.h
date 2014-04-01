@@ -576,4 +576,15 @@ inline bool operator>=(const CBigNum& a, const CBigNum& b) { return (BN_cmp(&a, 
 inline bool operator<(const CBigNum& a, const CBigNum& b)  { return (BN_cmp(&a, &b) < 0); }
 inline bool operator>(const CBigNum& a, const CBigNum& b)  { return (BN_cmp(&a, &b) > 0); }
 
+inline std::ostream& operator<<(std::ostream& os, const CBigNum& bn) {
+    return os << bn.getvch();
+}
+
+inline std::istream& operator>>(std::istream& is, CBigNum& bn) {
+    std::vector<unsigned char> vch;
+    is >> vch;
+    bn.setvch(vch);
+    return is;
+}
+
 #endif

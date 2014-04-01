@@ -82,6 +82,17 @@ public:
     
     EC_POINT* ec_point() const;
     
+    friend std::ostream& operator<<(std::ostream& os, const Point& p) {
+        return os << p.X() << p.Y();
+    }
+
+    friend std::istream& operator>>(std::istream& is, Point& p) {
+        CBigNum x, y;
+        is >> x >> y;
+        p = Point(x, y);
+        return is;
+    }
+
 private:
     EC_POINT* _ec_point;
     EC_GROUP* _ec_group;

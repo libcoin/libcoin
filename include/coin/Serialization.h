@@ -19,6 +19,7 @@
 
 #include <vector>
 #include <set>
+#include <map>
 #include <iostream>
 #include <stdint.h>
 
@@ -165,6 +166,53 @@ std::istream& operator>>(std::istream& is, std::set<T>& array) {
         else
             is >> binary<T>(t);
         array.insert(t);
+    }
+    return is;
+}
+
+template <typename F, typename S>
+std::ostream& operator<<(std::ostream& os, const std::pair<F, S>& p) {
+    if (boost::is_class<F>())
+        os << p.first;
+    else
+        os << const_binary<F>(p.first);
+    if (boost::is_class<S>())
+        return os << p.second;
+    else
+        return os << const_binary<S>(p.second);
+}
+
+template <typename F, typename S>
+std::istream& operator>>(std::istream& is, std::pair<F, S>& p) {
+    if (boost::is_class<F>())
+        is >> p.first;
+    else
+        is >> binary<F>(p.first);
+    if (boost::is_class<S>())
+        return is >> p.second;
+    else
+        return is >> binary<S>(p.second);
+}
+
+template <typename K, typename V>
+std::ostream& operator<<(std::ostream& os, const std::map<K, V>& container) {
+    os << const_varint(container.size());
+    for (typename std::map<K, V>::const_iterator c = container.begin(); c != container.end(); ++c) {
+        os << (*c);
+    }
+    return os;
+}
+
+template <typename K, typename V>
+std::istream& operator>>(std::istream& is, std::map<K, V>& container) {
+    container.clear();
+    uint64_t size = 0;
+    is >> varint(size);
+    typename std::map<K, V>::iterator m = container.begin();
+    for (size_t i = 0; i < size; ++i) {
+        std::pair<K, V> p;
+        is >> p;
+        m = container.insert(m, p);
     }
     return is;
 }
