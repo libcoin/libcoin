@@ -269,9 +269,6 @@ Key::Key(uint256 hash, const Data& signature) {
     if (rec<0 || rec>=3)
         throw runtime_error("Key::Key signature malformed");
 
-    if (!((signature[0] - 27) & 4))
-        throw runtime_error("Key::Key verification of uncompressed keys not supported");
-    
     ECDSA_SIG *sig = ECDSA_SIG_new();
     BN_bin2bn(&p64[0],  32, sig->r);
     BN_bin2bn(&p64[32], 32, sig->s);
