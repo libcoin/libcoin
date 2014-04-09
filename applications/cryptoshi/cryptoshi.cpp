@@ -594,8 +594,7 @@ public:
     
     uint256 serialize(const std::string& message) const {
         ostringstream os;
-        os << const_varint(_magic.size()) << _magic
-           << const_varint(message.size()) << message;
+        os << const_varstr(_magic) << const_varstr(message);
         string s = os.str();
         return ::Hash(s.begin(), s.end());
     }
