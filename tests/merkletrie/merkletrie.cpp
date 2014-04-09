@@ -27,13 +27,30 @@
 
 #include <stdint.h>
 
+//Portable algorithms from http://aggregate.org/MAGIC/
+static inline uint32_t ones32(const uint32_t x)
+{
+    /* 32-bit recursive reduction using SWAR...
+       but first step is mapping 2-bit values
+       into sum of 2 1-bit values in sneaky way
+	  */
+    uint32_t y = x;
+    y -= ((y >> 1) & 0x55555555);
+    y = (((y >> 2) & 0x33333333) + (y & 0x33333333));
+    y = (((y >> 4) + y) & 0x0f0f0f0f);
+    y += (y >> 8);
+    y += (y >> 16);
+    return(y & 0x0000003f);
+}
+
 static inline uint32_t log2(const uint32_t x) {
-    uint32_t y;
-    asm ( "\tbsr %1, %0\n"
-         : "=r"(y)
-         : "r" (x)
-         );
-    return y;
+    uint32_t y = x;
+    y |= (y >> 1);
+    y |= (y >> 2);
+    y |= (y >> 4);
+    y |= (y >> 8);
+    y |= (y >> 16);
+    return(ones32(y >> 1));
 }
 
 using namespace std;

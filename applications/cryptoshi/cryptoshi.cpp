@@ -594,7 +594,8 @@ public:
     
     uint256 serialize(const std::string& message) const {
         ostringstream os;
-        os << _magic << message;
+        os << const_varint(_magic.size()) << _magic
+           << const_varint(message.size()) << message;
         string s = os.str();
         return ::Hash(s.begin(), s.end());
     }
@@ -604,7 +605,8 @@ public:
         Data compact = Data(raw.begin(), raw.end());
         uint256 hash = serialize(message);
         Key key(hash, compact);
-        return key.serialized_pubkeyhash();
+        bool isCompressed = (compact[0] - 27) & 4;
+        return key.serialized_pubkeyhash(isCompressed);
     }
 private:
     const std::string _magic;
@@ -665,7 +667,7 @@ int main(int argc, char* argv[])
                     ChainAddress addr = conf.chain().getAddress(address);
                     string signature = json_spirit::find_value(asset, "signature").get_str();
                     int64_t balance = lexical_cast<int64_t>(json_spirit::find_value(asset, "balance").get_str());
-                    if ( addr.getPubKeyHash() == verifier.verify(address + " " + message, signature) ) {
+                    if (addr.getPubKeyHash() == verifier.verify(message, signature) ) {
                         // cout << addr.toString() << " PASSED!" << endl;
                         int64_t balance_check = blockChain.balance(addr.getStandardScript(), height);
                         if (balance != balance_check) {
