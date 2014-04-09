@@ -210,7 +210,7 @@ public:
         // so dust is a txout less than 54 uBTC
         // (5460 satoshis) with default nMinRelayTxFee
         
-        return (_value*1000)/(3*(serialize_size(*this)+148) < (uint64_t)min_fee);
+        return (_value*1000)/(3*(serialize_size(*this)+148)) < (uint64_t)min_fee;
     }
     
     uint256 getHash() const {
