@@ -40,11 +40,10 @@ NameStatus::getAddress () const
   if (!coin)
     return "";
 
-  /* FIXME: This does not yet work as the name script prefix is
-     not appropriately stripped.  Implement this.  */
-  const PubKeyHash hash = coin.output.getAddress ();
+  const Chain& c = chain.chain ();
+  const PubKeyHash hash = coin.output.script ().getAddress (c.adhere_names ());
   if (!hash)
     return "";
 
-  return chain.chain ().getAddress (hash).toString ();
+  return c.getAddress (hash).toString ();
 }

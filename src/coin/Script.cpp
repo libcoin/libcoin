@@ -8,6 +8,7 @@
 #include <boost/foreach.hpp>
 
 #include <coin/BigNum.h>
+#include <coin/NameOperation.h>
 #include <coin/Transaction.h>
 #include <coin/Logger.h>
 
@@ -58,6 +59,44 @@ void MakeSameSize(valtype& vch1, valtype& vch2)
         vch1.resize(vch2.size(), 0);
     if (vch2.size() < vch1.size())
         vch2.resize(vch1.size(), 0);
+}
+
+bool Script::skipNamePrefix (const_iterator& pc) const
+{
+    opcodetype opcode;
+    if (!getOp(pc, opcode))
+        return false;
+    if (opcode < OP_1 || opcode > OP_16)
+        return false;
+
+    int op = opcode - OP_1 + 1;
+
+    unsigned argCnt = 0;
+    for (;;) {
+        vector<unsigned char> vch;
+        if (!getOp(pc, opcode, vch))
+            return false;
+        if (opcode == OP_DROP || opcode == OP_2DROP || opcode == OP_NOP)
+            break;
+        if (!(opcode >= 0 && opcode <= OP_PUSHDATA4))
+            return false;
+        ++argCnt;
+    }
+
+    // move the pc to after any DROP or NOP
+    while (opcode == OP_DROP || opcode == OP_2DROP || opcode == OP_NOP)
+    {
+        if (!getOp(pc, opcode))
+            break;
+    }
+
+    pc--;
+
+    if ((op == NameOperation::OP_NAME_NEW && argCnt == 1) ||
+            (op == NameOperation::OP_NAME_FIRSTUPDATE && argCnt == 3) ||
+            (op == NameOperation::OP_NAME_UPDATE && argCnt == 2))
+        return true;
+    return false;
 }
 
 bool Script::isPayToScriptHash() const

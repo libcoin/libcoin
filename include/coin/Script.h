@@ -419,6 +419,17 @@ ScriptHash toScriptHash(const Script& script);
 
 class Script : public std::vector<unsigned char>
 {
+private:
+
+    /**
+     * Skip name script prefix.  The iterator is incremented until after
+     * the name script prefix, and true is returned if indeed a name script
+     * was skipped.
+     * @param pc Iterator to increment.
+     * @return True iff a name script was skipped.
+     */
+    bool skipNamePrefix (const_iterator& pc) const;
+
 protected:
     Script& push_int64(int64_t n)
     {
@@ -707,11 +718,19 @@ public:
     }
 
 
-    PubKeyHash getAddress() const
+    PubKeyHash getAddress(bool allowNames = false) const
     {
         opcodetype opcode;
         std::vector<unsigned char> vch;
         Script::const_iterator pc = begin();
+
+        if (allowNames)
+        {
+            const bool ok = skipNamePrefix (pc);
+            if (!ok)
+                pc = begin();
+        }
+
         if (!getOp(pc, opcode, vch) || opcode != OP_DUP) return PubKeyHash();
         if (!getOp(pc, opcode, vch) || opcode != OP_HASH160) return PubKeyHash();
         if (!getOp(pc, opcode, vch) || vch.size() != sizeof(uint160)) return PubKeyHash();
