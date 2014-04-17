@@ -28,7 +28,6 @@
 
 #include <fstream>
 
-
 /// Get unspent coins belonging to an PubKeyHash
 class GetCoins : public NodeMethod {
 public:
@@ -54,6 +53,44 @@ using namespace std;
 using namespace boost;
 using namespace boost::program_options;
 using namespace json_spirit;
+
+class BlockFiles {
+public:
+    BlockFiles(string path) {
+        int fileno = 0;
+        ostringstream os;
+        os << path << "blk" << setfill('0') << setw(5) << fileno << ".dat";
+        log_info("Processing %s", os.str());
+        ifstream ifs(os.str().c_str(), ios::in|ios::binary);
+        if (!ifs.is_open())
+            throw runtime_error("BlockFiles not found");
+        
+        do {
+            // index the files:
+            BlockHeader blockHeader;
+            Magic magic;
+            unsigned int size;
+            streampos offset = 0;
+            while (ifs >> binary<Magic>(magic) >> binary<unsigned int>(size)) {
+//                size -= sizeof(BlockHeader); // 80 bytes
+                ifs.seekg(size, ios_base::cur); // skip transactions
+//                _prevs.insert(make_pair(blockHeader.getPrevBlock(), offset));
+                offset = ifs.tellg();
+            }
+            ifs.close();
+            ostringstream os;
+            os << path << "blk" << setfill('0') << setw(5) << ++fileno << ".dat";
+            log_info("Processing %s", os.str());
+            ifs.open(os.str().c_str(), ios::in|ios::binary);
+
+        } while (ifs.is_open());
+    }
+private:
+    std::multimap<int, std::streampos> _heights; // lookup height to position
+    std::multimap<uint256, std::streampos> _prevs; // lookup prev to position
+};
+
+
 
 Value GetCoins::operator()(const Array& params, bool fHelp) {
     if (fHelp || params.size() != 1)
@@ -315,8 +352,19 @@ int main(int argc, char* argv[])
         for(strings::iterator ep = add_peers.begin(); ep != add_peers.end(); ++ep) node.addPeer(*ep);
         for(strings::iterator ep = connect_peers.begin(); ep != connect_peers.end(); ++ep) node.connectPeer(*ep);
 
-        if (blockpath.size())
+        if (blockpath.size()) {
+            // index the blockfiles
+            BlockFiles blockFiles(blockpath);
+            
+            Node::Strictness verification = node.verification();
+            Node::Strictness persistence = node.persistence();
+            node.verification(Node::NONE); // dont verify blockfile signatures
+            if (persistence != Node::FULL)
+                persistence = Node::NONE;
             node.readBlockFile(blockpath);
+            node.verification(verification);
+            node.verification(persistence);
+        }
         
         thread nodeThread(&Node::run, &node); // run this as a background thread
         

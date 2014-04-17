@@ -415,6 +415,8 @@ void Peer::PushGetBlocks(const BlockLocator locatorBegin, uint256 hashEnd)
         return;
     locatorLastGetBlocksBegin = locatorBegin;
     hashLastGetBlocksEnd = hashEnd;
+
+    log_debug("PushGetBlocks to %s, hashEnd: %s", addr.toString(), hashEnd.toString());
     
     os << const_binary<int>(version()) << locatorBegin << hashEnd;
     push("getblocks", os.str());

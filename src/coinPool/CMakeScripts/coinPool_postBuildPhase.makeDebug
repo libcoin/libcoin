@@ -7,4 +7,4 @@ all: \
 
 coinPool_buildpart_0: 
 	echo "Creating symlinks"
-	/usr/local/Cellar/cmake/2.8.12.1/bin/cmake -E cmake_symlink_library /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.0.7.03.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.0.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.dylib
+	/usr/local/Cellar/cmake/2.8.12.2/bin/cmake -E cmake_symlink_library /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.0.7.03.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.0.dylib /Users/gronager/Development/libcoin/libcoin/lib/libcoinPoold.dylib

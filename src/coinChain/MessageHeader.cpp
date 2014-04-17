@@ -22,8 +22,6 @@
 # include <arpa/inet.h>
 #endif
 
-static const unsigned char pchIPv4[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff };
-
 static const unsigned int MAX_SIZE = 0x02000000;
 
 MessageHeader::MessageHeader()

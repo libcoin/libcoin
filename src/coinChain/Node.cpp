@@ -181,7 +181,7 @@ void Node::update_persistence() {
 }
 
 void Node::run() {
-    Logger::label_thread("node");
+    Logger::label_thread(_blockChain.chain().name());
     // The io_service::run() call will block until all asynchronous operations
     // have finished. While the server is running, there is always at least one
     // asynchronous operation outstanding: the asynchronous accept call waiting
