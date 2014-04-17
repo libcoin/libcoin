@@ -245,9 +245,6 @@ public:
         return _tree.best_invalid();
     }
     
-    /// NameCoin: getNameValue returns the most recent value for a name
-    int getNameAge(const std::string& name) const;
-
     /// Namecoin: Return expiration count at given block height.
     inline int
     getExpirationCount (int count) const
@@ -274,9 +271,6 @@ public:
 
     /// NameCoin: query for full row in Names table
     NameDbRow getNameRow(const std::string& name) const;
-    
-    /// NameCoin: getCoinName returns the name, if any for an unspent output
-    std::string getCoinName(int64_t coin) const;
     
     /// Get the locator for the best index
     const BlockLocator& getBestLocator() const;
@@ -320,6 +314,12 @@ protected:
     bool disconnectInputs(const Transaction& tx);    
     
     void deleteTransaction(const int64_t tx, Transaction &txn);
+    
+    /// NameCoin: getCoinName returns the name, if any for an unspent output
+    std::string getCoinName(int64_t coin) const;
+    
+    /// NameCoin: getNameValue returns the most recent value for a name
+    int getNameAge(const std::string& name) const;
     
 private:
     typedef std::map<uint256, Transaction> Txns;

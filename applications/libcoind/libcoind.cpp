@@ -32,6 +32,8 @@
 
 #include <coinNAT/PortMapper.h>
 
+#include <coinName/NameGetRPC.h>
+
 #include <coin/Logger.h>
 
 #include <boost/thread.hpp>
@@ -152,7 +154,11 @@ int main(int argc, char* argv[])
         server.registerMethod(method_ptr(new GetInfo(node)));
 
         //server.registerMethod(method_ptr(new TxWait(node)));
-
+        
+        if (conf.chain().adhere_names()) {
+            server.registerMethod(method_ptr(new NameShow(node)));
+        }
+        
         /// The Pool enables you to run a backend for a miner, i.e. your private pool, it also enables you to participate in the "Name of Pool"
         // We need a list of blocks for the shared mining
         //
@@ -195,7 +201,7 @@ int main(int argc, char* argv[])
         server.registerMethod(method_ptr(new ValidateAddress(wallet)), auth);
         // this method also takes the io_service from the server to start a deadline timer locking the wallet again.
         server.registerMethod(method_ptr(new WalletPassphrase(wallet, server.get_io_service())), auth);
-        
+
         try { // we keep the server in its own exception scope as we want the other threads to shut down properly if the server exits
             server.run();    
         } catch(std::exception& e) { 

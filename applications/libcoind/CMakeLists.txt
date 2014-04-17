@@ -1,6 +1,6 @@
 SET(TARGET_SRC libcoind.cpp)
 
-SET(TARGET_ADDED_LIBRARIES coinPool coinWallet coinNAT)
+SET(TARGET_ADDED_LIBRARIES coinPool coinWallet coinName coinNAT)
 
 SET(TARGET_EXTERNAL_LIBRARIES
     ${CMAKE_THREAD_LIBS_INIT}    
