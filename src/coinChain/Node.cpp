@@ -58,14 +58,22 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
     ip::tcp::resolver resolver(_io_service);
-    ip::tcp::resolver::query query(address, port == "0" ? lexical_cast<string>(chain.defaultPort()) : port);
-    if (address.size()) {
-        ip::tcp::endpoint endpoint = *resolver.resolve(query);
-        _acceptor.open(endpoint.protocol());
-        _acceptor.set_option(ip::tcp::acceptor::reuse_address(true));
-        _acceptor.bind(endpoint);
-        _acceptor.listen();        
-    }
+
+        if (address.size()) {
+            boost::system::error_code ec;
+            unsigned short bind_port = (port == "0" ? chain.defaultPort() : lexical_cast<unsigned short>(port));
+            do {
+                ip::tcp::resolver::query query(address, lexical_cast<string>(bind_port++));
+                ip::tcp::endpoint endpoint = *resolver.resolve(query);
+                _acceptor.close(ec);
+                _acceptor.open(endpoint.protocol());
+                _acceptor.set_option(ip::tcp::acceptor::reuse_address(true));
+                _acceptor.bind(endpoint, ec);
+            } while (ec && port == "0" && bind_port != 0);
+            if (ec)
+                throw runtime_error("Could not bind to port" + lexical_cast<string>(bind_port-1));
+            _acceptor.listen();
+        }
     // else nolisten
     
     // ensure we have some addresses to start with (dns seed)
