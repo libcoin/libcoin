@@ -30,9 +30,12 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
         // Each connection can only send one version message
         if (origin->initialized())
             return false;
-            
-        istringstream is(msg.payload());
         
+        ostringstream os;
+        os << (*origin); // to store a copy of us.
+        
+        istringstream is(msg.payload());
+
         is >> (*origin);
         
         if (origin->disconnecting()) {
@@ -49,8 +52,9 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
         }
         
         // Be shy and don't send version until we hear
-        if (origin->inbound())
-            origin->PushVersion();
+        if (origin->inbound()) {
+            origin->push("version", os.str());
+        }
 
         // We need to wait till after we have sent our data setting the nStartingHeight for the remote. Otherwise the remote will only get its onw height back.
         
