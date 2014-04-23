@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
 
         Key k;
         k.reset();
-        Shamir shamir(6, 3, k.order());
+        Shamir shamir(6, 3);
         
         uint256 s(k.number().getuint256());
         Shamir::Shares shares = shamir.split(s);

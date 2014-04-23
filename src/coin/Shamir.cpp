@@ -16,11 +16,14 @@
 
 #include <coin/Shamir.h>
 
+#include <coin/Key.h>
+
 #include <openssl/rand.h>
 
 Shamir::Shamir(unsigned char shares, unsigned char quorum, CBigNum order) : _shares(shares), _quorum(quorum), _order(order) {
     if (_order == CBigNum(0)) {
-        
+        Key key(CBigNum((123)));
+        _order = key.order();
     }
 }
 
