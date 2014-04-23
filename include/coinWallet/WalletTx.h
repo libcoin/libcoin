@@ -6,7 +6,6 @@
 #define WALLETTX_H
 
 #include <coin/BigNum.h>
-#include <coin/Key.h>
 #include <coin/Script.h>
 
 #include <coin/Block.h>
@@ -15,6 +14,7 @@
 #include <coinChain/BlockChain.h>
 
 #include <coinWallet/Export.h>
+#include <coinWallet/Key.h>
 #include <coinWallet/serialize.h>
 
 #include <boost/bind.hpp>

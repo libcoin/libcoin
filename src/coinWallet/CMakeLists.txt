@@ -13,6 +13,8 @@ SET(TARGET_H
     ${HEADER_PATH}/BerkeleyDB.h
     ${HEADER_PATH}/Crypter.h
     ${HEADER_PATH}/CryptoKeyStore.h
+    ${HEADER_PATH}/Key.h
+    ${HEADER_PATH}/KeyStore.h
     ${HEADER_PATH}/Export.h
     ${HEADER_PATH}/serialize.h
     ${HEADER_PATH}/Wallet.h
@@ -29,6 +31,8 @@ SET(TARGET_SRC
     BerkeleyDB.cpp
     Crypter.cpp
     CryptoKeyStore.cpp
+    Key.cpp
+    KeyStore.cpp
     Wallet.cpp
     WalletDB.cpp
     WalletTx.cpp

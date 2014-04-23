@@ -5,10 +5,10 @@
 #ifndef BITCOIN_DB_H
 #define BITCOIN_DB_H
 
-#include <coin/Key.h>
 #include <coin/Transaction.h>
 
 #include <coinWallet/Export.h>
+#include <coinWallet/Key.h>
 #include <coinWallet/serialize.h>
 
 #include <coin/uint256.h>

@@ -19,7 +19,7 @@
 #include <coin/Block.h>
 #include <coinChain/Peer.h>
 
-#include <coin/Key.h>
+#include <coin/ExtendedKey.h>
 #include <coin/Logger.h>
 
 #include "boost/foreach.hpp"
@@ -177,17 +177,20 @@ istream& operator>>(istream& is, Alert& a) {
 
 bool Alert::checkSignature()
 {
-    CKey key;
-    if (!key.SetPubKey(_pub_key))
-        return error("Alert::CheckSignature() : SetPubKey failed");
-    if (!key.Verify(Hash(_message.begin(), _message.end()), _signature))
-        return error("Alert::CheckSignature() : verify signature failed");
-    
-    // Now unserialize the data
+    try {
+        Key key(SecureData(_pub_key.begin(), _pub_key.end()));
+        if (!key.verify(Hash(_message.begin(), _message.end()), _signature))
+            throw runtime_error("verify signature failed");
 
-    istringstream is(string(_message.begin(), _message.end()));
-    is >> *(UnsignedAlert*)this;
-    return true;
+        // Now unserialize the data
+        istringstream is(string(_message.begin(), _message.end()));
+        is >> *(UnsignedAlert*)this;
+        return true;
+    }
+    catch (std::exception& e) {
+        string err = string("Alert::checkSignature : ") + e.what();
+        return error(err.c_str());
+    }
 }
 
 bool Alert::processAlert()

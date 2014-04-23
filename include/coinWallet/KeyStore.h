@@ -7,22 +7,8 @@
 
 #include <coin/Export.h>
 #include <coin/Address.h>
-#include <coin/Key.h>
 
-/// Payee is an interface to a generalized payee, the receiver of money. The payee can choose the generate a new script for each payment, to reuse a single script over and over again, or even to e.g. to use a deterministic wallet to generate a group of public keys.
-class Payee {
-public:
-    virtual Script current_script() = 0;
-    virtual void mark_used(const Script&) {}
-};
-
-class StaticPayee : public Payee {
-public:
-    StaticPayee(const PubKeyHash& pkh) : _pkh(pkh) { }
-    virtual Script current_script();
-private:
-    PubKeyHash _pkh;
-};
+#include <coinWallet/Key.h>
 
 /// KeyStore is a virtual base class for key stores. It enables mappings between PubKeyHashes and ScriptHashes, whether, all
 /// "Bitcoin" address specific stuff are kept in derived classes.
@@ -96,8 +82,6 @@ bool IsMine(const KeyStore& keystore, const Script& scriptPubKey);
 
 bool SignSignature(const KeyStore &keystore, const Output& txout, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL);
 bool SignSignature(const KeyStore& keystore, const Transaction& txFrom, Transaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL);
-
-bool Solver(const Script& scriptPubKey, std::vector<std::pair<opcodetype, std::vector<unsigned char> > >& vSolutionRet);
 
 bool ExtractAddress(const Script& scriptPubKey, PubKeyHash& pubKeyHash, ScriptHash& scriptHash);
 

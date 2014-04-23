@@ -19,7 +19,7 @@
 #include <coin/Block.h>
 #include <coinChain/BlockChain.h>
 #include <coin/Transaction.h>
-#include <coin/KeyStore.h>
+//#include <coin/KeyStore.h>
 #include <coin/Logger.h>
 
 #include <boost/assign/list_of.hpp>

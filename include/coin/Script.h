@@ -998,4 +998,7 @@ int ScriptSigArgsExpected(txnouttype t, const std::vector<std::vector<unsigned c
 void checkCanonicalPubKey(const std::vector<unsigned char> &vchPubKey);
 void checkCanonicalSignature(const std::vector<unsigned char> &vchSig);
 
+bool Solver(const Script& scriptPubKey, std::vector<std::pair<opcodetype, std::vector<unsigned char> > >& vSolutionRet);
+bool Solver(const Script& scriptPubKey, txnouttype& typeRet, std::vector<std::vector<unsigned char> >& vSolutionsRet);
+
 #endif

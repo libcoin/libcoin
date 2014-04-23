@@ -22,6 +22,12 @@ using namespace std;
 using namespace boost;
 using namespace json_spirit;
 
+Script StaticPayee::current_script() {
+    Script script;
+    script.setAddress(_pkh);
+    return script;
+}
+
 Block Pool::getBlockTemplate(bool invalid) {
     BlockIterator blk;
     if (invalid) {

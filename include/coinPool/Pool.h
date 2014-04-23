@@ -20,7 +20,6 @@
 #include <coinPool/Export.h>
 
 #include <coin/Block.h>
-#include <coin/KeyStore.h>
 
 #include <coinChain/Node.h>
 
@@ -28,7 +27,20 @@
 
 #include <map>
 
-class Payee;
+/// Payee is an interface to a generalized payee, the receiver of money. The payee can choose the generate a new script for each payment, to reuse a single script over and over again, or even to e.g. to use a deterministic wallet to generate a group of public keys.
+class Payee {
+public:
+    virtual Script current_script() = 0;
+    virtual void mark_used(const Script&) {}
+};
+
+class StaticPayee : public Payee {
+public:
+    StaticPayee(const PubKeyHash& pkh) : _pkh(pkh) { }
+    virtual Script current_script();
+private:
+    PubKeyHash _pkh;
+};
 
 /// Pool is an interface for running a pool. It is a basis for the pool rpc commands: 'getwork', 'getblocktemplate' and 'submitblock'
 /// The Pool requests a template from the blockchain - i.e. composes a block candidate from the unconfirmed transactions. It stores the

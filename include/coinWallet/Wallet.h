@@ -6,13 +6,13 @@
 #define BITCOIN_WALLET_H
 
 #include <coin/BigNum.h>
-#include <coin/Key.h>
 #include <coin/Script.h>
 
 #include <coin/Block.h>
 #include <coinChain/Node.h>
 
 #include <coinWallet/Export.h>
+#include <coinWallet/Key.h>
 #include <coinWallet/BerkeleyDB.h>
 #include <coinWallet/CryptoKeyStore.h>
 #include <coinWallet/WalletTx.h>

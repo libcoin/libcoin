@@ -17,6 +17,7 @@
 #ifndef CHAIN_H
 #define CHAIN_H
 
+#include <coin/Address.h>
 #include <coin/Block.h>
 #include <coin/Currency.h>
 

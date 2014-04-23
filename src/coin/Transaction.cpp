@@ -16,7 +16,8 @@
 
 #include <coin/util.h>
 #include <coin/Transaction.h>
-#include <coin/KeyStore.h>
+//#include <coin/KeyStore.h>
+#include <coin/ExtendedKey.h>
 
 using namespace std;
 using namespace boost;
@@ -401,21 +402,24 @@ boost::tribool TransactionEvaluator::eval(opcodetype opcode) {
 
 bool TransactionEvaluator::checkSig(std::vector<unsigned char> vchSig, std::vector<unsigned char> vchPubKey, Script scriptCode)
 {
-    CKey key;
-    int hashtype = _hash_type;
-
-    if (!key.SetPubKey(vchPubKey))
+    try {
+        Key key(SecureData(vchPubKey.begin(), vchPubKey.end()));
+        
+        int hashtype = _hash_type;
+        
+        // Hash type is one byte tacked on to the end of the signature
+        if (vchSig.empty())
+            return false;
+        if (hashtype == 0)
+            hashtype = vchSig.back();
+        else if (hashtype != vchSig.back())
+            return false;
+        vchSig.pop_back();
+        
+        return key.verify(_txn.getSignatureHash(scriptCode, _in, hashtype), vchSig);
+    }
+    catch (std::exception& e) {
         return false;
-    
-    // Hash type is one byte tacked on to the end of the signature
-    if (vchSig.empty())
-        return false;
-    if (hashtype == 0)
-        hashtype = vchSig.back();
-    else if (hashtype != vchSig.back())
-        return false;
-    vchSig.pop_back();
-    
-    return key.Verify(_txn.getSignatureHash(scriptCode, _in, hashtype), vchSig);
+    }
 }
 
