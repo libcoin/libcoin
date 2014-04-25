@@ -1,5 +1,5 @@
 #include <coin/Script.h>
-#include <coin/KeyStore.h>
+#include <coinWallet/KeyStore.h>
 #include <coinWallet/CryptoKeyStore.h>
 
 #include <boost/foreach.hpp>

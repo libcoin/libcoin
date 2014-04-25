@@ -4,7 +4,7 @@
 #ifndef _CRYPTOKEYSTORE_H_
 #define _CRYPTOKEYSTORE_H_
 
-#include <coin/KeyStore.h>
+#include <coinWallet/KeyStore.h>
 
 #include <coinWallet/Export.h>
 #include <coinWallet/Crypter.h>

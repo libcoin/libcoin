@@ -45,6 +45,24 @@ using namespace std;
 using namespace boost;
 using namespace json_spirit;
 
+/// Get unspent coins belonging to an PubKeyHash
+class TestMessage : public NodeMethod {
+public:
+    TestMessage(Node& node) : NodeMethod(node) {}
+    json_spirit::Value operator()(const json_spirit::Array& params, bool fHelp);
+};
+
+Value TestMessage::operator()(const Array& params, bool fHelp) {
+    if (fHelp || params.size() != 1)
+        throw RPC::error(RPC::invalid_params, "testmessage message\n"
+                         "fake sending a message to the node");
+    
+    string param = params[0].get_str();
+    
+    _node.post("mempool", "");
+    
+    return Value::null;
+}
 
 
 int main(int argc, char* argv[])
@@ -152,6 +170,7 @@ int main(int argc, char* argv[])
         server.registerMethod(method_ptr(new GetConnectionCount(node)));
         server.registerMethod(method_ptr(new GetDifficulty(node)));
         server.registerMethod(method_ptr(new GetInfo(node)));
+        server.registerMethod(method_ptr(new TestMessage(node)));
 
         //server.registerMethod(method_ptr(new TxWait(node)));
         

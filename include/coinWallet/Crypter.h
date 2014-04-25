@@ -4,7 +4,7 @@
 #ifndef __CRYPTER_H__
 #define __CRYPTER_H__
 
-#include <coin/Key.h>
+#include <coinWallet/Key.h>
 #include <coin/util.h>
 
 #include <coinWallet/serialize.h>

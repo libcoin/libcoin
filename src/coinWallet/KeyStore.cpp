@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include <coin/KeyStore.h>
+#include <coinWallet/KeyStore.h>
 #include <coin/Script.h>
 #include <coin/Transaction.h>
 
