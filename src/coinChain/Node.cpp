@@ -451,6 +451,18 @@ void Node::post(const Transaction& tx, size_t n)
         _io_service.dispatch(boost::bind(&TransactionFilter::process, static_cast<TransactionFilter*>(_transactionFilter.get()), tx, peers));
 }
 
+void Node::post(string command, string message) {
+    MessageHeader hdr(_blockChain.chain(), command, message);
+    Message msg;
+    msg.header() = hdr;
+    msg.payload() = message;
+    
+    Peer* origin = _peerManager.getAllPeers().begin()->get();
+    
+    _messageHandler.handleMessage(origin, msg);
+}
+
+
 int Node::peerPenetration(const uint256 hash) const {
     // create Inv from hash
     Inventory inv(MSG_TX, hash);

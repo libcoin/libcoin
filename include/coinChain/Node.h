@@ -153,7 +153,10 @@ public:
             else if (hash < block.getShareTarget() )
                 _io_service.dispatch(boost::bind(&ShareFilter::process, static_cast<ShareFilter*>(_shareFilter.get()), block, peers));
     }
-        
+    
+    /// Test sending a command to the Node
+    void post(std::string command, std::string message);
+    
     /// Subscribe to Transaction accept notifications
     void subscribe(TransactionFilter::listener_ptr listener) { static_cast<TransactionFilter*>(_transactionFilter.get())->subscribe(listener); }
     
