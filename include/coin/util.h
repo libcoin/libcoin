@@ -155,7 +155,6 @@ std::string strprintf(const char* format, ...);
 bool error(const char* format, ...);
 void LogException(std::exception* pex, const char* pszThread);
 void PrintException(std::exception* pex, const char* pszThread);
-void PrintExceptionContinue(std::exception* pex, const char* pszThread);
 //void ParseString(const std::string& str, char c, std::vector<std::string>& v);
 std::string FormatMoney(int64_t n, bool fPlus=false);
 //bool ParseMoney(const std::string& str, int64_t& nRet);

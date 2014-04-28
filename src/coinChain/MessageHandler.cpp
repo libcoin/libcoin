@@ -61,15 +61,9 @@ bool MessageHandler::handleMessage(Peer* origin, Message& msg) {
             log_warn("ProcessMessage(%s, %u bytes) : Exception '%s' caught\n", msg.command().c_str(), msg.payload().size(), e.what());
         }
         else {
-            PrintExceptionContinue(&e, "ProcessMessage()");
+            log_warn("ProcessMessage(%s, %u bytes) : Exception '%s' caught\n", msg.command().c_str(), msg.payload().size(), e.what());
         }
     }
-    //    catch (std::exception& e) {
-    //        PrintExceptionContinue(&e, "ProcessMessage()");
-    //    }
-    //    catch (...) {
-    //        PrintExceptionContinue(NULL, "ProcessMessage()");
-    //    }
     log_trace("exit: false");
     return false;
 }

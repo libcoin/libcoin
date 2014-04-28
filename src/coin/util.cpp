@@ -578,37 +578,6 @@ void PrintException(std::exception* pex, const char* pszThread)
 #endif
     throw;
 }
-/*
-void ThreadOneMessageBox(string strMessage)
-{
-    // Skip message boxes if one is already open
-    static bool fMessageBoxOpen;
-    if (fMessageBoxOpen)
-        return;
-    fMessageBoxOpen = true;
-//    ThreadSafeMessageBox(strMessage, "Bitcoin", wxOK | wxICON_EXCLAMATION);
-    fMessageBoxOpen = false;
-}
-*/
-void PrintExceptionContinue(std::exception* pex, const char* pszThread)
-{
-    char pszMessage[10000];
-    FormatException(pszMessage, pex, pszThread);
-    printf("\n\n************************\n%s\n", pszMessage);
-    fprintf(stderr, "\n\n************************\n%s\n", pszMessage);
-    strMiscWarning = pszMessage;
-#ifdef GUI
-    if (wxTheApp && !fDaemon)
-        boost::thread(boost::bind(ThreadOneMessageBox, string(pszMessage)));
-#endif
-}
-
-
-
-
-
-
-
 
 #ifdef _WIN32
 //typedef WINSHELLAPI BOOL (WINAPI *PSHGETSPECIALFOLDERPATHA)(HWND hwndOwner, LPSTR lpszPath, int nFolder, BOOL fCreate);
