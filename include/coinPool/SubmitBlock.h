@@ -14,7 +14,7 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef COINPOOL_SUBMITBLOCKL_H
+#ifndef COINPOOL_SUBMITBLOCK_H
 #define COINPOOL_SUBMITBLOCK_H
 
 #include <coinPool/Export.h>

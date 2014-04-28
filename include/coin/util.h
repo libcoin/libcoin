@@ -133,9 +133,6 @@ void RandAddSeedPerfmon();
 std::string FormatMoney(int64_t n, bool fPlus=false);
 std::vector<unsigned char> ParseHex(const char* psz);
 std::vector<unsigned char> ParseHex(const std::string& str);
-const char* wxGetTranslation(const char* psz);
-int GetFilesize(FILE* file);
-std::string GetPidFile();
 
 #ifdef _WIN32
 std::string MyGetSpecialFolderPath(int nFolder, bool fCreate);
@@ -222,7 +219,7 @@ public:
 #define CRITICAL_BLOCK(cs)     \
     for (bool fcriticalblockonce=true; fcriticalblockonce; assert(("break caught by CRITICAL_BLOCK!" && !fcriticalblockonce)), fcriticalblockonce=false) \
         for (CCriticalBlock criticalblock(cs, #cs, __FILE__, __LINE__); fcriticalblockonce; fcriticalblockonce=false)
-
+/*
 class CTryCriticalBlock
 {
 protected:
@@ -246,7 +243,7 @@ public:
 #define TRY_CRITICAL_BLOCK(cs)     \
     for (bool fcriticalblockonce=true; fcriticalblockonce; assert(("break caught by TRY_CRITICAL_BLOCK!" && !fcriticalblockonce)), fcriticalblockonce=false) \
         for (CTryCriticalBlock criticalblock(cs, #cs, __FILE__, __LINE__); fcriticalblockonce && (fcriticalblockonce = criticalblock.Entered()); fcriticalblockonce=false)
-
+*/
 //
 // Allocator that locks its contents from being paged
 // out of memory and clears its contents before deletion.
@@ -329,7 +326,7 @@ inline std::string HexStr(const std::vector<unsigned char>& vch, bool fSpaces=fa
 {
     return HexStr(vch.begin(), vch.end(), fSpaces);
 }
-
+/*
 template<typename T>
 std::string HexNumStr(const T itbegin, const T itend, bool f0x=true)
 {
@@ -348,7 +345,7 @@ inline std::string HexNumStr(const std::vector<unsigned char>& vch, bool f0x=tru
 {
     return HexNumStr(vch.begin(), vch.end(), f0x);
 }
-
+*/
 template<typename T>
 void PrintHex(const T pbegin, const T pend, const char* pszFormat="%s", bool fSpaces=true)
 {
@@ -448,22 +445,6 @@ inline int64_t GetTimeMillis()
             boost::posix_time::ptime(boost::gregorian::date(1970,1,1))).total_milliseconds();
 }
 
-template<typename T>
-void skipspaces(T& it)
-{
-    while (isspace(*it))
-        ++it;
-}
-
-inline bool IsSwitchChar(char c)
-{
-#ifdef _WIN32
-    return c == '-' || c == '/';
-#else
-    return c == '-';
-#endif
-}
-
 enum
 {
     CSIDL_DESKTOP = 0x0000, CSIDL_INTERNET = 0x0001, CSIDL_PROGRAMS = 0x0002,
@@ -496,32 +477,6 @@ enum
     CSIDL_CDBURN_AREA = 0x003B, CSIDL_PROFILES = 0x003E, CSIDL_FLAG_CREATE =
     0x8000
 }; //CSIDL
-
-
-
-
-
-inline void heapchk()
-{
-#ifdef _WIN32
-    /// for debugging
-    //if (_heapchk() != _HEAPOK)
-    //    DebugBreak();
-#endif
-}
-
-// Randomize the stack to help protect against buffer overrun exploits
-#define IMPLEMENT_RANDOMIZE_STACK(ThreadFn)     \
-    {                                           \
-        static char nLoops;                     \
-        if (nLoops <= 0)                        \
-            nLoops = GetRand(20) + 1;           \
-        if (nLoops-- > 1)                       \
-        {                                       \
-            ThreadFn;                           \
-            return;                             \
-        }                                       \
-    }
 
 template<typename T1>
 inline uint256 Hash(const T1 pbegin, const T1 pend)
