@@ -69,9 +69,9 @@ public:
     }
     
     bool isKnownType() const;
-    const char* getCommand() const;
+//    const char* getCommand() const;
     std::string toString() const;
-    void print() const;
+//    void print() const;
     
     const int getType() const { return _type; }
     const uint256 getHash() const { return _hash; }

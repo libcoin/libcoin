@@ -46,11 +46,15 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         
         // Check for duplicate
         uint256 hash = inv.getHash();
-        if (_blockChain.haveBlock(hash))
-            return error("ProcessBlock() : already have block %d %s", _blockChain.getHeight(hash), hash.toString().substr(0,20).c_str());
+        if (_blockChain.haveBlock(hash)) {
+            log_error("ProcessBlock() : already have block %d %s", _blockChain.getHeight(hash), hash.toString().substr(0,20).c_str());
+            return false;
+        }
     
-        if (_orphans.count(hash))
-            return error("ProcessBlock() : already have block (orphan) %s", hash.toString().substr(0,20).c_str());
+        if (_orphans.count(hash)) {
+            log_error("ProcessBlock() : already have block (orphan) %s", hash.toString().substr(0,20).c_str());
+            return false;
+        }
         
         // Preliminary checks
         //        if (!block.checkBlock(_blockChain.chain().proofOfWorkLimit()))
@@ -65,8 +69,10 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         // as the block is valid we obviously got what we asked for and we can delete the request (no matter if the block was useful or not)
         origin->dequeue(inv);
         
-        if (!_blockChain.chain().checkProofOfWork(block))
-            return error("ProcessBlock() : CheckProofOfWork FAILED");
+        if (!_blockChain.chain().checkProofOfWork(block)) {
+            log_error("ProcessBlock() : CheckProofOfWork FAILED");
+            return false;
+        }
         
         // If don't already have its previous block, shunt it off to holding area until we get it
         if (!_blockChain.haveBlock(block.getPrevBlock())) {
@@ -162,8 +168,10 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         vector<Inventory> vInv;
         istringstream is(msg.payload());
         is >> vInv;
-        if (vInv.size() > 50000)
-            return error("message getdata size() = %d", vInv.size());
+        if (vInv.size() > 50000) {
+            log_error("message getdata size() = %d", vInv.size());
+            return false;
+        }
         
         BOOST_FOREACH(const Inventory& inv, vInv) {
             log_debug("received getdata for: %s", inv.toString().c_str());
@@ -211,8 +219,10 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         vector<Inventory> inventories;
         istringstream is(msg.payload());
         is >> inventories;
-        if (inventories.size() > 50000)
-            return error("message inv size() = %d", inventories.size());
+        if (inventories.size() > 50000) {
+            log_error("message inv size() = %d", inventories.size());
+            return false;
+        }
         
         BOOST_FOREACH(const Inventory& inv, inventories) {
             if (inv.getType() == MSG_BLOCK) {                
@@ -324,7 +334,8 @@ bool ShareFilter::process(const Block& block, Peers peers) {
         _blockChain.append(block);
     }
     catch (std::exception &e) {
-        return error((string("append(Block) failed: ") + e.what()).c_str());
+        log_error((string("append(Block) failed: ") + e.what()).c_str());
+        return false;
     }
     // notify all listeners
     for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)

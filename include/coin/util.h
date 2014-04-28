@@ -82,13 +82,11 @@ munlock(((void *)(((size_t)(a)) & (~((PAGESIZE)-1)))),\
 #define UBEGIN(a)           ((unsigned char*)&(a))
 #define UEND(a)             ((unsigned char*)&((&(a))[1]))
 #define ARRAYLEN(array)     (sizeof(array)/sizeof((array)[0]))
-//#define printf              OutputDebugStringF
-//#define perror              OutputDebugStringF
 
-#ifdef snprintf
-#undef snprintf
-#endif
-#define snprintf my_snprintf
+//#ifdef snprintf
+//#undef snprintf
+//#endif
+//#define snprintf my_snprintf
 
 #ifndef PRI64d
 #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__MSVCRT__)
@@ -128,37 +126,17 @@ munlock(((void *)(((size_t)(a)) & (~((PAGESIZE)-1)))),\
 #define unlink              _unlink
 #else
 #define WSAGetLastError()   errno
-#define _vsnprintf(a,b,c,d) vsnprintf(a,b,c,d)
+//#define _vsnprintf(a,b,c,d) vsnprintf(a,b,c,d)
 #define strlwr(psz)         to_lower(psz)
 #define _strlwr(psz)        to_lower(psz)
 #define MAX_PATH            1024
 #define Beep(n1,n2)         (0)
 #endif
 
-//extern std::map<std::string, std::string> mapArgs;
-//extern std::map<std::string, std::vector<std::string> > mapMultiArgs;
-extern bool fDebug;
-extern bool fPrintToConsole;
-extern bool fPrintToDebugger;
-extern std::string logfile;
-extern char pszSetDataDir[MAX_PATH];
-extern bool fDaemon;
-extern std::string strMiscWarning;
-
-extern bool fLogTimestamps;
-
 void RandAddSeed();
 void RandAddSeedPerfmon();
-int OutputDebugStringF(const char* pszFormat, ...);
-int my_snprintf(char* buffer, size_t limit, const char* format, ...);
-std::string strprintf(const char* format, ...);
-bool error(const char* format, ...);
-void LogException(std::exception* pex, const char* pszThread);
-void PrintException(std::exception* pex, const char* pszThread);
-//void ParseString(const std::string& str, char c, std::vector<std::string>& v);
+
 std::string FormatMoney(int64_t n, bool fPlus=false);
-//bool ParseMoney(const std::string& str, int64_t& nRet);
-//bool ParseMoney(const char* pszIn, int64_t& nRet);
 std::vector<unsigned char> ParseHex(const char* psz);
 std::vector<unsigned char> ParseHex(const std::string& str);
 const char* wxGetTranslation(const char* psz);
@@ -168,8 +146,6 @@ std::string GetPidFile();
 #ifdef _WIN32
 std::string MyGetSpecialFolderPath(int nFolder, bool fCreate);
 #endif
-//std::string GetDefaultDataDir();
-//std::string GetDataDir();
 void ShrinkDebugFile();
 int GetRandInt(int nMax);
 uint64_t GetRand(uint64_t nMax);
@@ -326,39 +302,6 @@ struct secure_allocator : public std::allocator<T>
 // (secure_allocator<> is defined in serialize.h)
 typedef std::basic_string<char, std::char_traits<char>, secure_allocator<char> > SecureString;
 
-inline std::string i64tostr(int64_t n)
-{
-    return strprintf("%"PRI64d, n);
-}
-
-inline std::string itostr(int n)
-{
-    return strprintf("%d", n);
-}
-
-inline int64_t atoi64(const char* psz)
-{
-#ifdef _MSC_VER
-    return _atoi64(psz);
-#else
-    return strtoll(psz, NULL, 10);
-#endif
-}
-
-inline int64_t atoi64(const std::string& str)
-{
-#ifdef _MSC_VER
-    return _atoi64(str.c_str());
-#else
-    return strtoll(str.c_str(), NULL, 10);
-#endif
-}
-
-inline int atoi(const std::string& str)
-{
-    return atoi(str.c_str());
-}
-
 inline int roundint(double d)
 {
     return (int)(d > 0 ? d + 0.5 : d - 0.5);
@@ -384,7 +327,7 @@ std::string HexStr(const T itbegin, const T itend, bool fSpaces=false)
     std::string str;
     str.reserve((pend-pbegin) * (fSpaces ? 3 : 2));
     for (const unsigned char* p = pbegin; p != pend; p++)
-        str += strprintf((fSpaces && p != pend-1 ? "%02x " : "%02x"), *p);
+        str += cformat((fSpaces && p != pend-1 ? "%02x " : "%02x"), *p).text();
     return str;
 }
 
@@ -403,7 +346,7 @@ std::string HexNumStr(const T itbegin, const T itend, bool f0x=true)
     std::string str = (f0x ? "0x" : "");
     str.reserve(str.size() + (pend-pbegin) * 2);
     for (const unsigned char* p = pend-1; p >= pbegin; p--)
-        str += strprintf("%02x", *p);
+        str += cformat("%02x", *p).text();
     return str;
 }
 
@@ -535,34 +478,6 @@ inline bool IsSwitchChar(char c)
     return c == '-';
 #endif
 }
-/*
-inline std::string GetArg(const std::string& strArg, const std::string& strDefault)
-{
-    if (mapArgs.count(strArg))
-        return mapArgs[strArg];
-    return strDefault;
-}
-
-inline int64_t GetArg(const std::string& strArg, int64_t nDefault)
-{
-    if (mapArgs.count(strArg))
-        return atoi64(mapArgs[strArg]);
-    return nDefault;
-}
-
-inline bool GetBoolArg(const std::string& strArg)
-{
-    if (mapArgs.count(strArg))
-    {
-        if (mapArgs[strArg].empty())
-            return true;
-        return (atoi(mapArgs[strArg]) != 0);
-    }
-    return false;
-}
-*/
-
-
 
 enum
 {
@@ -622,22 +537,6 @@ inline void heapchk()
             return;                             \
         }                                       \
     }
-
-#define CATCH_PRINT_EXCEPTION(pszFn)     \
-    catch (std::exception& e) {          \
-        PrintException(&e, (pszFn));     \
-    } catch (...) {                      \
-        PrintException(NULL, (pszFn));   \
-    }
-
-
-
-
-
-
-
-
-
 
 template<typename T1>
 inline uint256 Hash(const T1 pbegin, const T1 pend)

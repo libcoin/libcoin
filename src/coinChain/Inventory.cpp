@@ -52,7 +52,7 @@ Inventory::Inventory(const std::string& type_name, const uint256& hash)
         }
     }
     if (i == ARRAYLEN(ppszTypeName))
-        throw std::out_of_range(strprintf("Inventory::Inventory(string, uint256) : unknown type '%s'", type_name.c_str()));
+        throw std::out_of_range(cformat("Inventory::Inventory(string, uint256) : unknown type '%s'", type_name).text());
     _hash = hash;
 }
 
@@ -83,6 +83,13 @@ bool Inventory::isKnownType() const
     return (_type >= 1 && (unsigned int)_type < ARRAYLEN(ppszTypeName));
 }
 
+std::string Inventory::toString() const {
+    if (!isKnownType())
+        throw std::out_of_range(cformat("Inventory::GetCommand() : type=%d unknown type", _type).text());
+    
+    return cformat("%s %s", ppszTypeName[_type], _hash.toString().substr(0,20)).text();
+}
+/*
 const char* Inventory::getCommand() const
 {
     if (!isKnownType())
@@ -90,12 +97,8 @@ const char* Inventory::getCommand() const
     return ppszTypeName[_type];
 }
 
-std::string Inventory::toString() const
-{
-    return strprintf("%s %s", getCommand(), _hash.toString().substr(0,20).c_str());
-}
-
 void Inventory::print() const
 {
     log_info("Inventory(%s)\n", toString().c_str());
 }
+*/

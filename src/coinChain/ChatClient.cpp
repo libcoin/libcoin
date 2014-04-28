@@ -117,7 +117,7 @@ void ChatClient::handle_read_line(const boost::system::error_code& err, size_t b
                     if (_endpointPool.getLocal().isRoutable() && !_proxy && !_name_in_use)
                         _my_name = encodeAddress(_endpointPool.getLocal());
                     else
-                        _my_name = strprintf("x%u", GetRand(1000000000));
+                        _my_name = cformat("x%u", GetRand(1000000000)).text();
                     
                     std::ostream txstream(&_send);
                     txstream << "NICK " << _my_name << "\r";

@@ -22,21 +22,6 @@
 using namespace std;
 using namespace boost;
 
-//map<string, string> mapArgs;
-//map<string, vector<string> > mapMultiArgs;
-bool fDebug = false;
-bool fPrintToConsole = false;
-bool fPrintToDebugger = false;
-string logfile("");
-char pszSetDataDir[MAX_PATH] = "";
-bool fDaemon = false;
-string strMiscWarning;
-
-bool fLogTimestamps = false;
-
-
-
-
 // Workaround for "multiple definition of `_tls_used'"
 // http://svn.boost.org/trac/boost/ticket/4258
 extern "C" void tss_cleanup_implemented() { }
@@ -180,96 +165,7 @@ int GetRandInt(int nMax)
 {
     return GetRand(nMax);
 }
-
-inline int OutputDebugStringF(const char* pszFormat, ...)
-{
-    int ret = 0;
-    if (logfile.size() == 0)
-    {
-        // print to console
-        va_list arg_ptr;
-        va_start(arg_ptr, pszFormat);
-        ret = vprintf(pszFormat, arg_ptr);
-        va_end(arg_ptr);
-    }
-    else
-    {
-        // print to debug.log
-        static FILE* fileout = NULL;
-
-        if (!fileout)
-        {
-        //            char pszFile[MAX_PATH+100];
-        //            GetDataDir(pszFile);
-        //            strlcat(pszFile, "/debug.log", sizeof(pszFile));
-            fileout = fopen(logfile.c_str(), "a");
-            if (fileout) setbuf(fileout, NULL); // unbuffered
-        }
-        if (fileout)
-        {
-            static bool fStartedNewLine = true;
-
-            // Debug print useful for profiling
-            if (fLogTimestamps && fStartedNewLine)
-                fprintf(fileout, "%s ", DateTimeStrFormat("%x %H:%M:%S", UnixTime::s()).c_str());
-            if (pszFormat[strlen(pszFormat) - 1] == '\n')
-                fStartedNewLine = true;
-            else
-                fStartedNewLine = false;
-
-            va_list arg_ptr;
-            va_start(arg_ptr, pszFormat);
-            ret = vfprintf(fileout, pszFormat, arg_ptr);
-            va_end(arg_ptr);
-        }
-    }
-
-#ifdef _WIN32
-    if (fPrintToDebugger)
-    {
-        static CCriticalSection cs_OutputDebugStringF;
-
-        // accumulate a line at a time
-        CRITICAL_BLOCK(cs_OutputDebugStringF)
-        {
-            static char pszBuffer[50000];
-            static char* pend;
-            if (pend == NULL)
-                pend = pszBuffer;
-            va_list arg_ptr;
-            va_start(arg_ptr, pszFormat);
-            int limit = END(pszBuffer) - pend - 2;
-            int ret = _vsnprintf(pend, limit, pszFormat, arg_ptr);
-            va_end(arg_ptr);
-            if (ret < 0 || ret >= limit)
-            {
-                pend = END(pszBuffer) - 2;
-                *pend++ = '\n';
-            }
-            else
-                pend += ret;
-            *pend = '\0';
-            char* p1 = pszBuffer;
-            char* p2;
-            while (p2 = strchr(p1, '\n'))
-            {
-                p2++;
-                char c = *p2;
-                *p2 = '\0';
-                OutputDebugStringA(p1);
-                *p2 = c;
-                p1 = p2;
-            }
-            if (p1 != pszBuffer)
-                memmove(pszBuffer, p1, pend - p1 + 1);
-            pend -= (p1 - pszBuffer);
-        }
-    }
-#endif
-    return ret;
-}
-
-
+/*
 // Safer snprintf
 //  - prints up to limit-1 characters
 //  - output string is always null terminated even if limit reached
@@ -318,7 +214,8 @@ string strprintf(const char* format, ...)
     return str;
 }
 
-
+*/
+/*
 bool error(const char* format, ...)
 {
     char buffer[50000];
@@ -335,28 +232,7 @@ bool error(const char* format, ...)
     log_error("ERROR: %s\n", buffer);
     return false;
 }
-
-/*
-void ParseString(const string& str, char c, vector<string>& v)
-{
-    if (str.empty())
-        return;
-    string::size_type i1 = 0;
-    string::size_type i2;
-    loop
-    {
-        i2 = str.find(c, i1);
-        if (i2 == str.npos)
-        {
-            v.push_back(str.substr(i1));
-            return;
-        }
-        v.push_back(str.substr(i1, i2-i1));
-        i1 = i2+1;
-    }
-}
 */
-
 string FormatMoney(int64_t n, bool fPlus)
 {
     // Note: not using straight sprintf here because we do NOT want
@@ -364,7 +240,7 @@ string FormatMoney(int64_t n, bool fPlus)
     int64_t n_abs = (n > 0 ? n : -n);
     int64_t quotient = n_abs/COIN;
     int64_t remainder = n_abs%COIN;
-    string str = strprintf("%"PRI64d".%08"PRI64d, quotient, remainder);
+    string str = cformat("%"PRI64d".%08"PRI64d, quotient, remainder).text();
 
     // Right-trim excess 0's before the decimal point:
     int nTrim = 0;
@@ -385,48 +261,7 @@ bool ParseMoney(const string& str, int64_t& nRet)
 {
     return ParseMoney(str.c_str(), nRet);
 }
-/*
-bool ParseMoney(const char* pszIn, int64_t& nRet)
-{
-    string strWhole;
-    int64_t nUnits = 0;
-    const char* p = pszIn;
-    while (isspace(*p))
-        p++;
-    for (; *p; p++)
-    {
-        if (*p == '.')
-        {
-            p++;
-            int64_t nMult = CENT*10;
-            while (isdigit(*p) && (nMult > 0))
-            {
-                nUnits += nMult * (*p++ - '0');
-                nMult /= 10;
-            }
-            break;
-        }
-        if (isspace(*p))
-            break;
-        if (!isdigit(*p))
-            return false;
-        strWhole.insert(strWhole.end(), *p);
-    }
-    for (; *p; p++)
-        if (!isspace(*p))
-            return false;
-    if (strWhole.size() > 14)
-        return false;
-    if (nUnits < 0 || nUnits > COIN)
-        return false;
-    int64_t nWhole = atoi64(strWhole);
-    int64_t nValue = nWhole*COIN + nUnits;
 
-    nRet = nValue;
-    return true;
-}
-
-*/
 vector<unsigned char> ParseHex(const char* psz)
 {
     static char phexdigit[256] =
@@ -509,74 +344,6 @@ long hex2long(const char* hexString) {
     }
     
     return ret;
-}
-
-/*
-bool WildcardMatch(const char* psz, const char* mask)
-{
-    loop
-    {
-        switch (*mask)
-        {
-        case '\0':
-            return (*psz == '\0');
-        case '*':
-            return WildcardMatch(psz, mask+1) || (*psz && WildcardMatch(psz+1, mask));
-        case '?':
-            if (*psz == '\0')
-                return false;
-            break;
-        default:
-            if (*psz != *mask)
-                return false;
-            break;
-        }
-        psz++;
-        mask++;
-    }
-}
-
-bool WildcardMatch(const string& str, const string& mask)
-{
-    return WildcardMatch(str.c_str(), mask.c_str());
-}
-*/
-void FormatException(char* pszMessage, std::exception* pex, const char* pszThread)
-{
-#ifdef _WIN32
-    char pszModule[MAX_PATH];
-    pszModule[0] = '\0';
-    GetModuleFileNameA(NULL, pszModule, sizeof(pszModule));
-#else
-    const char* pszModule = "bitcoin";
-#endif
-    if (pex)
-        snprintf(pszMessage, 1000,
-            "EXCEPTION: %s       \n%s       \n%s in %s       \n", typeid(*pex).name(), pex->what(), pszModule, pszThread);
-    else
-        snprintf(pszMessage, 1000,
-            "UNKNOWN EXCEPTION       \n%s in %s       \n", pszModule, pszThread);
-}
-
-void LogException(std::exception* pex, const char* pszThread)
-{
-    char pszMessage[10000];
-    FormatException(pszMessage, pex, pszThread);
-    log_error("\n%s", pszMessage);
-}
-
-void PrintException(std::exception* pex, const char* pszThread)
-{
-    char pszMessage[10000];
-    FormatException(pszMessage, pex, pszThread);
-    log_error("\n\n************************\n%s\n", pszMessage);
-    fprintf(stderr, "\n\n************************\n%s\n", pszMessage);
-    strMiscWarning = pszMessage;
-#ifdef GUI
-    if (wxTheApp && !fDaemon)
-        MyMessageBox(pszMessage, "Bitcoin", wxOK | wxICON_ERROR);
-#endif
-    throw;
 }
 
 #ifdef _WIN32
@@ -679,9 +446,7 @@ void AddTimeData(unsigned int ip, int64_t nTime)
                 {
                     fDone = true;
                     string strMessage = "Warning: Please check that your computer's date and time are correct.  If your clock is wrong Bitcoin will not work properly.";
-                    strMiscWarning = strMessage;
-                    log_warn("*** %s\n", strMessage.c_str());
-//                    boost::thread(boost::bind(ThreadSafeMessageBox, strMessage+" ", string("Bitcoin"), wxOK | wxICON_EXCLAMATION, (wxWindow*)NULL, -1, -1));
+                    log_warn("*** %s\n", strMessage);
                 }
             }
         }
@@ -702,9 +467,9 @@ void AddTimeData(unsigned int ip, int64_t nTime)
 string FormatVersion(int nVersion)
 {
     if (nVersion%100 == 0)
-        return strprintf("%d.%d.%d", nVersion/1000000, (nVersion/10000)%100, (nVersion/100)%100);
+        return cformat("%d.%d.%d", nVersion/1000000, (nVersion/10000)%100, (nVersion/100)%100).text();
     else
-        return strprintf("%d.%d.%d.%d", nVersion/1000000, (nVersion/10000)%100, (nVersion/100)%100, nVersion%100);
+        return cformat("%d.%d.%d.%d", nVersion/1000000, (nVersion/10000)%100, (nVersion/100)%100, nVersion%100).text();
 }
 
 // Format the subversion field according to BIP 14 spec (https://en.bitcoin.it/wiki/BIP_0014)
@@ -784,7 +549,7 @@ static void push_lock(CCriticalSection* c, const CLockLocation& locklocation)
     if (lockstack.get() == NULL)
         lockstack.reset(new LockStack);
 
-    if (fDebug) log_debug("Locking: %s\n", locklocation.toString().c_str());
+    log_debug("Locking: %s\n", locklocation.toString().c_str());
     dd_mutex.lock();
 
     (*lockstack).push_back(std::make_pair(c, locklocation));
@@ -810,11 +575,8 @@ static void push_lock(CCriticalSection* c, const CLockLocation& locklocation)
 
 static void pop_lock()
 {
-    if (fDebug) 
-    {
-        const CLockLocation& locklocation = (*lockstack).rbegin()->second;
-        log_debug("Unlocked: %s\n", locklocation.toString().c_str());
-    }
+    const CLockLocation& locklocation = (*lockstack).rbegin()->second;
+    log_debug("Unlocked: %s\n", locklocation.toString().c_str());
     dd_mutex.lock();
     (*lockstack).pop_back();
     dd_mutex.unlock();

@@ -45,8 +45,10 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
         vector<Inventory> vInv;
         istringstream is(msg.payload());
         is >> vInv;
-        if (vInv.size() > 50000)
-            return error("message getdata size() = %d", vInv.size());
+        if (vInv.size() > 50000) {
+            log_error("message getdata size() = %d", vInv.size());
+            return false;
+        }
         
         BOOST_FOREACH(const Inventory& inv, vInv) {
             log_debug("received getdata for: %s\n", inv.toString().c_str());
@@ -78,8 +80,10 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
         vector<Inventory> vInv;
         istringstream is(msg.payload());
         is >> vInv;
-        if (vInv.size() > 50000)
-            return error("message inv size() = %d", vInv.size());
+        if (vInv.size() > 50000) {
+            log_error("message inv size() = %d", vInv.size());
+            return false;
+        }
         
         BOOST_FOREACH(const Inventory& inv, vInv) {
             if (inv.getType() == MSG_TX) {

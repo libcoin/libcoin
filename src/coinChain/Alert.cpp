@@ -70,11 +70,11 @@ string UnsignedAlert::toString() const
 {
     std::string cancels;
     BOOST_FOREACH(int n, _cancels)
-    cancels += strprintf("%d ", n);
+    cancels += lexical_cast<string>(n);
     std::string subversions;
     BOOST_FOREACH(std::string str, _subversions)
     subversions += "\"" + str + "\" ";
-    return strprintf(
+    return cformat(
                      "Alert(\n"
                      "    nVersion     = %d\n"
                      "    nRelayUntil  = %"PRI64d"\n"
@@ -100,7 +100,7 @@ string UnsignedAlert::toString() const
                      subversions.c_str(),
                      _priority,
                      _comment.c_str(),
-                     _status_bar.c_str());
+                     _status_bar.c_str()).text();
 }
 
 
@@ -188,8 +188,8 @@ bool Alert::checkSignature()
         return true;
     }
     catch (std::exception& e) {
-        string err = string("Alert::checkSignature : ") + e.what();
-        return error(err.c_str());
+        log_error("Alert::checkSignature : %s", e.what());
+        return false;
     }
 }
 

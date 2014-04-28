@@ -282,7 +282,7 @@ std::string Endpoint::toStringIP() const
 
 std::string Endpoint::toStringPort() const
 {
-    return strprintf("%u", port());
+    return cformat("%u", port()).text();
 }
 
 std::string Endpoint::toString() const

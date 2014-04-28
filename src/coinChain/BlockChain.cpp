@@ -690,10 +690,10 @@ void BlockChain::postTransaction(const Transaction txn, int64_t& fees, int64_t m
             name_op.check_fees(_chain.network_fee(blk.count()));
     }
     catch (NameOperation::Error& e) {
-        throw Error("Error in transaction: " + hash.toString() + "\n" + txn.toString() + "\n\t" + e.what());
+        throw Error("Error in transaction: " + hash.toString() + "\n\t" + e.what());
     }
     catch (Error& e) {
-        throw Error("Error in transaction: " + hash.toString() + "\n" + txn.toString() + "\n\t" + e.what());
+        throw Error("Error in transaction: " + hash.toString() + "\n\t" + e.what());
     }
     catch (std::exception& e) {
         log_error("Error in transaction: %s", hash.toString());

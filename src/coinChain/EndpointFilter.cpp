@@ -39,8 +39,10 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
             return true;
         if (origin->version() < 31402 && _endpointPool.getPoolSize() > 1000)
             return true;
-        if (endpoints.size() > 1000)
-            return error("message addr size() = %d", endpoints.size());
+        if (endpoints.size() > 1000) {
+            log_error("message addr size() = %d", endpoints.size());
+            return false;
+        }
         
         log_debug("PEERS: %d addresses received from %s", endpoints.size(), origin->addr.toString());
         

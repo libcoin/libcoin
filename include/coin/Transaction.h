@@ -71,7 +71,7 @@ struct Coin { // was COutPoint
     }
     
     std::string toString() const {
-        return strprintf("COutPoint(%s, %d)", hash.toString().substr(0,10).c_str(), index);
+        return cformat("COutPoint(%s, %d)", hash.toString().substr(0,10).c_str(), index).text();
     }
     
     void print() const {
@@ -136,13 +136,14 @@ public:
     bool isSubsidy() const {
         return _prevout.isNull();
     }
-    
+
+    /*
     std::string toString() const {
         std::string str;
-        str += strprintf("CTxIn(");
+        str += std::string("CTxIn(");
         str += _prevout.toString();
         if (_prevout.isNull())
-            str += strprintf(", coinbase %s", HexStr(_signature).c_str());
+            str += cformat(", coinbase %s", HexStr(_signature)).text();
         else
             str += strprintf(", scriptSig=%s", _signature.toString().substr(0,24).c_str());
         if (_sequence != UINT_MAX)
@@ -154,7 +155,7 @@ public:
     void print() const {
         log_info("%s\n", toString().c_str());
     }
-    
+    */
 private:
     Coin _prevout;
     Script _signature;
@@ -231,6 +232,7 @@ public:
         return !(a == b);
     }
 
+    /*
     std::string toString() const {
         if (_script.size() < 6)
             return "CTxOut(error)";
@@ -240,7 +242,7 @@ public:
     void print() const {
         log_info("%s\n", toString().c_str());
     }
-    
+    */
 private:
     int64_t _value;
     Script _script;
@@ -387,6 +389,7 @@ public:
         return HexStr(ss.begin(), ss.end());
     }
 
+    /*
     /// toString and print - for debugging.
     std::string toString() const {
         std::string str;
@@ -406,6 +409,7 @@ public:
     void print() const {
         log_info("%s", toString().c_str());
     }
+     */
 
 protected:
     int _version;

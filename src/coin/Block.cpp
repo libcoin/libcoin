@@ -87,7 +87,7 @@ uint256 Block::checkMerkleBranch(uint256 hash, const MerkleBranch& merkleBranch,
     }
     return hash;
 }
-
+/*
 void Block::print() const
 {
     log_info("Block(hash=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%d)\n",
@@ -107,7 +107,7 @@ void Block::print() const
         log_info("%s ", _merkleTree[i].toString().substr(0,10).c_str());
     log_info("\n");
 }
-
+*/
 //bool Block::checkBlock(const CBigNum& proofOfWorkLimit) const
 
 bool Block::checkHeightInCoinbase(int height) const {

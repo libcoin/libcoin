@@ -121,7 +121,7 @@ CDB::CDB(const std::string dataDir, const char* pszFile, const char* pszMode) : 
                              DB_RECOVER,
                              S_IRUSR | S_IWUSR);
             if (ret > 0)
-                throw runtime_error(strprintf("CDB() : error %d opening database environment", ret));
+                throw runtime_error(cformat("CDB() : error %d opening database environment", ret).text());
             fDbEnvInit = true;
         }
 
@@ -146,7 +146,7 @@ CDB::CDB(const std::string dataDir, const char* pszFile, const char* pszMode) : 
                 CRITICAL_BLOCK(cs_db)
                     --mapFileUseCount[strFile];
                 strFile = "";
-                throw runtime_error(strprintf("CDB() : can't open database file %s, error %d", pszFile, ret));
+                throw runtime_error(cformat("CDB() : can't open database file %s, error %d", pszFile, ret).text());
             }
 
             if (fCreate && !Exists(string("version")))

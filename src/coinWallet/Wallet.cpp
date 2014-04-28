@@ -885,7 +885,7 @@ bool Wallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
 {
     CRITICAL_BLOCK(cs_wallet)
     {
-        log_info("CommitTransaction:\n%s", wtxNew.toString().c_str());
+        log_info("CommitTransaction:\n%s", wtxNew.getHash().toString());
         {
             // This is only to keep the database open to defeat the auto-flush for the
             // duration of this scope.  This is the only place where this optimization
@@ -951,7 +951,7 @@ string Wallet::SendMoney(Script scriptPubKey, int64_t nValue, CWalletTx& wtxNew,
     {
         string strError;
         if (nValue + nFeeRequired > GetBalance())
-            strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds  ", FormatMoney(nFeeRequired).c_str());
+            strError = cformat("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds  ", FormatMoney(nFeeRequired)).text();
         else
             strError = "Error: Transaction creation failed  ";
         log_error("SendMoney() : %s", strError.c_str());

@@ -221,13 +221,17 @@ const bool BitcoinChain::checkProofOfWork(const Block& block) const {
     bnTarget.SetCompact(nBits);
     
     // Check range
-    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit()))
-        return error("CheckProofOfWork() : nBits below minimum work");
+    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit())) {
+        log_error("CheckProofOfWork() : nBits below minimum work");
+        return false;
+    }
     
     // Check proof of work matches claimed amount
-    if (hash > bnTarget.getuint256())
-        return error("CheckProofOfWork() : hash doesn't match nBits");
-    
+    if (hash > bnTarget.getuint256()) {
+        log_error("CheckProofOfWork() : hash doesn't match nBits");
+        return false;
+    }
+
     return true;
 }
 
@@ -333,12 +337,16 @@ const bool TestNet3Chain::checkProofOfWork(const Block& block) const {
     bnTarget.SetCompact(nBits);
     
     // Check range
-    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit()))
-        return error("CheckProofOfWork() : nBits below minimum work");
+    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit())) {
+        log_error("CheckProofOfWork() : nBits below minimum work");
+        return false;
+    }
     
     // Check proof of work matches claimed amount
-    if (hash > bnTarget.getuint256())
-        return error("CheckProofOfWork() : hash doesn't match nBits");
+    if (hash > bnTarget.getuint256()) {
+        log_error("CheckProofOfWork() : hash doesn't match nBits");
+        return false;
+    }
     
     return true;
 }
@@ -499,20 +507,27 @@ const bool NamecoinChain::checkProofOfWork(const Block& block) const {
     if (proofOfWorkLimit() != 0 && (target <= 0 || target > proofOfWorkLimit())) {
         cout << target.GetHex() << endl;
         cout << proofOfWorkLimit().GetHex() << endl;
-        return error("CheckProofOfWork() : nBits below minimum work");
+        log_error("CheckProofOfWork() : nBits below minimum work");
+        return false;
     }
     
     if (block.getVersion()&BLOCK_VERSION_AUXPOW) {
-        if (!block.getAuxPoW().Check(block.getHash(), block.getVersion()/BLOCK_VERSION_CHAIN_START))
-            return error("CheckProofOfWork() : AUX POW is not valid");
+        if (!block.getAuxPoW().Check(block.getHash(), block.getVersion()/BLOCK_VERSION_CHAIN_START)) {
+            log_error("CheckProofOfWork() : AUX POW is not valid");
+            return false;
+        }
         // Check proof of work matches claimed amount
-        if (block.getAuxPoW().GetParentBlockHash() > target.getuint256())
-            return error("CheckProofOfWork() : AUX proof of work failed");
+        if (block.getAuxPoW().GetParentBlockHash() > target.getuint256()) {
+            log_error("CheckProofOfWork() : AUX proof of work failed");
+            return false;
+        }
     }
     else {
         // Check proof of work matches claimed amount
-        if (block.getHash() > target.getuint256())
-            return error("CheckProofOfWork() : proof of work failed");
+        if (block.getHash() > target.getuint256()) {
+            log_error("CheckProofOfWork() : proof of work failed");
+            return false;
+        }
     }
     log_trace("Return(true): %s", __FUNCTION__);
     return true;
@@ -653,12 +668,16 @@ const bool LitecoinChain::checkProofOfWork(const Block& block) const {
     bnTarget.SetCompact(nBits);
     
     // Check range
-    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit()))
-        return error("CheckProofOfWork() : nBits below minimum work");
+    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit())) {
+        log_error("CheckProofOfWork() : nBits below minimum work");
+        return false;
+    }
     
     // Check proof of work matches claimed amount
-    if (hash > bnTarget.getuint256())
-        return error("CheckProofOfWork() : hash doesn't match nBits");
+    if (hash > bnTarget.getuint256()) {
+        log_error("CheckProofOfWork() : hash doesn't match nBits");
+        return false;
+    }
     
     return true;
 }
@@ -819,12 +838,16 @@ const int64_t TerracoinChain::subsidy(unsigned int height, uint256 prev) const {
 
 bool TerracoinChain::isStandard(const Transaction& tx) const {
     BOOST_FOREACH(const Input& txin, tx.getInputs())
-    if (!txin.signature().isPushOnly())
-        return error("nonstandard txin: %s", txin.signature().toString().c_str());
+    if (!txin.signature().isPushOnly()) {
+        log_error("nonstandard txin: %s", txin.signature().toString().c_str());
+        return false;
+    }
     BOOST_FOREACH(const Output& txout, tx.getOutputs()) {
         vector<pair<opcodetype, valtype> > solution;
-        if (!Solver(txout.script(), solution))
-            return error("nonstandard txout: %s", txout.script().toString().c_str());
+        if (!Solver(txout.script(), solution)) {
+            log_error("nonstandard txout: %s", txout.script().toString().c_str());
+            return false;
+        }
     }
     return true;
 }
@@ -837,12 +860,16 @@ const bool TerracoinChain::checkProofOfWork(const Block& block) const {
     bnTarget.SetCompact(nBits);
     
     // Check range
-    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit()))
-        return error("CheckProofOfWork() : nBits below minimum work");
+    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit())) {
+        log_error("CheckProofOfWork() : nBits below minimum work");
+        return false;
+    }
     
     // Check proof of work matches claimed amount
-    if (hash > bnTarget.getuint256())
-        return error("CheckProofOfWork() : hash doesn't match nBits");
+    if (hash > bnTarget.getuint256()) {
+        log_error("CheckProofOfWork() : hash doesn't match nBits");
+        return false;
+    }
     
     return true;
 }
@@ -1019,12 +1046,16 @@ const bool DogecoinChain::checkProofOfWork(const Block& block) const {
     bnTarget.SetCompact(nBits);
     
     // Check range
-    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit()))
-        return error("CheckProofOfWork() : nBits below minimum work");
+    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit())) {
+        log_error("CheckProofOfWork() : nBits below minimum work");
+        return false;
+    }
     
     // Check proof of work matches claimed amount
-    if (hash > bnTarget.getuint256())
-        return error("CheckProofOfWork() : hash doesn't match nBits");
+    if (hash > bnTarget.getuint256()) {
+        log_error("CheckProofOfWork() : hash doesn't match nBits");
+        return false;
+    }
     
     return true;
 }

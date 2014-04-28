@@ -281,7 +281,7 @@ int CWalletDB::LoadWallet(Wallet* pwallet)
     if (nFileVersion < LIBRARY_VERSION)
     {
         // Get rid of old debug.log file in current directory
-        if (nFileVersion <= 105 && !pszSetDataDir[0])
+        if (nFileVersion <= 105)
             unlink("debug.log");
 
         WriteVersion(LIBRARY_VERSION);

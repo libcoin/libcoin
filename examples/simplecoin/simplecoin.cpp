@@ -29,8 +29,6 @@ using namespace boost;
 
 int main(int argc, char* argv[])
 {    
-    logfile = default_data_dir(bitcoin.dataDirSuffix()) + "/debug.log";
-    
     Node node; // deafult chain is bitcoin
     
     Wallet wallet(node); // add the wallet

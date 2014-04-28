@@ -114,7 +114,7 @@ Object tx2json(Transaction &tx, int64_t timestamp, int64_t blockheight)
     BOOST_FOREACH(const Output& txout, tx.getOutputs()) {
         Object outentry;
         outentry.clear();
-        outentry.push_back(Pair("value", strprintf("%"PRI64d".%08"PRI64d"",txout.value()/COIN, txout.value()%COIN))); // format correctly
+        outentry.push_back(Pair("value", cformat("%"PRI64d".%08"PRI64d"",txout.value()/COIN, txout.value()%COIN).text())); // format correctly
         outentry.push_back(Pair("scriptPubKey", txout.script().toString()));
         txouts.push_back(outentry);
     }
