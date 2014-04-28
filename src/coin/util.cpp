@@ -141,7 +141,7 @@ void RandAddSeedPerfmon()
     {
         RAND_add(pdata, nSize, nSize/100.0);
         memset(pdata, 0, nSize);
-        log_debug("%s RandAddSeed() %d bytes\n", DateTimeStrFormat("%x %H:%M", UnixTime::s()).c_str(), nSize);
+        log_debug("%d RandAddSeed() %d bytes\n", UnixTime::s(), nSize);
     }
 #endif
 }
@@ -165,74 +165,7 @@ int GetRandInt(int nMax)
 {
     return GetRand(nMax);
 }
-/*
-// Safer snprintf
-//  - prints up to limit-1 characters
-//  - output string is always null terminated even if limit reached
-//  - return value is the number of characters actually printed
-int my_snprintf(char* buffer, size_t limit, const char* format, ...)
-{
-    if (limit == 0)
-        return 0;
-    va_list arg_ptr;
-    va_start(arg_ptr, format);
-    int ret = _vsnprintf(buffer, limit, format, arg_ptr);
-    va_end(arg_ptr);
-    if (ret < 0 || (unsigned int)ret >= limit)
-    {
-        ret = limit - 1;
-        buffer[limit-1] = 0;
-    }
-    return ret;
-}
 
-
-string strprintf(const char* format, ...)
-{
-    char buffer[50000];
-    char* p = buffer;
-    int limit = sizeof(buffer);
-    int ret;
-    loop
-    {
-        va_list arg_ptr;
-        va_start(arg_ptr, format);
-        ret = _vsnprintf(p, limit, format, arg_ptr);
-        va_end(arg_ptr);
-        if (ret >= 0 && ret < limit)
-            break;
-        if (p != buffer)
-            delete[] p;
-        limit *= 2;
-        p = new char[limit];
-        if (p == NULL)
-            throw std::bad_alloc();
-    }
-    string str(p, p+ret);
-    if (p != buffer)
-        delete[] p;
-    return str;
-}
-
-*/
-/*
-bool error(const char* format, ...)
-{
-    char buffer[50000];
-    int limit = sizeof(buffer);
-    va_list arg_ptr;
-    va_start(arg_ptr, format);
-    int ret = _vsnprintf(buffer, limit, format, arg_ptr);
-    va_end(arg_ptr);
-    if (ret < 0 || ret >= limit)
-    {
-        ret = limit - 1;
-        buffer[limit-1] = 0;
-    }
-    log_error("ERROR: %s\n", buffer);
-    return false;
-}
-*/
 string FormatMoney(int64_t n, bool fPlus)
 {
     // Note: not using straight sprintf here because we do NOT want

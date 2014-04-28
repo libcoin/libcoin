@@ -83,11 +83,6 @@ munlock(((void *)(((size_t)(a)) & (~((PAGESIZE)-1)))),\
 #define UEND(a)             ((unsigned char*)&((&(a))[1]))
 #define ARRAYLEN(array)     (sizeof(array)/sizeof((array)[0]))
 
-//#ifdef snprintf
-//#undef snprintf
-//#endif
-//#define snprintf my_snprintf
-
 #ifndef PRI64d
 #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__MSVCRT__)
 #define PRI64d  "I64d"
@@ -126,7 +121,6 @@ munlock(((void *)(((size_t)(a)) & (~((PAGESIZE)-1)))),\
 #define unlink              _unlink
 #else
 #define WSAGetLastError()   errno
-//#define _vsnprintf(a,b,c,d) vsnprintf(a,b,c,d)
 #define strlwr(psz)         to_lower(psz)
 #define _strlwr(psz)        to_lower(psz)
 #define MAX_PATH            1024
@@ -454,15 +448,6 @@ inline int64_t GetTimeMillis()
             boost::posix_time::ptime(boost::gregorian::date(1970,1,1))).total_milliseconds();
 }
 
-inline std::string DateTimeStrFormat(const char* pszFormat, int64_t nTime)
-{
-    time_t n = nTime;
-    struct tm* ptmTime = gmtime(&n);
-    char pszTime[200];
-    strftime(pszTime, sizeof(pszTime), pszFormat, ptmTime);
-    return pszTime;
-}
-
 template<typename T>
 void skipspaces(T& it)
 {
@@ -588,52 +573,6 @@ uint256 serialize_hash(const T& t) {
     std::string s = serialize(t);
     return ::Hash(s.begin(), s.end());
 }
-
-// Median filter over a stream of values
-// Returns the median of the last N numbers
-template <typename T> class CMedianFilter
-{
-private:
-    std::vector<T> vValues;
-    std::vector<T> vSorted;
-    unsigned int nSize;
-public:
-    CMedianFilter(unsigned int size, T initial_value): nSize(size) {
-        vValues.reserve(size);
-        vValues.push_back(initial_value);
-        vSorted = vValues;
-    }
-    
-    void input(T value) {
-        if(vValues.size() == nSize) {
-            vValues.erase(vValues.begin());
-        }
-        vValues.push_back(value);
-        
-        vSorted.resize(vValues.size());
-        std::copy(vValues.begin(), vValues.end(), vSorted.begin());
-        std::sort(vSorted.begin(), vSorted.end());
-    }
-    
-    T median() const {
-        int size = vSorted.size();
-        assert(size>0);
-        if(size & 1) { // Odd number of elements
-            return vSorted[size/2];
-        }
-        else { // Even number of elements
-            return (vSorted[size/2-1] + vSorted[size/2]) / 2;
-        }
-    }
-    
-    unsigned int size() const {
-        return vValues.size();
-    }
-    
-    std::vector<T> sorted () const {
-        return vSorted;
-    }
-};
 
 // litecoin stuff
 

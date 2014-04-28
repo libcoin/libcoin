@@ -93,8 +93,53 @@ private:
     typedef std::map<Inventory, int> Priorities;
     Priorities _priorities;
     
+    // Median filter over a stream of values
+    // Returns the median of the last N numbers
+    template <typename T> class MedianFilter {
+    private:
+        std::vector<T> _values;
+        std::vector<T> _sorted;
+        unsigned int _size;
+    public:
+        MedianFilter(unsigned int size, T initial_value): _size(size) {
+            _values.reserve(size);
+            _values.push_back(initial_value);
+            _sorted = _values;
+        }
+        
+        void input(T value) {
+            if(_values.size() == _size) {
+                _values.erase(_values.begin());
+            }
+            _values.push_back(value);
+            
+            _sorted.resize(_values.size());
+            std::copy(_values.begin(), _values.end(), _sorted.begin());
+            std::sort(_sorted.begin(), _sorted.end());
+        }
+        
+        T median() const {
+            int size = _sorted.size();
+            assert(size > 0);
+            if(size & 1) { // Odd number of elements
+                return _sorted[size/2];
+            }
+            else { // Even number of elements
+                return (_sorted[size/2-1] + _sorted[size/2]) / 2;
+            }
+        }
+        
+        unsigned int size() const {
+            return _values.size();
+        }
+        
+        std::vector<T> sorted () const {
+            return _sorted;
+        }
+    };
+    
     /// Amount of blocks that the Peers claim to have.
-    CMedianFilter<int> _peerBlockCounts;
+    MedianFilter<int> _peerBlockCounts;
     
     /// The delegate
     Node& _node;
