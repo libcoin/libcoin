@@ -91,29 +91,7 @@ Data passphrase2seed(const std::string& pass_phrase) {
 
 
 int main(int argc, char* argv[])
-{
-    ExtendedKey alice;
-    alice.reset();
-
-    ExtendedKey bob;
-    bob.reset();
-    
-    alice.file("/Users/gronager/alice.pem");
-    
-    ExtendedKey alicebob(alice.number(), alice.number()*bob.public_point(), alice.chain_code());
-    alicebob.file("/Users/gronager/alicebob.pem");
-    
-    Key alice1("/Users/gronager/alice.pem");
-    
-    Key alicebob1("/Users/gronager/alicebob.pem");
-
-    cout << hexify(alice.serialized_pubkey()) << endl;
-    cout << hexify(alice1.serialized_pubkey()) << endl;
-    cout << hexify(alicebob.serialized_pubkey()) << endl;
-    cout << hexify(alicebob1.serialized_pubkey()) << endl;
-    
-    return 0;
-    
+{    
     try {
         cout << "TESTING: ExtendedKey class" << endl << endl;
         
@@ -221,10 +199,10 @@ int main(int argc, char* argv[])
         
         try {
             // create a key
-            CKey key;
-            key.MakeNewKey();
+            Key key;
+            key.reset();
             
-            PubKeyHash pkh = toPubKeyHash(key.GetPubKey());
+            PubKeyHash pkh = toPubKeyHash(key.serialized_pubkey());
 
             Script script = Script() << OP_DUP << OP_HASH160 << pkh << OP_EQUALVERIFY << OP_CHECKSIG;
             Output from(100000000, script); // One btc
@@ -240,12 +218,10 @@ int main(int argc, char* argv[])
             // now sign the transaction:
             uint256 hash = txn.getSignatureHash(script, 0, SIGHASH_ALL);
             
-            vector<unsigned char> sig;
-            if (!key.Sign(hash, sig))
-                throw runtime_error("couldn't sign!");
+            vector<unsigned char> sig = key.sign(hash);
             sig.push_back((unsigned char)SIGHASH_ALL);
 
-            Script signature = Script() << sig << key.GetPubKey();
+            Script signature = Script() << sig << key.serialized_pubkey();
             
             Input input(prevout, signature);
             
