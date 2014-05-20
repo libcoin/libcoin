@@ -124,12 +124,16 @@ const int64_t PonziChain::subsidy(unsigned int height, uint256 prev) const {
 
 bool PonziChain::isStandard(const Transaction& tx) const {
     BOOST_FOREACH(const Input& txin, tx.getInputs())
-    if (!txin.signature().isPushOnly())
-        return ::error("nonstandard txin: %s", txin.signature().toString().c_str());
+    if (!txin.signature().isPushOnly()) {
+        log_error("nonstandard txin: %s", txin.signature().toString());
+        return false;
+    }
     BOOST_FOREACH(const Output& txout, tx.getOutputs()) {
         vector<pair<opcodetype, valtype> > solution;
-        if (!Solver(txout.script(), solution))
-            return ::error("nonstandard txout: %s", txout.script().toString().c_str());        
+        if (!Solver(txout.script(), solution)) {
+            log_error("nonstandard txout: %s", txout.script().toString());
+            return false;
+        }
     }
     return true;
 }
