@@ -169,7 +169,7 @@ namespace jsonite {
                     ostringstream oss;
                     oss << setfill('0') << setw(19) << _fraction;
                     string f = oss.str();
-                    while (f.back() == '0') f.pop_back();
+                    while (f[f.size()-1] == '0') f.erase(f.size()-1, 1);
                     os << f;
                 }
                 if (_mantissa) os << "E" << _mantissa;
