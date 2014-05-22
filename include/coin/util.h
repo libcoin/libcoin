@@ -315,11 +315,14 @@ std::string HexStr(const T itbegin, const T itend, bool fSpaces=false)
         return "";
     const unsigned char* pbegin = (const unsigned char*)&itbegin[0];
     const unsigned char* pend = pbegin + (itend - itbegin) * sizeof(itbegin[0]);
-    std::string str;
-    str.reserve((pend-pbegin) * (fSpaces ? 3 : 2));
-    for (const unsigned char* p = pbegin; p != pend; p++)
-        str += cformat((fSpaces && p != pend-1 ? "%02x " : "%02x"), *p).text();
-    return str;
+    char chars[16] = {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
+    std::ostringstream ss;
+    for (const unsigned char* p = pbegin; p != pend; p++) {
+        ss << chars[(*p)>>4];
+        ss << chars[(*p)&0xf];
+        if (fSpaces && p != pend) ss << ' ';
+    }
+    return ss.str();
 }
 
 inline std::string HexStr(const std::vector<unsigned char>& vch, bool fSpaces=false)

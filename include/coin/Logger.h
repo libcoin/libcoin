@@ -131,7 +131,7 @@ private:
 // G(1, 2, 3) -> X = 1, 2, 3
 // i.e. VA_ARGS is interpretated as one argument not multiple and hence a VA_ARGS cannot be forwarded - hence we use (fmt, ...) throughout
 
-#define cformat(fmt, ...) (Format(fmt), ##__VA_ARGS__)
+#define cformat(fmt, ...) (Format((fmt)), ##__VA_ARGS__)
 
 class COIN_EXPORT Format {
 public:
