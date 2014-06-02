@@ -160,6 +160,7 @@ int main(int argc, char* argv[])
         t_insert += time_microseconds();
         
         cout << "Took " << 0.001*t_insert << "ms" << endl;
+        trie.authenticated(true);
         cout << "Root hash is: " << trie.root()->hash().toString() << endl;
         
         cout << "Shuffeling the elements and inserting them in another trie (hashing off)" << endl;
