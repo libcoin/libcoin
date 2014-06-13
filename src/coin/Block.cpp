@@ -30,13 +30,13 @@ int Block::GetSigOpCount() const
 
 ostream& operator<<(ostream& os, const Block& b) {
     os << (BlockHeader)b;
-    if (!b._ignore_aux_pow) os << b._aux_pow;
+    if (!b._ignore_aux_pow && b.getVersion() & BLOCK_VERSION_AUXPOW) os << b._aux_pow;
     return os << b._transactions;
 }
 
 istream& operator>>(istream& is, Block& b) {
     is >> (BlockHeader&)b;
-    if (!b._ignore_aux_pow) is >> b._aux_pow;
+    if (!b._ignore_aux_pow && b.getVersion() & BLOCK_VERSION_AUXPOW) is >> b._aux_pow;
     return is >> b._transactions;
 }
 
