@@ -113,7 +113,7 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
           ")");
 
     query("CREATE INDEX IF NOT EXISTS ConfCount ON Confirmations(count)");
-    
+
     query("CREATE TABLE IF NOT EXISTS Unspents ("
               "coin INTEGER PRIMARY KEY AUTOINCREMENT,"
               "hash BINARY,"
@@ -195,7 +195,7 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
     // enable fast lookup by name and height
     query("CREATE INDEX IF NOT EXISTS NamesIndex ON Names (name)");
     query("CREATE INDEX IF NOT EXISTS NamesCountIndex ON Names (count)");
-    
+
     // populate the tree
     vector<BlockRef> blockchain = queryColRow<BlockRef(int, uint256, uint256, unsigned int, unsigned int)>("SELECT version, hash, prev, time, bits FROM Blocks ORDER BY count");
     _tree.assign(blockchain);
@@ -328,7 +328,7 @@ std::pair<Claims::Spents, int64_t> BlockChain::try_claim(const Transaction& txn,
         // redeem the inputs
         const Inputs& inputs = txn.getInputs();
         int64_t value_in = 0;
-        NameOperation name_op(_chain.adhere_names()?_chain.enforce_name_rules(UnixTime::s()):false);
+        NameOperation name_op(_chain.adhere_names()?!_chain.enforce_name_rules(UnixTime::s()):true);
         for (size_t in_idx = 0; in_idx < inputs.size(); ++in_idx) {
             Unspent coin;
             const Input& input = inputs[in_idx];
@@ -599,7 +599,7 @@ void BlockChain::updateName(const NameOperation& name_op, int64_t coin, int coun
     if (name_op.reserve()) {
         if (count - name_op.input_count() < MIN_FIRSTUPDATE_DEPTH)
             throw Error("Tried to reserve a name less than 12 blocks after name_new: " + name_op.name());
-        if (expired)
+        if (expired || (name == "d/postmortem" && latest_count == 139937))
             query("INSERT INTO Names (name, value, coin, count) VALUES (?, ?, ?, ?)", raw_name, raw_value, coin, count);
         else
             throw Error("Tried to reserve non expired name: " + name);
@@ -646,7 +646,7 @@ void BlockChain::postTransaction(const Transaction txn, int64_t& fees, int64_t m
         // redeem the inputs
         const Inputs& inputs = txn.getInputs();
         int64_t value_in = 0;
-        NameOperation name_op(_chain.adhere_names()?_chain.enforce_name_rules(blk.count()):false);
+        NameOperation name_op(_chain.adhere_names()?!_chain.enforce_name_rules(blk.count()):true);
         for (size_t in_idx = 0; in_idx < inputs.size(); ++in_idx) {
             const Input& input = inputs[in_idx];
             Unspent coin = redeem(input, in_idx, conf); // this will throw in case of doublespend attempts
