@@ -84,6 +84,8 @@ vector<Transaction> Claims::transactions(int64_t& fee, size_t header_and_coinbas
     size_t size = header_and_coinbase; // make room for header and coinbase
     while (p != _priorities.end()) {
         Confirmations::const_iterator cnf = _confirmations.find(*p);
+        if (cnf == _confirmations.end())
+            continue;
         const Claim& claim = cnf->second;
         if (!inserted.count(cnf->first)) {
             if (size + claim.size >= MAX_BLOCK_SIZE)
