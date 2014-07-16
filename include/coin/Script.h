@@ -577,35 +577,36 @@ public:
     {
          // Wrapper so it can be called with either iterator or const_iterator
          const_iterator pc2 = pc;
-         bool fRet = getOp2(pc2, opcodeRet, &vchRet);
+         bool fRet = getOp2(pc2, opcodeRet, vchRet);
          pc = begin() + (pc2 - begin());
          return fRet;
     }
 
     bool getOp(iterator& pc, opcodetype& opcodeRet)
     {
-         const_iterator pc2 = pc;
-         bool fRet = getOp2(pc2, opcodeRet, NULL);
-         pc = begin() + (pc2 - begin());
-         return fRet;
+        const_iterator pc2 = pc;
+        std::vector<unsigned char> pvchRet;
+        bool fRet = getOp2(pc2, opcodeRet, pvchRet);
+        pc = begin() + (pc2 - begin());
+        return fRet;
     }
 
     bool getOp(const_iterator& pc, opcodetype& opcodeRet, std::vector<unsigned char>& vchRet) const
     {
-        return getOp2(pc, opcodeRet, &vchRet);
+        return getOp2(pc, opcodeRet, vchRet);
     }
 
     bool getOp(const_iterator& pc, opcodetype& opcodeRet) const
     {
-        return getOp2(pc, opcodeRet, NULL);
+        std::vector<unsigned char> pvchRet;
+        return getOp2(pc, opcodeRet, pvchRet);
     }
 
-    bool getOp2(const_iterator& pc, opcodetype& opcodeRet, std::vector<unsigned char>* pvchRet) const
+    bool getOp2(const_iterator& pc, opcodetype& opcodeRet, std::vector<unsigned char>& pvchRet) const
     {
         opcodeRet = OP_INVALIDOPCODE;
-        if (pvchRet)
-            pvchRet->clear();
-        if (pc >= end())
+        pvchRet.clear();
+        if (pc < begin() || end() <= pc)
             return false;
 
         // Read instruction
@@ -642,10 +643,9 @@ public:
                 memcpy(&nSize, &pc[0], 4);
                 pc += 4;
             }
-            if (end() - pc < 0 || (unsigned int)(end() - pc) < nSize)
+            if (pc < begin() || pc > end() || pc + nSize > end())
                 return false;
-            if (pvchRet)
-                pvchRet->assign(pc, pc + nSize);
+            pvchRet.assign(pc, pc + nSize);
             pc += nSize;
         }
 
