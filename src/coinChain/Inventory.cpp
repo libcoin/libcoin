@@ -25,7 +25,8 @@ static const char* ppszTypeName[] =
 {
     "ERROR",
     "tx",
-    "block"
+    "block",
+    "filtered block"
 };
 
 Inventory::Inventory()
