@@ -31,6 +31,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <numeric>
+#include <sstream>
 
 using namespace std;
 using namespace boost;
@@ -613,24 +614,45 @@ void BlockChain::updateName(const NameOperation& name_op, int64_t coin, int coun
 }
 
 int BlockChain::getNameAge(const std::string& name) const {
-    Evaluator::Value raw_name(name.begin(), name.end());
+    const Evaluator::Value raw_name(name.begin(), name.end());
     return query<int64_t>("SELECT count FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", raw_name);
 }
 
 NameDbRow BlockChain::getNameRow(const std::string& name) const {
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
-    Evaluator::Value raw_name(name.begin(), name.end());
+    const Evaluator::Value raw_name(name.begin(), name.end());
     return queryRow<NameDbRow(int64_t, int64_t, Evaluator::Value, Evaluator::Value)>("SELECT coin, count, name, value FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", raw_name);
 }
 
 std::vector<NameDbRow> BlockChain::getNameHistory(const std::string& name) const {
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
-    Evaluator::Value raw_name(name.begin(), name.end());
+    const Evaluator::Value raw_name(name.begin(), name.end());
     return queryColRow<NameDbRow(int64_t, int64_t, Evaluator::Value, Evaluator::Value)>("SELECT coin, count, name, value FROM Names WHERE name = ? ORDER BY count ASC", raw_name);
 }
 
+std::vector<NameDbRow> BlockChain::getNameScan(const std::string& start, unsigned cnt) const {
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+    const Evaluator::Value raw_start(start.begin(), start.end());
+
+    /* name_scan in namecoind orders shorter names before longer ones,
+       since that is how BDB does it.  SQLite orders alphabetically.  The
+       latter seems actually "better suited" to the purpose, but for now,
+       emulate the behaviour of namecoind for compatibility.  */
+    /* TODO: Discuss changing the behaviour.  */
+    const std::string orderBy = "LENGTH(name) ASC, name ASC";
+    const std::string startCond = "LENGTH(name) >= LENGTH(?) AND name >= ?";
+
+    std::ostringstream query;
+    query << "SELECT coin, count, name, value FROM Names WHERE name IN"
+          << " (SELECT DISTINCT name FROM Names"
+          << " WHERE " << startCond << " ORDER BY " << orderBy << " LIMIT ?)"
+          << " ORDER BY " << orderBy << ", count DESC";
+
+    return queryColRow<NameDbRow(int64_t, int64_t, Evaluator::Value, Evaluator::Value)>(query.str().c_str(), raw_start, raw_start, cnt);
+}
+
 string BlockChain::getCoinName(int64_t coin) const {
-    Evaluator::Value raw_name = query<Evaluator::Value>("SELECT name FROM Names WHERE coin=?", coin);
+    const Evaluator::Value raw_name = query<Evaluator::Value>("SELECT name FROM Names WHERE coin=?", coin);
     return string(raw_name.begin(), raw_name.end());
 }
 

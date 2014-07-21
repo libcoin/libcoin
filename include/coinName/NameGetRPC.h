@@ -118,4 +118,37 @@ public:
 
 };
 
+/* ************************************************************************** */
+/* name_scan implementation.  */
+
+/**
+ * Implementation of the name_scan method to list (a subset of) all known
+ * names (but only with their latest status).
+ */
+class COINNAME_EXPORT NameScan : public NameGetMethod
+{
+
+public:
+
+  /**
+   * Construct it for the given node.
+   * @param n Node to use.
+   */
+  explicit inline
+  NameScan (Node& n)
+    : NameGetMethod(n)
+  {
+    setName ("name_scan");
+  }
+
+  /**
+   * Perform the call.
+   * @param params Parameters given to call.
+   * @param fHelp Help requested?
+   * @return JSON result.
+   */
+  json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+
+};
+
 #endif // NAMEGETRPC_H

@@ -81,3 +81,51 @@ NameHistory::operator() (const json_spirit::Array& params, bool fHelp)
 
   return res;
 }
+
+/* ************************************************************************** */
+/* name_scan implementation.  */
+
+json_spirit::Value
+NameScan::operator() (const json_spirit::Array& params, bool fHelp)
+{
+  if (fHelp || params.size () > 2)
+    throw RPC::error (RPC::invalid_params,
+                      "name_history [<start> [<count>=500]]\n"
+                      "List all known names starting at <start> in increasing"
+                      " order, up to a maximum of <count> entries.");
+
+  std::string start;
+  if (params.size () >= 1)
+    {
+      /* FIXME: Correctly handle integer parameters (convert to string).  */
+      start = params[0].get_str ();
+    }
+  else
+    start = "";
+
+  unsigned count = 500;
+  if (params.size () >= 2)
+    count = params[1].get_int ();
+
+  /* Query for the data in the block chain database.  */
+  const BlockChain& chain = node.blockChain ();
+  const std::vector<NameDbRow> rows = chain.getNameScan (start, count);
+
+  /* Build up an array from all the rows.  Take care that we use only
+     the first entry for each name.  */
+  std::set<Evaluator::Value> namesSeen;
+  json_spirit::Array res;
+  for (std::vector<NameDbRow>::const_iterator i = rows.begin ();
+       i != rows.end (); ++i)
+    {
+      assert (i->found);
+      if (namesSeen.count (i->name) == 0)
+        {
+          namesSeen.insert (i->name);
+          const NameStatus nm(*i, node.blockChain ());
+          res.push_back (nm.toJson ());
+        }
+    }
+
+  return res;
+}
