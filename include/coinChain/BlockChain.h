@@ -271,6 +271,8 @@ public:
 
     /// NameCoin: query for full row in Names table
     NameDbRow getNameRow(const std::string& name) const;
+    /// NameCoin: query for all rows in Names table for a given name
+    std::vector<NameDbRow> getNameHistory(const std::string& name) const;
     
     /// Get the locator for the best index
     const BlockLocator& getBestLocator() const;

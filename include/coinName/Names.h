@@ -20,6 +20,8 @@
 #include <coinChain/BlockChain.h>
 #include <coinChain/Spendables.h>
 
+#include <coinHTTP/json/json_spirit.h>
+
 #include <coinName/Export.h>
 
 #include <string>
@@ -139,6 +141,12 @@ public:
    * @return This name's address.
    */
   std::string getAddress () const;
+
+  /**
+   * Return information as JSON object.
+   * @return JSON object in the name_show / name_history format.
+   */
+  json_spirit::Object toJson () const;
 
 };
 

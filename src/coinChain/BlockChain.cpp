@@ -623,6 +623,12 @@ NameDbRow BlockChain::getNameRow(const std::string& name) const {
     return queryRow<NameDbRow(int64_t, int64_t, Evaluator::Value, Evaluator::Value)>("SELECT coin, count, name, value FROM Names WHERE name = ? ORDER BY count DESC LIMIT 1", raw_name);
 }
 
+std::vector<NameDbRow> BlockChain::getNameHistory(const std::string& name) const {
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+    Evaluator::Value raw_name(name.begin(), name.end());
+    return queryColRow<NameDbRow(int64_t, int64_t, Evaluator::Value, Evaluator::Value)>("SELECT coin, count, name, value FROM Names WHERE name = ? ORDER BY count ASC", raw_name);
+}
+
 string BlockChain::getCoinName(int64_t coin) const {
     Evaluator::Value raw_name = query<Evaluator::Value>("SELECT name FROM Names WHERE coin=?", coin);
     return string(raw_name.begin(), raw_name.end());

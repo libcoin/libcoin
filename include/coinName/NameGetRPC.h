@@ -85,4 +85,37 @@ public:
 
 };
 
+/* ************************************************************************** */
+/* name_history implementation.  */
+
+/**
+ * Implementation of the name_history method to query for basic info
+ * about all known (current and past, not yet pruned) states of a name.
+ */
+class COINNAME_EXPORT NameHistory : public NameGetMethod
+{
+
+public:
+
+  /**
+   * Construct it for the given node.
+   * @param n Node to use.
+   */
+  explicit inline
+  NameHistory (Node& n)
+    : NameGetMethod(n)
+  {
+    setName ("name_history");
+  }
+
+  /**
+   * Perform the call.
+   * @param params Parameters given to call.
+   * @param fHelp Help requested?
+   * @return JSON result.
+   */
+  json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+
+};
+
 #endif // NAMEGETRPC_H

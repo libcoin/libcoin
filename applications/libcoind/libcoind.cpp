@@ -176,6 +176,7 @@ int main(int argc, char* argv[])
         
         if (conf.chain().adhere_names()) {
             server.registerMethod(method_ptr(new NameShow(node)));
+            server.registerMethod(method_ptr(new NameHistory(node)));
         }
         
         /// The Pool enables you to run a backend for a miner, i.e. your private pool, it also enables you to participate in the "Name of Pool"

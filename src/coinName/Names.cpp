@@ -47,3 +47,23 @@ NameStatus::getAddress () const
 
   return c.getAddress (hash).toString ();
 }
+
+json_spirit::Object
+NameStatus::toJson () const
+{
+  const std::string txid = getTransactionId ();
+  const std::string addr = getAddress ();
+
+  json_spirit::Object res;
+  res.push_back (json_spirit::Pair ("name", getName ()));
+  res.push_back (json_spirit::Pair ("value", getValue ()));
+  res.push_back (json_spirit::Pair ("expires_in", getExpireCounter ()));
+  if (isExpired ())
+    res.push_back (json_spirit::Pair ("expired", 1));
+  if (txid != "")
+    res.push_back (json_spirit::Pair ("txid", txid));
+  if (addr != "")
+    res.push_back (json_spirit::Pair ("address", addr));
+
+  return res;
+}
