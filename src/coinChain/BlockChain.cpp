@@ -844,49 +844,62 @@ void BlockChain::getBlock(int count, Block& block) const {
 }
 
 void BlockChain::attach(BlockIterator &blk, Txns& unconfirmed, Hashes& confirmed) {
-    Block block = _branches[blk->hash];
-    int height = blk.height(); // height for non trunk blocks is negative
-    
-    if (!_chain.checkPoints(height, blk->hash))
-        throw Error("Rejected by checkpoint lockin at " + lexical_cast<string>(height));
-    
-    for(size_t idx = 0; idx < block.getNumTransactions(); ++idx)
-        if(!isFinal(block.getTransaction(idx), height, blk->time))
-            throw Error("Contains a non-final transaction");
-    
-    _verifier.reset();
-    
-    insertBlockHeader(blk.count(), block);
-    
-    // commit transactions
-    int64_t fees = 0;
-    int64_t min_fee = 0;
-    bool verify = _verification_depth && (height > _verification_depth);
-    for(size_t idx = 1; idx < block.getNumTransactions(); ++idx) {
-        Transaction txn = block.getTransaction(idx);
-        uint256 hash = txn.getHash();
-        if (unconfirmed.count(hash) || _claims.have(hash)) // if the transaction is already among the unconfirmed, we have verified it earlier
-            verify = false;
-        postTransaction(txn, fees, min_fee, blk, idx, verify);
-        unconfirmed.erase(hash);
-        confirmed.insert(hash);
+    try {
+        Block block = _branches[blk->hash];
+        int height = blk.height(); // height for non trunk blocks is negative
+        
+        if (!_chain.checkPoints(height, blk->hash))
+            throw Error("Rejected by checkpoint lockin at " + lexical_cast<string>(height));
+        
+        for(size_t idx = 0; idx < block.getNumTransactions(); ++idx)
+            if(!isFinal(block.getTransaction(idx), height, blk->time))
+                throw Error("Contains a non-final transaction");
+        
+        _verifier.reset();
+        
+        insertBlockHeader(blk.count(), block);
+        
+        // commit transactions
+        int64_t fees = 0;
+        int64_t min_fee = 0;
+        bool verify = _verification_depth && (height > _verification_depth);
+        for(size_t idx = 1; idx < block.getNumTransactions(); ++idx) {
+            Transaction txn = block.getTransaction(idx);
+            uint256 hash = txn.getHash();
+            if (unconfirmed.count(hash) || _claims.have(hash)) // if the transaction is already among the unconfirmed, we have verified it earlier
+                verify = false;
+            postTransaction(txn, fees, min_fee, blk, idx, verify);
+            unconfirmed.erase(hash);
+            confirmed.insert(hash);
+        }
+        // post subsidy - means adding the new coinbase to spendings and the matured coinbase (100 blocks old) to spendables
+        Transaction txn = block.getTransaction(0);
+        postSubsidy(txn, blk, fees);
+        
+        if (!_verifier.yield_success())
+            throw Error("Verify Signature failed with: " + _verifier.reason());
     }
-    // post subsidy - means adding the new coinbase to spendings and the matured coinbase (100 blocks old) to spendables
-    Transaction txn = block.getTransaction(0);
-    postSubsidy(txn, blk, fees);
-    
-    if (!_verifier.yield_success())
-        throw Error("Verify Signature failed with: " + _verifier.reason());    
+    catch (std::exception& e) {
+        log_error("attach failed");
+        throw;
+    }
 }
 
 void BlockChain::detach(BlockIterator &blk, Txns& unconfirmed) {
-    Block block;
-    getBlock(blk.count(), block);
-    rollbackBlock(blk.count()); // this will also remove spendable coins and immature_coinbases
-    Transactions& txns = block.getTransactions();
-    for (Transactions::const_iterator tx = txns.begin() + 1; tx != txns.end(); ++tx) // skip the coinbase!
-        unconfirmed[tx->getHash()] = *tx;
-    _branches[blk->hash] = block; // store it in the branches map
+    try {
+        
+        Block block;
+        getBlock(blk.count(), block);
+        rollbackBlock(blk.count()); // this will also remove spendable coins and immature_coinbases
+        Transactions& txns = block.getTransactions();
+        for (Transactions::const_iterator tx = txns.begin() + 1; tx != txns.end(); ++tx) // skip the coinbase!
+            unconfirmed[tx->getHash()] = *tx;
+        _branches[blk->hash] = block; // store it in the branches map
+    }
+    catch (std::exception& e) {
+        log_error("detach failed");
+        throw;
+    }
 }
 
 // check if this is a share - it is not checked if the transactions in the share can be validated/verified etc,
