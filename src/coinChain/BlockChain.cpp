@@ -31,7 +31,6 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <numeric>
-#include <sstream>
 
 using namespace std;
 using namespace boost;
@@ -634,21 +633,18 @@ std::vector<NameDbRow> BlockChain::getNameScan(const std::string& start, unsigne
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
     const Evaluator::Value raw_start(start.begin(), start.end());
 
-    /* name_scan in namecoind orders shorter names before longer ones,
-       since that is how BDB does it.  SQLite orders alphabetically.  The
-       latter seems actually "better suited" to the purpose, but for now,
-       emulate the behaviour of namecoind for compatibility.  */
-    /* TODO: Discuss changing the behaviour.  */
-    const std::string orderBy = "LENGTH(name) ASC, name ASC";
-    const std::string startCond = "LENGTH(name) >= LENGTH(?) AND name >= ?";
+    /* We want to return all names matching the name_scan criteria, and
+       for name_scan, we only want the *newest entry* for each name.  Since
+       this seems not easy to do in the SQL query, return all entries
+       with the newest first.  The interpreting code can than ignore
+       all later results for a name that was already in the
+       result before.  */
 
-    std::ostringstream query;
-    query << "SELECT coin, count, name, value FROM Names WHERE name IN"
-          << " (SELECT DISTINCT name FROM Names"
-          << " WHERE " << startCond << " ORDER BY " << orderBy << " LIMIT ?)"
-          << " ORDER BY " << orderBy << ", count DESC";
+    const char* query = "SELECT coin, count, name, value FROM Names WHERE name IN"
+                        " (SELECT DISTINCT name FROM Names WHERE name >= ? ORDER BY name ASC LIMIT ?)"
+                        " ORDER BY name ASC, count DESC";
 
-    return queryColRow<NameDbRow(int64_t, int64_t, Evaluator::Value, Evaluator::Value)>(query.str().c_str(), raw_start, raw_start, cnt);
+    return queryColRow<NameDbRow(int64_t, int64_t, Evaluator::Value, Evaluator::Value)>(query, raw_start, cnt);
 }
 
 string BlockChain::getCoinName(int64_t coin) const {
