@@ -1169,6 +1169,8 @@ namespace sqliterate {
         sqlite3 *_db;
         typedef std::map<const char *, StatementBase> Statements;
         mutable Statements _statements;
+
+        void registerFunctions();
     };
 }
 

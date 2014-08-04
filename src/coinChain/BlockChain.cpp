@@ -31,6 +31,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <numeric>
+#include <sstream>
 
 using namespace std;
 using namespace boost;
@@ -645,6 +646,43 @@ std::vector<NameDbRow> BlockChain::getNameScan(const std::string& start, unsigne
                         " ORDER BY name ASC, count DESC";
 
     return queryColRow<NameDbRow(int64_t, int64_t, Evaluator::Value, Evaluator::Value)>(query, raw_start, cnt);
+}
+
+std::vector<NameDbRow> BlockChain::getNameFilter(const std::string& pattern, unsigned maxage, unsigned from, unsigned nb) const {
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+    const Evaluator::Value raw_pattern(pattern.begin(), pattern.end());
+
+    /* We want to return all names matching the name_filter criteria, and
+       for name_filter, we only want the *newest entry* for each name.  Since
+       this seems not easy to do in the SQL query, return all entries
+       with the newest first.  The interpreting code can than ignore
+       all later results for a name that was already in the
+       result before.  */
+
+    std::ostringstream query;
+    query << "SELECT coin, count, name, value FROM Names WHERE name IN"
+          << "  (SELECT DISTINCT name FROM Names"
+          << "    WHERE REGEXP(name, ?) AND count >= ?"
+          << "    ORDER BY name ASC";
+    if (nb > 0)
+        query << " LIMIT ? OFFSET ?";
+    else
+        assert (from == 0);
+    query << ") ORDER BY name ASC, count DESC";
+
+    /* If maxage = 1, we want to check one block back:  So only the
+       best one is accepted.  In that case, minimum count that
+       is accepted should equal to the best height.  */
+    unsigned minHeight;
+    if (maxage >= getBestHeight ())
+      minHeight = 0;
+    else
+      minHeight = getBestHeight() - maxage + 1;
+
+    if (nb > 0)
+        return queryColRow<NameDbRow(int64_t, int64_t, Evaluator::Value, Evaluator::Value)>(query.str().c_str(), raw_pattern, minHeight, nb, from);
+
+    return queryColRow<NameDbRow(int64_t, int64_t, Evaluator::Value, Evaluator::Value)>(query.str().c_str(), raw_pattern, minHeight);
 }
 
 string BlockChain::getCoinName(int64_t coin) const {

@@ -52,7 +52,7 @@ protected:
    * @param unique Whether we should enforce unique names.
    * @return The corresponding JSON object.
    */
-  json_spirit::Value processNameRows (const std::vector<NameDbRow> arr,
+  json_spirit::Array processNameRows (const std::vector<NameDbRow>& arr,
                                       bool unique) const;
 
 public:
@@ -155,6 +155,39 @@ public:
     : NameGetMethod(n)
   {
     setName ("name_scan");
+  }
+
+  /**
+   * Perform the call.
+   * @param params Parameters given to call.
+   * @param fHelp Help requested?
+   * @return JSON result.
+   */
+  json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+
+};
+
+/* ************************************************************************** */
+/* name_filter implementation.  */
+
+/**
+ * Implementation of the name_filter method to query for names matching
+ * a given regexp.
+ */
+class COINNAME_EXPORT NameFilter : public NameGetMethod
+{
+
+public:
+
+  /**
+   * Construct it for the given node.
+   * @param n Node to use.
+   */
+  explicit inline
+  NameFilter (Node& n)
+    : NameGetMethod(n)
+  {
+    setName ("name_filter");
   }
 
   /**

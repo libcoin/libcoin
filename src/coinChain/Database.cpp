@@ -18,6 +18,9 @@
 #include <coin/Logger.h>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/xpressive/xpressive_dynamic.hpp>
+
+#include <sstream>
 
 using namespace std;
 using namespace boost;
@@ -115,6 +118,11 @@ namespace sqliterate {
             throw Database::Error("Database() : error " + lexical_cast<string>(ret) + " opening database environment");
         
         sqlite3_soft_heap_limit64(heap_limit);
+
+        /* Note: In the odd case that registerFunctions throws an error,
+           the DB handle in _db won't be destroyed correctly.  Not sure
+           if this is a problem or not.  */
+        registerFunctions();
     }
     
     Database::~Database() {
@@ -178,4 +186,47 @@ namespace sqliterate {
         oss << std::endl;
         return oss.str();
     }
+
+    /* Register user-defined functions in SQLite.  */
+
+    static std::string sqliteBlobToString (sqlite3_value* val) {
+        const unsigned len = sqlite3_value_bytes(val);
+        const char* data = reinterpret_cast<const char*>(sqlite3_value_blob(val));
+        return std::string(data, data + len);
+    }
+
+    static void fcn_regexp(sqlite3_context* context, int argc, sqlite3_value** argv) {
+        if (argc != 2)
+            return;
+
+        const std::string subject = sqliteBlobToString(argv[0]);
+        const std::string pattern = sqliteBlobToString(argv[1]);
+
+        try
+        {
+            const xpressive::sregex regex = xpressive::sregex::compile(pattern);
+            xpressive::smatch matches;
+            
+            if (xpressive::regex_search(subject, matches, regex))
+                sqlite3_result_int(context, 1);
+            else
+                sqlite3_result_int(context, 0);
+        } catch(...)
+        {
+            std::ostringstream msg;
+            msg << "error parsing regex: " << pattern;
+            sqlite3_result_error(context, msg.str().c_str(), msg.str().size());
+        }
+    }
+
+    void Database::registerFunctions() {
+        int ret;
+
+        /* We could declare the function to be SQLITE_DETERMINISTIC, but
+           this constant seems to be undefined on some systems.  */
+        ret = sqlite3_create_function(_db, "regexp", 2, SQLITE_UTF8, NULL, &fcn_regexp, NULL, NULL);
+        if (ret != SQLITE_OK)
+            throw Database::Error("Database() : error " + lexical_cast<std::string>(ret) + " registering function 'regexp'");
+    }
+
 }
