@@ -25,6 +25,9 @@
 #include <coinHTTP/Server.h>
 #include <coinHTTP/RPC.h>
 
+#include <string>
+#include <vector>
+
 /* ************************************************************************** */
 /* NameGetMethod base class.  */
 
@@ -38,6 +41,19 @@ protected:
 
   /** Node used to access the blockchain for name queries.  */
   Node& node;
+
+  /**
+   * Given an array of NameDbRow objects as returned by a database query
+   * (for name_history, name_scan or name_filter), convert that to
+   * a JSON array.  Optionally enforce that names are unique, in which
+   * case we only use the *first* appearance of a name (assuming they
+   * are sorted with "count DESC").
+   * @param arr The array of data rows.
+   * @param unique Whether we should enforce unique names.
+   * @return The corresponding JSON object.
+   */
+  json_spirit::Value processNameRows (const std::vector<NameDbRow> arr,
+                                      bool unique) const;
 
 public:
 

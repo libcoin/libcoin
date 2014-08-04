@@ -24,6 +24,33 @@
 #include <coinName/Names.h>
 
 /* ************************************************************************** */
+/* NameGetMethod base class.  */
+
+json_spirit::Value
+NameGetMethod::processNameRows (const std::vector<NameDbRow> arr,
+                                bool unique) const
+{
+  std::set<Evaluator::Value> namesSeen;
+
+  json_spirit::Array res;
+  for (std::vector<NameDbRow>::const_iterator i = arr.begin ();
+       i != arr.end (); ++i)
+    {
+      assert (i->found);
+      if (unique && namesSeen.count (i->name) > 0)
+        continue;
+
+      if (unique)
+        namesSeen.insert (i->name);
+
+      const NameStatus nm(*i, node.blockChain ());
+      res.push_back (nm.toJson ());
+    }
+
+  return res;
+}
+
+/* ************************************************************************** */
 /* name_show implementation.  */
 
 json_spirit::Value
@@ -69,17 +96,7 @@ NameHistory::operator() (const json_spirit::Array& params, bool fHelp)
     throw RPC::error (RPC::name_not_found,
                       "The requested name doesn't exist in the database.");
 
-  /* Build up an array from all the rows.  */
-  json_spirit::Array res;
-  for (std::vector<NameDbRow>::const_iterator i = rows.begin ();
-       i != rows.end (); ++i)
-    {
-      assert (i->found);
-      const NameStatus nm(*i, node.blockChain ());
-      res.push_back (nm.toJson ());
-    }
-
-  return res;
+  return processNameRows (rows, false);
 }
 
 /* ************************************************************************** */
@@ -111,21 +128,5 @@ NameScan::operator() (const json_spirit::Array& params, bool fHelp)
   const BlockChain& chain = node.blockChain ();
   const std::vector<NameDbRow> rows = chain.getNameScan (start, count);
 
-  /* Build up an array from all the rows.  Take care that we use only
-     the first entry for each name.  */
-  std::set<Evaluator::Value> namesSeen;
-  json_spirit::Array res;
-  for (std::vector<NameDbRow>::const_iterator i = rows.begin ();
-       i != rows.end (); ++i)
-    {
-      assert (i->found);
-      if (namesSeen.count (i->name) == 0)
-        {
-          namesSeen.insert (i->name);
-          const NameStatus nm(*i, node.blockChain ());
-          res.push_back (nm.toJson ());
-        }
-    }
-
-  return res;
+  return processNameRows (rows, true);
 }
