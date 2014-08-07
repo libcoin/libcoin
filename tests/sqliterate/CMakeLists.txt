@@ -1,10 +1,20 @@
 SET(TARGET_SRC sqliterate.cpp)
 
-SET(TARGET_EXTERNAL_LIBRARIES
-    ${CMAKE_THREAD_LIBS_INIT}    
-    ${MATH_LIBRARY} 
-    ${Boost_LIBRARIES} 
-    ${DL_LIBRARY}
-)
+IF( CMAKE_SYSTEM MATCHES "Linux" )
+    SET(TARGET_EXTERNAL_LIBRARIES
+        ${CMAKE_THREAD_LIBS_INIT}    
+        ${MATH_LIBRARY}  
+        ${Boost_LIBRARIES} 
+        ${DL_LIBRARY}
+        ${RT_LIBRARY}
+    )
+ELSE( CMAKE_SYSTEM MATCHES "Linux" )
+    SET(TARGET_EXTERNAL_LIBRARIES
+        ${CMAKE_THREAD_LIBS_INIT}    
+        ${MATH_LIBRARY} 
+        ${Boost_LIBRARIES} 
+        ${DL_LIBRARY}
+    )
+ENDIF( CMAKE_SYSTEM MATCHES "Linux" )
 
 SETUP_TEST(sqliterate)

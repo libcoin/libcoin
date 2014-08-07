@@ -6,6 +6,10 @@ using namespace std;
 using namespace boost;
 using namespace boost::program_options;
 
+std::ostream& operator<<(std::ostream& os, const Configuration& conf) {
+    return os << conf._visible;
+}
+
 Node::Strictness strictness(std::string s) {
     if (s == "NONE")
         return Node::NONE;

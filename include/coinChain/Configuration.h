@@ -125,8 +125,4 @@ private:
     std::ofstream _olog;
 };
 
-std::ostream& operator<<(std::ostream& os, const Configuration& conf) {
-    return os << conf._visible;
-}
-
 #endif // CONFIGURATION_H
