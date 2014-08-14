@@ -87,6 +87,15 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
             return false; // don't process orphan blocks
         }
         
+        // check if the block belongs to the invalid chain - if so, we should try to reapply the invalid chain again - might seem strange, but in case of random DB errors it does make sense - we warn as this should not happen and also we should warn in case of failure again - as it could indicate that we are on the wrong chain.
+        /*
+        if (_blockChain.isInvalid(block.getPrevBlock())) {
+            log_warn("The invalid chain is growing!");
+            // attempt to recommit the entire invalid chain - if it fails announce!
+            // iterate backwards until we find the main chain
+            _branches.find(block.getPrevBlock());
+        }
+        */
         // the block is now part of the chain and has a valid proof of work
         
         process(block, origin->getAllPeers());

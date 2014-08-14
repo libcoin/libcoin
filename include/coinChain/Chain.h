@@ -128,6 +128,44 @@ public:
         std::set<std::string> _seeds;
 };
 
+class COINCHAIN_EXPORT Chains {
+public:
+    static void insert(const Chain& chain) { instance()->_chains.insert(&chain); }
+    
+    static const Chain* select(const std::string& name) {
+        for (std::set<const Chain*>::const_iterator c = instance()->_chains.begin(); c != instance()->_chains.end(); ++c) {
+            if ((*c)->name() == name)
+                return *c;
+        }
+        throw std::runtime_error("Chain named " + name + " not found!");
+    }
+    
+    typedef std::set<const std::string> List;
+    static List list() {
+        List l;
+        for (std::set<const Chain*>::const_iterator c = instance()->_chains.begin(); c != instance()->_chains.end(); ++c) {
+            l.insert((*c)->name());
+        }
+        return l;
+    }
+    
+private:
+    static Chains* instance() {
+        static Chains* s_chains = new Chains;
+        return s_chains;
+    }
+    virtual ~Chains();
+    std::set<const Chain*> _chains;
+};
+
+template <class T>
+class RegisterChain {
+public:
+    RegisterChain(const Chain& chain) {
+        Chains::insert(chain);
+    }
+};
+
 class COINCHAIN_EXPORT BitcoinChain : public Chain {
 public:
     BitcoinChain();

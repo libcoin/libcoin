@@ -27,7 +27,8 @@
 
 enum
 {
-    NODE_NETWORK = (1 << 0)
+    NODE_NETWORK = (1 << 0),
+    NODE_WEBSOCKET = (1 << 3)
 };
 
 /// Endpoint is a boost endpoint with a time of last use attached to it

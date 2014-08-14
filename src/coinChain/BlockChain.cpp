@@ -1143,8 +1143,9 @@ void BlockChain::append(const Block &block) {
     catch (std::exception& e) {
         query("ROLLBACK --BLOCK");
         _tree.pop_back();
-        for (BlockTree::Hashes::const_iterator h = changes.deleted.begin(); h != changes.deleted.end(); ++h)
-            _branches.erase(*h);
+        // don't erase as we might need those later,or just for reference
+//        for (BlockTree::Hashes::const_iterator h = changes.deleted.begin(); h != changes.deleted.end(); ++h)
+//            _branches.erase(*h);
 
         _spendables = snapshot; // this will restore the Merkle Trie to its former state
         
@@ -1432,6 +1433,10 @@ bool BlockChain::isFinal(const Transaction& tx, int nBlockHeight, int64_t nBlock
 
 bool BlockChain::haveBlock(uint256 hash) const {
     return _tree.find(hash) != _tree.end() || _invalid_tree.find(hash) != _invalid_tree.end();
+}
+
+bool BlockChain::isInvalid(uint256 hash) const {
+    return _tree.find(hash) == _tree.end() && _invalid_tree.find(hash) != _invalid_tree.end();
 }
 
 void BlockChain::getTransaction(const uint256& hash, Transaction& txn) const {

@@ -92,7 +92,19 @@ Configuration::Configuration(int argc, char* argv[], const options_description& 
     variables_map args;
     store(command_line_parser(argc, argv).options(cmdline_options).positional(pos).run(), args);
     notify(args);
-    
+
+    _chain = &bitcoin; // default
+
+    // iterate over chains in the chain registry
+    Chains::List list = Chains::list();
+    for (Chains::List::const_iterator c = list.begin(); c != list.end(); ++c) {
+        if (args.count(*c) || prog_name.find(*c) != string::npos)
+            _chain = Chains::select(*c);
+    }
+    if(args.count("ripple") || prog_name.find("ripped") != string::npos)
+        _chain = &ripplecredits;
+
+    /*
     if(args.count("testnet3") || prog_name.find("testnet3") != string::npos)
         _chain = &testnet3;
     else if(args.count("litecoin") || prog_name.find("litecoin") != string::npos)
@@ -101,10 +113,7 @@ Configuration::Configuration(int argc, char* argv[], const options_description& 
         _chain = &namecoin;
     else if(args.count("dogecoin") || prog_name.find("dogecoin") != string::npos)
         _chain = &dogecoin;
-    else if(args.count("ripple") || prog_name.find("ripped") != string::npos)
-        _chain = &ripplecredits;
-    else
-        _chain = &bitcoin;
+     */
     
     if(!args.count("datadir"))
         _data_dir = default_data_dir(_chain->name());

@@ -184,6 +184,8 @@ public:
     /// Query for existence of Block.
     bool haveBlock(uint256 hash) const;
     
+    bool isInvalid(uint256 hash) const;
+    
     /// Accept a block (Note: this could lead to a reorganization of the block that is often quite time consuming).
     void append(const Block &block);
 

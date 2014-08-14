@@ -116,6 +116,10 @@ void Chain::check(const Block& block) const {
     }
 }
 
+Chains::~Chains() {
+    
+}
+
 BitcoinChain::BitcoinChain() : Chain("bitcoin", "BTC", 8), _genesis("0x000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f") {
     _alert_key = ParseHex("04fc9702847840aaf195de8442ebecedf5b095cdbb9bc716bda9110971b28a49e0ead8564ff0db22209e0374782c093bb899692d524e9d6a6956e7c5ecbcd68284");
     _magic[0] = 0xf9; _magic[1] = 0xbe; _magic[2] = 0xb4; _magic[3] = 0xd9;
@@ -289,6 +293,7 @@ bool BitcoinChain::checkPoints(const unsigned int height, const uint256& hash) c
 // global const definition of the bitcoin chain
 const BitcoinChain bitcoin;
 
+RegisterChain<BitcoinChain> g_bitcoin(bitcoin);
 
 TestNet3Chain::TestNet3Chain() : Chain("testnet3", "TST", 8), _genesis("0x000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943") {
     _alert_key = ParseHex("04302390343f91cc401d56d68b123028bf52e5fca1939df127f63c6467cdf9c8e2c14b61104cf817d0b780da337893ecc4aaff1309e536162dabbdb45200ca2b0a");
@@ -402,6 +407,7 @@ int TestNet3Chain::nextWorkRequired(BlockIterator blk) const {
 // global const definition of the testnet chain
 const TestNet3Chain testnet3;
 
+RegisterChain<TestNet3Chain> g_testnet3(testnet3);
 
 NamecoinChain::NamecoinChain() : Chain("namecoin", "NMC", 8), _genesis("000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770") {
     _alert_key = ParseHex("04fc9702847840aaf195de8442ebecedf5b095cdbb9bc716bda9110971b28a49e0ead8564ff0db22209e0374782c093bb899692d524e9d6a6956e7c5ecbcd68284");
@@ -590,6 +596,7 @@ bool NamecoinChain::checkPoints(const unsigned int height, const uint256& hash) 
 // global const definition of the bitcoin chain
 const NamecoinChain namecoin;
 
+RegisterChain<NamecoinChain> g_namecoin(namecoin);
 
 LitecoinChain::LitecoinChain() : Chain("litecoin", "LTC", 8), _genesis("0x12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2") {
     _alert_key = ParseHex("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9");    _magic[0] = 0xfb; _magic[1] = 0xc0; _magic[2] = 0xb6; _magic[3] = 0xdb; // Litecoin: increase each by adding 2 to bitcoin's value.
@@ -740,6 +747,8 @@ const uint256 LitecoinChain::getPoWHash(const Block& block) const {
 
 
 const LitecoinChain litecoin;
+
+RegisterChain<LitecoinChain> g_litecoin(litecoin);
 
 TerracoinChain::TerracoinChain() : Chain("terracoin", "TRC", 8), _genesis("0x00000000804bbc6a621a9dbb564ce469f492e1ccf2d70f8a6b241e26a277afa2") {
     _alert_key = ParseHex("04302390343f91cc401d56d68b123028bf52e5fca1939df127f63c6467cdf9c8e2c14b61104cf817d0b780da337893ecc4aaff1309e536162dabbdb45200ca2b0a");
@@ -1165,5 +1174,7 @@ const uint256 DogecoinChain::getPoWHash(const Block& block) const {
 
 
 const DogecoinChain dogecoin;
+
+RegisterChain<DogecoinChain> g_dogecoin(dogecoin);
 
 const Currency ripplecredits("ripple", "XRP", 6);
