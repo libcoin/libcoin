@@ -129,8 +129,9 @@ bool PonziChain::isStandard(const Transaction& tx) const {
         return false;
     }
     BOOST_FOREACH(const Output& txout, tx.getOutputs()) {
-        vector<pair<opcodetype, valtype> > solution;
-        if (!Solver(txout.script(), solution)) {
+        std::vector<std::vector<unsigned char> > solution;
+        txnouttype txnout;
+        if (!Solver(txout.script(), txnout, solution)) {
             log_error("nonstandard txout: %s", txout.script().toString());
             return false;
         }
