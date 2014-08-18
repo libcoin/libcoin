@@ -70,6 +70,7 @@ int64_t Transaction::getValueOut() const
     return valueOut;
 }
 /*
+ 
 int64_t Transaction::paymentTo(PubKeyHash address) const {
     int64_t value = 0;
     BOOST_FOREACH(const Output& output, _outputs)
@@ -88,6 +89,7 @@ bool Transaction::isSufficient(map<PubKeyHash, int64_t> payments) const {
     }
     return true;
 }
+ 
 */
 int64_t Transaction::getMinFee(unsigned int nBlockSize, bool fAllowFree, bool fForRelay) const {
     // Base fee is either MIN_TX_FEE or MIN_RELAY_TX_FEE
