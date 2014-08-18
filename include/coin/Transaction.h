@@ -221,8 +221,6 @@ public:
         return Hash(ss.begin(), ss.end());
     }
 
-    uint160 getAddress() const;
-    
     friend bool operator==(const Output& a, const Output& b) {
         return (a._value       == b._value &&
                 a._script == b._script);
@@ -232,17 +230,6 @@ public:
         return !(a == b);
     }
 
-    /*
-    std::string toString() const {
-        if (_script.size() < 6)
-            return "CTxOut(error)";
-        return strprintf("CTxOut(nValue=%"PRI64d".%08"PRI64d", scriptPubKey=%s)", _value / COIN, _value % COIN, _script.toString().substr(0,30).c_str());
-    }
-
-    void print() const {
-        log_info("%s\n", toString().c_str());
-    }
-    */
 private:
     int64_t _value;
     Script _script;
@@ -355,10 +342,10 @@ public:
 
     /// Calculate the amount payed to a spicific address by this transaction. If the address is not part of the
     /// transaction, 0 will be returned. 
-    int64_t paymentTo(PubKeyHash address) const;
+    //int64_t paymentTo(PubKeyHash address) const;
     
     /// Calculate for a payment map of pubkeyhashes and amounts if a transaction is sufficient.
-    bool isSufficient(std::map<PubKeyHash, int64_t> payments) const;
+    //bool isSufficient(std::map<PubKeyHash, int64_t> payments) const;
     
     /// Check if a transaction with a given priority can be completed with no fee.
     static bool allowFree(double dPriority) {

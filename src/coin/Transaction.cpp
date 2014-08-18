@@ -22,30 +22,6 @@
 using namespace std;
 using namespace boost;
 
-//////////////////////////////////////////////////////////////////////////////
-//
-// Output
-//
-
-uint160 Output::getAddress() const
-{
-    vector<pair<opcodetype, vector<unsigned char> > > vSolution;
-    if (!Solver(_script, vSolution))
-        return 0;
-    
-    BOOST_FOREACH(PAIRTYPE(opcodetype, vector<unsigned char>)& item, vSolution)
-    {
-        vector<unsigned char> vchPubKey;
-        if (item.first == OP_PUBKEY)
-            // encode the pubkey into a hash160
-            return toPubKeyHash(item.second);
-        else if (item.first == OP_PUBKEYHASH)
-            return uint160(item.second);                
-    }
-    
-    return 0;
-}
-
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -93,7 +69,7 @@ int64_t Transaction::getValueOut() const
     }
     return valueOut;
 }
-
+/*
 int64_t Transaction::paymentTo(PubKeyHash address) const {
     int64_t value = 0;
     BOOST_FOREACH(const Output& output, _outputs)
@@ -112,7 +88,7 @@ bool Transaction::isSufficient(map<PubKeyHash, int64_t> payments) const {
     }
     return true;
 }
-
+*/
 int64_t Transaction::getMinFee(unsigned int nBlockSize, bool fAllowFree, bool fForRelay) const {
     // Base fee is either MIN_TX_FEE or MIN_RELAY_TX_FEE
     int64_t nBaseFee = fForRelay ? MIN_RELAY_TX_FEE : MIN_TX_FEE;

@@ -59,60 +59,6 @@ bool BasicKeyStore::getScript(const ScriptHash& hash, Script& redeemScript) cons
     return false;
 }
 
-
-bool Solver(const KeyStore& keystore, const Script& scriptPubKey, uint256 hash, int nHashType, Script& scriptSigRet)
-{
-    scriptSigRet.clear();
-    
-    std::vector<pair<opcodetype, valtype> > vSolution;
-    if (!Solver(scriptPubKey, vSolution))
-        return false;
-    
-    // Compile solution
-    BOOST_FOREACH(PAIRTYPE(opcodetype, valtype)& item, vSolution)
-    {
-    if (item.first == OP_PUBKEY)
-        {
-        // Sign
-        const valtype& vchPubKey = item.second;
-        CKey key;
-        if (!keystore.getKey(toPubKeyHash(vchPubKey), key))
-            return false;
-        if (key.GetPubKey() != vchPubKey)
-            return false;
-        if (hash != 0)
-            {
-            vector<unsigned char> vchSig;
-            if (!key.Sign(hash, vchSig))
-                return false;
-            vchSig.push_back((unsigned char)nHashType);
-            scriptSigRet << vchSig;
-            }
-        }
-    else if (item.first == OP_PUBKEYHASH)
-        {
-        // Sign and give pubkey
-        CKey key;
-        if (!keystore.getKey(uint160(item.second), key))
-            return false;
-        if (hash != 0)
-            {
-            vector<unsigned char> vchSig;
-            if (!key.Sign(hash, vchSig))
-                return false;
-            vchSig.push_back((unsigned char)nHashType);
-            scriptSigRet << vchSig << key.GetPubKey();
-            }
-        }
-    else
-        {
-        return false;
-        }
-    }
-    
-    return true;
-}
-
 bool Sign1(const PubKeyHash& pubKeyhash, const KeyStore& keystore, uint256 hash, int nHashType, Script& scriptSigRet)
 {
     CKey key;

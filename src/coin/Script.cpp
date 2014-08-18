@@ -764,65 +764,6 @@ int ScriptSigArgsExpected(txnouttype t, const std::vector<std::vector<unsigned c
     return -1;
 }
 
-bool Solver(const Script& scriptPubKey, vector<pair<opcodetype, valtype> >& vSolutionRet)
-{
-    // Templates
-    static vector<Script> vTemplates;
-    if (vTemplates.empty())
-    {
-        // Standard tx, sender provides pubkey, receiver adds signature
-        vTemplates.push_back(Script() << OP_PUBKEY << OP_CHECKSIG);
-        
-        // Bitcoin address tx, sender provides hash of pubkey, receiver provides signature and pubkey
-        vTemplates.push_back(Script() << OP_DUP << OP_HASH160 << OP_PUBKEYHASH << OP_EQUALVERIFY << OP_CHECKSIG);
-    }
-    
-    // Scan templates
-    const Script& script1 = scriptPubKey;
-    BOOST_FOREACH(const Script& script2, vTemplates)
-    {
-        vSolutionRet.clear();
-        opcodetype opcode1, opcode2;
-        vector<unsigned char> vch1, vch2;
-        
-        // Compare
-        Script::const_iterator pc1 = script1.begin();
-        Script::const_iterator pc2 = script2.begin();
-        loop
-        {
-            if (pc1 == script1.end() && pc2 == script2.end())
-            {
-                // Found a match
-                reverse(vSolutionRet.begin(), vSolutionRet.end());
-                return true;
-            }
-            if (!script1.getOp(pc1, opcode1, vch1))
-                break;
-            if (!script2.getOp(pc2, opcode2, vch2))
-                break;
-            if (opcode2 == OP_PUBKEY)
-            {
-                if (vch1.size() < 33 || vch1.size() > 120)
-                    break;
-                vSolutionRet.push_back(make_pair(opcode2, vch1));
-            }
-            else if (opcode2 == OP_PUBKEYHASH)
-            {
-                if (vch1.size() != sizeof(uint160))
-                    break;
-                vSolutionRet.push_back(make_pair(opcode2, vch1));
-            }
-            else if (opcode1 != opcode2 || vch1 != vch2)
-            {
-                break;
-            }
-        }
-    }
-    
-    vSolutionRet.clear();
-    return false;
-}
-
 //
 // Return public keys or hashes from scriptPubKey, for 'standard' transaction types.
 //
