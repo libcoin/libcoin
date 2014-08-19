@@ -140,7 +140,7 @@ public:
         throw std::runtime_error("Chain named " + name + " not found!");
     }
     
-    typedef std::set<const std::string> List;
+    typedef std::set<std::string> List;
     static List list() {
         List l;
         for (std::set<const Chain*>::const_iterator c = instance()->_chains.begin(); c != instance()->_chains.end(); ++c) {
@@ -154,7 +154,7 @@ private:
         static Chains* s_chains = new Chains;
         return s_chains;
     }
-    virtual ~Chains();
+    ~Chains();
     std::set<const Chain*> _chains;
 };
 
