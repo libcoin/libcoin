@@ -143,7 +143,7 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
               "icnf INTEGER REFERENCES Confirmations(cnf)" // icnf is the confirmation that spent the coin
           ")");
 
-    //    query("CREATE INDEX IF NOT EXISTS SpendingIndex ON Spendings (hash, idx)");
+    query("CREATE INDEX IF NOT EXISTS SpendingIndex ON Spendings (hash, idx)");
 
     query("CREATE INDEX IF NOT EXISTS SpendingsIn ON Spendings (icnf)");
     query("CREATE INDEX IF NOT EXISTS SpendingsOut ON Spendings (ocnf)");
