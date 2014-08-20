@@ -24,6 +24,33 @@
 #include <coinName/Names.h>
 
 /* ************************************************************************** */
+/* NameGetMethod base class.  */
+
+json_spirit::Array
+NameGetMethod::processNameRows (const std::vector<NameDbRow>& arr,
+                                bool unique) const
+{
+  std::set<Evaluator::Value> namesSeen;
+
+  json_spirit::Array res;
+  for (std::vector<NameDbRow>::const_iterator i = arr.begin ();
+       i != arr.end (); ++i)
+    {
+      assert (i->found);
+      if (unique && namesSeen.count (i->name) > 0)
+        continue;
+
+      if (unique)
+        namesSeen.insert (i->name);
+
+      const NameStatus nm(*i, node.blockChain ());
+      res.push_back (nm.toJson ());
+    }
+
+  return res;
+}
+
+/* ************************************************************************** */
 /* name_show implementation.  */
 
 json_spirit::Value
@@ -69,14 +96,106 @@ NameHistory::operator() (const json_spirit::Array& params, bool fHelp)
     throw RPC::error (RPC::name_not_found,
                       "The requested name doesn't exist in the database.");
 
-  /* Build up an array from all the rows.  */
-  json_spirit::Array res;
-  for (std::vector<NameDbRow>::const_iterator i = rows.begin ();
-       i != rows.end (); ++i)
+  return processNameRows (rows, false);
+}
+
+/* ************************************************************************** */
+/* name_scan implementation.  */
+
+json_spirit::Value
+NameScan::operator() (const json_spirit::Array& params, bool fHelp)
+{
+  if (fHelp || params.size () > 2)
+    throw RPC::error (RPC::invalid_params,
+                      "name_history [<start> [<count>=500]]\n"
+                      "List all known names starting at <start> in increasing"
+                      " order, up to a maximum of <count> entries.");
+
+  std::string start;
+  if (params.size () >= 1)
     {
-      assert (i->found);
-      const NameStatus nm(*i, node.blockChain ());
-      res.push_back (nm.toJson ());
+      /* FIXME: Correctly handle integer parameters (convert to string).  */
+      start = params[0].get_str ();
+    }
+  else
+    start = "";
+
+  unsigned count = 500;
+  if (params.size () >= 2)
+    count = params[1].get_int ();
+
+  /* Query for the data in the block chain database.  */
+  const BlockChain& chain = node.blockChain ();
+  const std::vector<NameDbRow> rows = chain.getNameScan (start, count);
+
+  return processNameRows (rows, true);
+}
+
+/* ************************************************************************** */
+/* name_filter implementation.  */
+
+json_spirit::Value
+NameFilter::operator() (const json_spirit::Array& params, bool fHelp)
+{
+  if (fHelp || params.size () > 5)
+    throw RPC::error (RPC::invalid_params,
+      "name_filter [<pattern> [<maxage>=36000 [from=0 nb=0 [\"stat\"]]]]\n"
+      "Scan for names matching <pattern>.  Only look into"
+      " the last <maxage> blocks.\n"
+      "Return at most <nb> results (0 means all) and return them from the\n"
+      "entry with number <from> onward.\n\n"
+      "If \"stat\" is given as fifth argument, print statistics instead of\n"
+      "returning the results by themselves.");
+
+  std::string pattern;
+  if (params.size () >= 1)
+    {
+      /* FIXME: Correctly handle integer parameters (convert to string).  */
+      pattern = params[0].get_str ();
+    }
+  else
+    pattern = "";
+
+  unsigned maxage = 36000, from = 0, nb = 0;
+  if (params.size () >= 2)
+    maxage = params[1].get_int ();
+  if (params.size () >= 3)
+    from = params[2].get_int ();
+  if (params.size () >= 4)
+    nb = params[3].get_int ();
+
+  /* Only allow "from" to be non-zero if "nb" is set.  "from" non-zero
+     without "nb" makes no real sense, especially since the order of names
+     is not strictly defined.  It also makes things complicated with the
+     SQL query.  */
+  if (from > 0 && nb == 0)
+    throw RPC::error (RPC::invalid_params,
+                      "<from> can only be non-zero if <nb> is set");
+
+  bool stat = false;
+  if (params.size () >= 5)
+    {
+      if (params[4].get_str () == "stat")
+        stat = true;
+      else
+        throw RPC::error (RPC::invalid_params,
+                          "invalid fifth argument, expected \"stat\"");
+    }
+
+  /* Query for the data in the block chain database.  */
+  const BlockChain& chain = node.blockChain ();
+  const std::vector<NameDbRow> rows = chain.getNameFilter (pattern, maxage, from, nb);
+
+  /* Convert to JSON array.  */
+  json_spirit::Array res = processNameRows (rows, true);
+
+  /* Handle stats flag if we have it.  */
+  if (stat)
+    {
+      json_spirit::Object stats;
+      stats.push_back (json_spirit::Pair ("blocks", chain.getBestHeight ()));
+      stats.push_back (json_spirit::Pair ("count", res.size ()));
+      return stats;
     }
 
   return res;

@@ -25,6 +25,9 @@
 #include <coinHTTP/Server.h>
 #include <coinHTTP/RPC.h>
 
+#include <string>
+#include <vector>
+
 /* ************************************************************************** */
 /* NameGetMethod base class.  */
 
@@ -38,6 +41,19 @@ protected:
 
   /** Node used to access the blockchain for name queries.  */
   Node& node;
+
+  /**
+   * Given an array of NameDbRow objects as returned by a database query
+   * (for name_history, name_scan or name_filter), convert that to
+   * a JSON array.  Optionally enforce that names are unique, in which
+   * case we only use the *first* appearance of a name (assuming they
+   * are sorted with "count DESC").
+   * @param arr The array of data rows.
+   * @param unique Whether we should enforce unique names.
+   * @return The corresponding JSON object.
+   */
+  json_spirit::Array processNameRows (const std::vector<NameDbRow>& arr,
+                                      bool unique) const;
 
 public:
 
@@ -106,6 +122,72 @@ public:
     : NameGetMethod(n)
   {
     setName ("name_history");
+  }
+
+  /**
+   * Perform the call.
+   * @param params Parameters given to call.
+   * @param fHelp Help requested?
+   * @return JSON result.
+   */
+  json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+
+};
+
+/* ************************************************************************** */
+/* name_scan implementation.  */
+
+/**
+ * Implementation of the name_scan method to list (a subset of) all known
+ * names (but only with their latest status).
+ */
+class COINNAME_EXPORT NameScan : public NameGetMethod
+{
+
+public:
+
+  /**
+   * Construct it for the given node.
+   * @param n Node to use.
+   */
+  explicit inline
+  NameScan (Node& n)
+    : NameGetMethod(n)
+  {
+    setName ("name_scan");
+  }
+
+  /**
+   * Perform the call.
+   * @param params Parameters given to call.
+   * @param fHelp Help requested?
+   * @return JSON result.
+   */
+  json_spirit::Value operator() (const json_spirit::Array& params, bool fHelp);
+
+};
+
+/* ************************************************************************** */
+/* name_filter implementation.  */
+
+/**
+ * Implementation of the name_filter method to query for names matching
+ * a given regexp.
+ */
+class COINNAME_EXPORT NameFilter : public NameGetMethod
+{
+
+public:
+
+  /**
+   * Construct it for the given node.
+   * @param n Node to use.
+   */
+  explicit inline
+  NameFilter (Node& n)
+    : NameGetMethod(n)
+  {
+    setName ("name_filter");
   }
 
   /**
