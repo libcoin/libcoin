@@ -2,14 +2,27 @@ SET(TARGET_SRC libcoind.cpp)
 
 SET(TARGET_ADDED_LIBRARIES coinPool coinWallet coinName coinNAT)
 
-SET(TARGET_EXTERNAL_LIBRARIES
-    ${CMAKE_THREAD_LIBS_INIT}    
-    ${MATH_LIBRARY} 
-    ${OPENSSL_LIBRARIES} 
-    ${Boost_LIBRARIES} 
-    ${BDB_LIBRARY} 
-    ${SQLITE3_LIBRARIES}
-    ${DL_LIBRARY}
-)
+IF( CMAKE_SYSTEM MATCHES "Linux" )
+    SET(TARGET_EXTERNAL_LIBRARIES
+        ${CMAKE_THREAD_LIBS_INIT}    
+        ${MATH_LIBRARY} 
+        ${OPENSSL_LIBRARIES} 
+        ${Boost_LIBRARIES} 
+        ${BDB_LIBRARY} 
+        ${SQLITE3_LIBRARIES}
+        ${DL_LIBRARY}
+        ${RT_LIBRARY}
+    )
+ELSE( CMAKE_SYSTEM MATCHES "Linux" )
+    SET(TARGET_EXTERNAL_LIBRARIES
+        ${CMAKE_THREAD_LIBS_INIT}    
+        ${MATH_LIBRARY} 
+        ${OPENSSL_LIBRARIES} 
+        ${Boost_LIBRARIES} 
+        ${BDB_LIBRARY} 
+        ${SQLITE3_LIBRARIES}
+        ${DL_LIBRARY}
+    )
+ENDIF( CMAKE_SYSTEM MATCHES "Linux" )
 
 SETUP_APPLICATION(libcoind)
