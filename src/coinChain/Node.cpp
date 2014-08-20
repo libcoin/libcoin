@@ -285,13 +285,15 @@ void Node::updatePeers(const vector<string>& eps) {
 
 Endpoint Node::getCandidate(const set<unsigned int>& not_in) {
     Endpoint ep;
-    for (endpoints::iterator candidate = _connection_list.begin(); candidate != _connection_list.end(); ++candidate) {
+    endpoints candidates = _connection_list;
+    for (endpoints::const_iterator candidate = _connection_list.begin(); candidate != _connection_list.end(); ++candidate) {
         if(not_in.count(Endpoint(*candidate).getIP()) == 0) {
-            ep = *candidate;   
-            break;
+            candidates.insert(*candidate);
         }
     }
-    return ep;
+    endpoints::iterator candidate = candidates.begin();
+    advance(candidate, rand()%candidates.size());
+    return *candidate;
 }
 
 void Node::start_connect() {
@@ -350,7 +352,7 @@ void Node::handle_connect(const system::error_code& e) {
         _peerManager.start(_new_server);
     }
     else {
-        log_debug("Failed connect: \"%s\" to: %s", e.message().c_str(), _new_server->addr.toString().c_str());
+        log_info("Failed connect: \"%s\" to: %s", e.message().c_str(), _new_server->addr.toString().c_str());
     }
     
     //    _endpointPool.getEndpoint(_new_server->addr.getKey()).setLastTry(GetAdjustedTime());
