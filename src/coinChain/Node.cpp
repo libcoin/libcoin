@@ -178,10 +178,10 @@ void Node::update_persistence() {
         case LAZY:
             _blockChain.lazy_purging(true);
         case MINIMAL: {
-//            unsigned int network_depth = _peerManager.getPeerMedianNumBlocks()-_blockChain.chain().maturity(_blockChain.getBestHeight());
+            unsigned int network_depth = _peerManager.getPeerMedianNumBlocks()-_blockChain.chain().maturity(_blockChain.getBestHeight());
             unsigned int internal_depth = _blockChain.getBestHeight()-2*_blockChain.chain().maturity(_blockChain.getBestHeight());
-//            _blockChain.purge_depth(std::min(network_depth, internal_depth));
-            _blockChain.purge_depth(internal_depth);
+            _blockChain.purge_depth(std::min(network_depth, internal_depth));
+//            _blockChain.purge_depth(internal_depth);
             break;
         }
         case NONE:
