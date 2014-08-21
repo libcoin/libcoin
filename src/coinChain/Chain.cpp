@@ -156,7 +156,6 @@ BitcoinChain::BitcoinChain() : Chain("bitcoin", "BTC", 8), _genesis("0x000000000
     _seeds = boost::assign::list_of
     ("seed.bitcoin.sipa.be")
     ("dnsseed.bluematt.me")
-    ("dnsseed.bitcoin.dashjr.org")
     ("bitseed.xf2.org");
 }
 
