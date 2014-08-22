@@ -60,18 +60,30 @@ class OriginNotReady: public std::exception
     }
 };
 
+class Notifier {
+public:
+    virtual int operator()(std::string message) = 0;
+};
+
 typedef std::set<std::string> Commands;
 
 class Filter
 {
 public:
+    Filter(Notifier& notifier) : _notifier(notifier) {}
     /// The actual filter call - you need to overload this to implement a filter
     virtual bool operator()(Peer* origin, Message& msg) = 0;
     
     /// Returns a list of commands that are processed by this filter
     virtual Commands commands() { std::set<std::string> c; return c; }
     
+    int notify(std::string message) {
+        return _notifier(message);
+    }
+    
     virtual ~Filter() {}
+private:
+    Notifier& _notifier;
 };
 
 typedef boost::shared_ptr<Filter> filter_ptr;

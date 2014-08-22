@@ -22,20 +22,29 @@
 #include <coinChain/TransactionFilter.h>
 #include <coinChain/FilterHandler.h>
 #include <coinChain/AlertFilter.h>
+#include <coinChain/Alert.h>
 #include <coin/Logger.h>
 
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
+
 #include <signal.h>
+#include <cstdlib>
 
 using namespace std;
 using namespace boost;
 using namespace asio;
 
-Node::Node(const Chain& chain, std::string dataDir, const string& address, const string& port, ip::tcp::endpoint proxy, unsigned int timeout, const string& irc) :
+int NodeNotifier::operator()(std::string message) {
+    return _node.notify(message);
+}
+
+Node::Node(const Chain& chain, std::string dataDir, const string& address, const string& port, ip::tcp::endpoint proxy, unsigned int timeout, const string& irc, string notify) :
     _dataDir(dataDir),
     _fileLock(_dataDir == "" ? "" : _dataDir + "/.lock"),
+    _notifier(*this),
+    _notify(notify),
     _io_service(),
     _acceptor(_io_service),
     _blockChain(chain, _dataDir),
@@ -52,9 +61,10 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     {
     
     //    _endpointPool.loadEndpoints(dataDir);
-    _transactionFilter = filter_ptr(new TransactionFilter(_blockChain));
-    _blockFilter = filter_ptr(new BlockFilter(_blockChain));
-    _shareFilter = filter_ptr(new ShareFilter(_blockChain));
+    _transactionFilter = filter_ptr(new TransactionFilter(_notifier, _blockChain));
+    _blockFilter = filter_ptr(new BlockFilter(_notifier, _blockChain));
+    _shareFilter = filter_ptr(new ShareFilter(_notifier, _blockChain));
+    _alertFilter = filter_ptr(new AlertFilter(_notifier, _blockChain.chain().alert_key(), _blockChain.chain().protocol_version(), getFullClientVersion()));
     
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
     ip::tcp::resolver resolver(_io_service);
@@ -111,6 +121,14 @@ void Node::readBlockFile(string path, int fileno) {
             _blockChain.append(block);
     }
     readBlockFile(path, fileno+1);
+}
+
+int Node::notify(std::string message) {
+    if (_notify.size() && message.size()) {
+        std::string cl = "echo \"" + message + "\"|" + _notify;
+        return std::system(cl.c_str());
+    }
+    return 0;
 }
 
 void Node::verification(Strictness v) {
@@ -200,13 +218,13 @@ void Node::run() {
     //    start_connect();
     
     // Install filters for the messages. First inserted filters are executed first.
-    _messageHandler.installFilter(filter_ptr(new VersionFilter()));
-    _messageHandler.installFilter(filter_ptr(new EndpointFilter(_endpointPool)));
+    _messageHandler.installFilter(filter_ptr(new VersionFilter(_notifier)));
+    _messageHandler.installFilter(filter_ptr(new EndpointFilter(_notifier, _endpointPool)));
     _messageHandler.installFilter(_blockFilter);
     _messageHandler.installFilter(_shareFilter);
     _messageHandler.installFilter(_transactionFilter);
-    _messageHandler.installFilter(filter_ptr(new FilterHandler())); // this only output the alert to stdout
-    _messageHandler.installFilter(filter_ptr(new AlertFilter(_blockChain.chain().alert_key(), _blockChain.chain().protocol_version(), getFullClientVersion()))); // this only output the alert to stdout
+    _messageHandler.installFilter(filter_ptr(new FilterHandler(_notifier))); // this only output the alert to stdout
+    _messageHandler.installFilter(filter_ptr(_alertFilter)); // this only output the alert to stdout
     
     _io_service.run();
 }

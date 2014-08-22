@@ -282,6 +282,15 @@ void BlockFilter::process(const Block& block, Peers peers) {
         log_debug("ProcessBlock: ACCEPTED");
     }
     catch (std::exception &e) {
+        // check if we are getting behind the invalid chain:
+        int invalid = _blockChain.getInvalidHeight();
+        int best = _blockChain.getBestHeight();
+
+        if (_blockChain.getInvalidHeight() - _blockChain.getBestHeight() > 2) {
+            ostringstream oss;
+            oss << "Invalid " << _blockChain.chain().name() << " chain is longer than our best chain : " << invalid << " vs. " << best;
+            notify(oss.str());
+        }
         log_error("append(Block) failed: %s", e.what());
     }
 

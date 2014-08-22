@@ -31,19 +31,9 @@
 
 class Alert;
 
-class COINCHAIN_EXPORT AlertHandler : boost::noncopyable
-{
-    virtual void operator()(const Alert& alert) = 0;
-};
-
-typedef boost::shared_ptr<AlertHandler> alerthandler_ptr;
-
 class COINCHAIN_EXPORT AlertFilter : public Filter {
 public:
-    AlertFilter(const PubKey& pubkey, int version, std::string subversion) : _pub_key(pubkey), _version(version), _sub_version(subversion) {}
-    
-    /// Inhierit from AlertHandler and add it to receive alert notifications.
-    void addHandler(alerthandler_ptr h) { _alertHandlers.insert(h); }
+    AlertFilter(Notifier& notifier, const PubKey& pubkey, int version, std::string subversion) : Filter(notifier), _pub_key(pubkey), _version(version), _sub_version(subversion) {}
     
     virtual bool operator()(Peer* origin, Message& msg);
     
@@ -55,7 +45,6 @@ public:
     }
     
 private:
-    std::set<alerthandler_ptr> _alertHandlers;
     PubKey _pub_key;
     int _version;
     std::string _sub_version;

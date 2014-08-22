@@ -32,6 +32,7 @@ bool AlertFilter::operator() (Peer* origin, Message& msg) {
         is >> alert;
         
         if (alert.processAlert()) {
+            notify(alert.getStatusBar());
             // Relay
             origin->setKnown.insert(alert.getHash());
             Peers peers = origin->getAllPeers();

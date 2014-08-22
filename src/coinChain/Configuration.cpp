@@ -62,6 +62,7 @@ Configuration::Configuration(int argc, char* argv[], const options_description& 
     ("proxy", value<string>(&_proxy), "Connect through socks4 proxy")
     ("timeout", value<unsigned int>(&_timeout)->default_value(5000), "Specify connection timeout (in milliseconds)")
     ("port", value<unsigned short>(&_port)->default_value(0), "Listen on specified port for the p2p protocol")
+    ("notify", value<string>(&_notify), "Notify external command in case of Alerts or Serious issues")
     ("rpcuser", value<string>(&_rpc_user), "Username for JSON-RPC connections")
     ("rpcpassword", value<string>(&_rpc_pass), "Password for JSON-RPC connections")
     ("rpcport", value<unsigned short>(&_rpc_port)->default_value(8332), "Listen for JSON-RPC connections on <arg>")
@@ -95,7 +96,7 @@ Configuration::Configuration(int argc, char* argv[], const options_description& 
     // parse the command line
     variables_map args;
     store(command_line_parser(argc, argv).options(cmdline_options).positional(pos).run(), args);
-    notify(args);
+    ::notify(args);
 
     _chain = &bitcoin; // default
 
@@ -131,7 +132,7 @@ Configuration::Configuration(int argc, char* argv[], const options_description& 
         ifs.open((_data_dir + "/libcoin.conf").c_str());
     if(ifs) {
         store(parse_config_file(ifs, config_file_options, true), args);
-        notify(args);
+        ::notify(args);
     }
     
     if (_log_file.size() && _log_file[0] != '-') {

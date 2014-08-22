@@ -24,7 +24,7 @@
 
 class COINCHAIN_EXPORT FilterHandler : public Filter {
 public:
-    FilterHandler() : Filter() {}
+    FilterHandler(Notifier& notifier) : Filter(notifier) {}
     
     virtual bool operator()(Peer* origin, Message& msg);
     

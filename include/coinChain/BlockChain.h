@@ -116,6 +116,10 @@ public:
         _listeners.push_back(boost::ref(listener));
     }
     
+    /// Check if transaction is confirmed - note - if confirmation is requested further back than we have valid blocks and the tx_id is not found it will throw
+    /// negative numbers are relative to the best height, positive are absolute
+    int confirmations(const uint256& hash, int block = -100) const;
+    
     /// Get transactions from db or memory.
     void getTransaction(const int64_t cnf, Transaction &txn) const;
     void getTransaction(const uint256& hash, Transaction& tx) const;
@@ -234,6 +238,10 @@ public:
     /// Get the best height
     int getBestHeight() const {
         return _tree.height();
+    }
+    
+    int getInvalidHeight() const {
+        return _invalid_tree.height();
     }
     
     /// Get the deepest block height, that have not been purged

@@ -1326,6 +1326,28 @@ void BlockChain::getBlock(const uint256 hash, Block& block) const
     }
 }
 
+int BlockChain::confirmations(const uint256& hash, int from /* = -100*/ ) const {
+    // lock the pool and chain for reading
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+    // first lookup in unspents
+    int count = query<int64_t>("SELECT count FROM Unspents WHERE hash=?", hash);
+    if (!count) {
+        int conf = query<int64_t>("SELECT ocnf FROM Spendings WHERE hash=?", hash);
+        if (conf)
+            count = query<int64_t>("SELECT count FROM Confirmations WHERE cnf = ?");
+    }
+    if (count)
+        return getBestHeight() - count + 2;
+
+    // check our pruning level
+    int prune_base = query<int64_t>("SELECT MIN(count) FROM Confirmations");
+    if (from < 0) from = getBestHeight() + from;
+    if (prune_base - 1 > from)
+        throw runtime_error("Asking for confirmations where no data avail - prune_base is: " + lexical_cast<string>(prune_base - 1));
+
+    return 0;
+}
+
 void BlockChain::getTransaction(const int64_t cnf, Transaction &txn) const {
     Confirmation conf = queryRow<Confirmation(int, unsigned int, int64_t, int64_t)>("SELECT cnf, version, locktime, count FROM Confirmations WHERE cnf = ?", cnf);
 
@@ -1498,7 +1520,8 @@ bool BlockChain::isInvalid(uint256 hash) const {
 void BlockChain::getTransaction(const uint256& hash, Transaction& txn) const {
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
 
-    int64_t cnf = query<int64_t>("SELECT ocnf FROM Unspents WHERE hash = ? LIMIT 1", txn.getHash());
+    int64_t cnf = query<int64_t>("SELECT ocnf FROM Unspents WHERE hash = ? LIMIT 1", hash);
+    if (!cnf) cnf = query<int64_t>("SELECT ocnf FROM Spendings WHERE hash = ? LIMIT 1", hash);
     
     getTransaction(cnf, txn);
 }
@@ -1508,7 +1531,8 @@ void BlockChain::getTransaction(const uint256& hash, Transaction& txn, int64_t& 
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
 
     int64_t cnf = query<int64_t>("SELECT ocnf FROM Unspents WHERE hash = ? LIMIT 1", hash);
-
+    if (!cnf) cnf = query<int64_t>("SELECT ocnf FROM Spendings WHERE hash = ? LIMIT 1", hash);
+    
     getTransaction(cnf, txn, height, time);
 }
 

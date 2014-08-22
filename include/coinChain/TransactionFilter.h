@@ -35,7 +35,7 @@ class COINCHAIN_EXPORT TransactionFilter : public Filter
 {
 public:
 
-    TransactionFilter(BlockChain& bc) : _blockChain(bc) {}
+    TransactionFilter(Notifier& notifier, BlockChain& bc) : Filter(notifier), _blockChain(bc) {}
     
     class Listener : private boost::noncopyable {
     public:

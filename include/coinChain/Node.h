@@ -65,6 +65,17 @@ private:
     boost::interprocess::file_lock _file_lock;
 };
 
+class Node;
+
+class NodeNotifier : public Notifier {
+public:
+    NodeNotifier(Node& node) : _node(node) {}
+    virtual int operator()(std::string message);
+private:
+    Node& _node;
+};
+
+
 /// The top-level class of the btc Node.
 /// Node keeps a list of Peers and accepts and initiates connectes using a list of endpoints
 /// To bootstrap the process a connection to IRC is made - or a lookup in the existing endpoints is used
@@ -79,7 +90,7 @@ class COINCHAIN_EXPORT Node : private boost::noncopyable
 {
 public:
     /// Construct the node to listen on the specified TCP address and port. Further, connect to IRC (irc.lfnet.org)
-    explicit Node(const Chain& chain = bitcoin, std::string dataDir = "", const std::string& address = "0.0.0.0", const std::string& port = "0", boost::asio::ip::tcp::endpoint proxy = boost::asio::ip::tcp::endpoint(), unsigned int timeout = 5000, const std::string& irc = "92.243.23.21");
+    explicit Node(const Chain& chain = bitcoin, std::string dataDir = "", const std::string& address = "0.0.0.0", const std::string& port = "0", boost::asio::ip::tcp::endpoint proxy = boost::asio::ip::tcp::endpoint(), unsigned int timeout = 5000, const std::string& irc = "92.243.23.21", std::string notify = "");
     
     /// Read an old style block file - this is for rapid initialization.
     void readBlockFile(std::string path, int fileno = 0);
@@ -98,6 +109,8 @@ public:
     
     std::string getFullClientVersion() const;
 
+    int notify(std::string message);
+    
     /// Add an endpoint to the endpool (endpoint or "host:port" versions)
     void addPeer(std::string);
     void addPeer(boost::asio::ip::tcp::endpoint ep);
@@ -228,6 +241,12 @@ private:
     /// The lock file
     FileLock _fileLock;
     
+    /// The Notify object, to be passed to filters
+    NodeNotifier _notifier;
+    
+    /// The alert notification system call
+    std::string _notify;
+    
     /// The io_service used to perform asynchronous operations.
     boost::asio::io_service _io_service;
     
@@ -264,6 +283,7 @@ private:
     filter_ptr _transactionFilter;
     filter_ptr _blockFilter;
     filter_ptr _shareFilter;
+    filter_ptr _alertFilter;
 
     unsigned int _connection_timeout; // seconds
 

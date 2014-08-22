@@ -27,7 +27,7 @@ class EndpointPool;
 class COINCHAIN_EXPORT EndpointFilter : public Filter
 {
 public:
-    EndpointFilter(EndpointPool& epp) : _endpointPool(epp) {}
+    EndpointFilter(Notifier& notifier, EndpointPool& epp) : Filter(notifier), _endpointPool(epp) {}
     
     virtual bool operator()(Peer* origin, Message& msg);
     

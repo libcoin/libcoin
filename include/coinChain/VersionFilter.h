@@ -27,7 +27,7 @@ class BlockChain;
 class COINCHAIN_EXPORT VersionFilter : public Filter
 {
 public:
-    VersionFilter() {}
+    VersionFilter(Notifier& notifier) : Filter(notifier) {}
     
     virtual bool operator()(Peer* origin, Message& msg);
 

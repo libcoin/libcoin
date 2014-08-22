@@ -32,7 +32,7 @@ class Inventory;
 
 class COINCHAIN_EXPORT BlockFilter : public Filter {
 public:
-    BlockFilter(BlockChain& bc) : _blockChain(bc) {}
+    BlockFilter(Notifier& notifier, BlockChain& bc) : Filter(notifier), _blockChain(bc) {}
     
     class Listener : private boost::noncopyable {
     public:
@@ -77,7 +77,7 @@ private:
 
 class COINCHAIN_EXPORT ShareFilter : public Filter {
 public:
-    ShareFilter(BlockChain& bc) : _blockChain(bc) {}
+    ShareFilter(Notifier& notifier, BlockChain& bc) : Filter(notifier), _blockChain(bc) {}
     
     class Listener : private boost::noncopyable {
     public:

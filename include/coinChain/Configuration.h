@@ -74,6 +74,9 @@ public:
     std::string data_dir() const {
         return _data_dir;
     }
+    std::string notify() const {
+        return _notify;
+    }
     std::string listen() const {
         return _listen;
     }
@@ -110,6 +113,7 @@ private:
     std::string _config_file;
     std::string _data_dir;
     std::string _log_file;
+    std::string _notify;
     unsigned short _port, _rpc_port;
     std::string _rpc_bind, _rpc_connect, _rpc_user, _rpc_pass;
     std::string _method;
