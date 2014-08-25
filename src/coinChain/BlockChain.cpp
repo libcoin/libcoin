@@ -1330,11 +1330,11 @@ int BlockChain::confirmations(const uint256& hash, int from /* = -100*/ ) const 
     // lock the pool and chain for reading
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
     // first lookup in unspents
-    int count = query<int64_t>("SELECT count FROM Unspents WHERE hash=?", hash);
+    int count = query<int64_t>("SELECT count FROM Unspents WHERE hash=? LIMIT 1", hash);
     if (!count) {
-        int conf = query<int64_t>("SELECT ocnf FROM Spendings WHERE hash=?", hash);
+        int conf = query<int64_t>("SELECT ocnf FROM Spendings WHERE hash=? LIMIT 1", hash);
         if (conf)
-            count = query<int64_t>("SELECT count FROM Confirmations WHERE cnf = ?");
+            count = query<int64_t>("SELECT count FROM Confirmations WHERE cnf = ?", conf);
     }
     if (count)
         return getBestHeight() - count + 2;
