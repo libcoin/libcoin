@@ -133,13 +133,13 @@ std::ostream& operator<<(std::ostream& os, const KeyEnvelope& envelope) {
     Bio bio;
     if (envelope.key().isPrivate()) {
         string name = (envelope.named() ? envelope.name() : string("EC")) + " PRIVATE KEY";
-        int success = PEM_ASN1_write_bio((i2d_of_void *)(&i2d_ECPrivateKey), name.c_str(), bio.get(), (void*)eckey, NULL, NULL, 0, NULL, NULL);
+        int success = PEM_ASN1_write_bio((i2d_of_void *)(&i2d_ECPrivateKey), name.c_str(), bio.get(), (char*)eckey, NULL, NULL, 0, NULL, NULL);
         if (!success)
             throw runtime_error("Failed saving " + name);
     }
     else { // assuming public key
         string name = (envelope.named() ? envelope.name() : string("EC")) + " PUBLIC KEY";
-        int success = PEM_ASN1_write_bio((i2d_of_void *)(&i2d_EC_PUBKEY), name.c_str(), bio.get(), (void*)eckey, NULL, NULL, 0, NULL, NULL);
+        int success = PEM_ASN1_write_bio((i2d_of_void *)(&i2d_EC_PUBKEY), name.c_str(), bio.get(), (char*)eckey, NULL, NULL, 0, NULL, NULL);
         if (!success)
             throw runtime_error("Failed saving " + name);
     }
