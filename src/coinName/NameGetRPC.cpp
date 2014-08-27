@@ -194,7 +194,7 @@ NameFilter::operator() (const json_spirit::Array& params, bool fHelp)
     {
       json_spirit::Object stats;
       stats.push_back (json_spirit::Pair ("blocks", chain.getBestHeight ()));
-      stats.push_back (json_spirit::Pair ("count", res.size ()));
+      stats.push_back (json_spirit::Pair ("count", int (res.size ())));
       return stats;
     }
 
