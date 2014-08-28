@@ -28,4 +28,4 @@ Cheat sheet for Ubuntu:
 * sudo make install
 
 On windows separate building instructions can be found online:
-http://github.com/ceptacle/libcoin/wiki/Windows-build
+https://github.com/libcoin/libcoin/wiki/Windows-build
