@@ -402,12 +402,14 @@ public:
     }
 };
 
+/// Monotonic will return a strictly increasing ns resolution timer, but for s/ms/us two consecutive calls can return the same number (but never a smaller one)
+
 class Monotonic {
 public:
     inline static int s() {
         static int last = 0;
         int t = UnixTime::s();
-        if (t <= last)
+        if (t < last)
             t = ++last;
         else
             last = t;
@@ -416,7 +418,7 @@ public:
     inline static int64_t ms() {
         static int64_t last = 0;
         int64_t t = UnixTime::ms();
-        if (t <= last)
+        if (t < last)
             t = ++last;
         else
             last = t;
@@ -425,7 +427,7 @@ public:
     inline static int64_t us() {
         static int64_t last = 0;
         int64_t t = UnixTime::us();
-        if (t <= last)
+        if (t < last)
             t = ++last;
         else
             last = t;
