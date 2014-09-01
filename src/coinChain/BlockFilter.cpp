@@ -134,7 +134,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                 // When this block is requested, we'll send an inv that'll make them
                 // getblocks the next batch of inventory.
                 log_debug("  getblocks stopping at limit %d %s (%u bytes)", height, hash.toString().substr(0,20).c_str(), nBytes);
-                origin->hashContinue = hash;
+                origin->setContinue(hash);
                 break;
             }
         }
@@ -204,19 +204,19 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                         for (size_t i = 0; i < merkleBlock.getNumFilteredTransactions(); ++i) {
                             const Transaction& txn = block.getTransaction(merkleBlock.getTransactionBlockIndex(i));
                             Inventory inv(txn);
-                            if (!origin->setInventoryKnown.count(inv))
+                            if (!origin->known(inv))
                                 origin->push(inv);
                         }
                     }
                     // Trigger them to send a getblocks request for the next batch of inventory
-                    if (inv.getHash() == origin->hashContinue) {
+                    if (inv.getHash() == origin->getContinue()) {
                         // Bypass PushInventory, this must send even if redundant,
                         // and we want it right after the last block so they don't
                         // wait for other stuff first.
                         vector<Inventory> vInv;
                         vInv.push_back(Inventory(MSG_BLOCK, _blockChain.getBestChain()));
                         origin->PushMessage("inv", vInv);
-                        origin->hashContinue = 0;
+                        origin->setContinue(uint256(0));
                     }
                 }
             }

@@ -38,7 +38,7 @@ Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, Mes
 //    fNetworkNode = false;
     _successfullyConnected = false;
     _disconnect = false;
-    hashContinue = 0;
+    _continue = 0;
     locatorLastGetBlocksBegin.SetNull();
     hashLastGetBlocksEnd = 0;
     _startingHeight = 0;
@@ -269,10 +269,10 @@ void Peer::reply() {
 
 void Peer::trickle() {
     vector<Endpoint> vAddr;
-    vAddr.reserve(vAddrToSend.size());
-    BOOST_FOREACH(const Endpoint& addr, vAddrToSend) {
+    vAddr.reserve(_endpointBuffer.size());
+    BOOST_FOREACH(const Endpoint& addr, _endpointBuffer) {
         // returns true if wasn't already contained in the set
-        if (setAddrKnown.insert(addr).second) {
+        if (_knownEndpoints.insert(addr).second) {
             vAddr.push_back(addr);
             // receiver rejects addr messages larger than 1000
             if (vAddr.size() >= 1000) {
@@ -281,7 +281,7 @@ void Peer::trickle() {
             }
         }
     }
-    vAddrToSend.clear();
+    _endpointBuffer.clear();
     if (!vAddr.empty())
         PushMessage("addr", vAddr);
     
@@ -289,11 +289,11 @@ void Peer::trickle() {
     vector<Inventory> vInv;
     vInv.reserve(vInventoryToSend.size());
     BOOST_FOREACH(const Inventory& inv, vInventoryToSend) {
-        if (setInventoryKnown.count(inv))
+        if (_knownInventory.count(inv))
             continue;
         
         // returns true if wasn't already contained in the set
-        if (setInventoryKnown.insert(inv).second) {
+        if (_knownInventory.insert(inv).second) {
             vInv.push_back(inv);
             if (vInv.size() >= 1000) {
                 PushMessage("inv", vInv);
@@ -311,7 +311,7 @@ void Peer::broadcast() {
     vInv.reserve(vInventoryToSend.size());
     vInvWait.reserve(vInventoryToSend.size());
     BOOST_FOREACH(const Inventory& inv, vInventoryToSend) {
-        if (setInventoryKnown.count(inv))
+        if (_knownInventory.count(inv))
             continue;
         
         if (inv.getType() == MSG_TX) {
@@ -329,7 +329,7 @@ void Peer::broadcast() {
         }
         
         // returns true if wasn't already contained in the set
-        if (setInventoryKnown.insert(inv).second) {
+        if (_knownInventory.insert(inv).second) {
             vInv.push_back(inv);
             if (vInv.size() >= 1000) {
                 PushMessage("inv", vInv);
@@ -369,23 +369,23 @@ void Peer::successfullyConnected() {
 }
 
 void Peer::AddAddressKnown(const Endpoint& addr) {
-    setAddrKnown.insert(addr);
+    _knownEndpoints.insert(addr);
 }
 
 void Peer::PushAddress(const Endpoint& addr) {
     // Known checking here is only to save space from duplicates.
     // SendMessages will filter it again for knowns that were added
     // after addresses were pushed.
-    if (addr.isValid() && !setAddrKnown.count(addr))
-        vAddrToSend.push_back(addr);
+    if (addr.isValid() && !_knownEndpoints.count(addr))
+        _endpointBuffer.push_back(addr);
 }
 
 void Peer::AddInventoryKnown(const Inventory& inv) {
-    setInventoryKnown.insert(inv);
+    _knownInventory.insert(inv);
 }
 
 void Peer::push(const Inventory& inv) {
-    if (!setInventoryKnown.count(inv)) {
+    if (!_knownInventory.count(inv)) {
         vInventoryToSend.push_back(inv);
     }
 }

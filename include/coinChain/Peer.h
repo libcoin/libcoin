@@ -97,6 +97,30 @@ public:
         return (_version != 0);
     }
     
+    bool alert(uint256 hash) {
+        return _knownAlerts.insert(hash).second;
+    }
+    
+    bool known(const Inventory& inv) const {
+        return _knownInventory.count(inv);
+    }
+    
+    void forgetEndpoints() {
+        _knownEndpoints.clear();
+    }
+    
+    void clearEndpoints() {
+        _endpointBuffer.clear();
+    }
+    
+    uint256 getContinue() const {
+        return _continue;
+    }
+    
+    void setContinue(uint256 hash) {
+        _continue = hash;
+    }
+    
 private:
     void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
     void handle_write(const boost::system::error_code& e, std::size_t bytes_transferred);
@@ -116,20 +140,20 @@ public:
 //    bool fNetworkNode;
     
     BloomFilter filter;
+    bool fGetAddr;
     
-public:
-    uint256 hashContinue;
+private:
+    uint256 _continue;
     BlockLocator locatorLastGetBlocksBegin;
     uint256 hashLastGetBlocksEnd;
     
     // flood relay
-    std::vector<Endpoint> vAddrToSend;
-    std::set<Endpoint> setAddrKnown;
-    bool fGetAddr;
-    std::set<uint256> setKnown;
+    std::vector<Endpoint> _endpointBuffer;
+    std::set<Endpoint> _knownEndpoints;
+    std::set<uint256> _knownAlerts;
     
     // inventory based relay
-    std::set<Inventory> setInventoryKnown;
+    std::set<Inventory> _knownInventory;
     std::vector<Inventory> vInventoryToSend;    
 public:
         

@@ -94,7 +94,7 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
     }
     else if (msg.command() == "getaddr") {
         // Nodes rebroadcast an addr every 24 hours
-        origin->vAddrToSend.clear();
+        origin->clearEndpoints();
         set<Endpoint> endpoints = _endpointPool.getRecent(3*60*60, 2500);
         for (set<Endpoint>::iterator ep = endpoints.begin(); ep != endpoints.end(); ++ep)
             origin->PushAddress(*ep);
@@ -148,7 +148,7 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
     if (UnixTime::s() - nLastRebroadcast > 24 * 60 * 60) {
         nLastRebroadcast = UnixTime::s();
         // Periodically clear setAddrKnown to allow refresh broadcasts
-        origin->setAddrKnown.clear();
+        origin->forgetEndpoints();
         
         // Rebroadcast our address
         if (_endpointPool.getLocal().isRoutable() && origin->getProxy()) {

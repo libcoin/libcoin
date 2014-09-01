@@ -34,12 +34,12 @@ bool AlertFilter::operator() (Peer* origin, Message& msg) {
         if (alert.processAlert()) {
             notify(alert.getStatusBar());
             // Relay
-            origin->setKnown.insert(alert.getHash());
+            origin->alert(alert.getHash());
             Peers peers = origin->getAllPeers();
             if (alert.isInEffect()) {
                 for (Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer) {
                     // returns true if wasn't already contained in the set
-                    if ((*peer)->setKnown.insert(alert.getHash()).second) {
+                    if ((*peer)->alert(alert.getHash())) {
                         if (alert.appliesTo((*peer)->version(), (*peer)->sub_version()) ||
                             alert.appliesTo(_version, _sub_version) ||
                             GetAdjustedTime() < alert.until()) {
@@ -55,7 +55,7 @@ bool AlertFilter::operator() (Peer* origin, Message& msg) {
             BOOST_FOREACH(PAIRTYPE(const uint256, Alert)& item, mapAlerts) {
                 const Alert& alert = item.second;
                 if (!alert.isInEffect()) {
-                    if (origin->setKnown.insert(alert.getHash()).second) {
+                    if (origin->alert(alert.getHash())) {
                         if (alert.appliesTo(origin->version(), origin->sub_version()) || alert.appliesTo(_version, _sub_version) || GetAdjustedTime() < alert.until())
                             origin->PushMessage("alert", alert);
                     }

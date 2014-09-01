@@ -490,7 +490,7 @@ int Node::peerPenetration(const uint256 hash) const {
     size_t count = 0;
     Peers peers = _peerManager.getAllPeers();
     for(Peers::iterator p = peers.begin(); p != peers.end(); ++p)
-        if ((*p)->setInventoryKnown.count(inv)) count++;
+        if ((*p)->known(inv)) count++;
     return count;
 }
 
