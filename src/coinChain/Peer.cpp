@@ -162,11 +162,11 @@ void Peer::show_activity(const system::error_code& e) {
                 PushMessage("ping");
             flush();
         }
-        _suicide.expires_from_now(posix_time::seconds(_heartbeat_timeout)); // show activity each 30 minutes
-        _suicide.async_wait(boost::bind(&Peer::show_activity, this, asio::placeholders::error));
+        _keep_alive.expires_from_now(posix_time::seconds(_heartbeat_timeout)); // show activity each 30 minutes
+        _keep_alive.async_wait(boost::bind(&Peer::show_activity, this, asio::placeholders::error));
     }
     else if (e != error::operation_aborted) {
-        log_info("Boost deadline timer error in Peer: %s\n", e.message().c_str());
+        log_info("Boost keep alive timer error in Peer: %s\n", e.message().c_str());
     }
     
     // we ignore abort errors - they are generated due to timer cancels
