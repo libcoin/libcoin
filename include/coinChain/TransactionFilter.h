@@ -93,7 +93,7 @@ private:
     Expiration _relayExpiration;
     
 //    inline void relayInventory(const Peers& peers, const Inventory& inv);
-    void relay(const Peers& peers, const Transaction& txn);
+    void relay(const Peers& peers, const Transaction& txn, bool force);
 
 //    template<typename T> void relayMessage(const Peers& peers, const Inventory& inv, const T& a);
 };

@@ -450,8 +450,7 @@ void Node::handle_stop() {
     _io_service.stop();
 }
 
-void Node::post(const Transaction& tx, size_t n)
-{ 
+void Node::post(const Transaction& tx, size_t n) {
     Peers peers = _peerManager.getAllPeers();
     Peers some;
     size_t s = peers.size();

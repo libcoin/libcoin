@@ -39,7 +39,8 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
 
         origin->AddInventoryKnown(inv);
         
-        process(tx, origin->getAllPeers());
+        if (!_blockChain.haveTx(inv.getHash()))
+            process(tx, origin->getAllPeers());
     }
     else if (msg.command() == "getdata") {
         vector<Inventory> vInv;
@@ -107,7 +108,7 @@ void TransactionFilter::process(Transaction& txn, Peers peers) {
     
     if (_blockChain.haveTx(inv.getHash())) {
         // we have it already - just relay and exit
-        relay(peers, txn);
+        relay(peers, txn, true);
         return;
     }
     //    bool fMissingInputs = false;
@@ -117,7 +118,7 @@ void TransactionFilter::process(Transaction& txn, Peers peers) {
 
         for(Listeners::iterator listener = _listeners.begin(); listener != _listeners.end(); ++listener)
             (*listener->get())(txn);
-        relay(peers, txn);
+        relay(peers, txn, false);
         workQueue.push_back(inv.getHash());
         
         // Recursively process any orphan transactions that depended on this one
@@ -135,7 +136,7 @@ void TransactionFilter::process(Transaction& txn, Peers peers) {
                         (*listener->get())(tx);
                     log_debug("   accepted orphan tx %s", inv.getHash().toString().substr(0,10).c_str());
                     //                        SyncWithWallets(tx, NULL, true);
-                    relay(peers, tx);
+                    relay(peers, tx, false);
                     workQueue.push_back(inv.getHash());
                 }
                 catch (...) {
@@ -197,9 +198,10 @@ bool TransactionFilter::have(const Inventory& inv) {
         return true;
 }
 
-void TransactionFilter::relay(const Peers& peers, const Transaction& txn) {
+void TransactionFilter::relay(const Peers& peers, const Transaction& txn, bool force) {
     // Expire old relay messages
-    while (!_relayExpiration.empty() && _relayExpiration.front().first < UnixTime::s()) {
+    int now = UnixTime::s();
+    while (!_relayExpiration.empty() && _relayExpiration.front().first < now) {
         _relay.erase(_relayExpiration.front().second);
         _relayExpiration.pop_front();
     }
@@ -208,9 +210,10 @@ void TransactionFilter::relay(const Peers& peers, const Transaction& txn) {
     
     // Save original serialized message so newer versions are preserved
     _relay[inv] = txn;
-    _relayExpiration.push_back(std::make_pair(UnixTime::s() + 15 * 60, inv));
+    _relayExpiration.push_back(std::make_pair(UnixTime::s() + 180 * 60, inv));
     
     // Put on lists to offer to the other nodes
-    for(Peers::const_iterator peer = peers.begin(); peer != peers.end(); ++peer)
-        (*peer)->push(inv);
+    for(Peers::const_iterator peer = peers.begin(); peer != peers.end(); ++peer) {
+        (*peer)->push(inv, force);
+    }
 }

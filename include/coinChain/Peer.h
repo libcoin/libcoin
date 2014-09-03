@@ -163,7 +163,7 @@ public:
     
     void AddInventoryKnown(const Inventory& inv);
     
-    void push(const Inventory& inv);
+    void push(const Inventory& inv, bool force = false);
     void push(const Transaction& inv);
     
     void push(const std::string& command, const std::string& str);

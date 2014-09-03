@@ -120,7 +120,8 @@ void Peer::start() {
     // Be shy and don't send version until we hear
     if (!_inbound) {
         PushVersion();
-        _socket.async_write_some(_send.data(), boost::bind(&Peer::handle_write, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
+        flush();
+//        _socket.async_write_some(_send.data(), boost::bind(&Peer::handle_write, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
 
     _suicide.expires_from_now(posix_time::seconds(_initial_timeout)); // no activity the first 60 seconds means disconnect
@@ -159,6 +160,7 @@ void Peer::show_activity(const system::error_code& e) {
                 PushMessage("ping", nonce);
             else
                 PushMessage("ping");
+            flush();
         }
         _suicide.expires_from_now(posix_time::seconds(_heartbeat_timeout)); // show activity each 30 minutes
         _suicide.async_wait(boost::bind(&Peer::show_activity, this, asio::placeholders::error));
@@ -287,22 +289,31 @@ void Peer::trickle() {
     
     //      Message: inventory
     vector<Inventory> vInv;
-    vInv.reserve(vInventoryToSend.size());
+//    vInv.reserve(vInventoryToSend.size());
+    vector<int> sent;
+    int i = 0;
     BOOST_FOREACH(const Inventory& inv, vInventoryToSend) {
-        if (_knownInventory.count(inv))
+        if (_knownInventory.count(inv)) {
+            sent.push_back(i);
             continue;
+        }
         
         // returns true if wasn't already contained in the set
         if (_knownInventory.insert(inv).second) {
             vInv.push_back(inv);
+            sent.push_back(i);
             if (vInv.size() >= 1000) {
                 PushMessage("inv", vInv);
                 vInv.clear();
             }
         }
+        i++;
     }
     if (!vInv.empty())
         PushMessage("inv", vInv);
+    
+    for (vector<int>::const_reverse_iterator r = sent.rbegin(); r != sent.rend(); ++r)
+        vInventoryToSend.erase(vInventoryToSend.begin() + *r);
 }
 
 void Peer::broadcast() {
@@ -384,10 +395,12 @@ void Peer::AddInventoryKnown(const Inventory& inv) {
     _knownInventory.insert(inv);
 }
 
-void Peer::push(const Inventory& inv) {
-    if (!_knownInventory.count(inv)) {
+void Peer::push(const Inventory& inv, bool force) {
+    if (force || !_knownInventory.count(inv)) {
         vInventoryToSend.push_back(inv);
     }
+    if (force)
+        flush();
 }
 
 void Peer::push(const Transaction& txn) {
