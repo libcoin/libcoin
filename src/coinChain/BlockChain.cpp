@@ -349,8 +349,8 @@ std::pair<Claims::Spents, int64_t> BlockChain::try_claim(const Transaction& txn,
                     if (!coin)
                         throw Reject("Spent coin not found !");
                     
-                    if (coin.count < 0 && _tree.count() + coin.count < _chain.maturity(_tree.height()))
-                        throw Error(cformat("Tried to spend immature (%d confirmations) coinbase: %s", _tree.count() + coin.count, hash.toString()).text());
+                    if (coin.count < 0 && _tree.count() + coin.count + 1 < _chain.maturity(_tree.height()))
+                        throw Error(cformat("Tried to spend immature (%d confirmations) coinbase: %s", _tree.count() + coin.count + 1, hash.toString()).text());
                 }
                 else {
                     Spendables::Iterator is = _spendables.find(input.prevout());
