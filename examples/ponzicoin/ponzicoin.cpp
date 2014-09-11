@@ -65,7 +65,7 @@ public:
     }
 
     virtual const Magic& magic() const { return _magic; };
-    virtual short defaultPort() const { return 5247; }
+    virtual unsigned short defaultPort() const { return 5247; }
     
     virtual std::string ircChannel() const { return "ponzicoin"; }
     virtual unsigned int ircChannels() const { return 1; } // number of groups to try (100 for bitcoin, 2 for litecoin)
