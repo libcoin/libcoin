@@ -960,11 +960,23 @@ DogecoinChain::DogecoinChain() : Chain("dogecoin", "DGE", 8), _genesis("0x1a91e3
     (     0, uint256("0x1a91e3dace36e2be3bf030a65679fe821aa1d6ef92e7c9902eb318182c355691"))
     ( 42279, uint256("0x8444c3ef39a46222e87584ef956ad2c9ef401578bd8b51e8e4b9a86ec3134d3a"))
     ( 42400, uint256("0x557bb7c17ed9e6d4a6f9361cfddf7c1fc0bdc394af7019167442b41f507252b4"))
+    ( 104679, uint256("0x35eb87ae90d44b98898fec8c39577b76cb1eb08e1261cfc10706c8ce9a1d01cf"))
+    ( 128370, uint256("0x3f9265c94cab7dc3bd6a2ad2fb26c8845cb41cff437e0a75ae006997b4974be6"))
+    ( 145000, uint256("0xcc47cae70d7c5c92828d3214a266331dde59087d4a39071fa76ddfff9b7bde72"))
+    ( 165393, uint256("0x7154efb4009e18c1c6a6a79fc6015f48502bcd0a1edd9c20e44cd7cbbe2eeef1"))
+    ( 186774, uint256("0x3c712c49b34a5f34d4b963750d6ba02b73e8a938d2ee415dcda141d89f5cb23a"))
+    ( 199992, uint256("0x3408ff829b7104eebaf61fd2ba2203ef2a43af38b95b353e992ef48f00ebb190"))
+    ( 225000, uint256("be148d9c5eab4a33392a6367198796784479720d06bfdd07bd547fe934eea15a"))
+    ( 250000, uint256("0e4bcfe8d970979f7e30e2809ab51908d435677998cf759169407824d4f36460"))
+    ( 270639, uint256("c587a36dd4f60725b9dd01d99694799bef111fc584d659f6756ab06d2a90d911"))
+    ( 299742, uint256("1cc89c0c8a58046bf0222fe131c099852bd9af25a80e07922918ef5fb39d6742"))
+    ( 323141, uint256("60c9f919f9b271add6ef5671e9538bad296d79f7fdc6487ba702bf2ba131d31d"))
+    ( 339202, uint256("8c29048df5ae9df38a67ea9470fdd404d281a3a5c6f33080cd5bf14aa496ab03"))
     ;
     
     _seeds = boost::assign::list_of
-    ("seed.dogecoin.com");
-
+    ("seed.dogecoin.com")
+    ("seed.mophides.com");
 }
 
 unsigned int DogecoinChain::totalBlocksEstimate() const {
@@ -1051,25 +1063,49 @@ unsigned int ComputeMinWork(unsigned int nBase, int64_t nTime) {
 }
 */
 const bool DogecoinChain::checkProofOfWork(const Block& block) const {
+
     uint256 hash = getPoWHash(block);
     
-    unsigned int nBits = block.getBits();
-    CBigNum bnTarget;
-    bnTarget.SetCompact(nBits);
+    log_trace("Enter %s (block.version = %d)", __FUNCTION__, block.getVersion());
+    // we accept aux pow all the time - the lockins will ensure we get the right chain
+    // Prevent same work from being submitted twice:
+    // - this block must have our chain ID
+    // - parent block must not have the same chain ID (see CAuxPow::Check)
+    // - index of this chain in chain merkle tree must be pre-determined (see CAuxPow::Check)
+    //    if (nHeight != INT_MAX && GetChainID() != GetOurChainID())
+    //    return error("CheckProofOfWork() : block does not have our chain ID");
     
-    // Check range
-    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit())) {
+    CBigNum target;
+    target.SetCompact(block.getBits());
+    if (proofOfWorkLimit() != 0 && (target <= 0 || target > proofOfWorkLimit())) {
+        cout << target.GetHex() << endl;
+        cout << proofOfWorkLimit().GetHex() << endl;
         log_error("CheckProofOfWork() : nBits below minimum work");
         return false;
     }
     
-    // Check proof of work matches claimed amount
-    if (hash > bnTarget.getuint256()) {
-        log_error("CheckProofOfWork() : hash doesn't match nBits");
-        return false;
+    if (block.getVersion()&BLOCK_VERSION_AUXPOW) {
+        if (!block.getAuxPoW().Check(block.getHash(), block.getVersion()/BLOCK_VERSION_CHAIN_START)) {
+            log_error("CheckProofOfWork() : AUX POW is not valid");
+            return false;
+        }
+        // Check proof of work matches claimed amount
+        if (getPoWHash(block.getAuxPoW().parentBlock) > target.getuint256()) {
+            log_error("CheckProofOfWork() : AUX proof of work failed");
+            return false;
+        }
     }
-    
+    else {
+        // Check proof of work matches claimed amount
+        if (hash > target.getuint256()) {
+            log_error("CheckProofOfWork() : proof of work failed");
+            return false;
+        }
+    }
+    log_trace("Return(true): %s", __FUNCTION__);
     return true;
+
+    
 }
 
 int DogecoinChain::nextWorkRequired(BlockIterator blk) const {
@@ -1169,7 +1205,7 @@ int DogecoinChain::nextWorkRequired(BlockIterator blk) const {
     return bnNew.GetCompact();
 }
 
-const uint256 DogecoinChain::getPoWHash(const Block& block) const {
+const uint256 DogecoinChain::getPoWHash(const BlockHeader& block) const {
     uint256 hash;
     scrypt_1024_1_1_256(BEGIN(block), BEGIN(hash));
     return hash;
@@ -1179,5 +1215,216 @@ const uint256 DogecoinChain::getPoWHash(const Block& block) const {
 const DogecoinChain dogecoin;
 
 RegisterChain<DogecoinChain> g_dogecoin(dogecoin);
+
+DogetestChain::DogetestChain() : Chain("dogetest", "DGT", 8), _genesis("0xbb0a78264637406b6360aad926284d544d7049f45189db5664f3c4d07350559e") {
+    _alert_key = ParseHex("042756726da3c7ef515d89212ee1705023d14be389e25fe15611585661b9a20021908b2b80a3c7200a0139dd2b26946606aab0eef9aa7689a6dc2c7eee237fa834");    _magic[0] = 0xfc; _magic[1] = 0xc1; _magic[2] = 0xb7; _magic[3] = 0xdc; // Litecoin: increase each by adding 2 to bitcoin's value.
+    
+    const char* pszTimestamp = "Nintondo";
+    Transaction txNew;
+    
+    Script signature = Script() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
+    txNew.addInput(Input(Coin(), signature));
+    Script script = Script() << ParseHex("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9") << OP_CHECKSIG;
+    txNew.addOutput(Output(88 * COIN, script));
+    
+    _genesisBlock = Block(1, uint256(0), uint256(0), 1391503289, 0x1e0ffff0, 997879);
+    _genesisBlock.addTransaction(txNew);
+    _genesisBlock.updateMerkleTree(); // genesisBlock
+    assert(_genesisBlock.getHash() == _genesis);
+    
+    _checkpoints = boost::assign::map_list_of
+    (     0, uint256("0xbb0a78264637406b6360aad926284d544d7049f45189db5664f3c4d07350559e"))
+    ( 42279, uint256("0x8444c3ef39a46222e87584ef956ad2c9ef401578bd8b51e8e4b9a86ec3134d3a"))
+    ( 42400, uint256("0x557bb7c17ed9e6d4a6f9361cfddf7c1fc0bdc394af7019167442b41f507252b4"))
+    ;
+    
+    _seeds = boost::assign::list_of
+    ("testdoge-seed.lionservers.de")
+    ("testdoge-seed-static.lionservers.de");
+    
+}
+
+unsigned int DogetestChain::totalBlocksEstimate() const {
+    return _checkpoints.rbegin()->first;
+}
+
+bool DogetestChain::checkPoints(const unsigned int height, const uint256& hash) const {
+    Checkpoints::const_iterator i = _checkpoints.find(height);
+    if (i == _checkpoints.end())
+        return true;
+    
+    return hash == i->second;
+}
+
+const Block& DogetestChain::genesisBlock() const {
+    return _genesisBlock;
+}
+
+const int64_t DogetestChain::subsidy(unsigned int height, uint256 prev) const {
+    if (height == 0) return 88 * COIN;
+    
+    int64_t s = 500000 * COIN;
+    
+    std::string cseed_str = prev.toString().substr(7,7);
+    const char* cseed = cseed_str.c_str();
+    long seed = hex2long(cseed);
+    int rand = generateMTRandom(seed, 999999);
+    int rand1 = 0;
+    
+    if(height < 100000) {
+        s = (1 + rand) * COIN;
+    }
+    else if(height < 145000) {
+        cseed_str = prev.toString().substr(7,7);
+        cseed = cseed_str.c_str();
+        seed = hex2long(cseed);
+        rand1 = generateMTRandom(seed, 499999);
+        s = (1 + rand1) * COIN;
+    }
+    else if(height < 600000) {
+        s >>= (height / 100000);
+    }
+    else {
+        s = 10000 * COIN;
+    }
+    
+    
+    return s;
+}
+
+bool DogetestChain::isStandard(const Transaction& tx) const {
+    // on the test net everything is allowed
+    return true;
+}
+
+const bool DogetestChain::checkProofOfWork(const Block& block) const {
+    uint256 hash = getPoWHash(block);
+    
+    unsigned int nBits = block.getBits();
+    CBigNum bnTarget;
+    bnTarget.SetCompact(nBits);
+    
+    // Check range
+    if (proofOfWorkLimit() != 0 && (bnTarget <= 0 || bnTarget > proofOfWorkLimit())) {
+        log_error("CheckProofOfWork() : nBits below minimum work");
+        return false;
+    }
+    
+    // Check proof of work matches claimed amount
+    if (hash > bnTarget.getuint256()) {
+        log_error("CheckProofOfWork() : hash doesn't match nBits");
+        return false;
+    }
+    
+    return true;
+}
+
+int DogetestChain::nextWorkRequired(BlockIterator blk) const {
+    const int64_t nTargetTimespan = 4 * 60 * 60; // Dogecoin every 4 hours
+    const int64_t nTargetTimespanNEW = 60; // Dogecoin every minute
+    const int64_t nTargetSpacing = 60; // Dogecoin: Every minute
+    const int64_t nInterval = nTargetTimespan / nTargetSpacing;
+    const int64_t nDiffChangeTarget = 145000;
+    
+    unsigned int nProofOfWorkLimit = _genesisBlock.getBits();
+    CBigNum bnProofOfWorkLimit = proofOfWorkLimit();
+    //bnProofOfWorkLimit.SetCompact(nProofOfWorkLimit);
+    int nHeight = blk.count();
+    bool fNewDifficultyProtocol = (nHeight >= nDiffChangeTarget);
+    
+    
+    
+    int64_t retargetTimespan = nTargetTimespan;
+    //    int64_t retargetSpacing = nTargetSpacing;
+    int64_t retargetInterval = nInterval;
+    
+    if (fNewDifficultyProtocol) {
+        retargetInterval = nTargetTimespanNEW / nTargetSpacing;
+        retargetTimespan = nTargetTimespanNEW;
+    }
+    
+    // Genesis block
+    if (blk.height() == 0)
+        return nProofOfWorkLimit;
+    
+    // Only change once per interval
+    if (nHeight % retargetInterval != 0)
+    {
+        return blk->bits;
+    }
+    
+    // Dogecoin: This fixes an issue where a 51% attack can change difficulty at will.
+    // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
+    int blockstogoback = retargetInterval-1;
+    if (nHeight != retargetInterval)
+        blockstogoback = retargetInterval;
+    
+    // Go back by what we want to be 14 days worth of blocks
+    BlockIterator former = blk - blockstogoback;
+    
+    // Limit adjustment step
+    int64_t nActualTimespan = blk->time;
+    nActualTimespan -= former->time;
+    log_debug("  nActualTimespan = %d  before bounds\n", nActualTimespan);
+    
+    CBigNum bnNew;
+    bnNew.SetCompact(blk->bits);
+    
+    if(fNewDifficultyProtocol) //DigiShield implementation - thanks to RealSolid & WDC for this code
+    {
+        // amplitude filter - thanks to daft27 for this code
+        nActualTimespan = retargetTimespan + (nActualTimespan - retargetTimespan)/8;
+        log_debug("DIGISHIELD RETARGET\n");
+        if (nActualTimespan < (retargetTimespan - (retargetTimespan/4)) ) nActualTimespan = (retargetTimespan - (retargetTimespan/4));
+        if (nActualTimespan > (retargetTimespan + (retargetTimespan/2)) ) nActualTimespan = (retargetTimespan + (retargetTimespan/2));
+    }
+    else if (nHeight > 10000) {
+        if (nActualTimespan < nTargetTimespan/4)
+            nActualTimespan = nTargetTimespan/4;
+        if (nActualTimespan > nTargetTimespan*4)
+            nActualTimespan = nTargetTimespan*4;
+    }
+    else if(nHeight > 5000)
+    {
+        if (nActualTimespan < nTargetTimespan/8)
+            nActualTimespan = nTargetTimespan/8;
+        if (nActualTimespan > nTargetTimespan*4)
+            nActualTimespan = nTargetTimespan*4;
+    }
+    else
+    {
+        if (nActualTimespan < nTargetTimespan/16)
+            nActualTimespan = nTargetTimespan/16;
+        if (nActualTimespan > nTargetTimespan*4)
+            nActualTimespan = nTargetTimespan*4;
+    }
+    
+    // Retarget
+    
+    bnNew *= nActualTimespan;
+    bnNew /= retargetTimespan;
+    
+    if (bnNew > bnProofOfWorkLimit)
+        bnNew = bnProofOfWorkLimit;
+    
+    /// debug print
+    log_debug("GetNextWorkRequired RETARGET\n");
+    log_debug("nTargetTimespan = %d    nActualTimespan = %d\n", retargetTimespan, nActualTimespan);
+    log_debug("Before: %08x  %s\n", blk->bits, CBigNum().SetCompact(blk->bits).getuint256().toString().c_str());
+    log_debug("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().toString().c_str());
+    
+    return bnNew.GetCompact();
+}
+
+const uint256 DogetestChain::getPoWHash(const Block& block) const {
+    uint256 hash;
+    scrypt_1024_1_1_256(BEGIN(block), BEGIN(hash));
+    return hash;
+}
+
+
+const DogetestChain dogetest;
+
+RegisterChain<DogetestChain> g_dogetest(dogetest);
 
 const Currency ripplecredits("ripple", "XRP", 6);

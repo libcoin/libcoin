@@ -44,6 +44,7 @@ Configuration::Configuration(int argc, char* argv[], const options_description& 
     ("litecoin", "Run as a litecoin client")
     ("namecoin", "Run as a namecoin client")
     ("dogecoin", "Run as a dogecoin client")
+    ("dogetest", "Run as a dogecoin test client")
     ("ripple", "Run as a ripple client")
     ;
     
@@ -53,7 +54,7 @@ Configuration::Configuration(int argc, char* argv[], const options_description& 
     config.add_options()
     ("verification", value<string>(&verification)->default_value("MINIMAL"), "Specify the signuture verificatin depth: NONE, MINIMAL: last 100 blocks, CHECKPOINT: last checkpoint, FULL")
     ("validation", value<string>(&validation)->default_value("NONE"), "Specify the depth from which MerkleTrie validation hashes are calculated: NONE, MINIMAL: last 100 blocks, CHECKPOINT: last checkpoint, FULL")
-    ("persistence", value<string>(&persistance)->default_value("LAZY"), "Specify the depth of stored blocks: NONE, MINIMAL: last 100 blocks, LAZY: like MINIMAL, but only purge on restart, CHECKPOINT: last checkpoint, FULL")
+    ("persistence", value<string>(&persistance)->default_value("MINIMAL"), "Specify the depth of stored blocks: NONE, MINIMAL: last 100 blocks, LAZY: like MINIMAL, but only purge on restart, CHECKPOINT: last checkpoint, FULL")
     ("searchable", value<bool>(&_searchable)->default_value(true), "Enable indexing of addresses/scripts")
     ("pid", value<string>(), "Specify pid file (default: bitcoind.pid)")
     ("nolisten", "Don't accept connections from outside")

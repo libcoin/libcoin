@@ -494,7 +494,7 @@ Unspent BlockChain::redeem(const Input& input, int iidx, Confirmation iconf) {
         coin = queryRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, count, ocnf FROM Unspents WHERE hash = ? AND idx = ?", input.prevout().hash, input.prevout().index);
 
         if (!coin)
-            throw Reject("Spent coin not found !");
+            throw Reject("Spent coin (" + input.prevout().hash.toString() + ":" + lexical_cast<string>(input.prevout().index) + ") not found !");
 
         if (coin.count < 0 && iconf.count + coin.count < _chain.maturity(-coin.count))
             throw Error("Tried to spend immature coinbase");
@@ -758,7 +758,7 @@ void BlockChain::postTransaction(const Transaction txn, int64_t& fees, int64_t m
         throw Error("Error in transaction: " + hash.toString() + "\n\t" + e.what());
     }
     catch (std::exception& e) {
-        log_error("Error in transaction: %s", hash.toString());
+        log_error("Error in transaction: %s \n\t %s", hash.toString(), e.what());
         throw;
     }
 }
@@ -1060,6 +1060,8 @@ bool BlockChain::checkShare(const Block& share) const {
 // as share means that the block will not be committed (well, unless it is already a valid block)
 void BlockChain::append(const Block &block) {
 
+    int64_t append_time = UnixTime::ns();
+    
     uint256 hash = block.getHash();
 
     bool valid_share = checkShare(block);
@@ -1147,6 +1149,8 @@ void BlockChain::append(const Block &block) {
         if (_purge_depth && !_lazy_purging && blk.count() >= _purge_depth) { // no need to purge during download as we don't store spendings anyway
             query("DELETE FROM Spendings WHERE icnf IN (SELECT cnf FROM Confirmations WHERE count <= ?)", _purge_depth);
             query("DELETE FROM Confirmations WHERE count <= ?", _purge_depth);
+            if (_purge_depth == prev_height-_chain.maturity(prev_height))
+                _purge_depth++;
         }
         
         // Check that the block is conforming to its block version constraints
@@ -1246,9 +1250,13 @@ void BlockChain::append(const Block &block) {
 
     size_t claims_after = _claims.count();
 
+    append_time = UnixTime::ns()-append_time;
+
     log_info("BLOCK: %s", blk->hash.toString());
     log_info("\theight: %d @ %s, txns: %d", prev_height + 1, posix_time::to_simple_string(posix_time::from_time_t(block.getTime())), block.getNumTransactions());
     log_info("\tclaims: %d --> %d (resolved: %d)", claims_before, claims_after, claims_before-claims_after);
+    log_info("\ttime: %d milli seconds", append_time/1000000);
+
     if ((prev_height + 1)%1000 == 0) {
         log_info(statistics());
         log_info(_spendables.statistics());

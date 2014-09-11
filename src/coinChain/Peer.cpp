@@ -356,7 +356,8 @@ void Peer::broadcast() {
 
 void Peer::flush() {
     if (_send.size()) {
-        _socket.async_write_some(_send.data(), boost::bind(&Peer::handle_write, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
+        async_write(_socket, _send.data(), boost::bind(&Peer::handle_write, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
+//        _socket.async_write_some(_send.data(), boost::bind(&Peer::handle_write, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
 }
 
