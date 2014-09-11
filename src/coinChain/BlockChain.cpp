@@ -270,8 +270,20 @@ void BlockChain::purge_depth(int purge_depth) {
     if (purge_depth < _purge_depth)
         log_warn("Requested a purge_depth (Persistance setting) deeper than currently, please re-download the blockchain to enforce this!");
     _purge_depth = purge_depth;
-    query("DELETE FROM Spendings WHERE icnf IN (SELECT cnf FROM Confirmations WHERE count <= ?)", _purge_depth);
-    query("DELETE FROM Confirmations WHERE count <= ?", _purge_depth);
+    int current_depth = query<int64_t>("SELECT CASE WHEN COUNT(*)=0 THEN 0 ELSE MIN(count) END FROM Confirmations");
+    int step = 1;
+    if (_purge_depth - current_depth > 10)
+        step = (_purge_depth - current_depth)/10 + 1;
+    // the following purging might take some time, so doing it in pieces is probably good
+    for (int purge_to = current_depth+step; purge_to <= _purge_depth; purge_to += step) {
+        if (purge_to + step > _purge_depth)
+            purge_to = _purge_depth;
+        log_info("Purging to %d aiming for %d", purge_to, _purge_depth);
+        query("BEGIN --PURGING");
+        query("DELETE FROM Spendings WHERE icnf IN (SELECT cnf FROM Confirmations WHERE count <= ?)", purge_to);
+        query("DELETE FROM Confirmations WHERE count <= ?", purge_to);
+        query("COMMIT --PURGING");
+    }
 }
 
 void BlockChain::validation_depth(int v) {
