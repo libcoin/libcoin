@@ -496,6 +496,7 @@ public:
     virtual bool isStandard(const Transaction& tx) const ;
     virtual const CBigNum proofOfWorkLimit() const { return CBigNum(~uint256(0) >> 20); } // Litecoin: starting difficulty is 1 / 2^12
     virtual const bool checkProofOfWork(const Block& block) const;
+    virtual bool adhere_aux_pow() const { return true; }
     virtual int nextWorkRequired(BlockIterator blk) const;
     //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const;
     virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
