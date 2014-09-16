@@ -16,11 +16,6 @@
 
 #include <coinName/NameGetRPC.h>
 
-#include <coinChain/NodeRPC.h>
-
-#include <coinHTTP/Server.h>
-#include <coinHTTP/RPC.h>
-
 #include <coinName/Names.h>
 
 /* ************************************************************************** */

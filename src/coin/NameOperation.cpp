@@ -84,7 +84,7 @@ bool NameOperation::output(const Output& coin) {
         return true;
     }
     else if (!_name_out.empty() && !dropped.empty())
-        Error("Only one name pr transaction");
+        Error("Only one name per transaction allowed");
     
     return false;
 }

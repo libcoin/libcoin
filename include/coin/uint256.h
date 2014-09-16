@@ -46,10 +46,7 @@ public:
     
     bool operator!() const
     {
-        for (int i = 0; i < WIDTH; i++)
-            if (pn[i] != 0)
-                return false;
-        return true;
+        return isZero ();
     }
 
     const base_uint operator~() const

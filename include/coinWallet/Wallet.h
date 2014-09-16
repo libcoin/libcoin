@@ -98,6 +98,7 @@ public:
     }
 
     const Chain& chain() const { return _blockChain.chain(); }
+    const BlockChain& blockChain() const { return _blockChain; }
     
     /// acceptTransaction is a thread safe way to post transaction to the chain network. It first checks the transaction, if it can be send and then it emits it through the TransactionEmitter that connects to the Node to run a acceptTransaction in the proper thread.
     bool acceptTransaction(const Transaction& tx) {
@@ -221,6 +222,7 @@ public:
     }
     
     bool IsConfirmed(const CWalletTx& tx) const;
+    int getHeight(const CWalletTx& tx) const;
     
     int64_t GetDebit(const Transaction& tx) const
     {

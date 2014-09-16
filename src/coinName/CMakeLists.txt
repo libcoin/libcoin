@@ -13,6 +13,7 @@ SET(TARGET_H
     ${HEADER_PATH}/Export.h
     ${HEADER_PATH}/Names.h
     ${HEADER_PATH}/NameGetRPC.h
+    ${HEADER_PATH}/NameWalletRPC.h
     ${LIBCOIN_CONFIG_HEADER}
 )
 
@@ -22,6 +23,7 @@ SET(TARGET_H
 SET(TARGET_SRC
     Names.cpp
     NameGetRPC.cpp
+    NameWalletRPC.cpp
 
     ${LIBCOIN_VERSIONINFO_RC}
 )

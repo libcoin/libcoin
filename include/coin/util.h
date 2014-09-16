@@ -96,7 +96,7 @@ munlock(((void *)(((size_t)(a)) & (~((PAGESIZE)-1)))),\
 #endif
 
 // This is needed because the foreach macro can't get over the comma in pair<t1, t2>
-#define PAIRTYPE(t1, t2)    pair<t1, t2>
+#define PAIRTYPE(t1, t2)    std::pair<t1, t2>
 
 #ifdef __MACH__
 #define MSG_NOSIGNAL        0
