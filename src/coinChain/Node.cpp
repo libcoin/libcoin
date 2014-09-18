@@ -29,6 +29,8 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 
+#include <algorithm>
+
 #include <signal.h>
 #include <cstdlib>
 
@@ -417,15 +419,15 @@ void Node::accept_or_connect() {
     if (!_new_server) {
         log_debug("Outbound connections are now: %d", _peerManager.getNumOutbound());
         
-        if (_peerManager.getNumOutbound() < _max_outbound) // start_accept will not be called again before we get a read/write error on a socket
+        if (_peerManager.getNumOutbound() < min((size_t) _max_outbound, _connection_list.size())) // start_accept will not be called again before we get a read/write error on a socket
             start_connect();         
     }
 }
 
 void Node::peer_ready(peer_ptr p) {
-    update_persistence();
-    update_validation();
-    update_verification();
+    //update_persistence();
+    //update_validation();
+    //update_verification();
     log_info("PEER: #%d %s %s", (p->inbound())?_peerManager.getNumInbound():_peerManager.getNumOutbound(), p->addr.toString(), (p->inbound())?"inbound":"outbound");
     log_info("\tversion: %d, blocks: %d", p->version(), p->getStartingHeight());
 }
