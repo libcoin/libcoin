@@ -292,6 +292,11 @@ void BlockFilter::process(const Block& block, Peers peers) {
             notify(oss.str());
         }
         log_error("append(Block) failed: %s", e.what());
+        if (_blockChain.getInvalidHeight() - _blockChain.getBestHeight() > 3) {
+            log_error("Invalid chain is longer than ours - exiting");
+            exit(1); // we don't want to
+        }
+
     }
 
     // Relay inventory, but don't relay old inventory during initial block download
