@@ -457,6 +457,9 @@ void Node::post(const Transaction& tx, size_t n) {
     Peers peers = _peerManager.getAllPeers();
     Peers some;
     size_t s = peers.size();
+    log_info("Posting %s to %d peers:", tx.getHash().toString(), s);
+    for (Peers::const_iterator p = peers.begin(); p != peers.end(); ++p)
+        log_info("\t%s", p->get()->toString());
     if (s == 0) {
         log_warn("Cannot post txn: %s as no peers are available, relying on a later repost", tx.getHash().toString());
         return;

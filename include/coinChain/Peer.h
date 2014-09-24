@@ -121,6 +121,12 @@ public:
         _continue = hash;
     }
     
+    std::string toString() const {
+        std::ostringstream os;
+        os << _socket.remote_endpoint().address().to_string() << " : " << version() << " " << sub_version();
+        return os.str();
+    }
+    
 private:
     void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
     void handle_write(const boost::system::error_code& e, std::size_t bytes_transferred);
