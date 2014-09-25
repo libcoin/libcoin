@@ -307,7 +307,7 @@ void Node::updatePeers(const vector<string>& eps) {
 
 Endpoint Node::getCandidate(const set<unsigned int>& not_in) {
     Endpoint ep;
-    endpoints candidates = _connection_list;
+    endpoints candidates;
     for (endpoints::const_iterator candidate = _connection_list.begin(); candidate != _connection_list.end(); ++candidate) {
         if(not_in.count(Endpoint(*candidate).getIP()) == 0) {
             candidates.insert(*candidate);
