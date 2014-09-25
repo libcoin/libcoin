@@ -660,7 +660,7 @@ std::vector<NameDbRow> BlockChain::getNameScan(const std::string& start, unsigne
     return queryColRow<NameDbRow(int64_t, int64_t, Evaluator::Value, Evaluator::Value)>(query, raw_start, cnt);
 }
 
-std::vector<NameDbRow> BlockChain::getNameFilter(const std::string& pattern, unsigned maxage, unsigned from, unsigned nb) const {
+std::vector<NameDbRow> BlockChain::getNameFilter(const std::string& pattern, int maxage, unsigned from, unsigned nb) const {
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
     const Evaluator::Value raw_pattern(pattern.begin(), pattern.end());
 
@@ -671,16 +671,12 @@ std::vector<NameDbRow> BlockChain::getNameFilter(const std::string& pattern, uns
        all later results for a name that was already in the
        result before.  */
 
-    std::ostringstream query;
-    query << "SELECT coin, count, name, value FROM Names WHERE name IN"
-          << "  (SELECT DISTINCT name FROM Names"
-          << "    WHERE REGEXP(name, ?) AND count >= ?"
-          << "    ORDER BY name ASC";
-    if (nb > 0)
-        query << " LIMIT ? OFFSET ?";
-    else
-        assert (from == 0);
-    query << ") ORDER BY name ASC, count DESC";
+    const char* query = "SELECT coin, count, name, value FROM Names WHERE name IN"
+        "  (SELECT DISTINCT name FROM Names"
+        "    WHERE REGEXP(name, ?) AND count >= ?"
+        "    ORDER BY name ASC"
+        "    LIMIT ? OFFSET ?"
+        "  ) ORDER BY name ASC, count DESC";
 
     /* If maxage = 1, we want to check one block back:  So only the
        best one is accepted.  In that case, minimum count that
@@ -692,9 +688,9 @@ std::vector<NameDbRow> BlockChain::getNameFilter(const std::string& pattern, uns
       minHeight = getBestHeight() - maxage + 1;
 
     if (nb > 0)
-        return queryColRow<NameDbRow(int64_t, int64_t, Evaluator::Value, Evaluator::Value)>(query.str().c_str(), raw_pattern, minHeight, nb, from);
+        return queryColRow<NameDbRow(int64_t, int64_t, Evaluator::Value, Evaluator::Value)>(query, raw_pattern, minHeight, nb, from);
 
-    return queryColRow<NameDbRow(int64_t, int64_t, Evaluator::Value, Evaluator::Value)>(query.str().c_str(), raw_pattern, minHeight);
+    return queryColRow<NameDbRow(int64_t, int64_t, Evaluator::Value, Evaluator::Value)>(query, raw_pattern, minHeight, -1, 0);
 }
 
 string BlockChain::getCoinName(int64_t coin) const {

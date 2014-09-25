@@ -283,7 +283,7 @@ public:
     NameDbRow getNameRow(const std::string& name) const;
     std::vector<NameDbRow> getNameHistory(const std::string& name) const;
     std::vector<NameDbRow> getNameScan(const std::string& start, unsigned cnt) const;
-    std::vector<NameDbRow> getNameFilter(const std::string& pattern, unsigned maxage, unsigned from, unsigned nb) const;
+    std::vector<NameDbRow> getNameFilter(const std::string& pattern, int maxage, unsigned from, unsigned nb) const;
     
     /// Get the locator for the best index
     const BlockLocator& getBestLocator() const;
