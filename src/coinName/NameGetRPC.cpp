@@ -156,7 +156,7 @@ NameFilter::operator() (const json_spirit::Array& params, bool fHelp)
     else
         pattern = "";
     
-    unsigned int = 36000;
+    unsigned int maxage = 36000;
     unsigned from = 0, nb = 0;
     if (params.size () >= 2)
         maxage = params[1].get_int ();
