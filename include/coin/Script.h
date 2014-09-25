@@ -717,6 +717,7 @@ public:
         return true;
     }
 
+    bool hasCanonicalPushes() const;
 
     PubKeyHash getAddress(bool allowNames = false) const
     {

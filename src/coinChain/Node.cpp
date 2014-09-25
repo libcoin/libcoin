@@ -375,6 +375,8 @@ void Node::handle_connect(const system::error_code& e) {
     }
     else {
         log_info("Failed connect: \"%s\" to: %s", e.message().c_str(), _new_server->addr.toString().c_str());
+        _new_server.reset();
+        accept_or_connect();
     }
     
     //    _endpointPool.getEndpoint(_new_server->addr.getKey()).setLastTry(GetAdjustedTime());
@@ -382,8 +384,6 @@ void Node::handle_connect(const system::error_code& e) {
     
     // if we have a proxy error - don't reconnect - wait for some action to be taken...
     
-    _new_server.reset();    
-    accept_or_connect();
 }
 
 void Node::start_accept() {
@@ -430,6 +430,8 @@ void Node::peer_ready(peer_ptr p) {
     //update_verification();
     log_info("PEER: #%d %s %s", (p->inbound())?_peerManager.getNumInbound():_peerManager.getNumOutbound(), p->addr.toString(), (p->inbound())?"inbound":"outbound");
     log_info("\tversion: %d, blocks: %d", p->version(), p->getStartingHeight());
+    _new_server.reset();
+    accept_or_connect();
 }
 
 void Node::post_accept_or_connect() {

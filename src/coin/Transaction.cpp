@@ -288,7 +288,7 @@ boost::tribool TransactionEvaluator::eval(opcodetype opcode) {
             
             // Drop the signature, since there's no way for a signature to sign itself
             scriptCode.findAndDelete(Script(vchSig));
-            
+
             bool fSuccess = checkSig(vchSig, vchPubKey, scriptCode);
             
             pop(_stack);

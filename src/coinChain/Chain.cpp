@@ -200,6 +200,10 @@ bool BitcoinChain::isStandard(const Transaction& tx) const {
             log_debug("nonstandard txin, signature is not push only: %s", txin.signature().toString());
             return false;
         }
+        if (!txin.signature().hasCanonicalPushes()) {
+            log_debug("scriptsig-non-canonical-push: %s", txin.signature().toString());
+            return false;
+        }
     }
     BOOST_FOREACH(const Output& txout, tx.getOutputs()) {
         std::vector<std::vector<unsigned char> > solution;

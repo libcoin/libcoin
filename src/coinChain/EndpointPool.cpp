@@ -105,7 +105,7 @@ Endpoint EndpointPool::getCandidate(const set<unsigned int>& not_in, int64_t sta
     for (vector<Endpoint>::const_iterator e = endpoints.begin(); e != endpoints.end(); ++e) {
         bool skip = false;
         for (set<unsigned int>::const_iterator ep = not_in.begin(); ep != not_in.end(); ++ep) {
-            if (e->getIP() == (*ep)) {
+            if (e->address().to_v4().to_ulong() == (*ep)) {
                 skip = true;
                 break;
             }
