@@ -419,7 +419,7 @@ void Node::accept_or_connect() {
     if (!_new_server) {
         log_debug("Outbound connections are now: %d", _peerManager.getNumOutbound());
         
-        if (_peerManager.getNumOutbound() < min((size_t) _max_outbound, _connection_list.size())) // start_accept will not be called again before we get a read/write error on a socket
+        if ((_connection_list.empty() && _peerManager.getNumOutbound() < _max_outbound) || _peerManager.getNumOutbound() <_connection_list.size()) // start_accept will not be called again before we get a read/write error on a socket
             start_connect();         
     }
 }
