@@ -174,9 +174,13 @@ public:
 
     bool IsMine(const Input& txin) const;
     int64_t GetDebit(const Input& txin) const;
-    bool IsMine(const Output& txout) const
+    bool IsMine(const Output& txout, bool allowNames = false) const
     {
-        return ::IsMine(*this, txout.script());
+        Script scriptPubKey = txout.script();
+        if (allowNames)
+            scriptPubKey = scriptPubKey.getWithoutNamePrefix();
+
+        return ::IsMine(*this, scriptPubKey);
     }
     int64_t GetCredit(const Output& txout) const
     {

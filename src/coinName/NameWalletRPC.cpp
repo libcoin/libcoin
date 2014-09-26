@@ -84,7 +84,7 @@ NameList::operator() (const json_spirit::Array& params, bool fHelp)
       json_spirit::Object obj;
       obj.push_back (json_spirit::Pair ("name", name));
       obj.push_back (json_spirit::Pair ("value", value));
-      if (!wallet.IsMine (nameOutput))
+      if (!wallet.IsMine (nameOutput, true))
         obj.push_back (json_spirit::Pair ("transferred", 1));
 
       const PubKeyHash hash = nameOutput.script ().getAddress (true);
