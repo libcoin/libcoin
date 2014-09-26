@@ -32,7 +32,7 @@ template<typename Stream>
 inline unsigned int SerReadWrite(Stream& s, const MerkleTx& obj, int nType, int nVersion, CSerActionSerialize ser_action)
 {
     std::string str = serialize(obj);
-    s.write(&s[0], s.size());
+    s.write(&str[0], str.size());
     return 0;
 }
 
@@ -40,10 +40,10 @@ template<typename Stream>
 inline unsigned int SerReadWrite(Stream& s, MerkleTx& obj, int nType, int nVersion, CSerActionUnserialize ser_action)
 {
     std::istringstream is(s.str());
-    std::streampos p = is.tellg();
+    const std::streampos before = is.tellg();
     is >> obj;
-    p -= is.tellg();
-    s.ignore(p);
+    const std::streampos after = is.tellg();
+    s.ignore(after - before);
     //    ::Unserialize(s, obj, nType, nVersion);
     return 0;
 }
@@ -59,7 +59,7 @@ template<typename Stream>
 inline unsigned int SerReadWrite(Stream& s, const std::vector<MerkleTx>& obj, int nType, int nVersion, CSerActionSerialize ser_action)
 {
     std::string str = serialize(obj);
-    s.write(&s[0], s.size());
+    s.write(&str[0], str.size());
     return 0;
 }
 
@@ -67,10 +67,10 @@ template<typename Stream>
 inline unsigned int SerReadWrite(Stream& s, std::vector<MerkleTx>& obj, int nType, int nVersion, CSerActionUnserialize ser_action)
 {
     std::istringstream is(s.str());
-    std::streampos p = is.tellg();
+    const std::streampos before = is.tellg();
     is >> obj;
-    p -= is.tellg();
-    s.ignore(p);
+    const std::streampos after = is.tellg();
+    s.ignore(after - before);
     //    ::Unserialize(s, obj, nType, nVersion);
     return 0;
 }
