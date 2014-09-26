@@ -92,9 +92,11 @@ NameList::operator() (const json_spirit::Array& params, bool fHelp)
       const std::string addr = c.getAddress (hash).toString ();
       obj.push_back (json_spirit::Pair ("address", addr));
 
-      const int expiresIn = height - bc.getExpirationCount ();
+      /* There's a off-by-one difference between "height" and "count".
+         (Heights start at 0, counts at 1).  Take care of this!  */
+      const int expiresIn = height + 1 - bc.getExpirationCount ();
       obj.push_back (json_spirit::Pair ("expires_in", expiresIn));
-      if (bc.isExpired (height))
+      if (bc.isExpired (height + 1))
         obj.push_back (json_spirit::Pair ("expired", 1));
 
       namesHeight[name] = height;
