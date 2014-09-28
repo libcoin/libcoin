@@ -183,6 +183,15 @@ public:
     
     //    int64_t value(Coin coin) const;
     
+    /// get a list of confirmations belonging to the block with count.
+    std::vector<int64_t> getConfirmations(int count) const;
+    
+    /// get the spent outputs of a transaction - i.e. not the inputs, but the spent ouptuts
+    Outputs getSpentOutputs(int64_t conf) const;
+
+    /// get the outputs created by a transaction
+    Outputs getOutputs(int64_t conf) const;
+    
     /// B L O C K S
         
     /// Query for existence of Block.

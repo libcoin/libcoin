@@ -179,6 +179,10 @@ public:
     /// Subscribe to Block accept notifications
     void subscribe(BlockFilter::listener_ptr listener) { static_cast<BlockFilter*>(_blockFilter.get())->subscribe(listener); }
     
+    /// Subscribe to async block notifications
+    typedef boost::function<bool (int)> AsyncListener;
+    void subscribe(AsyncListener listener) { _async_listeners.push_back(listener); }
+    
     /// Get a handle to the io_service.
     boost::asio::io_service& get_io_service() { return _io_service; }
     
@@ -202,6 +206,9 @@ public:
 
     bool searchable() const { return _blockChain.script_to_unspents(); }
     void searchable(bool s) { _blockChain.script_to_unspents(s); }
+
+    /// Async invocation
+    void handle_block();
     
 private:
     /// Initiate an asynchronous accept operation.
@@ -228,6 +235,8 @@ private:
     /// Handle a request to stop the server.
     void handle_stop();
     
+    void handle_async_block();
+    
     /// Get a candidate to connect to using the internal list of peers.
     Endpoint getCandidate(const std::set<unsigned int>& not_in);
 
@@ -253,6 +262,9 @@ private:
     /// Acceptor used to listen for incoming connections.
     boost::asio::ip::tcp::acceptor _acceptor;
 
+    /// async invocation of block listeners
+    std::vector<AsyncListener> _async_listeners;
+    
     /// The pool of transactions hides the block chain and the transaction database in a simple interface.
     BlockChain _blockChain;
     

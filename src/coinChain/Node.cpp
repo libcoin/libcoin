@@ -38,6 +38,22 @@ using namespace std;
 using namespace boost;
 using namespace asio;
 
+class BlockListener : public BlockFilter::Listener {
+public:
+    BlockListener(Node& node) : BlockFilter::Listener(), _node(node) {}
+    
+    virtual void operator()(const Block& block) {
+        // locate a block that is 6 blocks behind - this is the right block to look in
+        _node.handle_block();
+    }
+    
+    virtual ~BlockListener() {}
+    
+private:
+    Node& _node;
+};
+
+
 int NodeNotifier::operator()(std::string message) {
     return _node.notify(message);
 }
@@ -68,7 +84,9 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     _shareFilter = filter_ptr(new ShareFilter(_notifier, _blockChain));
     _alertFilter = filter_ptr(new AlertFilter(_notifier, _blockChain.chain().alert_key(), _blockChain.chain().protocol_version(), getFullClientVersion()));
     
-    // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
+        subscribe(BlockFilter::listener_ptr(new BlockListener(*this)));
+
+        // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
     ip::tcp::resolver resolver(_io_service);
 
         if (address.size()) {
@@ -367,7 +385,29 @@ void Node::check_deadline(const boost::system::error_code& e) {
     }
 }
 
-void Node::handle_connect(const system::error_code& e) {    
+void Node::handle_block() {
+    int height = _blockChain.getBestHeight();
+    int median = _peerManager.getPeerMedianNumBlocks();
+    
+    // if we are up to date invoke
+    if (height >= median) {
+        _io_service.post(boost::bind(&Node::handle_async_block, this));
+    }
+}
+
+void Node::handle_async_block() {
+    int count = _blockChain.getBestHeight()+1;
+    
+    bool done = true;
+    for (vector<AsyncListener>::const_iterator l = _async_listeners.begin(); l != _async_listeners.end(); ++l) {
+        done &= !(*l)(count);
+    }
+    
+    if (!done)
+        handle_block();
+}
+
+void Node::handle_connect(const system::error_code& e) {
     _connection_deadline.cancel(); // cancel the deadline timer //expires_at(posix_time::pos_infin);
     
     if (!e && _new_server->socket().is_open()) {

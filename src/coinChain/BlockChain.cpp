@@ -1368,7 +1368,7 @@ void BlockChain::getTransaction(const int64_t cnf, Transaction &txn) const {
     Confirmation conf = queryRow<Confirmation(int, unsigned int, int64_t, int64_t)>("SELECT cnf, version, locktime, count FROM Confirmations WHERE cnf = ?", cnf);
 
     Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY iidx", cnf);
-    Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1 ORDER BY idx ASC);", cnf);
+    Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1 ORDER BY idx ASC)", cnf);
     txn = conf;
     txn.setInputs(inputs);
     txn.setOutputs(outputs);
@@ -1481,6 +1481,18 @@ bool BlockChain::getCoinById(int64_t id, Unspent& res, int64_t count) const
     res = queryRow<Unspent(int64_t, uint256, unsigned int, int64_t, Script, int64_t, int64_t)>("SELECT coin, hash, idx, value, script, ?, ocnf FROM Spendings WHERE coin = ?", count, id);
 
     return res.is_valid ();
+}
+
+std::vector<int64_t> BlockChain::getConfirmations(int count) const {
+    return queryCol<int64_t>("SELECT cnf FROM Confirmations WHERE count = ?", count);
+}
+
+Outputs BlockChain::getSpentOutputs(int64_t conf) const {
+    return queryColRow<Output(int64_t, Script)>("SELECT value, script FROM Spendings WHERE icnf = ? ORDER BY iidx", conf, conf);
+}
+
+Outputs BlockChain::getOutputs(int64_t conf) const {
+    return queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1 ORDER BY idx ASC)");
 }
 
 
