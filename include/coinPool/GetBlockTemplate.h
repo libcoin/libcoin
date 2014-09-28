@@ -73,8 +73,8 @@ public:
     
     
     GetBlockTemplate(Pool& pool, size_t claim_threshold = 50) : PoolMethod(pool), _txn_listener(new TransactionListener(*this)), _block_listener(new BlockListener(*this)), _claim_threshold(claim_threshold)  {
-        _pool.node().subscribe(_txn_listener);
-        _pool.node().subscribe(_block_listener);
+        _pool.node().subscribe((TransactionFilter::listener_ptr) _txn_listener);
+        _pool.node().subscribe((BlockFilter::listener_ptr) _block_listener);
     }
     
     /// dispatch installs a transaction filter that, after 5 transactions will call the handler
