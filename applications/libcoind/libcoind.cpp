@@ -82,18 +82,6 @@ int main(int argc, char* argv[])
         
         // If we have params on the cmdline we run as a command line client contacting a server
         if (conf.method() != "") {
-            if (conf.method() == "help") {
-                cout << "Usage: " << argv[0] << " [options] [rpc-command param1 param2 ...]\n";
-                cout << conf << "\n";
-                cout << "If no rpc-command is specified, " << argv[0] << " start up as a daemon, otherwise it offers commandline access to a running instance\n";
-                return 1;
-            }
-            
-            if (conf.method() == "version") {
-                cout << argv[0] << " version is: " << FormatVersion(LIBRARY_VERSION) << "\n";
-                return 1;
-            }
-
             // create URL
             string url = conf.url();
             Client client;
@@ -120,6 +108,19 @@ int main(int argc, char* argv[])
             }
         }
         
+        if (conf.help()) {
+                cout << "Usage: " << argv[0] << " [options] [rpc-command param1 param2 ...]\n";
+                cout << conf << "\n";
+                cout << "If no rpc-command is specified, " << argv[0] << " start up as a daemon, otherwise it offers commandline access to a running instance\n";
+                return 1;
+        }
+            
+        if (conf.version()) {
+                cout << argv[0] << " version is: " << FormatVersion(LIBRARY_VERSION) << "\n";
+                return 1;
+        }
+        
+        
         // Else we start the bitcoin node and server!
 
         asio::ip::tcp::endpoint proxy_server;
@@ -130,7 +131,7 @@ int main(int argc, char* argv[])
             if(host_port.size() < 2) host_port.push_back("1080"); 
             proxy_server = asio::ip::tcp::endpoint(asio::ip::address_v4::from_string(host_port[0]), lexical_cast<short>(host_port[1]));
         }
-        Node node(conf.chain(), conf.data_dir(), conf.listen(), lexical_cast<string>(conf.node_port()), proxy_server, conf.timeout()); // it is also here we specify the use of a proxy!
+        Node node(conf.chain(), conf.data_dir(), conf.listen(), lexical_cast<string>(conf.node_port()), proxy_server, conf.timeout(), conf.irc(), conf.notify() ); // it is also here we specify the use of a proxy!
         node.setClientVersion("libcoin/bitcoind", vector<string>());
         node.verification(conf.verification());
         node.validation(conf.validation());

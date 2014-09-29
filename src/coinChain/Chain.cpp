@@ -151,12 +151,17 @@ BitcoinChain::BitcoinChain() : Chain("bitcoin", "BTC", 8), _genesis("0x000000000
     (225430, uint256("0x00000000000001c108384350f74090433e7fcf79a606b8e797f065b130575932"))
     (250000, uint256("0x000000000000003887df1f29024b06fc2200b55f8af8f35453d7be294df2d214"))
     (279000, uint256("0x0000000000000001ae8c72a0b0c301f67e3afca10e819efa9041e458e9bd7e40"))
+    (295000, uint256("0x00000000000000004d9b4ef50f0f9d686fd69db2e03af35a100370c64632a983"))
     ;
 
     _seeds = boost::assign::list_of
     ("seed.bitcoin.sipa.be")
     ("dnsseed.bluematt.me")
-    ("bitseed.xf2.org");
+    ("bitseed.xf2.org")
+    ("dnsseed.bitcoin.dashjr.org")
+    ("seed.bitnodes.io")
+    ("seed.bitcoinstats.com")
+    ;
 }
 
 unsigned int BitcoinChain::totalBlocksEstimate() const {
@@ -316,9 +321,26 @@ TestNet3Chain::TestNet3Chain() : Chain("testnet3", "TST", 8), _genesis("0x000000
     _genesisBlock.updateMerkleTree(); // genesisBlock
     assert(_genesisBlock.getHash() == _genesis);
     
+    _checkpoints = boost::assign::map_list_of
+    (   546, uint256("0x000000002a936ca763904c3c35fce2f3556c559c0214345d31b1bcebf76acb70"))
+    (  2016, uint256("0x0000000089d757fd95d79f7fcc2bc25ca7fc16492dca9aa610730ea05d9d3de9"))
+    (  4032, uint256("0x000000001af3b22a7598b10574deb6b3e2d596f36d62b0a49cb89a1f99ab81eb"))
+    (  6048, uint256("0x000000000be66197ad285aedd52e56036f28d595fe281858bc5d562173d4d6de"))
+    (  8064, uint256("0x00000000118da1e2165a19307b86f87eba814845e8a0f99734dce279ca3fb029"))
+    ( 10080, uint256("0x000000007c4fc01a14af8067762fb807144b1b59cd4ec79ffc61efae3439757d"))
+    ( 51000, uint256("0x000000000ba96cf383b6a372e843d61d00f461b2e67c2181938ba8a2ebe7f1d2"))
+    (101000, uint256("0x0000000000381fb63636f367615251da84cb729a47fb0b1a4fb870b44485eaf1"))
+    (151000, uint256("0x00000000001124fa27eca4c692c2493e88d93b366f4035b560586cd8aa9726c6"))
+    (201000, uint256("0x0000000000b5d8920d803a70efdaf04be2bde49946181900821cd792e1dd27c5"))
+    (251000, uint256("0x000000000651c576426da716ebd9f26f7ebe41e714eedeeef32575177b84bfa3"))
+    (281000, uint256("0x000000006e28c6b63c4299a8a37f0c66cc528f6e9fc7992e0be31f141ce1ac4d"))
+    ;
+    
     _seeds = boost::assign::list_of
     ("testnet-seed.bitcoin.petertodd.org")
-    ("testnet-seed.bluematt.me");
+    ("testnet-seed.bluematt.me")
+    ("testnet-seed.alexykot.me")
+    ;
 }
 
 const Block& TestNet3Chain::genesisBlock() const {
@@ -408,6 +430,14 @@ int TestNet3Chain::nextWorkRequired(BlockIterator blk) const {
     return bnNew.GetCompact();
 }
 
+bool TestNet3Chain::checkPoints(const unsigned int height, const uint256& hash) const {
+    Checkpoints::const_iterator i = _checkpoints.find(height);
+    if (i == _checkpoints.end())
+        return true;
+    
+    return hash == i->second;
+}
+
 // global const definition of the testnet chain
 const TestNet3Chain testnet3;
 
@@ -441,6 +471,7 @@ NamecoinChain::NamecoinChain() : Chain("namecoin", "NMC", 8), _genesis("00000000
     ( 57000, uint256("0xaa3ec60168a0200799e362e2b572ee01f3c3852030d07d036e0aa884ec61f203"))
     (112896, uint256("0x73f880e78a04dd6a31efc8abf7ca5db4e262c4ae130d559730d6ccb8808095bf"))
     (182000, uint256("0xd47b4a8fd282f635d66ce34ebbeb26ffd64c35b41f286646598abfd813cba6d9"))
+    (193000, uint256("0x3b85e70ba7f5433049cfbcf0ae35ed869496dbedcd1c0fafadb0284ec81d7b58"))
     ;
     
 }

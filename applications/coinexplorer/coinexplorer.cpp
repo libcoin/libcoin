@@ -23,6 +23,8 @@
 #include <coinHTTP/RPC.h>
 #include <coinHTTP/Client.h>
 
+#include <coinName/NameGetRPC.h>
+
 #include <boost/thread.hpp>
 #include <boost/program_options.hpp>
 
@@ -316,19 +318,17 @@ int main(int argc, char* argv[])
         
         Auth auth(conf.user(), conf.pass()); // if rpc_user and rpc_pass are not set, all authenticated methods becomes disallowed.
         
-        if (conf.method() != "") {
-            if (conf.method() == "help") {
+            if (conf.help()) {
                 cout << "Usage: " << argv[0] << " [options]\n";
                 cout << conf << "\n";
                 cout << argv[0] << " start up as a daemon\n";
                 return 1;
             }
             
-            if (conf.method() == "version") {
+            if (conf.version()) {
                 cout << argv[0] << " version is: " << FormatVersion(LIBRARY_VERSION) << "\n";
                 return 1;
             }
-        }
 
         // Start the bitcoin node and server!
         
@@ -341,11 +341,11 @@ int main(int argc, char* argv[])
             if(host_port.size() < 2) host_port.push_back("1080");
             proxy_server = asio::ip::tcp::endpoint(asio::ip::address_v4::from_string(host_port[0]), lexical_cast<short>(host_port[1]));
         }
-        Node node(conf.chain(), conf.data_dir(), conf.listen(), lexical_cast<string>(conf.node_port()), proxy_server, conf.timeout(), "", conf.notify()); // it is also here we specify the use of a proxy!
+        Node node(conf.chain(), conf.data_dir(), conf.listen(), lexical_cast<string>(conf.node_port()), proxy_server, conf.timeout(), conf.irc(), conf.notify() ); // it is also here we specify the use of a proxy!
         node.setClientVersion("libcoin/bitcoind", vector<string>());
         node.verification(conf.verification());
         node.validation(conf.validation());
-        node.persistence(conf.persistance());
+        node.persistence(conf.persistance()); //should this also be always true?
         node.searchable(true); // always true - otherwise we cannot explorer the addresses!
 
         // use the connect and addnode options to restrict and supplement the irc and endpoint db.
@@ -362,8 +362,8 @@ int main(int argc, char* argv[])
             if (persistence != Node::FULL)
                 persistence = Node::NONE;
             node.readBlockFile(blockpath);
-            node.verification(verification);
-            node.verification(persistence);
+            node.verification(verification); //when done reading blk* files, use settings
+            node.persistance(persistence);
         }
         
         thread nodeThread(&Node::run, &node); // run this as a background thread
@@ -406,6 +406,14 @@ int main(int argc, char* argv[])
         server.registerMethod(method_ptr(new GetCoins(node)));
         server.registerMethod(method_ptr(new GetAddressBalance(node)));
         server.registerMethod(method_ptr(new Search(node)));
+	
+	// Register Namecoin methods
+	if (conf.chain().adhere_names()) {
+            server.registerMethod(method_ptr(new NameShow(node)));
+            server.registerMethod(method_ptr(new NameHistory(node)));
+            server.registerMethod(method_ptr(new NameScan(node)));
+            server.registerMethod(method_ptr(new NameFilter(node)));
+        }
                 
         try { // we keep the server in its own exception scope as we want the other threads to shut down properly if the server exits
             server.run();    

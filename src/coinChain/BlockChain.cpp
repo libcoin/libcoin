@@ -267,8 +267,8 @@ int BlockChain::purge_depth() const {
 }
 
 void BlockChain::purge_depth(int purge_depth) {
-    if (purge_depth < _purge_depth)
-        log_warn("Requested a purge_depth (Persistance setting) deeper than currently, please re-download the blockchain to enforce this!");
+    if (purge_depth+1 < _purge_depth)
+        log_warn("Requested a purge_depth (Persistance setting) deeper than currently, please re-download the blockchain to enforce this!"); //first sync should not have this warning
     _purge_depth = purge_depth;
     int current_depth = query<int64_t>("SELECT CASE WHEN COUNT(*)=0 THEN 0 ELSE MIN(count) END FROM Confirmations");
     int step = 1;

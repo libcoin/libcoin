@@ -58,6 +58,7 @@ Configuration::Configuration(int argc, char* argv[], const options_description& 
     ("searchable", value<bool>(&_searchable)->default_value(true), "Enable indexing of addresses/scripts")
     ("pid", value<string>(), "Specify pid file (default: bitcoind.pid)")
     ("nolisten", "Don't accept connections from outside")
+    ("noirc", "Don't use IRC to find peers")
     ("portmap", value<bool>(&_portmap)->default_value(true), "Use IGD-UPnP or NATPMP to map the listening port")
     ("upnp", value<bool>(&_portmap), "Use UPnP to map the listening port - deprecated, use portmap")
     ("proxy", value<string>(&_proxy), "Connect through socks4 proxy")
@@ -161,9 +162,13 @@ Configuration::Configuration(int argc, char* argv[], const options_description& 
         _params.erase(_params.begin());
     }
     
+    
+    _help = args.count("help") ? true : false;
+    _version = args.count("version") ? true : false;
     _listen = args.count("nolisten") ? "" : "0.0.0.0";
     _verification = strictness(verification);
     _validation = strictness(validation);
     _persistance = strictness(persistance);
+    _irc = args.count("noirc") ? "" : "92.243.23.21"; //giraffe.heliacal.net of irc.lfnet.org
 }
 

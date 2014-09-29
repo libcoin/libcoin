@@ -107,9 +107,10 @@ NameScan::operator() (const json_spirit::Array& params, bool fHelp)
 {
     if (fHelp || params.size () > 2)
         throw RPC::error (RPC::invalid_params,
-                          "name_history [<start> [<count>=500]]\n"
-                          "List all known names starting at <start> in increasing"
-                          " order, up to a maximum of <count> entries.");
+                          "name_scan [<start-name>] [<max-returned>]\n"
+                          "Scan all names, starting at <start-name> and returning"
+                          " a maximum number of entries (default 500)"
+                          );
     
     std::string start;
     if (params.size () >= 1)
@@ -122,8 +123,10 @@ NameScan::operator() (const json_spirit::Array& params, bool fHelp)
     
     unsigned count = 500;
     if (params.size () >= 2)
+    {  
         count = params[1].get_int ();
-    
+	/* FIXME: bitcoin-rpc does not use integer parameters. */
+    }
     /* Query for the data in the block chain database.  */
     const BlockChain& chain = node.blockChain ();
     const std::vector<NameDbRow> rows = chain.getNameScan (start, count);
