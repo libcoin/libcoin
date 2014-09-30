@@ -37,6 +37,7 @@ void PeerManager::post_stop(peer_ptr p) {
 }
 
 void PeerManager::stop(peer_ptr p) {
+    log_info("Disconnected from %s", p->addr.toString());
     p->stop();
     _peers.erase(p);
     // we have stopped a node - we need to check if we need to connect to another node now.

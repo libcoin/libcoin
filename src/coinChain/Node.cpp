@@ -372,7 +372,8 @@ void Node::check_deadline(const boost::system::error_code& e) {
             // asynchronous operations are cancelled.
             if(_new_server) {
                 log_debug("Closing socket of: %s", _new_server->addr.toString().c_str());
-                _new_server->socket().close();
+                _new_server.reset();
+                accept_or_connect();
             }
             
             // There is no longer an active deadline. The expiry is set to positive
@@ -419,7 +420,6 @@ void Node::handle_connect(const system::error_code& e) {
         accept_or_connect();
     }
     
-    //    _endpointPool.getEndpoint(_new_server->addr.getKey()).setLastTry(GetAdjustedTime());
     _endpointPool.setLastTry(_new_server->addr);
     
     // if we have a proxy error - don't reconnect - wait for some action to be taken...
@@ -462,6 +462,8 @@ void Node::accept_or_connect() {
         if ((_connection_list.empty() && _peerManager.getNumOutbound() < _max_outbound) || _peerManager.getNumOutbound() <_connection_list.size()) // start_accept will not be called again before we get a read/write error on a socket
             start_connect();         
     }
+    else
+        log_debug("new_server not resat - skipping connect!");
 }
 
 void Node::peer_ready(peer_ptr p) {

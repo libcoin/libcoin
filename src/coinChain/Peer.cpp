@@ -135,11 +135,11 @@ void Peer::start() {
 
 void Peer::check_activity(const system::error_code& e) {
     if (!e) {
-        if(!_activity)
+        if(!_activity || !(rand()%3))
             _peerManager.post_stop(shared_from_this());
         else {
             _activity = false;
-            _suicide.expires_from_now(posix_time::seconds(_suicide_timeout)); // 90 minutes of activity once we have started up
+            _suicide.expires_from_now(posix_time::seconds(_suicide_timeout/2 + rand()%_suicide_timeout)); // ~90 minutes of activity once we have started up
             _suicide.async_wait(boost::bind(&Peer::check_activity, this, asio::placeholders::error));
         }
     }
@@ -173,13 +173,14 @@ void Peer::show_activity(const system::error_code& e) {
 }
 
 void Peer::stop() {
-    _suicide.cancel(); // no need to commit suicide when being killed
     boost::system::error_code ec;
+    _suicide.cancel(ec); // no need to commit suicide when being killed
     _socket.shutdown(ip::tcp::socket::shutdown_both, ec);
-    if (ec) {
+    if (ec)
         log_debug("socket shutdown error: %s", ec.message()); // An error occurred.
-    }
-    _socket.close();
+    _socket.close(ec);
+    if (ec)
+        log_debug("socket close error: %s", ec.message()); // An error occurred.
 }
 
 void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferred) {
@@ -236,6 +237,8 @@ void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferre
         log_debug("Read error %s, disconnecting... (read %d bytes though) \n", e.message().c_str(), bytes_transferred);
         _peerManager.post_stop(shared_from_this());
     }
+    else
+        log_debug("not handled : %s", e.message());
     log_trace("exit");
 }
 
