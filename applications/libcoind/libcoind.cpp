@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
         node.setClientVersion("libcoin/bitcoind", vector<string>());
         node.verification(conf.verification());
         node.validation(conf.validation());
-        node.persistence(conf.persistance());
+        node.persistence(conf.persistence());
         node.searchable(conf.searchable());
 
         PortMapper mapper(node.get_io_service(), conf.node_port()); // this will use the Node call

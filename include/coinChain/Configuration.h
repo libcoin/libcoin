@@ -104,8 +104,8 @@ public:
     Node::Strictness validation() const {
         return _validation;
     }
-    Node::Strictness persistance() const {
-        return _persistance;
+    Node::Strictness persistence() const {
+        return _persistence;
     }
     bool searchable() const {
         return _searchable;
@@ -131,7 +131,7 @@ private:
     std::string _listen;
     std::string _irc;
     bool _portmap, _gen, _ssl;
-    Node::Strictness _verification, _validation, _persistance;
+    Node::Strictness _verification, _validation, _persistence;
     bool _searchable;
     bool _help, _version;
     unsigned int _timeout;

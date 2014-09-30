@@ -275,7 +275,7 @@ int main(int argc, char* argv[])
         node.setClientVersion("libcoin/bitcoind", vector<string>());
         node.verification(conf.verification());
         node.validation(Node::MINIMAL);
-        node.persistence(conf.persistance());
+        node.persistence(conf.persistence());
         node.searchable(conf.searchable());
         
         // use the connect and addnode options to restrict and supplement the irc and endpoint db.
