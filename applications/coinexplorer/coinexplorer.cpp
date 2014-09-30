@@ -345,7 +345,7 @@ int main(int argc, char* argv[])
         node.setClientVersion("libcoin/bitcoind", vector<string>());
         node.verification(conf.verification());
         node.validation(conf.validation());
-        node.persistence(conf.persistance()); //should this also be always true?
+        node.persistence(conf.persistence()); //should this also be always true?
         node.searchable(true); // always true - otherwise we cannot explorer the addresses!
 
         // use the connect and addnode options to restrict and supplement the irc and endpoint db.
@@ -363,7 +363,7 @@ int main(int argc, char* argv[])
                 persistence = Node::NONE;
             node.readBlockFile(blockpath);
             node.verification(verification); //when done reading blk* files, use settings
-            node.persistance(persistence);
+            node.persistence(persistence);
         }
         
         thread nodeThread(&Node::run, &node); // run this as a background thread
