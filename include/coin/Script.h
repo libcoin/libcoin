@@ -754,6 +754,21 @@ public:
     }
 
     Script getDropped() const;
+
+    /**
+     * Return a copy of the script and remove name prefix operations
+     * (if they are there).  This can be used to find the script's
+     * address or used in IsMine.
+     * @return Script without name prefix.
+     */
+    Script getWithoutNamePrefix() const
+    {
+        Script::const_iterator pc = begin();
+        const bool ok = skipNamePrefix(pc);
+        if (ok)
+            return Script(pc, end());
+        return *this;
+    }
     
     void printHex() const
     {
