@@ -31,19 +31,19 @@ inline CDataStream& operator<<(CDataStream& os, const std::pair<std::string, uin
 
 inline CDataStream& operator>>(CDataStream& is, std::pair<std::string, uint256>& obj) {
     std::istringstream iss(is.str());
-    std::streampos p = iss.tellg();
+    const std::streampos before = iss.tellg();
     iss >> varstr(obj.first) >> obj.second;
-    p -= iss.tellg();
-    is.ignore(p);
+    const std::streampos after = iss.tellg();
+    is.ignore(after - before);
     return is;
 }
 
 inline CDataStream& operator>>(CDataStream& is, uint256& n) {
     std::istringstream iss(is.str());
-    std::streampos p = iss.tellg();
+    const std::streampos before = iss.tellg();
     iss >> n;
-    p -= iss.tellg();
-    is.ignore(p);
+    const std::streampos after = iss.tellg();
+    is.ignore(after - before);
     return is;
 }
 

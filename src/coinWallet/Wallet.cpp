@@ -368,7 +368,7 @@ bool Wallet::IsConfirmed(const CWalletTx& tx) const
     // Quick answer in most cases
     if (!_blockChain.isFinal(tx))
         return false;
-    if (_blockChain.getDepthInMainChain(tx.getHash()) >= 1)
+    if (_blockChain.getDepthInMainChain(tx._blockHash) >= 1)
         return true;
     if (!IsFromMe(tx)) // using wtx's cached debit
         return false;
@@ -385,7 +385,7 @@ bool Wallet::IsConfirmed(const CWalletTx& tx) const
         
         if (!_blockChain.isFinal(*ptx))
             return false;
-        if (_blockChain.getDepthInMainChain(ptx->getHash()) >= 1)
+        if (_blockChain.getDepthInMainChain(ptx->_blockHash) >= 1)
             continue;
         if (!IsFromMe(*ptx))
             return false;
@@ -402,6 +402,11 @@ bool Wallet::IsConfirmed(const CWalletTx& tx) const
             }
         }
     return true;
+}
+
+int Wallet::getHeight(const CWalletTx& tx) const
+{
+    return _blockChain.getHeight(tx._blockHash);
 }
 
 /*
@@ -1043,7 +1048,7 @@ void Wallet::PrintWallet(const Block& block)
         if (mapWallet.count(block.getTransactions()[0].getHash()))
         {
             CWalletTx& wtx = mapWallet[block.getTransactions()[0].getHash()];
-            log_info("    mine:  %d  %d  %d", _blockChain.getDepthInMainChain(wtx.getHash()), _blockChain.getBlocksToMaturity(wtx), wtx.GetCredit());
+            log_info("    mine:  %d  %d  %d", _blockChain.getDepthInMainChain(wtx._blockHash), _blockChain.getBlocksToMaturity(wtx), wtx.GetCredit());
         }
     }
     log_info("\n");
