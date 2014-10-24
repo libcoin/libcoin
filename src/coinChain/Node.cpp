@@ -67,7 +67,6 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     _acceptor(_io_service),
     _blockChain(chain, _dataDir),
     _peerManager(*this),
-    _connection_deadline(_io_service),
     _messageHandler(),
     _endpointPool(chain.defaultPort(), _dataDir),
     _chatClient(_io_service, boost::bind(&Node::post_accept_or_connect, this), irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy),
@@ -247,6 +246,8 @@ void Node::run() {
     _messageHandler.installFilter(filter_ptr(new FilterHandler(_notifier))); // this only output the alert to stdout
     _messageHandler.installFilter(filter_ptr(_alertFilter)); // this only output the alert to stdout
     
+    handle_block(); // to start the async handling of blocks
+    
     _io_service.run();
 }
 
@@ -324,7 +325,6 @@ void Node::updatePeers(const vector<string>& eps) {
 
 
 Endpoint Node::getCandidate(const set<unsigned int>& not_in) {
-    Endpoint ep;
     endpoints candidates;
     for (endpoints::const_iterator candidate = _connection_list.begin(); candidate != _connection_list.end(); ++candidate) {
         if(not_in.count(Endpoint(*candidate).getIP()) == 0) {
@@ -332,6 +332,9 @@ Endpoint Node::getCandidate(const set<unsigned int>& not_in) {
         }
     }
     endpoints::iterator candidate = candidates.begin();
+    if (candidate == candidates.end())
+        return Endpoint();
+
     advance(candidate, rand()%candidates.size());
     return *candidate;
 }
@@ -350,41 +353,11 @@ void Node::start_connect() {
     stringstream ss;
     ss << (boost::asio::ip::tcp::endpoint)ep;
     log_debug("Trying connect to: %s", ss.str());
-    _new_server.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, false, _proxy, getFullClientVersion())); // false means outbound
-    _new_server->addr = ep;
-    // Set a deadline for the connect operation.
-    _connection_deadline.expires_from_now(posix_time::milliseconds(_connection_timeout));
-    // if using a socks4 proxy - we would here establish he connection to the socks server. 
-    if(_proxy)
-        _proxy(_new_server->socket()).async_connect(ep, boost::bind(&Node::handle_connect, this, asio::placeholders::error));
-    else
-        _new_server->socket().async_connect(ep, boost::bind(&Node::handle_connect, this, asio::placeholders::error));
-    // start wait for deadline to expire.
-    _connection_deadline.async_wait(boost::bind(&Node::check_deadline, this, asio::placeholders::error));
+    boost::shared_ptr<Peer> peer(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, false, _proxy, getFullClientVersion())); // false means outbound
+    peer->connect(ep, _proxy, _connection_timeout);
+    _endpointPool.setLastTry(peer->endpoint());    
 }
 
-void Node::check_deadline(const boost::system::error_code& e) {
-    if(!e) {
-        // Check whether the deadline has passed. We compare the deadline against
-        // the current time.
-        if (_connection_deadline.expires_at() <= deadline_timer::traits_type::now()) {
-            // The deadline has passed. The socket is closed so that any outstanding
-            // asynchronous operations are cancelled.
-            if(_new_server) {
-                log_debug("Closing socket of: %s", _new_server->addr.toString().c_str());
-                _new_server.reset();
-                accept_or_connect();
-            }
-            
-            // There is no longer an active deadline. The expiry is set to positive
-            // infinity so that the actor takes no action until a new deadline is set.
-            //_connection_deadline.expires_at(posix_time::pos_infin);
-        }        
-    }
-    else if (e != error::operation_aborted) {
-        log_warn("Boost deadline timer error in Node: %s", e.message().c_str());
-    }
-}
 
 void Node::handle_block() {
     int height = _blockChain.getBestHeight();
@@ -408,24 +381,6 @@ void Node::handle_async_block() {
         handle_block();
 }
 
-void Node::handle_connect(const system::error_code& e) {
-    _connection_deadline.cancel(); // cancel the deadline timer //expires_at(posix_time::pos_infin);
-    
-    if (!e && _new_server->socket().is_open()) {
-        _peerManager.start(_new_server);
-    }
-    else {
-        log_info("Failed connect: \"%s\" to: %s", e.message().c_str(), _new_server->addr.toString().c_str());
-        _new_server.reset();
-        accept_or_connect();
-    }
-    
-    _endpointPool.setLastTry(_new_server->addr);
-    
-    // if we have a proxy error - don't reconnect - wait for some action to be taken...
-    
-}
-
 void Node::start_accept() {
     _new_client.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, true, _proxy, getFullClientVersion())); // true means inbound
     _acceptor.async_accept(_new_client->socket(), boost::bind(&Node::handle_accept, this, asio::placeholders::error));
@@ -439,7 +394,8 @@ void Node::handle_accept(const system::error_code& e) {
     }
     
     if (!e) {
-        _peerManager.start(_new_client);
+        _peerManager.manage(_new_client);
+        _new_client->start();
     }
 
     _new_client.reset(); // this enables us to test if we have pending accepts
@@ -456,23 +412,16 @@ void Node::accept_or_connect() {
             if(_acceptor.is_open()) start_accept();
     }
         
-    if (!_new_server) {
-        log_debug("Outbound connections are now: %d", _peerManager.getNumOutbound());
-        
-        if ((_connection_list.empty() && _peerManager.getNumOutbound() < _max_outbound) || _peerManager.getNumOutbound() <_connection_list.size()) // start_accept will not be called again before we get a read/write error on a socket
-            start_connect();         
-    }
-    else
-        log_debug("new_server not resat - skipping connect!");
+    if ((_connection_list.empty() && _peerManager.getNumOutbound(true) < _max_outbound) || _peerManager.getNumOutbound(true) <_connection_list.size()) // start_accept will not be called again before we get a read/write error on a socket
+        start_connect();         
 }
 
 void Node::peer_ready(peer_ptr p) {
     //update_persistence();
     //update_validation();
     //update_verification();
-    log_info("PEER: #%d %s %s", (p->inbound())?_peerManager.getNumInbound():_peerManager.getNumOutbound(), p->addr.toString(), (p->inbound())?"inbound":"outbound");
+    log_info("PEER: #%d %s %s", (p->inbound())?_peerManager.getNumInbound():_peerManager.getNumOutbound(), p->endpoint().toString(), (p->inbound())?"inbound":"outbound");
     log_info("\tversion: %d, blocks: %d", p->version(), p->getStartingHeight());
-    _new_server.reset();
     accept_or_connect();
 }
 

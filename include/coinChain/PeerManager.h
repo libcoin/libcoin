@@ -40,8 +40,11 @@ public:
     /// Constructor - we register the Node as a delegate to enable spawning of new Peers when the old ones die
     PeerManager(Node& node);
     
-    /// Add the specified connection to the manager and start it.
-    void start(peer_ptr p);
+    /// Add the specified connection to the manager.
+    void manage(peer_ptr p);
+    
+    /// called from the peer to notify that a connection attempt was cancelled
+    void cancel(peer_ptr p);
     
     /// Stop the specified connection.
     void stop(peer_ptr p);
@@ -53,17 +56,14 @@ public:
     /// Returns a list of platform specific unsigned ints that contains the ipv4 addresses of connected peers
     const std::set<unsigned int> getPeerIPList() const;
     
-    /// Returns the list of peers
-    Peers getPeerList() { return _peers; }
-    
     /// Returns the number of outbound connections from this node
-    const unsigned int getNumOutbound() const;
+    const unsigned int getNumOutbound(bool pending = false) const;
     
     /// Returns the number of inbound connections from this node
     const unsigned int getNumInbound() const;
     
-    /// Returns all the peers
-    Peers getAllPeers() const { return _peers; }
+    /// Returns all the connected peers
+    Peers getAllPeers() const;
 
     /// Prioritize when to request this inventory - if already requested the returned time will be last queued request + 2min,  else it is now
     int prioritize(const Inventory& inv);

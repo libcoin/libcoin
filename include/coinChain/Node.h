@@ -223,9 +223,6 @@ private:
     /// Peer ready means that a new peer is connected and has completed the first version handshake
     void peer_ready(peer_ptr p);
     
-    /// Check the deadline timer and give up
-    void check_deadline(const boost::system::error_code& e);
-
     /// Handle completion of an asynchronous accept operation.
     void handle_accept(const boost::system::error_code& e);
     
@@ -272,11 +269,7 @@ private:
     PeerManager _peerManager;
     
     /// The next connection to be connected to or accepted.
-    peer_ptr _new_server; // connection from another peer
     peer_ptr _new_client; // connection to another peer
-    
-    /// Deadline timer for the connect operation
-    boost::asio::deadline_timer _connection_deadline;
     
     /// list of endpoints that overrules the endpointPool database.
     endpoints _connection_list;

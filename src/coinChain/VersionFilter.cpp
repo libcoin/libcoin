@@ -39,7 +39,7 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
         is >> (*origin);
         
         if (origin->disconnecting()) {
-            log_debug("connected to self at %s, disconnecting\n", origin->addr.toString().c_str());
+            log_debug("connected to self at %s, disconnecting\n", origin->endpoint().toString().c_str());
             return true;
         }
 
@@ -47,7 +47,7 @@ bool VersionFilter::operator() (Peer* origin, Message& msg) {
             return false;
   
         if (origin->disconnecting()) {
-            log_debug("connected to self at %s, disconnecting\n", origin->addr.toString().c_str());
+            log_debug("connected to self at %s, disconnecting\n", origin->endpoint().toString().c_str());
             return true;
         }
         

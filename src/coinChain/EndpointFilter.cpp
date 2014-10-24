@@ -24,7 +24,7 @@ using namespace std;
 using namespace boost;
 
 bool EndpointFilter::operator()(Peer* origin, Message& msg) {
-    log_trace("args: origin: %s, msg: %s", origin->addr.toString(), msg.command());
+    log_trace("args: origin: %s, msg: %s", origin->endpoint().toString(), msg.command());
     if (origin->version() == 0) {
         throw OriginNotReady();
     }
@@ -44,7 +44,7 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
             return false;
         }
         
-        log_debug("PEERS: %d addresses received from %s", endpoints.size(), origin->addr.toString());
+        log_debug("PEERS: %d addresses received from %s", endpoints.size(), origin->endpoint().toString());
         
         // Store the new addresses
         //        CAddrDB addrDB;
@@ -141,7 +141,7 @@ bool EndpointFilter::operator()(Peer* origin, Message& msg) {
     // Update the last seen time for this node's address
 //    if (origin->fNetworkNode)
         if (msg.command() == "version" || msg.command() == "addr" || msg.command() == "inv" || msg.command() == "getdata" || msg.command() == "ping")
-            _endpointPool.currentlyConnected(origin->addr);
+            _endpointPool.currentlyConnected(origin->endpoint());
     
     // Endpoint refresh broadcast - has been moved into the EndpointFilter... - this means that it is only induced by some of the commands registered to this filter, but it is a 24hours recheck, so it should not matter.
     static int64_t nLastRebroadcast;

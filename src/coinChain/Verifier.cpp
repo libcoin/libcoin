@@ -29,7 +29,7 @@ Verifier::Verifier(size_t threads) : _work(_io_service), _failed(false) {
     if (threads == 0) // #cores query not supported
         threads = 1;
     while (threads--)
-        _threads.add_thread(new boost::thread(boost::bind(&boost::asio::io_service::run, &_io_service)));
+        _threads.create_thread(boost::bind(&boost::asio::io_service::run, &_io_service));
 }
 
 Verifier::~Verifier() {
@@ -53,6 +53,9 @@ void Verifier::verify(const Output& output, const Transaction& txn, unsigned int
 }
 
 bool Verifier::do_verify(const Output& output, const Transaction& txn, unsigned int in_idx, bool strictPayToScriptHash, int hash_type) {
+//    ostringstream oss;
+//    oss << boost::this_thread::get_id();
+//    log_info("Thread: %s", oss.str());
     if (already_failed()) // no reason to waste time on a loosing tx
         return true;
 

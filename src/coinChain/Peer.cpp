@@ -28,7 +28,7 @@ using namespace std;
 using namespace boost;
 using namespace asio;
 
-Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, std::string sub_version) : _chain(chain),_socket(io_service), _peerManager(manager), _messageHandler(handler), _msgParser(), _suicide(io_service), _keep_alive(io_service) {
+Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, std::string sub_version) : _chain(chain),_socket(io_service), _peerManager(manager), _messageHandler(handler), _msgParser(), _connection_deadline(io_service), _suicide(io_service), _keep_alive(io_service) {
     _services = 0;
     _version = 0;//chain.protocol_version();
 
@@ -49,12 +49,16 @@ Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, Mes
     _activity = false;
 }
 
+Peer::~Peer() {
+//    log_info("Deleted PEER: %s", _endpoint.toString());
+}
+
 ostream& operator<<(ostream& os, const Peer& p) {
     /// when NTP implemented, change to just nTime = GetAdjustedTime()
     int64_t nTime = (p._inbound ? GetAdjustedTime() : UnixTime::s());
     //    Endpoint remote = _socket.remote_endpoint();
     Endpoint local = p._socket.local_endpoint();
-    Endpoint addrYou = (p._proxy ? Endpoint("0.0.0.0") : p.addr);
+    Endpoint addrYou = (p._proxy ? Endpoint("0.0.0.0") : p._endpoint);
     Endpoint addrMe = (p._proxy ? Endpoint("0.0.0.0") : local);
     // hack to avoid serializing the time
     if (p._version)
@@ -106,7 +110,7 @@ istream& operator>>(istream& is, Peer& p) {
     
     p._client = !(p._services & NODE_NETWORK);
     
-    AddTimeData(p.addr.getIP(), nTime);
+    AddTimeData(p._endpoint.getIP(), nTime);
     
     return is;
 }
@@ -116,12 +120,11 @@ ip::tcp::socket& Peer::socket() {
 }
 
 void Peer::start() {
-    log_debug("Starting Peer: %s", addr.toString());
+    log_debug("Starting Peer: %s", _endpoint.toString());
     // Be shy and don't send version until we hear
     if (!_inbound) {
         PushVersion();
         flush();
-//        _socket.async_write_some(_send.data(), boost::bind(&Peer::handle_write, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
 
     _suicide.expires_from_now(posix_time::seconds(_initial_timeout)); // no activity the first 60 seconds means disconnect
@@ -131,6 +134,49 @@ void Peer::start() {
     // and start the deadline timer
     _suicide.async_wait(boost::bind(&Peer::check_activity, this, asio::placeholders::error));
     _keep_alive.async_wait(boost::bind(&Peer::show_activity, this, asio::placeholders::error));
+}
+
+void Peer::connect(const Endpoint& ep, Proxy& proxy, unsigned int timeout) {
+    _peerManager.manage(shared_from_this());
+    _endpoint = ep;
+    // Set a deadline for the connect operation.
+    _connection_deadline.expires_from_now(posix_time::milliseconds(timeout));
+    // if using a socks4 proxy - we would here establish he connection to the socks server.
+    if(proxy)
+        proxy(socket()).async_connect(ep, boost::bind(&Peer::handle_connect, shared_from_this(), asio::placeholders::error));
+    else
+        socket().async_connect(ep, boost::bind(&Peer::handle_connect, shared_from_this(), asio::placeholders::error));
+    // start wait for deadline to expire.
+    _connection_deadline.async_wait(boost::bind(&Peer::check_deadline, shared_from_this(), asio::placeholders::error));
+}
+
+void Peer::handle_connect(const system::error_code& e) {
+    _connection_deadline.cancel(); // cancel the deadline timer //expires_at(posix_time::pos_infin);
+    
+    if (!e && socket().is_open()) {
+        start();
+    }
+    else {
+        log_info("Failed connect: \"%s\" to: %s", e.message().c_str(), endpoint().toString().c_str());
+        _peerManager.cancel(shared_from_this());
+    }    
+}
+
+void Peer::check_deadline(const boost::system::error_code& e) {
+    if(!e) {
+        // Check whether the deadline has passed. We compare the deadline against
+        // the current time.
+        if (_connection_deadline.expires_at() <= deadline_timer::traits_type::now()) {
+            // The deadline has passed. The socket is closed so that any outstanding
+            // asynchronous operations are cancelled.
+            log_debug("Closing socket of: %s", endpoint().toString());
+            socket().close();
+            _peerManager.cancel(shared_from_this());
+        }
+    }
+    else if (e != error::operation_aborted) {
+        log_warn("Boost deadline timer error in Node: %s", e.message().c_str());
+    }
 }
 
 void Peer::check_activity(const system::error_code& e) {
@@ -198,7 +244,7 @@ void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferre
                 if (_messageHandler.handleMessage(this, _message) ) fRet = true;
             }
             else if (!result) {
-                log_warn("Peer %s sending bogus - disconnecting", addr.toString());
+                log_warn("Peer %s sending bogus - disconnecting", _endpoint.toString());
                 _peerManager.post_stop(shared_from_this());
             }//                continue; // basically, if we get a false result, we should consider to disconnect from the Peer!
             else
@@ -433,7 +479,7 @@ void Peer::PushGetBlocks(const BlockLocator locatorBegin, uint256 hashEnd)
     locatorLastGetBlocksBegin = locatorBegin;
     hashLastGetBlocksEnd = hashEnd;
 
-    log_debug("PushGetBlocks to %s, hashEnd: %s", addr.toString(), hashEnd.toString());
+    log_debug("PushGetBlocks to %s, hashEnd: %s", _endpoint.toString(), hashEnd.toString());
     
     os << const_binary<int>(version()) << locatorBegin << hashEnd;
     push("getblocks", os.str());

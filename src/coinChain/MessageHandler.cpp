@@ -32,7 +32,7 @@ void MessageHandler::installFilter(filter_ptr filter) {
 }
 
 bool MessageHandler::handleMessage(Peer* origin, Message& msg) {
-    log_trace("args origin: %s, command: %s, size: %d", origin->addr.toString(), msg.command(), msg.payload().size());
+    log_trace("args origin: %s, command: %s, size: %d", origin->endpoint().toString(), msg.command(), msg.payload().size());
 
     try {
         bool ret = false;

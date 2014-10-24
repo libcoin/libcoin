@@ -27,17 +27,21 @@ using namespace boost;
 
 PeerManager::PeerManager(Node& node) : _peerBlockCounts(5, node.blockChain().chain().totalBlocksEstimate()), _node(node) {}
 
-void PeerManager::start(peer_ptr p) {
+void PeerManager::manage(peer_ptr p) {
     _peers.insert(p);
-    p->start();
 }
 
 void PeerManager::post_stop(peer_ptr p) {
     _node.post_stop(p);
 }
 
+void PeerManager::cancel(peer_ptr p) {
+    _peers.erase(p);
+    _node.post_accept_or_connect();
+}
+
 void PeerManager::stop(peer_ptr p) {
-    log_info("Disconnected from %s", p->addr.toString());
+    log_info("Disconnected from %s", p->endpoint().toString());
     p->stop();
     _peers.erase(p);
     // we have stopped a node - we need to check if we need to connect to another node now.
@@ -85,15 +89,17 @@ const set<unsigned int> PeerManager::getPeerIPList() const {
         if(!ec)
             ips.insert(ep.address().to_v4().to_ulong());
         else
-            log_warn("WARNING: non-bound Peers in the Peer list ???: %s", ec.message().c_str());
+            ips.insert((*peer)->endpoint().address().to_v4().to_ulong());
+//            log_warn("WARNING: non-bound Peers in the Peer list ???: %s", ec.message().c_str());
     }
     return ips;
 }
 
-const unsigned int PeerManager::getNumOutbound() const {
+const unsigned int PeerManager::getNumOutbound(bool pending) const {
     unsigned int outbound = 0;
     for (Peers::const_iterator peer = _peers.begin(); peer != _peers.end(); ++peer) {
-        if(!(*peer)->inbound()) outbound++;
+        if (!pending && !(*peer)->is_connected()) continue;
+        if (!(*peer)->inbound()) outbound++;
     }
     return outbound;
 }
@@ -101,7 +107,17 @@ const unsigned int PeerManager::getNumOutbound() const {
 const unsigned int PeerManager::getNumInbound() const {
     unsigned int inbound = 0;
     for (Peers::const_iterator peer = _peers.begin(); peer != _peers.end(); ++peer) {
-        if((*peer)->inbound()) inbound++;
+        if (!(*peer)->is_connected()) continue;
+        if ((*peer)->inbound()) inbound++;
     }
     return inbound;    
 }
+
+Peers PeerManager::getAllPeers() const {
+    Peers peers;
+    for (Peers::const_iterator p = _peers.begin(); p != _peers.end(); ++p)
+        if ((*p)->socket().is_open())
+            peers.insert(*p);
+    return peers;
+}
+

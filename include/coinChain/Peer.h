@@ -24,6 +24,7 @@
 #include <coinChain/MessageParser.h>
 #include <coinChain/Inventory.h>
 #include <coinChain/BloomFilter.h>
+#include <coinChain/Proxy.h>
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -41,6 +42,8 @@ class COINCHAIN_EXPORT Peer : public boost::enable_shared_from_this<Peer>, priva
 public:
     /// Construct a peer connection with the given io_service.
     explicit Peer(const Chain& chain, boost::asio::io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, std::string sub_version);
+    
+    ~Peer();
 
     friend std::ostream& operator<<(std::ostream& os, const Peer& p);
     
@@ -127,7 +130,17 @@ public:
         return os.str();
     }
     
+    const Endpoint& endpoint() const { return _endpoint; }
+    
+    void connect(const Endpoint& ep, Proxy& proxy, unsigned int timeout);
+    
+    bool is_connected() const { return _successfullyConnected; }
+    
 private:
+    /// Check the deadline timer and give up
+    void check_deadline(const boost::system::error_code& e);
+
+    void handle_connect(const boost::system::error_code& e);
     void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
     void handle_write(const boost::system::error_code& e, std::size_t bytes_transferred);
     
@@ -139,9 +152,9 @@ private:
     void check_activity(const boost::system::error_code& e);
     void show_activity(const boost::system::error_code& e);
     
+    Endpoint _endpoint;
 public:
     // socket
-    Endpoint addr;
     bool relayTxes;
 //    bool fNetworkNode;
     
@@ -237,6 +250,9 @@ private:
     
     /// The message parser.
     MessageParser _msgParser;
+    
+    /// Deadline timer for the connect operation
+    boost::asio::deadline_timer _connection_deadline;
     
     /// Activity monitoring - if no activity we commit suicide
     bool _activity;
