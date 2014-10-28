@@ -156,7 +156,6 @@ private:
 public:
     // socket
     bool relayTxes;
-//    bool fNetworkNode;
     
     BloomFilter filter;
     bool fGetAddr;
@@ -268,6 +267,9 @@ private:
     
     /// the local nonce - used to detect connections to self
     uint64_t _nonce;
+    
+    /// flush control - we cannot flush while there is a pending async_write
+    bool _flushing;
     
     /// Streambufs for reading and writing
     boost::asio::streambuf _send;

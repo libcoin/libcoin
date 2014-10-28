@@ -45,6 +45,7 @@ Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, Mes
     fGetAddr = false;    
     _proxy = proxy;
     _nonce = 0;
+    _flushing = false;
     RAND_bytes((unsigned char*)&_nonce, sizeof(_nonce));
     _activity = false;
 }
@@ -405,8 +406,8 @@ void Peer::broadcast() {
 
 void Peer::flush() {
     if (_send.size()) {
+        _flushing = true;
         async_write(_socket, _send.data(), boost::bind(&Peer::handle_write, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
-//        _socket.async_write_some(_send.data(), boost::bind(&Peer::handle_write, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
 }
 
@@ -414,8 +415,11 @@ void Peer::handle_write(const system::error_code& e, size_t bytes_transferred) {
     log_trace("args error: %s, bytes: %d", e.message(), bytes_transferred);
     if (!e) {
         // you need show you activity to avoid disconnection
-        //        _activity = true;
+        _flushing = false;
         _send.consume(bytes_transferred);
+        log_info("Sent %d bytes to %s, still %d bytes left in the buffer", bytes_transferred, _endpoint.toString(), _send.size());
+        if (_send.size()) // always flush if there is something in the buffer - should not be possible, though?
+            flush();
     }
     else if (e != error::operation_aborted) {
         log_debug("Write error %s, disconnecting...\n", e.message().c_str());
