@@ -171,8 +171,7 @@ void Peer::check_deadline(const boost::system::error_code& e) {
             // The deadline has passed. The socket is closed so that any outstanding
             // asynchronous operations are cancelled.
             log_debug("Closing socket of: %s", endpoint().toString());
-            socket().close();
-            _peerManager.cancel(shared_from_this());
+            _peerManager.post_stop(shared_from_this());
         }
     }
     else if (e != error::operation_aborted) {
