@@ -417,9 +417,10 @@ void Peer::handle_write(const system::error_code& e, size_t bytes_transferred) {
         // you need show you activity to avoid disconnection
         _flushing = false;
         _send.consume(bytes_transferred);
-        log_info("Sent %d bytes to %s, still %d bytes left in the buffer", bytes_transferred, _endpoint.toString(), _send.size());
-        if (_send.size()) // always flush if there is something in the buffer - should not be possible, though?
+        if (_send.size()) { // always flush if there is something in the buffer - should not be possible, though?
+            log_info("Sent %d bytes to %s, still %d bytes left in the buffer", bytes_transferred, _endpoint.toString(), _send.size());
             flush();
+        }
     }
     else if (e != error::operation_aborted) {
         log_debug("Write error %s, disconnecting...\n", e.message().c_str());

@@ -99,27 +99,6 @@ IF(LIBCOIN_BUILD_PLATFORM_ANDROID)
 
 ENDIF()
 
-
-
-# Okay, here's the problem: On some platforms, linking against OpenThreads
-# is not enough and explicit linking to the underlying thread library
-# is also required (e.g. FreeBSD). But OpenThreads may be built with different
-# backends (Pthreads, Sproc, Windows) so we don't know what the underlying
-# thread library is because some platforms support multiple backends (e.g.
-# IRIX supports Sproc and Pthreads). Linking all libraries won't work
-# because the libraries may be incompatible.
-# So the current solution is to attempt best guess linking and exempt certain
-# cases. With IRIX, we're going to hope explicit linking to the underlying
-# library is not necessary. We currently don't case for pthreads on Windows
-# which might be an issue on things like Cygwin. This may need to be fixed.
-IF(NOT ANDROID)
-    FIND_PACKAGE(Threads)
-ENDIF()
-IF(CMAKE_SYSTEM MATCHES IRIX)
-    # Erase CMAKE_THREAD_LIBS_INIT and hope it works
-    SET(CMAKE_THREAD_LIBS_INIT "" CACHE INTERNAL "")
-ENDIF()
-
 SET(LIBCOIN_OSX_SDK_NAME "macosx10.9")
 
 IF(NOT ANDROID)
