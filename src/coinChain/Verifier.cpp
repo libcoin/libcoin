@@ -24,10 +24,6 @@ using namespace std;
 using namespace boost;
 
 Verifier::Verifier(size_t threads) : _work(_io_service), _failed(false) {
-    if (threads == 0)
-        threads = boost::thread::hardware_concurrency();
-    if (threads == 0) // #cores query not supported
-        threads = 1;
     while (threads--)
         _threads.create_thread(boost::bind(&boost::asio::io_service::run, &_io_service));
 }
@@ -45,22 +41,24 @@ void Verifier::reset() {
 }
 
 void Verifier::verify(const Output& output, const Transaction& txn, unsigned int in_idx, bool strictPayToScriptHash, int hash_type) {
-    typedef packaged_task<bool> bool_task;
-    boost::shared_ptr<bool_task> task = boost::make_shared<bool_task>(boost::bind(&Verifier::do_verify, this, output, txn, in_idx, strictPayToScriptHash, hash_type));
-    unique_future<bool> fut = task->get_future();
-    _pending_verifications.push_back(boost::move(fut));
-    _io_service.post(boost::bind(&bool_task::operator(), task));
+    if (_threads.size()) {
+        typedef packaged_task<bool> bool_task;
+        boost::shared_ptr<bool_task> task = boost::make_shared<bool_task>(boost::bind(&Verifier::do_verify, this, output, txn, in_idx, strictPayToScriptHash, hash_type));
+        unique_future<bool> fut = task->get_future();
+        _pending_verifications.push_back(boost::move(fut));
+        _io_service.post(boost::bind(&bool_task::operator(), task));
+    }
+    else {
+        if (!_failed)
+            _failed = !txn.verify(in_idx, output.script(), hash_type, strictPayToScriptHash);
+    }
 }
 
 bool Verifier::do_verify(const Output& output, const Transaction& txn, unsigned int in_idx, bool strictPayToScriptHash, int hash_type) {
-//    ostringstream oss;
-//    oss << boost::this_thread::get_id();
-//    log_info("Thread: %s", oss.str());
     if (already_failed()) // no reason to waste time on a loosing tx
         return true;
 
     if (!txn.verify(in_idx, output.script(), hash_type, strictPayToScriptHash)) {
-        //    if (!VerifySignature(output, txn, in_idx, strictPayToScriptHash, hash_type)) {
         failed_with_reason("Transaction hash: " + txn.getHash().toString());
         return false;
     }

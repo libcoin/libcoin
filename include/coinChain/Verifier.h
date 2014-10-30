@@ -28,7 +28,7 @@
 class COINCHAIN_EXPORT Verifier
 {
 public:
-    Verifier(size_t threads = 0);
+    Verifier(size_t threads = boost::thread::hardware_concurrency());
     ~Verifier();
     
     void reset();

@@ -48,7 +48,6 @@ typedef vector<unsigned char> Data;
 BlockChain::BlockChain(const Chain& chain, const string dataDir) :
     sqliterate::Database(dataDir == "" ? ":memory:" : dataDir + "/blockchain.sqlite3", getMemorySize()/4),
     _chain(chain),
-    _verifier(0),
     _lazy_purging(false),
     _purge_depth(0), // means no purging - i.e.
     _verification_depth(_chain.totalBlocksEstimate())
@@ -68,10 +67,12 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
     // use only 25% of the memory at max:
     const size_t page_size = 4096;
     size_t cache_size = total_memory/4/page_size;
+    size_t wal_size = 1024*1024*1024/page_size;
     
     // we need to declare this static as the pointer to the c_str will live also outside this function
     static string pragma_page_size = "PRAGMA page_size = " + lexical_cast<string>(page_size);
     static string pragma_cache_size = "PRAGMA cache_size = " + lexical_cast<string>(cache_size);
+    static string pragma_wal_size = "PRAGMA wal_autocheckpoint = " + lexical_cast<string>(wal_size);
     
     // check the user_version and the application_id:
     /*
@@ -92,6 +93,7 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
     query("PRAGMA synchronous=OFF");
     query(pragma_page_size.c_str()); // this is 512MiB of cache with 4kiB page_size
     query(pragma_cache_size.c_str()); // this is 512MiB of cache with 4kiB page_size
+//    query(pragma_wal_size.c_str()); // this is 512MiB of cache with 4kiB page_size
     query("PRAGMA temp_store=MEMORY"); // use memory for temp tables
     
     query("CREATE TABLE IF NOT EXISTS Blocks ("
