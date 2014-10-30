@@ -221,12 +221,15 @@ void Peer::show_activity(const system::error_code& e) {
 void Peer::stop() {
     boost::system::error_code ec;
     _suicide.cancel(ec); // no need to commit suicide when being killed
+    // we are going to delete the socket - just rely on the destructor!
+    /*
     _socket.shutdown(ip::tcp::socket::shutdown_both, ec);
     if (ec)
         log_debug("socket shutdown error: %s", ec.message()); // An error occurred.
     _socket.close(ec);
     if (ec)
         log_debug("socket close error: %s", ec.message()); // An error occurred.
+     */
 }
 
 void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferred) {
