@@ -50,10 +50,6 @@ Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, Mes
     _activity = false;
 }
 
-Peer::~Peer() {
-//    log_info("Deleted PEER: %s", _endpoint.toString());
-}
-
 ostream& operator<<(ostream& os, const Peer& p) {
     /// when NTP implemented, change to just nTime = GetAdjustedTime()
     int64_t nTime = (p._inbound ? GetAdjustedTime() : UnixTime::s());
@@ -216,20 +212,6 @@ void Peer::show_activity(const system::error_code& e) {
     }
     
     // we ignore abort errors - they are generated due to timer cancels
-}
-
-void Peer::stop() {
-    boost::system::error_code ec;
-    _suicide.cancel(ec); // no need to commit suicide when being killed
-    // we are going to delete the socket - just rely on the destructor!
-    /*
-    _socket.shutdown(ip::tcp::socket::shutdown_both, ec);
-    if (ec)
-        log_debug("socket shutdown error: %s", ec.message()); // An error occurred.
-    _socket.close(ec);
-    if (ec)
-        log_debug("socket close error: %s", ec.message()); // An error occurred.
-     */
 }
 
 void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferred) {
@@ -407,7 +389,7 @@ void Peer::broadcast() {
 }
 
 void Peer::flush() {
-    if (_send.size()) {
+    if (_send.size() && !_flushing) {
         _flushing = true;
         async_write(_socket, _send.data(), boost::bind(&Peer::handle_write, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
     }
@@ -419,10 +401,7 @@ void Peer::handle_write(const system::error_code& e, size_t bytes_transferred) {
         // you need show you activity to avoid disconnection
         _flushing = false;
         _send.consume(bytes_transferred);
-        if (_send.size()) { // always flush if there is something in the buffer - should not be possible, though?
-            log_info("Sent %d bytes to %s, still %d bytes left in the buffer", bytes_transferred, _endpoint.toString(), _send.size());
-            flush();
-        }
+        flush(); // we can safely call flush again - it will just exit silently if there is nothing in the buffer
     }
     else if (e != error::operation_aborted) {
         log_debug("Write error %s, disconnecting...\n", e.message().c_str());

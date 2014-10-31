@@ -41,15 +41,13 @@ void PeerManager::cancel(peer_ptr p) {
 }
 
 void PeerManager::stop(peer_ptr p) {
-    log_info("Disconnected from %s", p->endpoint().toString());
-    p->stop();
-    _peers.erase(p);
-    // we have stopped a node - we need to check if we need to connect to another node now.
-    _node.post_accept_or_connect();
+    if (_peers.erase(p)) { // we have stopped a node - we need to check if we need to connect to another node now.
+        log_info("Disconnected from %s", p->endpoint().toString());
+        _node.post_accept_or_connect();
+    }
 }
 
 void PeerManager::stop_all() {
-    for_each(_peers.begin(), _peers.end(), boost::bind(&Peer::stop, _1));
     _peers.clear();
 }
 

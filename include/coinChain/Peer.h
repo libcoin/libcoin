@@ -43,8 +43,6 @@ public:
     /// Construct a peer connection with the given io_service.
     explicit Peer(const Chain& chain, boost::asio::io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, std::string sub_version);
     
-    ~Peer();
-
     friend std::ostream& operator<<(std::ostream& os, const Peer& p);
     
     friend std::istream& operator>>(std::istream& is, Peer& p);
@@ -56,7 +54,7 @@ public:
     void start();
     
     /// Stop all asynchronous operations associated with the peer connection.
-    void stop();
+    //void stop();
     
     /// Get a list of all Peers from the PeerManager.
     Peers getAllPeers() { return _peerManager.getAllPeers(); }
