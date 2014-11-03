@@ -31,19 +31,11 @@ void PeerManager::manage(peer_ptr p) {
     _peers.insert(p);
 }
 
-void PeerManager::post_stop(peer_ptr p) {
-    _node.post_stop(p);
-}
-
 void PeerManager::cancel(peer_ptr p) {
-    _peers.erase(p);
-    _node.post_accept_or_connect();
-}
-
-void PeerManager::stop(peer_ptr p) {
     if (_peers.erase(p)) { // we have stopped a node - we need to check if we need to connect to another node now.
+        p->disconnect();
         log_info("Disconnected from %s", p->endpoint().toString());
-        _node.post_accept_or_connect();
+        _node.post_connect();
     }
 }
 
@@ -68,15 +60,9 @@ bool PeerManager::queued(const Inventory& inv) const {
     return ( _priorities.find(inv) != _priorities.end());
 }
 
-
-void PeerManager::ready(peer_ptr peer) {
-    _node.post_ready(peer);
-}
-
 int PeerManager::getBestHeight() const {
     return _node.blockChain().getBestHeight();
 }
-
 
 const set<unsigned int> PeerManager::getPeerIPList() const {
     // iterate the list of peers and accumulate their IPv4s
@@ -114,7 +100,7 @@ const unsigned int PeerManager::getNumInbound() const {
 Peers PeerManager::getAllPeers() const {
     Peers peers;
     for (Peers::const_iterator p = _peers.begin(); p != _peers.end(); ++p)
-        if ((*p)->socket().is_open())
+        if ((*p)->is_connected())
             peers.insert(*p);
     return peers;
 }

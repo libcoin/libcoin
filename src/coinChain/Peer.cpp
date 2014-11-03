@@ -28,7 +28,7 @@ using namespace std;
 using namespace boost;
 using namespace asio;
 
-Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, std::string sub_version) : _chain(chain),_socket(io_service), _peerManager(manager), _messageHandler(handler), _msgParser(), _connection_deadline(io_service), _suicide(io_service), _keep_alive(io_service) {
+Peer::Peer(const Chain& chain, io_service& io_service, PeerManager& manager, MessageHandler& handler, bool inbound, bool proxy, std::string sub_version) : _sub_version(sub_version), _chain(chain),_socket(io_service), _peerManager(manager), _messageHandler(handler), _msgParser(), _connection_deadline(io_service), _suicide(io_service), _keep_alive(io_service) {
     _services = 0;
     _version = 0;//chain.protocol_version();
 
@@ -116,21 +116,10 @@ ip::tcp::socket& Peer::socket() {
     return _socket;
 }
 
-void Peer::start() {
-    log_debug("Starting Peer: %s", _endpoint.toString());
-    // Be shy and don't send version until we hear
-    if (!_inbound) {
-        PushVersion();
-        flush();
-    }
-
-    _suicide.expires_from_now(posix_time::seconds(_initial_timeout)); // no activity the first 60 seconds means disconnect
-    _keep_alive.expires_from_now(posix_time::seconds(_heartbeat_timeout)); // no activity the first 60 seconds means disconnect
-    _socket.async_read_some(buffer(_recv.prepare(2048)), boost::bind(&Peer::handle_read, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
-    
-    // and start the deadline timer
-    _suicide.async_wait(boost::bind(&Peer::check_activity, this, asio::placeholders::error));
-    _keep_alive.async_wait(boost::bind(&Peer::show_activity, this, asio::placeholders::error));
+void Peer::disconnect() {
+    _socket.close();
+    _keep_alive.cancel();
+    _suicide.cancel();
 }
 
 void Peer::connect(const Endpoint& ep, Proxy& proxy, unsigned int timeout) {
@@ -151,12 +140,23 @@ void Peer::handle_connect(const system::error_code& e) {
     _connection_deadline.cancel(); // cancel the deadline timer //expires_at(posix_time::pos_infin);
     
     if (!e && socket().is_open()) {
-        start();
+        log_debug("Starting Peer: %s", _endpoint.toString());
+        // Be shy and don't send version until we hear
+        if (!_inbound) {
+            PushVersion();
+            flush();
+        }
+        
+        _suicide.expires_from_now(posix_time::seconds(_initial_timeout)); // no activity the first 60 seconds means disconnect
+        _socket.async_read_some(buffer(_recv.prepare(2048)), boost::bind(&Peer::handle_read, shared_from_this(), asio::placeholders::error, asio::placeholders::bytes_transferred));
+        
+        // and start the deadline timer
+        _suicide.async_wait(boost::bind(&Peer::check_activity, shared_from_this(), asio::placeholders::error));
     }
     else {
         log_info("Failed connect: \"%s\" to: %s", e.message().c_str(), endpoint().toString().c_str());
         _peerManager.cancel(shared_from_this());
-    }    
+    }
 }
 
 void Peer::check_deadline(const boost::system::error_code& e) {
@@ -167,7 +167,7 @@ void Peer::check_deadline(const boost::system::error_code& e) {
             // The deadline has passed. The socket is closed so that any outstanding
             // asynchronous operations are cancelled.
             log_debug("Closing socket of: %s", endpoint().toString());
-            _peerManager.post_stop(shared_from_this());
+            _peerManager.cancel(shared_from_this());
         }
     }
     else if (e != error::operation_aborted) {
@@ -178,11 +178,11 @@ void Peer::check_deadline(const boost::system::error_code& e) {
 void Peer::check_activity(const system::error_code& e) {
     if (!e) {
         if(!_activity || !(rand()%3))
-            _peerManager.post_stop(shared_from_this());
+            _peerManager.cancel(shared_from_this());
         else {
             _activity = false;
             _suicide.expires_from_now(posix_time::seconds(_suicide_timeout/2 + rand()%_suicide_timeout)); // ~90 minutes of activity once we have started up
-            _suicide.async_wait(boost::bind(&Peer::check_activity, this, asio::placeholders::error));
+            _suicide.async_wait(boost::bind(&Peer::check_activity, shared_from_this(), asio::placeholders::error));
         }
     }
     else if (e != error::operation_aborted) {
@@ -205,7 +205,7 @@ void Peer::show_activity(const system::error_code& e) {
             flush();
         }
         _keep_alive.expires_from_now(posix_time::seconds(_heartbeat_timeout)); // show activity each 30 minutes
-        _keep_alive.async_wait(boost::bind(&Peer::show_activity, this, asio::placeholders::error));
+        _keep_alive.async_wait(boost::bind(&Peer::show_activity, shared_from_this(), asio::placeholders::error));
     }
     else if (e != error::operation_aborted) {
         log_info("Boost keep alive timer error in Peer: %s\n", e.message().c_str());
@@ -230,7 +230,7 @@ void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferre
             }
             else if (!result) {
                 log_warn("Peer %s sending bogus - disconnecting", _endpoint.toString());
-                _peerManager.post_stop(shared_from_this());
+                _peerManager.cancel(shared_from_this());
             }//                continue; // basically, if we get a false result, we should consider to disconnect from the Peer!
             else
                 break;
@@ -266,7 +266,7 @@ void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferre
     }
     else if (e != error::operation_aborted) {
         log_debug("Read error %s, disconnecting... (read %d bytes though) \n", e.message().c_str(), bytes_transferred);
-        _peerManager.post_stop(shared_from_this());
+        _peerManager.cancel(shared_from_this());
     }
     else
         log_debug("not handled : %s", e.message());
@@ -321,9 +321,7 @@ void Peer::trickle() {
     if (!vAddr.empty())
         PushMessage("addr", vAddr);
     
-    //      Message: inventory
     vector<Inventory> vInv;
-//    vInv.reserve(vInventoryToSend.size());
     vector<int> sent;
     int i = 0;
     BOOST_FOREACH(const Inventory& inv, vInventoryToSend) {
@@ -405,14 +403,17 @@ void Peer::handle_write(const system::error_code& e, size_t bytes_transferred) {
     }
     else if (e != error::operation_aborted) {
         log_debug("Write error %s, disconnecting...\n", e.message().c_str());
-        _peerManager.post_stop(shared_from_this());
+        _peerManager.cancel(shared_from_this());
     }
     log_trace("exit");
 }
 
 void Peer::successfullyConnected() {
     _successfullyConnected = true;
-    _peerManager.ready(shared_from_this());
+    _keep_alive.expires_from_now(posix_time::seconds(_heartbeat_timeout)); // no activity the first 60 seconds means disconnect
+    _keep_alive.async_wait(boost::bind(&Peer::show_activity, shared_from_this(), asio::placeholders::error));
+    log_info("PEER: #%d %s %s", (inbound())?_peerManager.getNumInbound():_peerManager.getNumOutbound(), endpoint().toString(), (inbound())?"inbound":"outbound");
+    log_info("\tversion: %d, blocks: %d", version(), getStartingHeight());
 }
 
 void Peer::AddAddressKnown(const Endpoint& addr) {

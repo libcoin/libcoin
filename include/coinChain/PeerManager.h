@@ -47,8 +47,8 @@ public:
     void cancel(peer_ptr p);
     
     /// Stop the specified connection.
-    void stop(peer_ptr p);
-    void post_stop(peer_ptr p);
+//    void stop(peer_ptr p);
+//    void post_stop(peer_ptr p);
     
     /// Stop all connections.
     void stop_all();
@@ -79,9 +79,6 @@ public:
 
     /// Record the block count in a newly connect peer.
     void recordPeerBlockCount(int height) { _peerBlockCounts.input(height); }
-    
-    /// Notify the connection of a new peer
-    void ready(peer_ptr peer);
     
     int getBestHeight() const;
     

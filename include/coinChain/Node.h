@@ -132,12 +132,8 @@ public:
     /// Proxy to get the median block countof the last five connected peers.
     int getPeerMedianNumBlocks() const { return _peerManager.getPeerMedianNumBlocks(); }
     
-    /// Accept or connect depending on the number and type of the connected peers.
-    void post_accept_or_connect();
-    
-    void post_stop(peer_ptr p);
-
-    void post_ready(peer_ptr p);
+    /// Start connecting.
+    void post_connect();
     
     /// Register a filter
     void installFilter(filter_ptr filter) {
@@ -216,12 +212,6 @@ private:
     
     /// Initiate an asynchronous connect operation.
     void start_connect();
-    
-    /// Accept or connect depending on the number and type of the connected peers.
-    void accept_or_connect();
-    
-    /// Peer ready means that a new peer is connected and has completed the first version handshake
-    void peer_ready(peer_ptr p);
     
     /// Handle completion of an asynchronous accept operation.
     void handle_accept(const boost::system::error_code& e);

@@ -50,11 +50,8 @@ public:
     /// Get the socket associated with the peer connection.
     boost::asio::ip::tcp::socket& socket();
     
-    /// Start the first asynchronous operation for the peer connection.
-    void start();
-    
-    /// Stop all asynchronous operations associated with the peer connection.
-    //void stop();
+    /// Disconnect and stop all asynchronous operations associated with the peer connection.
+    void disconnect();
     
     /// Get a list of all Peers from the PeerManager.
     Peers getAllPeers() { return _peerManager.getAllPeers(); }
@@ -131,14 +128,15 @@ public:
     const Endpoint& endpoint() const { return _endpoint; }
     
     void connect(const Endpoint& ep, Proxy& proxy, unsigned int timeout);
-    
-    bool is_connected() const { return _successfullyConnected; }
+
+    void handle_connect(const boost::system::error_code& e);
+
+    bool is_connected() const { return _successfullyConnected && _socket.is_open(); }
     
 private:
     /// Check the deadline timer and give up
     void check_deadline(const boost::system::error_code& e);
 
-    void handle_connect(const boost::system::error_code& e);
     void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
     void handle_write(const boost::system::error_code& e, std::size_t bytes_transferred);
     

@@ -250,8 +250,9 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
     }
     else if (msg.command() == "version") {
         // Ask the first connected node for block updates
+        int height = _blockChain.getBestHeight();
         static int nAskedForBlocks = 0;
-        if (!origin->client() && (origin->version() < 32000 || origin->version() >= 32400) && (nAskedForBlocks < 1 || origin->getAllPeers().size() <= 1)) {
+        if (!origin->client() && (origin->version() < 32000 || origin->version() >= 32400) && (nAskedForBlocks < 1 || origin->getAllPeers().size() <= 1) && (height -100 < origin->getStartingHeight())) {
             nAskedForBlocks++;
             origin->PushGetBlocks(_blockChain.getBestLocator(), uint256(0));
         }

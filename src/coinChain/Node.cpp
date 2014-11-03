@@ -69,7 +69,7 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     _peerManager(*this),
     _messageHandler(),
     _endpointPool(chain.defaultPort(), _dataDir),
-    _chatClient(_io_service, boost::bind(&Node::post_accept_or_connect, this), irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy),
+    _chatClient(_io_service, boost::bind(&Node::post_connect, this), irc, _endpointPool, chain.ircChannel(), chain.ircChannels(), proxy),
     _proxy(proxy),
     _connection_timeout(timeout),
     _client_name("libcoin"),
@@ -102,6 +102,7 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
             if (ec)
                 throw runtime_error("Could not bind to port" + lexical_cast<string>(bind_port-1));
             _acceptor.listen();
+            start_accept();
         }
     // else nolisten
     
@@ -112,7 +113,7 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
 
     // disable chat by blanking out the chat server address
     if (!irc.size()) {
-        post_accept_or_connect();
+        post_connect();
     }
 
     
@@ -234,9 +235,6 @@ void Node::run() {
     // asynchronous operation outstanding: the asynchronous accept call waiting
     // for new incoming connections.
     
-    //    if(_acceptor.is_open()) start_accept();
-    //    start_connect();
-    
     // Install filters for the messages. First inserted filters are executed first.
     _messageHandler.installFilter(filter_ptr(new VersionFilter(_notifier)));
     _messageHandler.installFilter(filter_ptr(new EndpointFilter(_notifier, _endpointPool)));
@@ -340,22 +338,24 @@ Endpoint Node::getCandidate(const set<unsigned int>& not_in) {
 }
 
 void Node::start_connect() {
-    // we connect to 8 peers, but we take one by one and only connect to new peers if we have less than 8 connections.
-    set<unsigned int> not_in = _peerManager.getPeerIPList();
-    Endpoint ep;
-    if(_connection_list.size())
-        ep = getCandidate(not_in);
-    else
-        ep = _endpointPool.getCandidate(not_in, 0);
-    if(!ep.isValid())
-        return; // this will cause the Node to wait for inbound connections only - alternatively we should add a timer
-    // TODO: we should check for validity of the candidate - if not valid we could retry later, give up or wait for a new Peer before we try a new connect. 
-    stringstream ss;
-    ss << (boost::asio::ip::tcp::endpoint)ep;
-    log_debug("Trying connect to: %s", ss.str());
-    boost::shared_ptr<Peer> peer(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, false, _proxy, getFullClientVersion())); // false means outbound
-    peer->connect(ep, _proxy, _connection_timeout);
-    _endpointPool.setLastTry(peer->endpoint());    
+    while ((_connection_list.empty() && _peerManager.getNumOutbound(true) < _max_outbound) || _peerManager.getNumOutbound(true) <_connection_list.size()) {
+        // we connect to 8 peers, but we take one by one and only connect to new peers if we have less than 8 connections.
+        set<unsigned int> not_in = _peerManager.getPeerIPList();
+        Endpoint ep;
+        if(_connection_list.size())
+            ep = getCandidate(not_in);
+        else
+            ep = _endpointPool.getCandidate(not_in, 0);
+        if(!ep.isValid())
+            return; // this will cause the Node to wait for inbound connections only - alternatively we should add a timer
+        // TODO: we should check for validity of the candidate - if not valid we could retry later, give up or wait for a new Peer before we try a new connect.
+        stringstream ss;
+        ss << (boost::asio::ip::tcp::endpoint)ep;
+        log_debug("Trying connect to: %s", ss.str());
+        boost::shared_ptr<Peer> peer(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, false, _proxy, getFullClientVersion())); // false means outbound
+        peer->connect(ep, _proxy, _connection_timeout);
+        _endpointPool.setLastTry(peer->endpoint());
+    }
 }
 
 
@@ -382,59 +382,26 @@ void Node::handle_async_block() {
 }
 
 void Node::start_accept() {
-    _new_client.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, true, _proxy, getFullClientVersion())); // true means inbound
-    _acceptor.async_accept(_new_client->socket(), boost::bind(&Node::handle_accept, this, asio::placeholders::error));
+    if(_acceptor.is_open()) {
+        _new_client.reset(new Peer(_blockChain.chain(), _io_service, _peerManager, _messageHandler, true, _proxy, getFullClientVersion())); // true means inbound
+        _acceptor.async_accept(_new_client->socket(), boost::bind(&Node::handle_accept, this, asio::placeholders::error));
+    }
 }
 
 void Node::handle_accept(const system::error_code& e) {
-    // Check whether the server was stopped by a signal before this completion
-    // handler had a chance to run.
-    if (!_acceptor.is_open()) {
-        return;
-    }
-    
+
     if (!e) {
-        _peerManager.manage(_new_client);
-        _new_client->start();
+        if (_peerManager.getNumInbound() < _max_inbound) { // if we have room for more connections start it, otherwise drop it
+            _peerManager.manage(_new_client);
+            _new_client->handle_connect(e);
+        }
     }
 
-    _new_client.reset(); // this enables us to test if we have pending accepts
-    
-    accept_or_connect();
+    start_accept();
 }
 
-void Node::accept_or_connect() {
-    // only start a connect or accept if we have not one pending already
-    if (!_new_client) {
-        log_debug("Inbound connections are now: %d", _peerManager.getNumInbound());
-        
-        if (_peerManager.getNumInbound() < _max_inbound) // start_accept will not be called again before we get a read/write error on a socket
-            if(_acceptor.is_open()) start_accept();
-    }
-        
-    if ((_connection_list.empty() && _peerManager.getNumOutbound(true) < _max_outbound) || _peerManager.getNumOutbound(true) <_connection_list.size()) // start_accept will not be called again before we get a read/write error on a socket
-        start_connect();         
-}
-
-void Node::peer_ready(peer_ptr p) {
-    //update_persistence();
-    //update_validation();
-    //update_verification();
-    log_info("PEER: #%d %s %s", (p->inbound())?_peerManager.getNumInbound():_peerManager.getNumOutbound(), p->endpoint().toString(), (p->inbound())?"inbound":"outbound");
-    log_info("\tversion: %d, blocks: %d", p->version(), p->getStartingHeight());
-    accept_or_connect();
-}
-
-void Node::post_accept_or_connect() {
-    _io_service.post(boost::bind(&Node::accept_or_connect, this));
-}
-
-void Node::post_stop(peer_ptr p) {
-    _io_service.post(boost::bind(&PeerManager::stop, &_peerManager, p));
-}
-
-void Node::post_ready(peer_ptr p) {
-    _io_service.post(boost::bind(&Node::peer_ready, this, p));
+void Node::post_connect() {
+    _io_service.post(boost::bind(&Node::start_connect, this));
 }
 
 void Node::handle_stop() {
