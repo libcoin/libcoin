@@ -1490,11 +1490,11 @@ std::vector<int64_t> BlockChain::getConfirmations(int count) const {
 }
 
 Outputs BlockChain::getSpentOutputs(int64_t conf) const {
-    return queryColRow<Output(int64_t, Script)>("SELECT value, script FROM Spendings WHERE icnf = ? ORDER BY iidx", conf, conf);
+    return queryColRow<Output(int64_t, Script)>("SELECT value, script FROM Spendings WHERE icnf = ? ORDER BY iidx", conf);
 }
 
 Outputs BlockChain::getOutputs(int64_t conf) const {
-    return queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1 ORDER BY idx ASC)");
+    return queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1 ORDER BY idx ASC)", conf);
 }
 
 

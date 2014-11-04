@@ -216,7 +216,7 @@ void Peer::show_activity(const system::error_code& e) {
 
 void Peer::handle_read(const system::error_code& e, std::size_t bytes_transferred) {
     log_trace("args error: %s, bytes: %d", e.message(), bytes_transferred);
-    if (!e && bytes_transferred > 0) {
+    if (!e && bytes_transferred > 0 && _socket.is_open()) {
         _activity = true;
         _recv.commit(bytes_transferred);
 
@@ -395,7 +395,7 @@ void Peer::flush() {
 
 void Peer::handle_write(const system::error_code& e, size_t bytes_transferred) {
     log_trace("args error: %s, bytes: %d", e.message(), bytes_transferred);
-    if (!e) {
+    if (!e && _socket.is_open()) {
         // you need show you activity to avoid disconnection
         _flushing = false;
         _send.consume(bytes_transferred);

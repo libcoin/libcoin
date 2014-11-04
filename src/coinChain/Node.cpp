@@ -374,7 +374,7 @@ void Node::handle_async_block() {
     
     bool done = true;
     for (vector<AsyncListener>::const_iterator l = _async_listeners.begin(); l != _async_listeners.end(); ++l) {
-        done &= !(*l)(count);
+        done &= (*l)(count);
     }
     
     if (!done)
