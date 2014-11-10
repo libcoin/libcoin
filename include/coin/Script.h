@@ -775,6 +775,10 @@ public:
         log_info("Script(%s)\n", HexStr(begin(), end(), true).c_str());
     }
 
+    std::string toHex() const {
+        return HexStr(begin(), end());
+    }
+    
     std::string toString() const
     {
         std::string str;

@@ -51,6 +51,8 @@ void Verifier::verify(const Output& output, const Transaction& txn, unsigned int
     else {
         if (!_failed)
             _failed = !txn.verify(in_idx, output.script(), hash_type, strictPayToScriptHash);
+        if (_failed)
+            failed_with_reason("Transaction hash: " + txn.getHash().toString());
     }
 }
 

@@ -127,7 +127,7 @@ RPC::RPC(const Request& request) : _id(Value::null), _error(Value::null), _reque
     if (_request.is_post() && _request.mime() == "application/json")
         parse(_request.content());
     else if (_request.is_get())
-        parse(_request.path(), _request.query());
+        parse(_request.path().substr(1), _request.query());
     // alternatively everything will be void...
 }
 
