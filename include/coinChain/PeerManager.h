@@ -21,6 +21,7 @@
 #include <coinChain/Export.h>
 #include <coinChain/Inventory.h>
 
+#include <deque>
 #include <set>
 #include <map>
 #include <boost/noncopyable.hpp>
@@ -94,44 +95,36 @@ private:
     // Returns the median of the last N numbers
     template <typename T> class MedianFilter {
     private:
-        std::vector<T> _values;
-        std::vector<T> _sorted;
+        std::deque<T> _values;
         unsigned int _size;
+        T _median;
     public:
-        MedianFilter(unsigned int size, T initial_value): _size(size) {
-            _values.reserve(size);
-            _values.push_back(initial_value);
-            _sorted = _values;
-        }
+        MedianFilter(unsigned int size, T initial_value):
+            _values(1, initial_value), _size(size), _median(initial_value)
+        {}
         
         void input(T value) {
             if(_values.size() == _size) {
-                _values.erase(_values.begin());
+                _values.pop_front();
             }
             _values.push_back(value);
-            
-            _sorted.resize(_values.size());
-            std::copy(_values.begin(), _values.end(), _sorted.begin());
-            std::sort(_sorted.begin(), _sorted.end());
+
+            std::vector<T> sorted(_values.begin(), _values.end());
+            std::sort(sorted.begin(), sorted.end());
+
+            const size_t size = sorted.size();
+            assert(size > 0);
+
+            if(size & 1) { // Odd number of elements
+                _median = sorted[size/2];
+            }
+            else { // Even number of elements
+                _median = (sorted[size/2-1] + sorted[size/2]) / 2;
+            }
         }
         
         T median() const {
-            int size = _sorted.size();
-            assert(size > 0);
-            if(size & 1) { // Odd number of elements
-                return _sorted[size/2];
-            }
-            else { // Even number of elements
-                return (_sorted[size/2-1] + _sorted[size/2]) / 2;
-            }
-        }
-        
-        unsigned int size() const {
-            return _values.size();
-        }
-        
-        std::vector<T> sorted () const {
-            return _sorted;
+            return _median;
         }
     };
     
