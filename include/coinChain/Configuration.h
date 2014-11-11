@@ -80,6 +80,9 @@ public:
     std::string listen() const {
         return _listen;
     }
+    std::string irc() const {
+        return _irc;
+    }
     bool portmap() const {
         return _portmap;
     }
@@ -101,11 +104,17 @@ public:
     Node::Strictness validation() const {
         return _validation;
     }
-    Node::Strictness persistance() const {
-        return _persistance;
+    Node::Strictness persistence() const {
+        return _persistence;
     }
     bool searchable() const {
         return _searchable;
+    }
+    bool help() const {
+        return _help;
+    }
+    bool version() const {
+        return _version;
     }
     friend std::ostream& operator<<(std::ostream& os, const Configuration&);
 private:
@@ -120,9 +129,11 @@ private:
     strings _params;
     std::string _proxy;
     std::string _listen;
+    std::string _irc;
     bool _portmap, _gen, _ssl;
-    Node::Strictness _verification, _validation, _persistance;
+    Node::Strictness _verification, _validation, _persistence;
     bool _searchable;
+    bool _help, _version;
     unsigned int _timeout;
     std::string _certchain, _privkey;
     const Currency* _chain;

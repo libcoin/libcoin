@@ -38,7 +38,7 @@ class EndpointPool;
 class COINCHAIN_EXPORT ChatClient
 {
 public:
-    ChatClient(boost::asio::io_service& io_service, boost::function<void (void)> new_endpoint_notifier, const std::string& server, EndpointPool& endpointPool, std::string channel, unsigned int channles, boost::asio::ip::tcp::endpoint proxy = boost::asio::ip::tcp::endpoint());
+    ChatClient(boost::asio::io_service& io_service, boost::function<void (void)> new_endpoint_notifier, const std::string& server, EndpointPool& endpointPool, std::string channel, unsigned int channels, boost::asio::ip::tcp::endpoint proxy = boost::asio::ip::tcp::endpoint());
     
     ~ChatClient() {
         boost::system::error_code ec;

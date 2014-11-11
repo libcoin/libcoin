@@ -229,6 +229,7 @@ public:
     virtual const bool checkProofOfWork(const Block& block) const;
     virtual int nextWorkRequired(BlockIterator blk) const;
     //    virtual const bool checkProofOfWork(uint256 hash, unsigned int nBits) const;
+    virtual bool checkPoints(const unsigned int height, const uint256& hash) const ;
     
     virtual int timeStamp(ChangeIdentifier id) const {
         switch(id) {
@@ -269,6 +270,8 @@ private:
     Block _genesisBlock;
     uint256 _genesis;
     Magic _magic;
+    typedef std::map<int, uint256> Checkpoints;
+    Checkpoints _checkpoints;
 };
 
 extern const TestNet3Chain testnet3;
