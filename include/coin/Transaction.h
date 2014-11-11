@@ -293,7 +293,7 @@ public:
     uint256 getSignatureHash(Script scriptCode, unsigned int n, int type) const;
     
     /// Verify the signature of input n against script
-    bool verify(unsigned int n, const Script& script, int type = 0, bool strictPayToScriptHash = true) const;
+    bool verify(unsigned int n, Script script, int type = 0, bool strictPayToScriptHash = true) const;
     
     /// Get version.
     unsigned int version() const { return _version; }

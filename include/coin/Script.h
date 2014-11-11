@@ -822,7 +822,8 @@ public:
     // bool operator()(const Script& script, const Script& tmpl);
 
     void stack(const Stack& s) {
-        _stack.insert(_stack.end(), s.begin(), s.end());
+        _stack = s;
+//        _stack.insert(_stack.end(), s.begin(), s.end());
     }
     
     const Stack& stack() const { return _stack; }

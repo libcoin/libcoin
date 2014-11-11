@@ -204,7 +204,7 @@ static bool CastToBool(const valtype& vch) {
 }
 
 
-bool Transaction::verify(unsigned int n, const Script& script, int type, bool strictPayToScriptHash) const {
+bool Transaction::verify(unsigned int n, Script script, int type, bool strictPayToScriptHash) const {
     Evaluator::Stack stackCopy;
     
     const Input& input = getInput(n);
