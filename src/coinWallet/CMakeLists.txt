@@ -21,6 +21,7 @@ SET(TARGET_H
     ${HEADER_PATH}/WalletDB.h
     ${HEADER_PATH}/WalletTx.h
     ${HEADER_PATH}/WalletRPC.h
+    ${HEADER_PATH}/NameWalletRPC.h
     ${LIBCOIN_CONFIG_HEADER}
 )
 
@@ -37,6 +38,7 @@ SET(TARGET_SRC
     WalletDB.cpp
     WalletTx.cpp
     WalletRPC.cpp
+    NameWalletRPC.cpp
     ${LIBCOIN_VERSIONINFO_RC}
 )
 SET(TARGET_LIBRARIES coin coinChain coinHTTP)

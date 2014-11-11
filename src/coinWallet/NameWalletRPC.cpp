@@ -14,7 +14,7 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <coinName/NameWalletRPC.h>
+#include <coinWallet/NameWalletRPC.h>
 
 #include <coin/NameOperation.h>
 

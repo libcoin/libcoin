@@ -22,9 +22,6 @@
 #include <coinHTTP/Server.h>
 #include <coinHTTP/Client.h>
 
-#include <coinWallet/Wallet.h>
-#include <coinWallet/WalletRPC.h>
-
 #include <coinPool/Miner.h>
 #include <coinPool/GetWork.h>
 #include <coinPool/GetBlockTemplate.h>
@@ -33,7 +30,10 @@
 #include <coinNAT/PortMapper.h>
 
 #include <coinName/NameGetRPC.h>
-#include <coinName/NameWalletRPC.h>
+
+#include <coinWallet/Wallet.h>
+#include <coinWallet/WalletRPC.h>
+#include <coinWallet/NameWalletRPC.h>
 
 #include <coin/Logger.h>
 
