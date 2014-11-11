@@ -205,7 +205,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                             const Transaction& txn = block.getTransaction(merkleBlock.getTransactionBlockIndex(i));
                             Inventory inv(txn);
                             if (!origin->known(inv))
-                                origin->push(inv);
+                                origin->push(txn);
                         }
                     }
                     // Trigger them to send a getblocks request for the next batch of inventory
