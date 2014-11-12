@@ -140,6 +140,7 @@ void Peer::handle_connect(const system::error_code& e) {
     _connection_deadline.cancel(); // cancel the deadline timer //expires_at(posix_time::pos_infin);
     
     if (!e && socket().is_open()) {
+        if (_inbound) _endpoint = socket().remote_endpoint();
         log_debug("Starting Peer: %s", _endpoint.toString());
         // Be shy and don't send version until we hear
         if (!_inbound) {
