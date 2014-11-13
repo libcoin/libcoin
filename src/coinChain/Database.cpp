@@ -112,7 +112,13 @@ namespace sqliterate {
     
     Database::Database(const string filename, int64_t heap_limit) {
         _db = NULL;
-
+        static bool configured = false;
+        if (!configured) {
+            configured = true;
+            int ret = sqlite3_config(SQLITE_CONFIG_SERIALIZED);
+            if (ret != SQLITE_OK)
+                throw Database::Error("Database() : error " + lexical_cast<string>(ret) + " configuring database environment");
+        }
         int ret = sqlite3_open(filename.c_str(), &_db);
         if (ret != SQLITE_OK)
             throw Database::Error("Database() : error " + lexical_cast<string>(ret) + " opening database environment");

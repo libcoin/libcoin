@@ -80,7 +80,9 @@ Value GetBlock::operator()(const Array& params, bool fHelp) {
     else if (type == "raw") {
         ostringstream os;
         os << block;
-        result.push_back(Pair("hex", hexify(os.str()) ));
+        string bin = os.str();
+        string hex = HexStr(bin.begin(), bin.end());
+        result.push_back(Pair("hex", hex));
     }
     return result;
 }        
