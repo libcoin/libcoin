@@ -216,8 +216,8 @@ public:
     void getBlock(BlockIterator blk, Block& block) const;
 
     /// getBlockHeader will only make one query to the DB and return an empty block without the transactions
-    void getBlockHeader(int count, Block& block) const;
-    void getBlockHeader(BlockIterator blk, Block& block) const { getBlockHeader(blk.count(), block); }
+    void getBlockHeader(int count, BlockHeader& block) const;
+    void getBlockHeader(BlockIterator blk, BlockHeader& block) const { getBlockHeader(blk.count(), block); }
 
     void getBlock(int count, Block& block) const;
     

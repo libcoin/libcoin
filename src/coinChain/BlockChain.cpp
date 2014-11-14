@@ -864,8 +864,8 @@ void BlockChain::rollbackBlock(int count) {
     query("DELETE FROM AuxProofOfWorks WHERE count = ?", count);
 }
 
-void BlockChain::getBlockHeader(int count, Block& block) const {
-    block = queryRow<Block(int, uint256, uint256, int, int, int)>("SELECT version, prev, mrkl, time, bits, nonce FROM Blocks WHERE count = ?", count);
+void BlockChain::getBlockHeader(int count, BlockHeader& block) const {
+    block = queryRow<BlockHeader(int, uint256, uint256, int, int, int)>("SELECT version, prev, mrkl, time, bits, nonce FROM Blocks WHERE count = ?", count);
 }
 
 void BlockChain::getBlock(int count, Block& block) const {

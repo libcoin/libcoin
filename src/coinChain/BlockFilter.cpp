@@ -147,31 +147,32 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
         istringstream is(msg.payload());
         is >> binary<int>(version) >> locator >> hashStop;
 
-        BlockIterator blk;
-        if (locator.IsNull()) {
-            // If locator is null, return the hashStop block
-            blk = _blockChain.iterator(hashStop);
-            if (!blk) return true;
-        }
-        else {
-            // Find the last block the caller has in the main chain
-            blk = _blockChain.iterator(locator);
-            if (!!blk)
-                ++blk;
-        }
-        
-        vector<Block> vHeaders;
-        int nLimit = 2000 + _blockChain.getDistanceBack(locator);
-        int height = blk.height();
-        log_debug("getheaders %d to %s limit %d", (!!blk ? height : -1), hashStop.toString().substr(0,20).c_str(), nLimit);
-        for (; !!blk; ++blk) {
-            Block block;
-            _blockChain.getBlockHeader(blk, block);
-            vHeaders.push_back(block);
-            if (--nLimit <= 0 || blk->hash == hashStop)
+        // Find the last block the caller has in the main chain
+        BlockIterator blk = _blockChain.iterator(locator);
+
+        vector<BlockHeader> headers;
+        int limit = 2000 + _blockChain.getDistanceBack(locator);
+        int height = blk.height() + 1;
+        log_debug("getheaders %d to %s limit %d", height, hashStop.toString().substr(0,20).c_str(), limit);
+        for (++blk; !!blk; ++blk) {
+            uint256 hash = blk->hash;
+            height = blk.height();
+            if (height < _blockChain.getDeepestDepth()) {
+                log_debug("  getheaders stopping at %d - no more blocks", height);
+                break;
+            }
+            if (hash == hashStop) {
+                log_debug("  getheaders stopping at %d %s", height, hash.toString().substr(0,20).c_str());
+                break;
+            }
+            BlockHeader header;
+
+            _blockChain.getBlockHeader(blk, header);
+            headers.push_back(header);
+            if (--limit <= 0 || blk->hash == hashStop)
                 break;
         }
-        origin->PushMessage("headers", vHeaders);
+        origin->PushMessage("headers", headers);
     }
     else if (msg.command() == "getdata") { // server, or whatever instance that holds the inv map...
         vector<Inventory> vInv;
