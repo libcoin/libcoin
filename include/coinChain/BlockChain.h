@@ -210,16 +210,19 @@ public:
 
     double getDifficulty(BlockIterator blk = BlockIterator()) const;
     
-    /// getBlock will first try to locate the block by its hash through the block index, if this fails it will assume that the hash for a tx and check the database to get the disk pos and then return the block as read from the block file
     void getBlock(const uint256 hash, Block& block) const;
+    typedef std::vector<Outputs> Redeemed;
+    void getBlock(const uint256 hash, Block& block, Redeemed& redeemed) const;
     
     void getBlock(BlockIterator blk, Block& block) const;
+    void getBlock(BlockIterator blk, Block& block, Redeemed& redeemed) const;
 
     /// getBlockHeader will only make one query to the DB and return an empty block without the transactions
     void getBlockHeader(int count, BlockHeader& block) const;
     void getBlockHeader(BlockIterator blk, BlockHeader& block) const { getBlockHeader(blk.count(), block); }
 
     void getBlock(int count, Block& block) const;
+    void getBlock(int count, Block& block, Redeemed& redeemed) const;
     
     /// S H A R E S
     bool checkShare(const Block& block) const;

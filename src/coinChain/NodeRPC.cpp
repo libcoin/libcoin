@@ -36,7 +36,7 @@ Value GetBlockHash::operator()(const Array& params, bool fHelp) {
 
 Value GetBlock::operator()(const Array& params, bool fHelp) {
     if (fHelp || params.size() < 1 || params.size() > 2)
-        throw RPC::error(RPC::invalid_params, "getblock <hash> raw/normalized\n"
+        throw RPC::error(RPC::invalid_params, "getblock <hash> raw/verifiable\n"
                             "Returns details of a block with given block-hash.");
     
     std::string strHash = params[0].get_str();
@@ -50,7 +50,11 @@ Value GetBlock::operator()(const Array& params, bool fHelp) {
     BlockIterator blk = _node.blockChain().iterator(hash);
     
     Block block;
-    _node.blockChain().getBlock(hash, block);
+    BlockChain::Redeemed redeemed;
+    if (type == "verifiable")
+        _node.blockChain().getBlock(hash, block, redeemed);
+    else
+        _node.blockChain().getBlock(hash, block);
     
     if (block.isNull())
         throw RPC::error(RPC::invalid_request,  "Block not found");
@@ -80,6 +84,19 @@ Value GetBlock::operator()(const Array& params, bool fHelp) {
     else if (type == "raw") {
         ostringstream os;
         os << block;
+        string bin = os.str();
+        string hex = HexStr(bin.begin(), bin.end());
+        result.push_back(Pair("hex", hex));
+    }
+    else if (type == "verifiable") {
+        ostringstream os;
+        os << (BlockHeader)block;
+        // now iterate over transactions and the redeemed outputs
+        os << block.getTransaction(0); // nothing to redeem for a coinbase
+        for (size_t i = 1; i < block.getNumTransactions(); ++i) {
+            os << redeemed[i];
+            os << block.getTransaction(i);
+        }
         string bin = os.str();
         string hex = HexStr(bin.begin(), bin.end());
         result.push_back(Pair("hex", hex));

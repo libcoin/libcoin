@@ -870,7 +870,7 @@ void BlockChain::getBlockHeader(int count, BlockHeader& block) const {
 
 void BlockChain::getBlock(int count, Block& block) const {
     block.setNull();
-
+    
     if (count < getDeepestDepth())
         return;
     
@@ -883,7 +883,53 @@ void BlockChain::getBlock(int count, Block& block) const {
         Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY iidx", confs[idx].cnf); // note that "ABS" as cnf for coinbases is negative!
         
         Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1) ORDER BY idx", confs[idx].cnf);
+        
+        Transaction txn = confs[idx];
+        txn.setInputs(inputs);
+        txn.setOutputs(outputs);
+        block.addTransaction(txn);
+    }
+    block.updateMerkleTree();
+    try {
+        _chain.check(block);
+    }
+    catch (std::exception& e) {
+        block.setNull();
+        log_warn("getBlock failed for count= %i with: %s", count, e.what());
+    }
+    
+    // and get the AuxPoW if it is a merged mined block
+    if (_chain.adhere_aux_pow() && block.getVersion()&BLOCK_VERSION_AUXPOW) {
+        Data data = query<Data>("SELECT auxpow FROM AuxProofOfWorks WHERE count = ?", count);
+        AuxPow auxpow;
+        istringstream is(string(data.begin(), data.end()));
+        is >> auxpow;
+        block.setAuxPoW(auxpow);
+    }
+    //    cout << block.getHash().toString() << endl;
+}
 
+void BlockChain::getBlock(int count, Block& block, Redeemed& redeemed) const {
+    block.setNull();
+    
+    if (count < getDeepestDepth())
+        return;
+    
+    getBlockHeader(count, block);
+    
+    // now get the transactions
+    vector<Confirmation> confs = queryColRow<Confirmation(int, unsigned int, int64_t, int64_t)>("SELECT cnf, version, locktime, count FROM Confirmations WHERE count = ? ORDER BY idx", count);
+    
+    for (size_t idx = 0; idx < confs.size(); idx++) {
+        Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY iidx", confs[idx].cnf); // note that "ABS" as cnf for coinbases is negative!
+
+        if (idx) {
+            Outputs redeems = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM Spendings WHERE icnf = ? ORDER BY iidx", confs[idx].cnf); // note that "ABS" as cnf for coinbases is negative!
+            redeemed.push_back(redeems);
+        }
+        
+        Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1) ORDER BY idx", confs[idx].cnf);
+        
         Transaction txn = confs[idx];
         txn.setInputs(inputs);
         txn.setOutputs(outputs);
@@ -1334,6 +1380,13 @@ void BlockChain::getBlock(BlockIterator blk, Block& block) const {
     getBlock(blk.count(), block);
 }
 
+void BlockChain::getBlock(BlockIterator blk, Block& block, Redeemed& redeemed) const {
+    // lock the pool and chain for reading
+    boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);
+    block.setNull();
+    getBlock(blk.count(), block, redeemed);
+}
+
 void BlockChain::getBlock(const uint256 hash, Block& block) const
 {
     // lookup in the database:
@@ -1341,6 +1394,16 @@ void BlockChain::getBlock(const uint256 hash, Block& block) const
     
     if (!!blk) {
         getBlock(blk, block);
+    }
+}
+
+void BlockChain::getBlock(const uint256 hash, Block& block, Redeemed& redeemed) const
+{
+    // lookup in the database:
+    BlockIterator blk = _tree.find(hash);
+    
+    if (!!blk) {
+        getBlock(blk, block, redeemed);
     }
 }
 
