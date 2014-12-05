@@ -806,6 +806,8 @@ bool Solver(const Script& scriptPubKey, txnouttype& typeRet, vector<vector<unsig
         
         // Sender provides N pubkeys, receivers provides M signatures
         mTemplates.insert(make_pair(TX_MULTISIG, Script() << OP_SMALLINTEGER << OP_PUBKEYS << OP_SMALLINTEGER << OP_CHECKMULTISIG));
+        
+        // Enable scan also of m
     }
     
     // Shortcut for pay-to-script-hash, which are more constrained than the other types:

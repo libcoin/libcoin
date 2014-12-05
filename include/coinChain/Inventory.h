@@ -48,7 +48,7 @@ class COINCHAIN_EXPORT Inventory
 public:
     Inventory();
     Inventory(int type, const uint256& hash);
-    Inventory(const std::string& type_name, const uint256& hash);
+//    Inventory(const std::string& type_name, const uint256& hash);
     
     explicit Inventory(const Block& blk);
     explicit Inventory(const MerkleBlock& blk);
@@ -79,6 +79,9 @@ public:
     
     const int getType() const { return _type; }
     const uint256 getHash() const { return _hash; }
+
+private:
+    static std::map<int, std::string> known_types;
     
 private:
     int _type;

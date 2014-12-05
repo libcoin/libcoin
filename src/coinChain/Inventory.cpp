@@ -21,13 +21,19 @@
 
 #include <coin/util.h>
 
-static const char* ppszTypeName[] =
-{
-    "ERROR",
-    "tx",
-    "block",
-    "filtered block"
-};
+#include <boost/assign/list_of.hpp>
+
+using namespace std;
+using namespace boost;
+
+map<int, string> Inventory::known_types = assign::map_list_of
+( 0, "ERROR")
+( (int)MSG_TX, "tx")
+( (int)MSG_BLOCK, "block")
+( (int)MSG_FILTERED_BLOCK, "filtered block")
+( (int)MSG_NORMALIZED_TX, "normalized tx")
+( (int)MSG_NORMALIZED_BLOCK, "normalized block");
+;
 
 Inventory::Inventory()
 {
@@ -40,7 +46,7 @@ Inventory::Inventory(int type, const uint256& hash)
     _type = type;
     _hash = hash;
 }
-
+/*
 Inventory::Inventory(const std::string& type_name, const uint256& hash)
 {
     int i;
@@ -56,7 +62,7 @@ Inventory::Inventory(const std::string& type_name, const uint256& hash)
         throw std::out_of_range(cformat("Inventory::Inventory(string, uint256) : unknown type '%s'", type_name).text());
     _hash = hash;
 }
-
+*/
 Inventory::Inventory(const Block& blk) {
     _type = MSG_BLOCK;
     _hash = blk.getHash();
@@ -81,14 +87,15 @@ bool operator<(const Inventory& a, const Inventory& b)
 
 bool Inventory::isKnownType() const
 {
-    return (_type >= 1 && (unsigned int)_type < ARRAYLEN(ppszTypeName));
+    std::map<int, string>::const_iterator it = known_types.find(_type);
+    return (_type > 0) && (it != known_types.end());
 }
 
 std::string Inventory::toString() const {
     if (!isKnownType())
         throw std::out_of_range(cformat("Inventory::GetCommand() : type=%d unknown type", _type).text());
-    
-    return cformat("%s %s", ppszTypeName[_type], _hash.toString().substr(0,20)).text();
+
+    return cformat("%s %s", known_types[_type], _hash.toString().substr(0,20)).text();
 }
 /*
 const char* Inventory::getCommand() const
