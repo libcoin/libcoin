@@ -185,6 +185,7 @@ enum opcodetype
     //    OP_VALUE = 0xee, // used for template matching - deprecating the stuff below
     
     // template matching params
+    OP_SIGNATURE = 0xf0,
     OP_SMALLINTEGER = 0xfa,
     OP_PUBKEYS = 0xfb,
     OP_PUBKEYHASH = 0xfd,
@@ -371,6 +372,8 @@ inline std::string StackString(const std::vector<std::vector<unsigned char> >& v
 // This is the raw PubKeyHash - the BitcoinAddress or more correctly the ChainAddress includes the netword Id and is hence better suited for communicating with the outside. For backwards compatability we do, however, need to use the ChainAddress in e.g. the wallet.
 
 typedef std::vector<unsigned char> PubKey;
+
+typedef std::vector<PubKey> PubKeys;
 
 class COIN_EXPORT PubKeyHash : public uint160 {
 public:
@@ -957,6 +960,27 @@ public:
             return uint160(0);
     }
 
+    /// pubKeys returns possible pubkeys from a multisig script
+    /*
+    static PubKeys pubKeys(const Script& script) {
+        Template eval(Script() << OP_SMALLINTEGER << OP_PUBKEYS << OP_SMALLINTEGER << OP_CHECKSIG);
+        if (eval(script))
+            return eval.top();
+        else
+            return PubKey();
+    }
+    */
+    
+    /// extract the pubkey from a signature script
+    static PubKey pubKeySignature(const Script& script) {
+        Template eval(Script() << OP_SIGNATURE << OP_PUBKEY);
+        if (eval(script))
+            return eval.top();
+        else
+            return PubKey();
+    }
+    
+    
 protected:
     /// Subclass Evaluator to implement eval, enbaling evaluation of context dependent operations
     virtual boost::tribool eval(opcodetype opcode) {
@@ -994,6 +1018,7 @@ protected:
                                 break;
                             case OP_PUBKEYS:
                             case OP_SMALLINTEGER:
+                            case OP_SIGNATURE:
                             default:
                                 break;
                         }

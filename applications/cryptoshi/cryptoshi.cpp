@@ -643,6 +643,15 @@ int main(int argc, char* argv[])
                 return conf.chain().isStandard(txn);
             }
             
+            if (conf.method() == "verifytx") {
+                Data data = ParseHex(conf.param(0));
+                istringstream is(string(data.begin(), data.end()));
+                Transaction txn;
+                is >> txn;
+                
+                
+            }
+            
             if (conf.method() == "audit") {
                 // load an audit file .json and audits its content
                 json_spirit::Value root;

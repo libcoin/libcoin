@@ -237,6 +237,14 @@ private:
 
 typedef std::vector<Output> Outputs;
 
+/// We also define a Spending - a spending is the matching input and output as one entity
+class COIN_EXPORT Spending : public Output, public Input {
+public:
+    Spending (int64_t value, Script script, uint256 hash, unsigned int idx, Script signature=Script(), unsigned int sequence=UINT_MAX) : Output(value, script), Input(hash, idx, signature, sequence) {}
+};
+
+typedef std::vector<Spending> Spendings;
+
 //
 // The basic transaction that is broadcasted on the network and contained in
 // blocks.  A transaction can contain multiple inputs and outputs.

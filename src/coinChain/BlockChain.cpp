@@ -1556,10 +1556,17 @@ Outputs BlockChain::getSpentOutputs(int64_t conf) const {
     return queryColRow<Output(int64_t, Script)>("SELECT value, script FROM Spendings WHERE icnf = ? ORDER BY iidx", conf);
 }
 
+Spendings BlockChain::getSpendings(int64_t conf) const {
+    return queryColRow<Spending(int64_t, Script, uint256, unsigned int, Script, unsigned int)>("SELECT value, script, hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY iidx", conf);
+}
+
 Outputs BlockChain::getOutputs(int64_t conf) const {
     return queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1 ORDER BY idx ASC)", conf);
 }
 
+uint256 BlockChain::getHash(int64_t conf) const {
+    return query<uint256>("SELECT hash FROM (SELECT hash FROM Unspents WHERE ocnf = ?1 UNION SELECT hash FROM Spendings WHERE ocnf = ?1 LIMIT 1)", conf);
+}
 
 bool BlockChain::haveTx(uint256 hash, bool must_be_confirmed) const
 {

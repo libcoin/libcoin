@@ -189,9 +189,15 @@ public:
     /// get the spent outputs of a transaction - i.e. not the inputs, but the spent ouptuts
     Outputs getSpentOutputs(int64_t conf) const;
 
+    /// get the spending - i.e. both the input and the matching spent output
+    Spendings getSpendings(int64_t conf) const;
+    
     /// get the outputs created by a transaction
     Outputs getOutputs(int64_t conf) const;
     
+    /// get the hash of a transaction with conf 
+    uint256 getHash(int64_t conf) const;
+
     /// B L O C K S
         
     /// Query for existence of Block.
