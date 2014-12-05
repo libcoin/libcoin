@@ -24,8 +24,7 @@
 
 #include <coinChain/Export.h>
 
-enum
-{
+enum {
     MSG_TX = 1,
     MSG_BLOCK,
     // Nodes may always request a MSG_FILTERED_BLOCK in a getdata, however,
@@ -43,12 +42,10 @@ class Block;
 class MerkleBlock;
 class Transaction;
 
-class COINCHAIN_EXPORT Inventory
-{
+class COINCHAIN_EXPORT Inventory {
 public:
     Inventory();
     Inventory(int type, const uint256& hash);
-//    Inventory(const std::string& type_name, const uint256& hash);
     
     explicit Inventory(const Block& blk);
     explicit Inventory(const MerkleBlock& blk);
@@ -73,9 +70,7 @@ public:
     }
     
     bool isKnownType() const;
-//    const char* getCommand() const;
     std::string toString() const;
-//    void print() const;
     
     const int getType() const { return _type; }
     const uint256 getHash() const { return _hash; }

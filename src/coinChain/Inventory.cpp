@@ -27,66 +27,39 @@ using namespace std;
 using namespace boost;
 
 map<int, string> Inventory::known_types = assign::map_list_of
-( 0, "ERROR")
-( (int)MSG_TX, "tx")
-( (int)MSG_BLOCK, "block")
-( (int)MSG_FILTERED_BLOCK, "filtered block")
-( (int)MSG_NORMALIZED_TX, "normalized tx")
-( (int)MSG_NORMALIZED_BLOCK, "normalized block");
-;
+    ( 0, "ERROR")
+    ( (int)MSG_TX, "tx")
+    ( (int)MSG_BLOCK, "block")
+    ( (int)MSG_FILTERED_BLOCK, "filtered block")
+    ( (int)MSG_NORMALIZED_TX, "normalized tx")
+    ( (int)MSG_NORMALIZED_BLOCK, "normalized block");
 
-Inventory::Inventory()
-{
+
+Inventory::Inventory() {
     _type = 0;
     _hash = 0;
 }
 
-Inventory::Inventory(int type, const uint256& hash)
-{
+Inventory::Inventory(int type, const uint256& hash) {
     _type = type;
     _hash = hash;
 }
-/*
-Inventory::Inventory(const std::string& type_name, const uint256& hash)
-{
-    int i;
-    for (i = 1; (unsigned int)i < ARRAYLEN(ppszTypeName); i++)
-    {
-        if (type_name == ppszTypeName[i])
-        {
-            _type = i;
-            break;
-        }
-    }
-    if (i == ARRAYLEN(ppszTypeName))
-        throw std::out_of_range(cformat("Inventory::Inventory(string, uint256) : unknown type '%s'", type_name).text());
-    _hash = hash;
-}
-*/
+
 Inventory::Inventory(const Block& blk) {
     _type = MSG_BLOCK;
     _hash = blk.getHash();
 }
-/*
-Inventory::Inventory(const MerkleBlock& blk) {
-    _type = MSG_FILTERED_BLOCK;
-    _hash = blk.getHash();
-}
-*/
+
 Inventory::Inventory(const Transaction& txn) {
     _type = MSG_TX;
     _hash = txn.getHash();
 }
 
-
-
-bool operator<(const Inventory& a, const Inventory& b)
-{
+bool operator<(const Inventory& a, const Inventory& b) {
     return (a._type < b._type || (a._type == b._type && a._hash < b._hash));
 }
 
-bool Inventory::isKnownType() const
-{
+bool Inventory::isKnownType() const {
     std::map<int, string>::const_iterator it = known_types.find(_type);
     return (_type > 0) && (it != known_types.end());
 }
@@ -97,16 +70,3 @@ std::string Inventory::toString() const {
 
     return cformat("%s %s", known_types[_type], _hash.toString().substr(0,20)).text();
 }
-/*
-const char* Inventory::getCommand() const
-{
-    if (!isKnownType())
-        throw std::out_of_range(strprintf("Inventory::GetCommand() : type=%d unknown type", _type));
-    return ppszTypeName[_type];
-}
-
-void Inventory::print() const
-{
-    log_info("Inventory(%s)\n", toString().c_str());
-}
-*/
