@@ -221,6 +221,20 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                     }
                 }
             }
+            else if (_support_normalized && inv.getType() == MSG_NORMALIZED_BLOCK) {
+                Block block;
+                BlockChain::Redeemed redeemed;
+                _blockChain.getBlock(inv.getHash(), block, redeemed);
+                ostringstream os;
+                os << (BlockHeader)block;
+                // now iterate over transactions and the redeemed outputs
+                os << block.getTransaction(0); // nothing to redeem for a coinbase
+                for (size_t i = 1; i < block.getNumTransactions(); ++i) {
+                    os << redeemed[i];
+                    os << block.getTransaction(i);
+                }
+                origin->push("normblock", os.str());
+            }
             // Track requests for our stuff
             //            Inventory(inv.hash);
         }

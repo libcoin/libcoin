@@ -30,7 +30,11 @@ enum
     MSG_BLOCK,
     // Nodes may always request a MSG_FILTERED_BLOCK in a getdata, however,
     // MSG_FILTERED_BLOCK should not appear in any invs except as a part of getdata.
-    MSG_FILTERED_BLOCK
+    MSG_FILTERED_BLOCK,
+    
+    // 'Normalized' transactions, blocks are blocks that cointains the spent outputs as well
+    MSG_NORMALIZED_TX = 0x80+1,
+    MSG_NORMALIZED_BLOCK = 0x80+2
 };
 
 static const unsigned int MAX_INV_SZ = 50000;

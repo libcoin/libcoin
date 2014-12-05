@@ -90,7 +90,7 @@ class COINCHAIN_EXPORT Node : private boost::noncopyable
 {
 public:
     /// Construct the node to listen on the specified TCP address and port. Further, connect to IRC (irc.lfnet.org)
-    explicit Node(const Chain& chain = bitcoin, std::string dataDir = "", const std::string& address = "0.0.0.0", const std::string& port = "0", boost::asio::ip::tcp::endpoint proxy = boost::asio::ip::tcp::endpoint(), unsigned int timeout = 5000, const std::string& irc = "92.243.23.21", std::string notify = "");
+    explicit Node(const Chain& chain = bitcoin, std::string dataDir = "", const std::string& address = "0.0.0.0", const std::string& port = "0", boost::asio::ip::tcp::endpoint proxy = boost::asio::ip::tcp::endpoint(), unsigned int timeout = 5000, const std::string& irc = "92.243.23.21", std::string notify = "", bool support_normalized = false);
     
     /// Read an old style block file - this is for rapid initialization.
     void readBlockFile(std::string path, int fileno = 0);

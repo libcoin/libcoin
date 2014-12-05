@@ -125,7 +125,8 @@ public:
     void getTransaction(const uint256& hash, Transaction& tx) const;
     void getTransaction(const int64_t cnf, Transaction& tx, int64_t& height, int64_t& time) const;
     void getTransaction(const uint256& hash, Transaction& tx, int64_t& height, int64_t& time) const;
-    
+    void getTransaction(const uint256& hash, Transaction& txn, Outputs& redeemed) const;
+
     /// Query for existence of a Transaction.
     bool haveTx(uint256 hash, bool must_be_confirmed = false) const;
     

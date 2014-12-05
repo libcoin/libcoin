@@ -35,7 +35,7 @@ class COINCHAIN_EXPORT TransactionFilter : public Filter
 {
 public:
 
-    TransactionFilter(Notifier& notifier, BlockChain& bc) : Filter(notifier), _blockChain(bc) {}
+    TransactionFilter(Notifier& notifier, BlockChain& bc, bool support_normalized = false) : Filter(notifier), _blockChain(bc), _support_normalized(support_normalized) {}
     
     class Listener : private boost::noncopyable {
     public:
@@ -96,6 +96,8 @@ private:
     void relay(const Peers& peers, const Transaction& txn, bool force);
 
 //    template<typename T> void relayMessage(const Peers& peers, const Inventory& inv, const T& a);
+    
+    bool _support_normalized;
 };
 
 

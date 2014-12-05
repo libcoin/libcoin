@@ -1459,6 +1459,25 @@ void BlockChain::getTransaction(const int64_t cnf, Transaction &txn, int64_t& he
     txn.setOutputs(outputs);
 }
 
+void BlockChain::getTransaction(const uint256& hash, Transaction& txn, Outputs& redeems) const {
+    
+    int64_t cnf = query<int64_t>("SELECT ocnf FROM Unspents WHERE hash = ? LIMIT 1", hash);
+    if (!cnf) cnf = query<int64_t>("SELECT ocnf FROM Spendings WHERE hash = ? LIMIT 1", hash);
+
+    if (!cnf) return;
+    
+    txn = queryRow<Transaction(int, unsigned int)>("SELECT version, locktime FROM Confirmations WHERE cnf = ?", cnf);
+    
+    Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY iidx", cnf); // note that "ABS" as cnf for coinbases is negative!
+    
+    redeems = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM Spendings WHERE icnf = ? ORDER BY iidx", cnf); // note that "ABS" as cnf for coinbases is negative!
+    
+    Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1) ORDER BY idx", cnf);
+        
+    txn.setInputs(inputs);
+    txn.setOutputs(outputs);
+}
+
 BlockIterator BlockChain::iterator(const BlockLocator& locator) const {
     // lock the pool and chain for reading
     boost::shared_lock< boost::shared_mutex > lock(_chain_and_pool_access);

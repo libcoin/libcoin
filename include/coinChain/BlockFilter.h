@@ -32,7 +32,7 @@ class Inventory;
 
 class COINCHAIN_EXPORT BlockFilter : public Filter {
 public:
-    BlockFilter(Notifier& notifier, BlockChain& bc) : Filter(notifier), _blockChain(bc) {}
+    BlockFilter(Notifier& notifier, BlockChain& bc, bool support_normalized = false) : Filter(notifier), _blockChain(bc), _support_normalized(support_normalized) {}
     
     class Listener : private boost::noncopyable {
     public:
@@ -73,6 +73,8 @@ private:
     Orphans _orphans;
     typedef std::multimap<uint256, Orphans::iterator> OrphansByPrev;
     OrphansByPrev _orphansByPrev;
+    
+    bool _support_normalized;
 };
 
 class COINCHAIN_EXPORT ShareFilter : public Filter {

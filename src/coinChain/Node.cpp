@@ -58,7 +58,7 @@ int NodeNotifier::operator()(std::string message) {
     return _node.notify(message);
 }
 
-Node::Node(const Chain& chain, std::string dataDir, const string& address, const string& port, ip::tcp::endpoint proxy, unsigned int timeout, const string& irc, string notify) :
+Node::Node(const Chain& chain, std::string dataDir, const string& address, const string& port, ip::tcp::endpoint proxy, unsigned int timeout, const string& irc, string notify, bool support_normalized) :
     _dataDir(dataDir),
     _fileLock(_dataDir == "" ? "" : _dataDir + "/.lock"),
     _notifier(*this),
@@ -76,10 +76,11 @@ Node::Node(const Chain& chain, std::string dataDir, const string& address, const
     _client_comments(std::vector<std::string>()),
     _client_version(LIBRARY_VERSION) // This is not optimal...
     {
-    
+    if (support_normalized)
+        _client_comments.push_back("support_normalized_inventory");
     //    _endpointPool.loadEndpoints(dataDir);
-    _transactionFilter = filter_ptr(new TransactionFilter(_notifier, _blockChain));
-    _blockFilter = filter_ptr(new BlockFilter(_notifier, _blockChain));
+    _transactionFilter = filter_ptr(new TransactionFilter(_notifier, _blockChain, support_normalized));
+    _blockFilter = filter_ptr(new BlockFilter(_notifier, _blockChain, support_normalized));
     _shareFilter = filter_ptr(new ShareFilter(_notifier, _blockChain));
     _alertFilter = filter_ptr(new AlertFilter(_notifier, _blockChain.chain().alert_key(), _blockChain.chain().protocol_version(), getFullClientVersion()));
     

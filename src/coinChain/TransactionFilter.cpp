@@ -60,6 +60,16 @@ bool TransactionFilter::operator()(Peer* origin, Message& msg) {
                 if (mi != _relay.end())
                     origin->push((*mi).second);
             }
+            
+            if (_support_normalized && inv.getType() == MSG_NORMALIZED_TX) {
+                Transaction txn;
+                Outputs redeemed;
+                _blockChain.getTransaction(inv.getHash(), txn, redeemed);
+                ostringstream os;
+                os << redeemed;
+                os << txn;
+                origin->push("normtx", os.str());
+            }
         }
     }
     else if (msg.command() == "mempool") {
