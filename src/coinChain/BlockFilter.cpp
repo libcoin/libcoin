@@ -209,6 +209,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                                 origin->push(txn);
                         }
                     }
+                    // tickle:
                     // Trigger them to send a getblocks request for the next batch of inventory
                     if (inv.getHash() == origin->getContinue()) {
                         // Bypass PushInventory, this must send even if redundant,
@@ -235,8 +236,17 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                 }
                 origin->push("normblock", os.str());
             }
-            // Track requests for our stuff
-            //            Inventory(inv.hash);
+            // tickle:
+            // Trigger them to send a getblocks request for the next batch of inventory
+            if (inv.getHash() == origin->getContinue()) {
+                // Bypass PushInventory, this must send even if redundant,
+                // and we want it right after the last block so they don't
+                // wait for other stuff first.
+                vector<Inventory> vInv;
+                vInv.push_back(Inventory(MSG_BLOCK, _blockChain.getBestChain()));
+                origin->PushMessage("inv", vInv);
+                origin->setContinue(uint256(0));
+            }
         }
     }
     else if (msg.command() == "inv") {
