@@ -231,7 +231,7 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                 // now iterate over transactions and the redeemed outputs
                 os << block.getTransaction(0); // nothing to redeem for a coinbase
                 for (size_t i = 1; i < block.getNumTransactions(); ++i) {
-                    os << redeemed[i];
+                    os << redeemed[i-1];
                     os << block.getTransaction(i);
                 }
                 origin->push("normblock", os.str());

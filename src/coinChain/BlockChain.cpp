@@ -935,6 +935,8 @@ void BlockChain::getBlock(int count, Block& block, Redeemed& redeemed) const {
         txn.setOutputs(outputs);
         block.addTransaction(txn);
     }
+    if (redeemed.size() != block.getNumTransactions()-1)
+        throw std::runtime_error("Missing redeemed tx in Trying to get Norm Block#: " + lexical_cast<string>(count));
     block.updateMerkleTree();
     try {
         _chain.check(block);
