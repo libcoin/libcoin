@@ -66,6 +66,10 @@ public:
         return 0;
     }
     
+    virtual int64_t duplicateTx(int64_t cnf) const {
+        return cnf;
+    }
+    
     virtual int maturity(int height) const {
         return 100;
     }
@@ -198,6 +202,12 @@ public:
         return addr;
     }
     
+    virtual int64_t duplicateTx(int64_t cnf) const {
+        if (cnf == -91723) return -91881;
+        if (cnf == -91813) return -91843;
+        return cnf;
+    }
+
     virtual std::string signedMessageMagic() const { return "Bitcoin Signed Message:\n"; }
 
     virtual const Magic& magic() const { return _magic; };

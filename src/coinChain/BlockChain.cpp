@@ -882,7 +882,11 @@ void BlockChain::getBlock(int count, Block& block) const {
     for (size_t idx = 0; idx < confs.size(); idx++) {
         Inputs inputs = queryColRow<Input(uint256, unsigned int, Script, unsigned int)>("SELECT hash, idx, signature, sequence FROM Spendings WHERE icnf = ? ORDER BY iidx", confs[idx].cnf); // note that "ABS" as cnf for coinbases is negative!
         
-        Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1) ORDER BY idx", confs[idx].cnf);
+        // note - some coins (bitcoin) have duplicate coinbases a couple of places - to support that it is more advantageous to insert this exception than to actually allow for duplicate coinbases in the database
+        
+        int64_t cnf = _chain.duplicateTx(confs[idx].cnf);
+        
+        Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1) ORDER BY idx", cnf);
         
         Transaction txn = confs[idx];
         txn.setInputs(inputs);
@@ -928,7 +932,9 @@ void BlockChain::getBlock(int count, Block& block, Redeemed& redeemed) const {
             redeemed.push_back(redeems);
         }
         
-        Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1) ORDER BY idx", confs[idx].cnf);
+        int64_t cnf = _chain.duplicateTx(confs[idx].cnf);
+
+        Outputs outputs = queryColRow<Output(int64_t, Script)>("SELECT value, script FROM (SELECT value, script, idx FROM Unspents WHERE ocnf = ?1 UNION SELECT value, script, idx FROM Spendings WHERE ocnf = ?1) ORDER BY idx", cnf);
         
         Transaction txn = confs[idx];
         txn.setInputs(inputs);
