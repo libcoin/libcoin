@@ -330,7 +330,7 @@ void BlockFilter::process(const Block& block, Peers peers) {
     if (bestChain == hash) {
         for(Peers::iterator peer = peers.begin(); peer != peers.end(); ++peer)
             if (_blockChain.getBestHeight() > ((*peer)->getStartingHeight() != -1 ? (*peer)->getStartingHeight() - 2000 : _blockChain.getTotalBlocksEstimate()))
-                (*peer)->push(Inventory(MSG_BLOCK, hash));
+                (*peer)->push(Inventory(MSG_BLOCK, hash), true);
     }
     
     // Recursively process any orphan blocks that depended on this one
