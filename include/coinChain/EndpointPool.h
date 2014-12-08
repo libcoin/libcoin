@@ -28,7 +28,7 @@
 
 typedef std::map<std::vector<unsigned char>, Endpoint> EndpointMap;
  
-class COINCHAIN_EXPORT EndpointPool : protected sqliterate::Database
+class COINCHAIN_EXPORT EndpointPool : protected postgresqlite::Database
 {
 public:
     EndpointPool(short defaultPort, const std::string dataDir, const char* pszMode="cr+");

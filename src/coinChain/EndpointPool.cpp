@@ -23,7 +23,7 @@
 
 using namespace std;
 using namespace boost;
-using namespace sqliterate;
+using namespace postgresqlite;
 
 EndpointPool::EndpointPool(short defaultPort, const std::string dataDir, const char* pszMode) :
     Database(dataDir == "" ? ":memory:" : dataDir+"/endpoints.sqlite3") /*CDB(dataDir, "addr.dat", pszMode)*/ ,

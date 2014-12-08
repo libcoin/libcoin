@@ -61,7 +61,7 @@ private:
     bool _running;
 };
 
-class COINCHAIN_EXPORT BlockChain : private sqliterate::Database {
+class COINCHAIN_EXPORT BlockChain : private postgresqlite::Database {
 private: // noncopyable
     BlockChain(const BlockChain&);
     void operator=(const BlockChain&);

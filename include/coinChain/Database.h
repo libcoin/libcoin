@@ -1,4 +1,4 @@
-/* -*-c++-*- libcoin - Copyright (C) 2012 Michael Gronager
+/* -*-c++-*- clusterizer - Copyright (C) 2012 Michael Gronager
  *
  * libcoin is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,10 +14,18 @@
  * along with libcoin.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _DATABASE_H
-#define _DATABASE_H
+#ifndef _POSTGRESQLITE_DATABASE_H
+#define _POSTGRESQLITE_DATABASE_H
 
 #include <coin/uint256.h>
+
+#ifdef __POSTGRESQL__
+    #include <libpq-fe.h>
+#else
+    typedef void PGconn;
+    typedef void PGresult;
+    typedef int Oid;
+#endif
 
 #include <sqlite3.h>
 
@@ -28,7 +36,7 @@
 #include <vector>
 #include <stdexcept>
 
-namespace sqliterate {
+namespace postgresqlite {
     
     struct undefined {};
     
@@ -274,7 +282,6 @@ namespace sqliterate {
         
         ~StatementBase() {
             if (_->unref() == 0) {
-                sqlite3_finalize(_->stmt);
                 delete _;
             }
         }
@@ -283,7 +290,6 @@ namespace sqliterate {
             if(this != &s) {
                 s._->ref();
                 if(_->unref() == 0) {
-                    sqlite3_finalize(_->stmt);
                     delete _;
                 }
                 _ = s._;
@@ -304,7 +310,6 @@ namespace sqliterate {
         void bind(const uint256& arg, int col) const;
         void bind(const uint160& arg, int col) const;
         
-        sqlite3_stmt *stmt() { return _->stmt; }
     protected:
         void get(int64_t& arg, int col) const;
         void get(int& arg, int col) const { int64_t a; get((a), col); arg = a;}
@@ -316,10 +321,20 @@ namespace sqliterate {
         void get(blob& arg, int col) const;
         void get(uint256& arg, int col) const;
         void get(uint160& arg, int col) const;
-
+        
         void get(undefined, int) const {}
         
+        void pgsql_exec();
+        
+        void pqsql_step() { ++_->row; }
+        
+        bool pgsql_rows() { return _->row < _->values.size(); }
+        
+        void pqsql_reset();
+        
         const std::string& sql() const { return _->sql; }
+        
+        bool isPSQL() const { return _->pgsql; }
         
         inline int64_t time_microseconds() const {
             return (boost::posix_time::ptime(boost::posix_time::microsec_clock::universal_time()) -
@@ -329,12 +344,19 @@ namespace sqliterate {
     protected:
         class Representation {
         public:
+            PGconn* pgsql; // connection to the database
+            PGresult* pgres;
             sqlite3_stmt *stmt;
-            std::string sql;
+            
+            std::string sql; // we use sql both for the actual statement as for prepared stmt lookup key
+            std::vector< std::vector<char> > values;
+            std::vector<Oid> params; // stores the types of the inputs
+            std::vector<Oid> fields; // stores the types of the outputs
+            size_t row;
             mutable int64_t stat_time;
             mutable int64_t stat_count;
             
-            Representation() : stmt(NULL), stat_time(0), stat_count(0), _refs(0) {}
+            Representation() : pgsql(NULL), pgres(NULL), stmt(NULL), row(0), stat_time(0), stat_count(0), _refs(0) {}
             
             int ref() { return ++_refs; }
             int unref() { return --_refs; }
@@ -353,9 +375,16 @@ namespace sqliterate {
         R eval() {
             int64_t t0 = time_microseconds();
             R r = R();
-            if (sqlite3_step(_->stmt) == SQLITE_ROW)
+            if (isPSQL()) {
+                pgsql_exec();
                 get(r, 0);
-            sqlite3_reset(_->stmt);
+                pqsql_reset();
+            }
+            else {
+                if (sqlite3_step(_->stmt) == SQLITE_ROW)
+                    get(r, 0);
+                sqlite3_reset(_->stmt);
+            }
             _->stat_time += time_microseconds() - t0;
             ++_->stat_count;
             return r;
@@ -377,9 +406,17 @@ namespace sqliterate {
         
         RowId eval() {
             int64_t t0 = time_microseconds();
-            while(sqlite3_step(_->stmt) == SQLITE_ROW);
-            int64_t last_id = sqlite3_last_insert_rowid(sqlite3_db_handle(_->stmt));
-            sqlite3_reset(_->stmt);
+            int64_t last_id = 0;
+            if (isPSQL()) {
+                pgsql_exec();
+                get(last_id, 0);
+                pqsql_reset();
+            }
+            else {
+                while(sqlite3_step(_->stmt) == SQLITE_ROW);
+                last_id = sqlite3_last_insert_rowid(sqlite3_db_handle(_->stmt));
+                sqlite3_reset(_->stmt);
+            }
             _->stat_time += time_microseconds() - t0;
             ++_->stat_count;
             return last_id;
@@ -394,15 +431,27 @@ namespace sqliterate {
         
         std::vector<R> eval() {
             int64_t t0 = time_microseconds();
-            int result = sqlite3_step(_->stmt);
             std::vector<R> rs;
-            while(result == SQLITE_ROW) {
-                R r;
-                get(r, 0);
-                rs.push_back(r);
-                result = sqlite3_step(_->stmt);
+            if (isPSQL()) {
+                pgsql_exec();
+                while (pgsql_rows()) {
+                    R r;
+                    get(r, 0);
+                    rs.push_back(r);
+                    pqsql_step();
+                }
+                pqsql_reset();
             }
-            sqlite3_reset(_->stmt);
+            else {
+                int result = sqlite3_step(_->stmt);
+                while(result == SQLITE_ROW) {
+                    R r;
+                    get(r, 0);
+                    rs.push_back(r);
+                    result = sqlite3_step(_->stmt);
+                }
+                sqlite3_reset(_->stmt);
+            }
             _->stat_time += time_microseconds() - t0;
             ++_->stat_count;
             return rs;
@@ -430,12 +479,23 @@ namespace sqliterate {
         C eval() {
             int64_t t0 = time_microseconds();
             C c;
-            if (sqlite3_step(_->stmt) == SQLITE_ROW) {
-                P0 p0; P1 p1; P2 p2; P3 p3; P4 p4; P5 p5; P6 p6; P7 p7; P8 p8; P9 p9;
-                get(p0, 0); get(p1, 1); get(p2, 2); get(p3, 3); get(p4, 4); get(p5, 5); get(p6, 6); get(p7, 7); get(p8, 8); get(p9, 9);
-                c = Construct<C, P0, P1, P2, P3, P4, P5, P6, P7, P8, P9>::construct(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+            if (isPSQL()) {
+                pgsql_exec();
+                if (pgsql_rows()) {
+                    P0 p0; P1 p1; P2 p2; P3 p3; P4 p4; P5 p5; P6 p6; P7 p7; P8 p8; P9 p9;
+                    get(p0, 0); get(p1, 1); get(p2, 2); get(p3, 3); get(p4, 4); get(p5, 5); get(p6, 6); get(p7, 7); get(p8, 8); get(p9, 9);
+                    c = Construct<C, P0, P1, P2, P3, P4, P5, P6, P7, P8, P9>::construct(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+                }
+                pqsql_reset();
             }
-            sqlite3_reset(_->stmt);
+            else {
+                if (sqlite3_step(_->stmt) == SQLITE_ROW) {
+                    P0 p0; P1 p1; P2 p2; P3 p3; P4 p4; P5 p5; P6 p6; P7 p7; P8 p8; P9 p9;
+                    get(p0, 0); get(p1, 1); get(p2, 2); get(p3, 3); get(p4, 4); get(p5, 5); get(p6, 6); get(p7, 7); get(p8, 8); get(p9, 9);
+                    c = Construct<C, P0, P1, P2, P3, P4, P5, P6, P7, P8, P9>::construct(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+                }
+                sqlite3_reset(_->stmt);
+            }
             _->stat_time += time_microseconds() - t0;
             ++_->stat_count;
             return c;
@@ -463,12 +523,24 @@ namespace sqliterate {
         std::vector<C> eval() {
             int64_t t0 = time_microseconds();
             std::vector<C> cs;
-            while (sqlite3_step(_->stmt) == SQLITE_ROW) {
-                P0 p0; P1 p1; P2 p2; P3 p3; P4 p4; P5 p5; P6 p6; P7 p7; P8 p8; P9 p9;
-                get(p0, 0); get(p1, 1); get(p2, 2); get(p3, 3); get(p4, 4); get(p5, 5); get(p6, 6); get(p7, 7); get(p8, 8); get(p9, 9);
-                cs.push_back(Construct<C, P0, P1, P2, P3, P4, P5, P6, P7, P8, P9>::construct(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9));
+            if (isPSQL()) {
+                pgsql_exec();
+                while (pgsql_rows()) {
+                    P0 p0; P1 p1; P2 p2; P3 p3; P4 p4; P5 p5; P6 p6; P7 p7; P8 p8; P9 p9;
+                    get(p0, 0); get(p1, 1); get(p2, 2); get(p3, 3); get(p4, 4); get(p5, 5); get(p6, 6); get(p7, 7); get(p8, 8); get(p9, 9);
+                    cs.push_back(Construct<C, P0, P1, P2, P3, P4, P5, P6, P7, P8, P9>::construct(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9));
+                    pqsql_step();
+                }
+                pqsql_reset();
             }
-            sqlite3_reset(_->stmt);
+            else {
+                while (sqlite3_step(_->stmt) == SQLITE_ROW) {
+                    P0 p0; P1 p1; P2 p2; P3 p3; P4 p4; P5 p5; P6 p6; P7 p7; P8 p8; P9 p9;
+                    get(p0, 0); get(p1, 1); get(p2, 2); get(p3, 3); get(p4, 4); get(p5, 5); get(p6, 6); get(p7, 7); get(p8, 8); get(p9, 9);
+                    cs.push_back(Construct<C, P0, P1, P2, P3, P4, P5, P6, P7, P8, P9>::construct(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9));
+                }
+                sqlite3_reset(_->stmt);
+            }
             _->stat_time += time_microseconds() - t0;
             ++_->stat_count;
             return cs;
@@ -482,7 +554,9 @@ namespace sqliterate {
             Error(const std::string& s) : std::runtime_error(s.c_str()) {}
         };
         
-        Database(const std::string filename = ":memory:", int64_t heap_limit = 0);
+        // URI: mysql://user:pass@host:port/database
+        typedef std::map<std::string, std::string> Dictionary;
+        Database(const std::string uri = ":memory:", const Dictionary dict = Dictionary(), int64_t heap_limit = 0);
         ~Database();
         
         StatementBase statement(const char* stmt);
@@ -690,7 +764,7 @@ namespace sqliterate {
             Statement<RowId> s = statement(stmt);
             return s.eval();
         }
-
+        
         template<class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10>
         RowId query(const char* stmt, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8, T9 t9, T10 t10) const {
             Statement<RowId> s = statement(stmt);
@@ -755,7 +829,7 @@ namespace sqliterate {
             Statement<RowId> s = statement(stmt);
             return s.eval();
         }
-
+        
         /// The queryCol template function takes as argument one of the standard sql types: integer, double, text, or blob and return a column, a std::vector<>, of these from a sql query.
         /// Up to 10 arguments to the query is supported.
         
@@ -890,7 +964,7 @@ namespace sqliterate {
             StatementCol<R> s = statement(stmt);
             return s.eval();
         }
-
+        
         /// The queryRow template function takes as argument a constructor signature with arguments as one of the sql types.
         /// The constructor supports up to 10 arguments and can hence be used to extract an entire row.
         /// Up to 10 arguments to the query is supported.
@@ -1025,7 +1099,7 @@ namespace sqliterate {
             StatementRow<Ctor> s = statement(stmt);
             return s.eval();
         }
-
+        
         /// The queryColRow template function takes as argument a constructor signature with arguments as one of the sql types.
         /// The constructor supports up to 10 arguments and can hence be used to extract a column, std::vector<>, of rows.
         /// Up to 10 arguments to the query is supported.
@@ -1161,17 +1235,28 @@ namespace sqliterate {
             StatementColRow<Ctor> s = statement(stmt);
             return s.eval();
         }
-
-        const std::string error_text() const { return sqlite3_errmsg(_db); }
+        
+        const std::string error_text() const;
         
         const std::string statistics() const;
+        
+        bool isPSQL() const { return _pgsql; }
+        bool isSQLite() const { return _sqlite; }
+        
+    protected:
+        std::string search_and_replace(std::string str) const;
+        
     private:
-        sqlite3 *_db;
+        PGconn *_pgsql;
+        sqlite3 *_sqlite;
+        
+        Dictionary _dict;
         typedef std::map<const char *, StatementBase> Statements;
         mutable Statements _statements;
-
+        
+    private:
         void registerFunctions();
     };
 }
 
-#endif
+#endif // _POSTGRESQLITE

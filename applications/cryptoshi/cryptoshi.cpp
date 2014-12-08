@@ -153,13 +153,13 @@ std::ostream& operator<<(std::ostream& os, const KeyEnvelope& envelope) {
 
 class Account;
 
-class BlockChainAccessor : protected sqliterate::Database {
+class BlockChainAccessor : protected postgresqlite::Database {
     private: // noncopyable
         BlockChainAccessor(const BlockChainAccessor&);
         void operator=(const BlockChainAccessor&);
         
     public:
-    BlockChainAccessor(const Chain& chain = bitcoin, const std::string dataDir = "") : sqliterate::Database(dataDir + "/blockchain.sqlite3") {
+    BlockChainAccessor(const Chain& chain = bitcoin, const std::string dataDir = "") : postgresqlite::Database(dataDir + "/blockchain.sqlite3") {
         
     }
     
