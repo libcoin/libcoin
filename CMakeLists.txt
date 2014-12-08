@@ -339,6 +339,13 @@ IF(SQLITE3_FOUND)
 	include_directories(${SQLITE3_INCLUDE_DIR})
 ENDIF(SQLITE3_FOUND)
 
+SET(PostgreSQL_ADDITIONAL_VERSIONS "9.3" "9.2")
+FIND_PACKAGE(PostgreSQL)
+IF(PostgreSQL_FOUND)
+include_directories(${PostgreSQL_INCLUDE_DIRS})
+add_definitions(-DPOSTGRESQL)
+ENDIF(PostgreSQL_FOUND)
+
 #Note: We need as a minimum Boost 1.47 to support the signal_set used in Server. A backup signal_set has been created, though.
 SET(Boost_NO_BOOST_CMAKE ON)
 SET(Boost_ADDITIONAL_VERSIONS "1.47" "1.47.0" "1.48" "1.48.0")

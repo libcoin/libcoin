@@ -24,7 +24,7 @@
 
 #include <sstream>
 
-#ifndef __POSTGRESQL__
+#ifndef POSTGRESQL
 typedef enum
 {
     PGRES_EMPTY_QUERY = 0,		/* empty query string was executed */
@@ -172,7 +172,7 @@ namespace postgresqlite {
     void StatementBase::bind(const blob& arg, int col) const {
         if (isPSQL()) {
             if (--col >= _->values.size())
-                throw Database::Error("StatementBase::bind( BLOB, " + lexical_cast<string>(col) + ") : too many params - max is : " + lexical_cast<string>(_->values.size()-1));
+                throw Database::Error("StatementBase::bind( BLOB, " + lexical_cast<string>(col+1) + ") : too many params - max is : " + lexical_cast<string>(_->values.size()));
             
             if (_->params[col] != BYTEAOID)
                 throw Database::Error("StatementBase::bind( BLOB, " + lexical_cast<string>(col) + ") : binding a blob to an oid # : " + lexical_cast<string>(_->params[col]));
@@ -226,7 +226,7 @@ namespace postgresqlite {
                 throw Database::Error("StatementBase::get(int64_t, " + lexical_cast<string>(col) + ") : too many params - max is : " + lexical_cast<string>(_->fields.size()-1));
             
             if (_->fields[col] != INT8OID)
-                throw Database::Error("StatementBase::get(int64_t, " + lexical_cast<string>(col) + ") : binding an int64_t to an oid # : " + lexical_cast<string>(_->params[col]));
+                throw Database::Error("StatementBase::get(int64_t, " + lexical_cast<string>(col) + ") : binding an int64_t to an oid # : " + lexical_cast<string>(_->fields[col]));
             
             
             if (PQntuples(_->pgres) == 0 || PQgetisnull(_->pgres, _->row, col)) {
@@ -257,7 +257,7 @@ namespace postgresqlite {
                 throw Database::Error("StatementBase::get(double, " + lexical_cast<string>(col) + ") : too many params - max is : " + lexical_cast<string>(_->fields.size()-1));
             
             if (_->fields[col] != FLOAT8OID)
-                throw Database::Error("StatementBase::get(double, " + lexical_cast<string>(col) + ") : binding a double to an oid # : " + lexical_cast<string>(_->params[col]));
+                throw Database::Error("StatementBase::get(double, " + lexical_cast<string>(col) + ") : binding a double to an oid # : " + lexical_cast<string>(_->fields[col]));
             
             
             if (PQntuples(_->pgres) == 0 || PQgetisnull(_->pgres, _->row, col)) {
@@ -284,7 +284,7 @@ namespace postgresqlite {
                 throw Database::Error("StatementBase::get(string, " + lexical_cast<string>(col) + ") : too many params - max is : " + lexical_cast<string>(_->fields.size()-1));
             
             if (_->fields[col] != TEXTOID)
-                throw Database::Error("StatementBase::get(string, " + lexical_cast<string>(col) + ") : binding a string to an oid # : " + lexical_cast<string>(_->params[col]));
+                throw Database::Error("StatementBase::get(string, " + lexical_cast<string>(col) + ") : binding a string to an oid # : " + lexical_cast<string>(_->fields[col]));
             
             
             if (PQntuples(_->pgres) == 0 || PQgetisnull(_->pgres, _->row, col)) {
@@ -313,7 +313,7 @@ namespace postgresqlite {
                 throw Database::Error("StatementBase::get(blob, " + lexical_cast<string>(col) + ") : too many params - max is : " + lexical_cast<string>(_->fields.size()-1));
             
             if (_->fields[col] != BYTEAOID)
-                throw Database::Error("StatementBase::get(blob, " + lexical_cast<string>(col) + ") : binding a double to an oid # : " + lexical_cast<string>(_->params[col]));
+                throw Database::Error("StatementBase::get(blob, " + lexical_cast<string>(col) + ") : binding a double to an oid # : " + lexical_cast<string>(_->fields[col]));
             
             
             if (PQntuples(_->pgres) == 0 || PQgetisnull(_->pgres, _->row, col)) {
@@ -422,7 +422,7 @@ namespace postgresqlite {
             if (_statements.count(stmt))
                 return _statements[stmt];
             StatementBase s;
-            int ret = sqlite3_prepare_v2(_sqlite, stmt, -1, &s._->stmt, NULL) ;
+            int ret = sqlite3_prepare_v2(_sqlite, search_and_replace(stmt).c_str(), -1, &s._->stmt, NULL) ;
             if (ret != SQLITE_OK)
                 throw Database::Error("Database::query() Code:" + lexical_cast<string>(ret) + ", Message: \"" + sqlite3_errmsg(_sqlite) + "\" preparing statement: " + stmt);
             s._->sql = stmt;
@@ -458,6 +458,8 @@ namespace postgresqlite {
             for (int i = 0; i < params; ++i)
                 s._->params.push_back(PQparamtype(res, i));
             
+            s._->values.resize(params);
+            
             int fields = PQnfields(res);
             for (int i = 0; i < fields; ++i)
                 s._->fields.push_back(PQftype(res, i));
@@ -475,7 +477,7 @@ namespace postgresqlite {
             if (_statements.count(stmt))
                 s = _statements[stmt];
             else {
-                int ret = sqlite3_prepare_v2(_sqlite, stmt, -1, &s._->stmt, NULL) ;
+                int ret = sqlite3_prepare_v2(_sqlite, search_and_replace(stmt).c_str(), -1, &s._->stmt, NULL) ;
                 if (ret != SQLITE_OK)
                     throw Database::Error("Database::query() Code:" + lexical_cast<string>(ret) + ", Message: \"" + sqlite3_errmsg(_sqlite) + "\" preparing statement: " + stmt);
                 s._->sql = stmt;

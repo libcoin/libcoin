@@ -18,8 +18,9 @@
 #define _POSTGRESQLITE_DATABASE_H
 
 #include <coin/uint256.h>
+#include <coin/Logger.h>
 
-#ifdef __POSTGRESQL__
+#ifdef POSTGRESQL
     #include <libpq-fe.h>
 #else
     typedef void PGconn;
@@ -409,7 +410,12 @@ namespace postgresqlite {
             int64_t last_id = 0;
             if (isPSQL()) {
                 pgsql_exec();
-                get(last_id, 0);
+                try {
+                    get(last_id, 0);
+                }
+                catch (std::exception& e) {
+                    log_debug("Got an exception trying to get a row-id return val from a statement: %s", e.what());
+                }
                 pqsql_reset();
             }
             else {
