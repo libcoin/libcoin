@@ -1372,7 +1372,7 @@ int BlockChain::getDistanceBack(const BlockLocator& locator) const
     int step = 1;
     for (vector<uint256>::const_iterator hash = locator.have.begin(); hash != locator.have.end(); ++hash) {
         BlockIterator blk = _tree.find(*hash);
-        if (blk != _tree.end())
+        if (blk != _tree.end() && blk.height() >= 0)
             return distance;
         distance += step;
         if (distance > 10)
@@ -1492,7 +1492,7 @@ BlockIterator BlockChain::iterator(const BlockLocator& locator) const {
     // Find the first block the caller has in the main chain
     for (vector<uint256>::const_iterator hash = locator.have.begin(); hash != locator.have.end(); ++hash) {
         BlockIterator blk = _tree.find(*hash);
-        if (blk != _tree.end())
+        if (blk != _tree.end() && blk.height() >= 0) // note that we only include the main chain in the locator
             return blk;
     }
     return _tree.begin(); // == the genesisblock
