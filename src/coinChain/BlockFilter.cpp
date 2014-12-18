@@ -235,7 +235,9 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                 for (size_t i = 1; i < block.getNumTransactions(); ++i) {
                     os << redeemed[i-1];
                     os << block.getTransaction(i);
+                    os << block.getTransaction(i).getHash();
                 }
+                os << inv.getHash();
                 origin->push("normblock", os.str());
             }
             // tickle:
