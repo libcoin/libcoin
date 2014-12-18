@@ -231,12 +231,12 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                 os << (BlockHeader)block;
                 os << const_varint(block.getNumTransactions()); // the is the number of transaction
                 // now iterate over transactions and the redeemed outputs
-                os << const_varint((int64_t)0); // this is an empty redeemed output
                 os << block.getTransaction(0).getHash();
+                os << const_varint((int64_t)0); // this is an empty redeemed output
                 os << block.getTransaction(0); // nothing to redeem for a coinbase
                 for (size_t i = 1; i < block.getNumTransactions(); ++i) {
-                    os << redeemed[i-1];
                     os << block.getTransaction(i).getHash();
+                    os << redeemed[i-1];
                     os << block.getTransaction(i);
                 }
                 origin->push("normblock", os.str());
