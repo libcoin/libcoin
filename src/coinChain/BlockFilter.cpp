@@ -227,7 +227,6 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                 BlockChain::Redeemed redeemed;
                 _blockChain.getBlock(inv.getHash(), block, redeemed);
                 ostringstream os;
-                os << inv.getHash();
                 os << (BlockHeader)block;
                 os << const_varint(block.getNumTransactions()); // the is the number of transaction
                 // now iterate over transactions and the redeemed outputs
