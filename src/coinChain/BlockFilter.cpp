@@ -230,7 +230,6 @@ bool BlockFilter::operator()(Peer* origin, Message& msg) {
                 os << (BlockHeader)block;
                 os << const_varint(block.getNumTransactions()); // the is the number of transaction
                 // now iterate over transactions and the redeemed outputs
-                os << "noget_snask";
                 os << block.getTransaction(0).getHash();
                 os << const_varint((int64_t)0); // this is an empty redeemed output
                 os << block.getTransaction(0); // nothing to redeem for a coinbase
