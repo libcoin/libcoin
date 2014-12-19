@@ -343,7 +343,7 @@ SET(PostgreSQL_ADDITIONAL_VERSIONS "9.3" "9.2")
 FIND_PACKAGE(PostgreSQL)
 IF(PostgreSQL_FOUND)
 include_directories(${PostgreSQL_INCLUDE_DIRS})
-link_directories (${POSTGRESQL_LIBRARY_DIRS})
+link_directories (${PostgreSQL_LIBRARY_DIRS})
 add_definitions(-DPOSTGRESQL)
 ENDIF(PostgreSQL_FOUND)
 
