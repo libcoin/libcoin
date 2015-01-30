@@ -370,9 +370,24 @@ Data Key::sign_compact(uint256 hash, Data signature) const {
 }
 
 bool Key::verify(uint256 hash, const Data& signature) const {
+    // New versions of OpenSSL will reject non-canonical DER signatures. de/re-serialize first.
+    unsigned char *norm_der = NULL;
+    ECDSA_SIG *norm_sig = ECDSA_SIG_new();
+    const unsigned char* sigptr = &signature[0];
+    d2i_ECDSA_SIG(&norm_sig, &sigptr, signature.size());
+    int derlen = i2d_ECDSA_SIG(norm_sig, &norm_der);
+    ECDSA_SIG_free(norm_sig);
+    if (derlen <= 0)
+        return false;
+    
     // -1 = error, 0 = bad sig, 1 = good
-    int check = ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &signature[0], signature.size(), _ec_key);
-    return (check == 1);
+    bool ret = ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), norm_der, derlen, _ec_key) == 1;
+    OPENSSL_free(norm_der);
+    return ret;
+
+    // -1 = error, 0 = bad sig, 1 = good
+//    int check = ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &signature[0], signature.size(), _ec_key);
+//    return (check == 1);
 }
 
 const BIGNUM* Key::private_number() const {
