@@ -12,6 +12,8 @@
 
 #include <openssl/rand.h>
 
+#include <limits>
+
 using namespace std;
 
 //CCriticalSection cs_setpwalletRegistered;
@@ -612,7 +614,7 @@ bool Wallet::SelectCoinsMinConf(int64_t nTargetValue, int nConfMine, int nConfTh
 
     // List of values less than target
     pair<int64_t, pair<const CWalletTx*,unsigned int> > coinLowestLarger;
-    coinLowestLarger.first = INT64_MAX;
+    coinLowestLarger.first = numeric_limits<int64_t>::max();
     coinLowestLarger.second.first = NULL;
     vector<pair<int64_t, pair<const CWalletTx*,unsigned int> > > vValue;
     int64_t nTotalLower = 0;
