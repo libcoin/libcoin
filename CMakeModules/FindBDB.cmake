@@ -19,6 +19,8 @@ FIND_PATH(BDB_INCLUDE_DIR db_cxx.h
     /usr/include
     /usr/local/opt/berkeley-db/include  # HomeBrew
     /usr/local/opt/berkeley-db4/include # HomeBrew, BDB4
+    /usr/local/include/db5 # FreeBSD, DBD5
+    /usr/local/include/db6 # FreeBSD, DBD6
     /sw/include # Fink
     /opt/local/include # DarwinPorts
     /opt/csw/include # Blastwave
@@ -37,6 +39,8 @@ FIND_LIBRARY(BDB_LIBRARY
     /usr/lib
     /usr/local/opt/berkeley-db/lib  # HomeBrew
     /usr/local/opt/berkeley-db4/lib # HomeBrew, BDB4
+    /usr/local/lib/db5 # FreeBSD, DBD5
+    /usr/local/lib/db6 # FreeBSD, DBD6
     /sw/lib
     /opt/local/lib
     /opt/csw/lib
