@@ -284,7 +284,7 @@ int main(int argc, char* argv[])
         
         Wallet wallet(node); // this will also register the needed callbacks
                 
-        thread nodeThread(&Node::run, &node); // run this as a background thread
+        boost::thread nodeThread(&Node::run, &node); // run this as a background thread
         
         CReserveKey reservekey(&wallet);
         
@@ -312,7 +312,7 @@ int main(int argc, char* argv[])
         Miner miner(pool);
         miner.setGenerate(false);
         miner.setGenerate(gen);
-        thread miningThread(&Miner::run, &miner);
+        boost::thread miningThread(&Miner::run, &miner);
         
         server.run();
         

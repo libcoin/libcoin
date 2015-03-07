@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     
     Wallet wallet(node); // add the wallet
     
-    thread nodeThread(&Node::run, &node); // run this as a background thread
+    boost::thread nodeThread(&Node::run, &node); // run this as a background thread
     
     Server server;
     

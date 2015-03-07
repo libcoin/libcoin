@@ -368,7 +368,7 @@ int main(int argc, char* argv[])
             node.persistence(persistence);
         }
         
-        thread nodeThread(&Node::run, &node); // run this as a background thread
+        boost::thread nodeThread(&Node::run, &node); // run this as a background thread
         
         string search_page = 
         "<html>"

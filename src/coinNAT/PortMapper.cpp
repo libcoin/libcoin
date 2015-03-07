@@ -66,7 +66,7 @@ void PortMapper::handle_mapping(const boost::system::error_code& e) {
             case IDGPORTMAP:
                 if (!_idg_trying) {
                     _idg_trying = true;
-                    _idg_thread = thread(&PortMapper::reqIDGportmap, this, _port);                      
+                    _idg_thread = boost::thread(&PortMapper::reqIDGportmap, this, _port);
                 }
                 _state = IDGWAITPORTMAP;
                 _repeat_timer.expires_from_now(boost::posix_time::seconds(3)); // we give UPnP 3 seconds to setup mapping
