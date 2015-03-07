@@ -115,11 +115,12 @@ Value GetBalance::operator()(const Array& params, bool fHelp) {
             list<pair<ChainAddress, int64_t> > listReceived;
             list<pair<ChainAddress, int64_t> > listSent;
             wtx.GetAmounts(allGeneratedImmature, allGeneratedMature, listReceived, listSent, allFee, strSentAccount);
-            if (_wallet.getDepthInMainChain(wtx.getHash()) >= nMinDepth)
+            if (_wallet.getDepthInMainChain(wtx.getHash()) >= nMinDepth) {
                 BOOST_FOREACH(const PAIRTYPE(ChainAddress,int64_t)& r, listReceived)
-                nBalance += r.second;
+                    nBalance += r.second;
+            }
             BOOST_FOREACH(const PAIRTYPE(ChainAddress,int64_t)& r, listSent)
-            nBalance -= r.second;
+                nBalance -= r.second;
             nBalance -= allFee;
             nBalance += allGeneratedMature;
         }
@@ -615,6 +616,7 @@ void ListMethod::listTransactions(const CWalletTx& wtx, const string& strAccount
     
     // Received
     if (listReceived.size() > 0 && _wallet.getDepthInMainChain(wtx.getHash()) >= nMinDepth)
+    {
         BOOST_FOREACH(const PAIRTYPE(ChainAddress, int64_t)& r, listReceived)
         {
         string account;
@@ -632,6 +634,7 @@ void ListMethod::listTransactions(const CWalletTx& wtx, const string& strAccount
             ret.push_back(entry);
             }
         }
+    }
 }
 
 void ListMethod::acEntryToJSON(const CAccountingEntry& acentry, const string& strAccount, Array& ret)

@@ -391,8 +391,10 @@ bool Wallet::IsConfirmed(const CWalletTx& tx) const
             return false;
         
         if (mapPrev.empty())
+            {
             BOOST_FOREACH(const MerkleTx& mtx, tx.vtxPrev)
                 mapPrev[tx.getHash()] = &mtx;
+            }
         
         BOOST_FOREACH(const Input& txin, ptx->getInputs())
             {
