@@ -46,7 +46,7 @@ static const int NAMECOIN_TX_VERSION = 0x7100;
 typedef vector<unsigned char> Data;
 
 BlockChain::BlockChain(const Chain& chain, const string dataDir) :
-    postgresqlite::Database(dataDir == "" ? ":memory:" : dataDir + "/blockchain.sqlite3", Dictionary(), getMemorySize()/4),
+postgresqlite::Database(dataDir == "" ? ":memory:" : dataDir + "/blockchain.sqlite3", Dictionary(), std::max<size_t>(1024*1024*1024, getMemorySize()/4)),
     _chain(chain),
     _lazy_purging(false),
     _purge_depth(0), // means no purging - i.e.
