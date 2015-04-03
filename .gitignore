@@ -17,3 +17,5 @@ cmake_uninstall.cmake
 include/coin/Config.h
 include/coin/Version.h
 packaging/ld.so.conf.d/libcoin.conf
+bin/
+lib/
