@@ -1222,8 +1222,8 @@ void BlockChain::append(const Block &block) {
         switch (min_enforced_version > 0 ? min_enforced_version : 0) {
             default:
             case 3:
-                if (block.getVersion() >= 3 && block.getSpendablesRoot() != _spendables.root()->hash())
-                    throw Error("Version 3(or more) block with wrong or missing Spendable Root hash in coinbase rejected!");
+//                if (block.getVersion() >= 3 && block.getSpendablesRoot() != _spendables.root()->hash())
+//                    throw Error("Version 3(or more) block with wrong or missing Spendable Root hash in coinbase rejected!");
             case 2:
                 if (block.getVersion() >= 2 && block.getHeight() != prev_height + 1)
                     throw Error("Version 2(or more) block with wrong or missing height in coinbase rejected!");
