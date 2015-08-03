@@ -33,15 +33,15 @@ public:
     
     void reset();
     
-    void verify(const Output& output, const Transaction& txn, unsigned int in_idx, bool strictPayToScriptHash, int hash_type);
+    void verify(const std::vector<Script>& scripts, const Transaction& txn, bool strictPayToScriptHash);
     
     std::string reason() const { return _reason; }
     
     bool yield_success() const;
     
 private:
-    bool do_verify(const Output& output, const Transaction& txn, unsigned int in_idx, bool strictPayToScriptHash, int hash_type);
-    
+    bool do_verify(const std::vector<Script>& scripts, const Transaction& txn, bool strictPayToScriptHash);
+
     void failed_with_reason(std::string reason);
     bool already_failed() const;
     

@@ -48,6 +48,7 @@ typedef vector<unsigned char> Data;
 BlockChain::BlockChain(const Chain& chain, const string dataDir) :
 postgresqlite::Database(dataDir == "" ? ":memory:" : dataDir + "/blockchain.sqlite3", Dictionary(), std::max<size_t>(1024*1024*1024, getMemorySize()/4)),
     _chain(chain),
+//    _verifier(0), // disable the multithreaded verification of transactions as it can slow down the verification of certain transactions (multi input ones)
     _lazy_purging(false),
     _purge_depth(0), // means no purging - i.e.
     _verification_depth(_chain.totalBlocksEstimate())
@@ -501,7 +502,7 @@ int64_t BlockChain::balance(const Script& script, int height) const {
     return unspent-created+spent;
 }
 
-Unspent BlockChain::redeem(const Input& input, int iidx, Confirmation iconf) {
+Unspent BlockChain::redeem(const Input& input, int iidx, const Confirmation& iconf) {
     Unspent coin;
     
     if (_validation_depth == 0) {
@@ -540,7 +541,7 @@ Unspent BlockChain::redeem(const Input& input, int iidx, Confirmation iconf) {
     return coin;
 }
 
-int64_t BlockChain::issue(const Output& output, uint256 hash, unsigned int out_idx, Confirmation conf, bool unique) {
+int64_t BlockChain::issue(const Output& output, uint256 hash, unsigned int out_idx, const Confirmation& conf, bool unique) {
     int64_t count = conf.is_coinbase() ? -conf.count : conf.count;
     if (_validation_depth == 0) {
         if (unique)
@@ -719,6 +720,7 @@ void BlockChain::postTransaction(const Transaction txn, int64_t& fees, int64_t m
         const Inputs& inputs = txn.getInputs();
         int64_t value_in = 0;
         NameOperation name_op(_chain.adhere_names()?!_chain.enforce_name_rules(blk.count()):true);
+        vector<Script> scripts;
         for (size_t in_idx = 0; in_idx < inputs.size(); ++in_idx) {
             const Input& input = inputs[in_idx];
             Unspent coin = redeem(input, in_idx, conf); // this will throw in case of doublespend attempts
@@ -729,14 +731,18 @@ void BlockChain::postTransaction(const Transaction txn, int64_t& fees, int64_t m
             // use the name from the UTXO and not from the input - workaround from for bug
             if (_chain.adhere_names() && name_op.input(output, count))
                 name_op.name(getCoinName(coin.coin));
-            
-            _verifySignatureTimer -= UnixTime::us();
-            
-            if (verify) // this is invocation only - the actual verification takes place in other threads
-                _verifier.verify(output, txn, in_idx, strictPayToScriptHash, 0);
-            
-            _verifySignatureTimer += UnixTime::us();
+
+            scripts.push_back(output.script());
         }
+        
+        _verifySignatureTimer -= UnixTime::us();
+        
+        if (verify) // this is invocation only - the actual verification takes place in other threads
+            _verifier.verify(scripts, txn, strictPayToScriptHash);
+        
+        _verifySignatureTimer += UnixTime::us();
+        
+
         
         // verify outputs
         int64_t fee = value_in - txn.getValueOut();

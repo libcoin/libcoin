@@ -40,27 +40,27 @@ void Verifier::reset() {
     _pending_verifications.clear();
 }
 
-void Verifier::verify(const Output& output, const Transaction& txn, unsigned int in_idx, bool strictPayToScriptHash, int hash_type) {
+void Verifier::verify(const vector<Script>& scripts, const Transaction& txn, bool strictPayToScriptHash) {
     if (_threads.size()) {
         typedef packaged_task<bool> bool_task;
-        boost::shared_ptr<bool_task> task = boost::make_shared<bool_task>(boost::bind(&Verifier::do_verify, this, output, txn, in_idx, strictPayToScriptHash, hash_type));
+        boost::shared_ptr<bool_task> task = boost::make_shared<bool_task>(boost::bind(&Verifier::do_verify, this, scripts, txn, strictPayToScriptHash));
         unique_future<bool> fut = task->get_future();
         _pending_verifications.push_back(boost::move(fut));
         _io_service.post(boost::bind(&bool_task::operator(), task));
     }
     else {
         if (!_failed)
-            _failed = !txn.verify(in_idx, output.script(), hash_type, strictPayToScriptHash);
+            _failed = !txn.verify(scripts, strictPayToScriptHash);
         if (_failed)
             failed_with_reason("Transaction hash: " + txn.getHash().toString());
     }
 }
 
-bool Verifier::do_verify(const Output& output, const Transaction& txn, unsigned int in_idx, bool strictPayToScriptHash, int hash_type) {
+bool Verifier::do_verify(const vector<Script>& scripts, const Transaction& txn, bool strictPayToScriptHash) {
     if (already_failed()) // no reason to waste time on a loosing tx
         return true;
-
-    if (!txn.verify(in_idx, output.script(), hash_type, strictPayToScriptHash)) {
+    
+    if (!txn.verify(scripts, strictPayToScriptHash)) {
         failed_with_reason("Transaction hash: " + txn.getHash().toString());
         return false;
     }

@@ -366,10 +366,10 @@ private:
     void insertBlockHeader(int64_t count, const Block& block);
 
     /// Mark a spendable spent - throw if already spent (or immature in case of database mode)
-    Unspent redeem(const Input& input, int iidx, Confirmation conf);
+    Unspent redeem(const Input& input, int iidx, const Confirmation& conf);
     
     /// Issue a new spendable
-    int64_t issue(const Output& output, uint256 hash, unsigned int out_idx, Confirmation conf, bool unique = true);
+    int64_t issue(const Output& output, uint256 hash, unsigned int out_idx, const Confirmation& conf, bool unique = true);
     
     /// Maturate the coinbase from block with count # - throw if not unique ?
     void maturate(int64_t count);

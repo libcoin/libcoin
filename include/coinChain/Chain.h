@@ -379,7 +379,7 @@ extern const NamecoinChain namecoin;
 class COINCHAIN_EXPORT LitecoinChain : public Chain {
 public:
     LitecoinChain();
-    virtual const int protocol_version() const { return 70002; } // 0.7.0.2
+    virtual const int protocol_version() const { return 100202; } // 0.10.2.2
     virtual const Block& genesisBlock() const ;
     virtual const uint256& genesisHash() const { return _genesis; }
     virtual const int64_t subsidy(unsigned int height, uint256 prev = uint256(0)) const ;

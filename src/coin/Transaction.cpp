@@ -203,6 +203,17 @@ static bool CastToBool(const valtype& vch) {
     return false;
 }
 
+bool Transaction::verify(const vector<Script>& scripts, bool strictPayToScriptHash) const {
+    if (scripts.size() != _inputs.size())
+        return false;
+    
+    for (int i = 0; i < scripts.size(); ++i) {
+        if (!verify(i, scripts[i], 0, strictPayToScriptHash))
+            return false;
+    }
+    return true;
+}
+
 
 bool Transaction::verify(unsigned int n, Script script, int type, bool strictPayToScriptHash) const {
     Evaluator::Stack stackCopy;

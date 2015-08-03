@@ -34,7 +34,7 @@ struct Confirmation : public Transaction {
     int64_t count;
     
     bool is_confirmed() { return (0 < count) && (count < LOCKTIME_THRESHOLD); }
-    bool is_coinbase() {return (cnf < 0); }
+    bool is_coinbase() const {return (cnf < 0); }
 };
 
 struct Unspent {

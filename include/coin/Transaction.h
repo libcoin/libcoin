@@ -303,6 +303,9 @@ public:
     /// Verify the signature of input n against script
     bool verify(unsigned int n, Script script, int type = 0, bool strictPayToScriptHash = true) const;
     
+    /// Verify the entire transaction using the supplied scripts (assuming type = 0)
+    bool verify(const std::vector<Script>& scripts, bool strictPayToScriptHash = true) const;
+    
     /// Get version.
     unsigned int version() const { return _version; }
     
@@ -415,15 +418,9 @@ protected:
     
 class TransactionEvaluator : public Evaluator {
 public:
-    TransactionEvaluator() {}
-    TransactionEvaluator(Transaction txn, unsigned int nIn, int nHashType = SIGHASH_ALL) : Evaluator(), _txn(txn), _in(nIn), _hash_type(nHashType), _code_separator(false) {}
+    TransactionEvaluator(const Transaction& txn, unsigned int nIn, int nHashType = SIGHASH_ALL) : Evaluator(), _txn(txn), _in(nIn), _hash_type(nHashType), _code_separator(false) {}
     
     virtual bool needContext() { return _txn.getNumInputs() == 0; }
-    void setTransactionContext(Transaction txn, unsigned int i, int hashtype = SIGHASH_ALL) {
-        _txn = txn;
-        _in = i;
-        _hash_type = hashtype;
-    }
     
 protected:
     virtual boost::tribool eval(opcodetype opcode);
@@ -431,7 +428,7 @@ protected:
     bool checkSig(std::vector<unsigned char> vchSig, std::vector<unsigned char> vchPubKey, Script scriptCode);
     
 protected:
-    Transaction _txn;
+    const Transaction& _txn;
     unsigned int _in;
     int _hash_type;
     bool _code_separator;
