@@ -418,9 +418,13 @@ protected:
     
 class TransactionEvaluator : public Evaluator {
 public:
-    TransactionEvaluator(const Transaction& txn, unsigned int nIn, int nHashType = SIGHASH_ALL) : Evaluator(), _txn(txn), _in(nIn), _hash_type(nHashType), _code_separator(false) {}
+    TransactionEvaluator(const Transaction& txn, int nHashType = SIGHASH_ALL) : Evaluator(), _txn(txn), _in(0), _hash_type(nHashType), _code_separator(false) {}
     
     virtual bool needContext() { return _txn.getNumInputs() == 0; }
+    
+    void setIndex(unsigned int nIn) {
+        _in = nIn;
+    }
     
 protected:
     virtual boost::tribool eval(opcodetype opcode);

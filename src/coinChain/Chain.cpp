@@ -474,6 +474,10 @@ NamecoinChain::NamecoinChain() : Chain("namecoin", "NMC", 8), _genesis("00000000
     (193000, uint256("0x3b85e70ba7f5433049cfbcf0ae35ed869496dbedcd1c0fafadb0284ec81d7b58"))
     ;
     
+    _seeds = boost::assign::list_of
+    ("nmc.seed.quisquis.de")
+    ;
+
 }
 
 unsigned int NamecoinChain::totalBlocksEstimate() const {

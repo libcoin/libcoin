@@ -221,7 +221,8 @@ bool Transaction::verify(unsigned int n, Script script, int type, bool strictPay
     const Input& input = getInput(n);
     const Script& scriptSig = input.signature();
     
-    TransactionEvaluator eval(*this, n, type);
+    TransactionEvaluator eval(*this, type);
+    eval.setIndex(n);
     
     if (!eval(scriptSig) || eval.stack().empty())
         return false;
