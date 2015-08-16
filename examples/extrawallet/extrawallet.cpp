@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
     Wallet wallet(node, "wallet.dat"); // add the wallet
     Wallet extra_wallet(node, "extra_wallet.dat"); // add the extra wallet
     
-    thread nodeThread(&Node::run, &node); // run this as a background thread
+    boost::thread nodeThread(&Node::run, &node); // run this as a background thread
     
     Server server;
     

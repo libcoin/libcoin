@@ -155,7 +155,7 @@ int main(int argc, char* argv[])
         //node.subscribe(wallet); // which will first sync the wallet, then install it as a callback to the blockchain
         // question was how to get 
         
-        thread nodeThread(&Node::run, &node); // run this as a background thread
+        boost::thread nodeThread(&Node::run, &node); // run this as a background thread
 
         CReserveKey reservekey(&wallet);
         
@@ -198,7 +198,7 @@ int main(int argc, char* argv[])
 
         Miner miner(pool);
         miner.setGenerate(conf.generate());
-        thread miningThread(&Miner::run, &miner);
+        boost::thread miningThread(&Miner::run, &miner);
         
         // Register Wallet methods.
         server.registerMethod(method_ptr(new GetBalance(wallet)), auth);
