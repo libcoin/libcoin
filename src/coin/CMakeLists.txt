@@ -30,7 +30,7 @@ SET(TARGET_H
     ${HEADER_PATH}/Shamir.h
     ${HEADER_PATH}/Serialization.h
     ${HEADER_PATH}/Transaction.h
-    ${HEADER_PATH}/Version.h
+    ${LIBCOIN_VERSION_HEADER}
     ${LIBCOIN_CONFIG_HEADER}
 )
 
