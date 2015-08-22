@@ -258,9 +258,10 @@ void CWalletTx::AddSupportingTransactions(const BlockChain& blockChain)
             int nDepth = blockChain.setMerkleBranch(tx);
             vtxPrev.push_back(tx);
             
-            if (nDepth < COPY_DEPTH)
+            if (nDepth < COPY_DEPTH) {
                 BOOST_FOREACH(const Input& txin, tx.getInputs())
-                vWorkQueue.push_back(txin.prevout().hash);
+                    vWorkQueue.push_back(txin.prevout().hash);
+            }
         }
     }
     //}

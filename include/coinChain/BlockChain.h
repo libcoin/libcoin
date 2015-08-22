@@ -37,7 +37,7 @@
 
 class Transaction;
 class NameOperation;
-class NameDbRow;
+struct NameDbRow;
 
 typedef std::vector<Transaction> Transactions;
 typedef std::map<uint256, Block> Branches;
