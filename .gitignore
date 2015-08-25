@@ -9,3 +9,13 @@ src/bitcoind
 *.o
 *.patch
 .bitcoin
+CMakeCache.txt
+**/CMakeFiles/
+**/Makefile
+**/cmake_install.cmake
+cmake_uninstall.cmake
+include/coin/Config.h
+include/coin/Version.h
+packaging/ld.so.conf.d/libcoin.conf
+bin/
+lib/
